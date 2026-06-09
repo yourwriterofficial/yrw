@@ -24,3 +24,45 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+.input-box {
+  width: 100%;
+  background: #0f0f0f;
+  border: 1px solid #333;
+  padding: 18px;
+  border-radius: 20px;
+  color: #fff;
+  margin-bottom: 12px;
+  outline: none;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+.input-box:focus {
+  border-color: #1DB954;
+  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15);
+  background: #141414;
+}
+.spotify-green {
+  background: #1DB954;
+  color: #000;
+  font-weight: 800;
+  border-radius: 50px;
+  padding: 16px 32px;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  transition: 0.3s;
+}
+.spotify-green:hover {
+  background: #17a44b;
+}
+body.light .input-box {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+body.light .input-box:focus {
+  border-color: #10b981;
+  background: #ffffff;
+}
