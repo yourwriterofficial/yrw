@@ -24,7 +24,7 @@ export default function AdminPage() {
   const [filteredOrders, setFilteredOrders] = useState<AdminOrderView[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 25;
-  const [sortColumn, setSortColumn] = useState<keyof AdminOrderView>('Timestamp');
+  const [sortColumn, setSortColumn] = useState<string>('Timestamp');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<WorkflowStatus | ''>('');
@@ -153,14 +153,20 @@ export default function AdminPage() {
       );
     }
     filtered.sort((a, b) => {
-      let aVal: any = a[sortColumn], bVal: any = b[sortColumn];
-      if (sortColumn === 'Timestamp' || sortColumn === 'Deadline')
-        aVal = new Date(aVal || 0), bVal = new Date(bVal || 0);
-      if (sortColumn === 'Price') aVal = parsePriceStr(a['Financial Quote']), bVal = parsePriceStr(b['Financial Quote']);
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
+  let aVal: any = a[sortColumn as keyof AdminOrderView];
+  let bVal: any = b[sortColumn as keyof AdminOrderView];
+  if (sortColumn === 'Timestamp' || sortColumn === 'Deadline') {
+    aVal = new Date(aVal || 0);
+    bVal = new Date(bVal || 0);
+  }
+  if (sortColumn === 'Financial Quote') {
+    aVal = parsePriceStr(a['Financial Quote']);
+    bVal = parsePriceStr(b['Financial Quote']);
+  }
+  if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+  if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+  return 0;
+});
     setFilteredOrders(filtered);
     setCurrentPage(1);
   }, [orders, statusFilter, tierFilter, paymentFilter, searchTerm, sortColumn, sortDirection]);
