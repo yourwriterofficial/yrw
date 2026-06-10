@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function LoginPage() {
@@ -10,17 +10,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Check if already logged in (optional)
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        window.location.href = '/dashboard/client';
-      }
-    };
-    checkSession();
-  }, []);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -29,7 +18,6 @@ export default function LoginPage() {
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
-      options: { persistSession: rememberMe },
     });
 
     if (signInError) {
@@ -46,7 +34,7 @@ export default function LoginPage() {
       return;
     }
 
-    // Ensure profile exists (create if missing)
+    // Ensure profile exists
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_admin')
@@ -70,17 +58,13 @@ export default function LoginPage() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        persistSession: rememberMe,
-      },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) {
       console.error('Google login error:', error);
       setError(error.message);
       setLoading(false);
     }
-    // No need to set loading false – page will redirect
   };
 
   return (
