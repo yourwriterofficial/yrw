@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const payload = await request.json();
     const parsed = webhookPayloadSchema.safeParse(payload);
     if (!parsed.success) {
-      console.error('Invalid webhook payload', parsed.error.errors);
+      console.error('Invalid webhook payload', parsed.error.issues);
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 

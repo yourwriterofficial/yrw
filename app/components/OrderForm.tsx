@@ -141,73 +141,73 @@ export default function OrderForm() {
   };
 
   const submitOrder = async () => {
-    if (!acceptTerms) return alert('You must formally accept the Terms of Service structure.');
-    if (!validateStep(1)) return;
-    if (!deadline) return alert('Please assign a pipeline deadline date.');
+  if (!acceptTerms) return alert('You must formally accept the Terms of Service structure.');
+  if (!validateStep(1)) return;
+  if (!deadline) return alert('Please assign a pipeline deadline date.');
 
-    setLoading(true);
-    const orderStringId = `RW-${Math.floor(100000 + Math.random() * 900000)}`;
-    const calculatedPages = Math.ceil(words / 275);
+  setLoading(true);
+  const orderStringId = `RW-${Math.floor(100000 + Math.random() * 900000)}`;
+  const calculatedPages = Math.ceil(words / 275);
 
-    const payloadManifest = {
-      order_id: orderStringId,
-      guest_name: name,
-      guest_email: email,
-      guest_whatsapp: whatsapp,
-      legal_name: name,
-      email: email,
-      topic: isCustom ? `[PROPOSAL] ${topic}` : topic,
-      word_count: words,
-      page_count: calculatedPages,
-      service_tier: plan,
-      financial_quote: isCustom ? customPrice : 0,
-      workflow_status: 'Briefing Received',
-      deadline,
-      reference_style: refStyle,
-      font_specification: fontStyle,
-      sixty_percent_paid: false,
-      forty_percent_paid: false,
-      work_submitted: false,
-      corrections_status: 'None',
-      additional_info: additionalInfo,
-      media_link: mediaLink || null,
-      vault_status: 'Secured in Vault',
-      whatsapp_sync: whatsapp,
-      last_activity: new Date().toISOString(),
-    };
-
-    const serverResponse = await createSecureOrder(payloadManifest, promoCode) as CreateOrderServerActionResponse;
-
-    if (!serverResponse?.success) {
-      console.error('Order creation failed:', serverResponse?.error);
-      alert(`Submission failed: ${serverResponse?.error || 'Unknown error'}`);
-      setLoading(false);
-      return;
-    }
-
-    // Upload files (if any)
-    const uploadUnit = async (file: File, label: 'brief' | 'extra') => {
-      const ext = file.name.split('.').pop();
-      const storagePath = `${orderStringId}/${label}_${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('order-files').upload(storagePath, file);
-      if (!error) {
-        await supabase.from('order_files').insert({
-          order_id: serverResponse.orderDbId,
-          file_path: storagePath,
-          file_name: file.name,
-          file_type: label,
-        });
-      }
-    };
-
-    if (briefFile) await uploadUnit(briefFile, 'brief');
-    for (const file of extraFiles) await uploadUnit(file, 'extra');
-
-    // Remove draft and redirect to account creation page
-    localStorage.removeItem('rw_order_draft');
-    router.push(`/complete-registration?email=${encodeURIComponent(email)}&orderId=${orderStringId}`);
-    setLoading(false);
+  const payloadManifest = {
+    order_id: orderStringId,
+    guest_name: name,
+    guest_email: email,
+    guest_whatsapp: whatsapp,
+    legal_name: name,
+    email: email,
+    topic: isCustom ? `[PROPOSAL] ${topic}` : topic,
+    word_count: words,
+    page_count: calculatedPages,
+    service_tier: plan,
+    financial_quote: isCustom ? customPrice : 0,
+    workflow_status: 'Briefing Received',
+    deadline,
+    reference_style: refStyle,
+    font_specification: fontStyle,
+    sixty_percent_paid: false,
+    forty_percent_paid: false,
+    work_submitted: false,
+    corrections_status: 'None',
+    additional_info: additionalInfo,
+    media_link: mediaLink || undefined,   // <-- FIX: use undefined instead of null
+    vault_status: 'Secured in Vault',
+    whatsapp_sync: whatsapp,
+    last_activity: new Date().toISOString(),
   };
+
+  const serverResponse = await createSecureOrder(payloadManifest, promoCode) as CreateOrderServerActionResponse;
+
+  if (!serverResponse?.success) {
+    console.error('Order creation failed:', serverResponse?.error);
+    alert(`Submission failed: ${serverResponse?.error || 'Unknown error'}`);
+    setLoading(false);
+    return;
+  }
+
+  // Upload files (if any)
+  const uploadUnit = async (file: File, label: 'brief' | 'extra') => {
+    const ext = file.name.split('.').pop();
+    const storagePath = `${orderStringId}/${label}_${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('order-files').upload(storagePath, file);
+    if (!error) {
+      await supabase.from('order_files').insert({
+        order_id: serverResponse.orderDbId,
+        file_path: storagePath,
+        file_name: file.name,
+        file_type: label,
+      });
+    }
+  };
+
+  if (briefFile) await uploadUnit(briefFile, 'brief');
+  for (const file of extraFiles) await uploadUnit(file, 'extra');
+
+  // Remove draft and redirect to account creation page
+  localStorage.removeItem('rw_order_draft');
+  router.push(`/complete-registration?email=${encodeURIComponent(email)}&orderId=${orderStringId}`);
+  setLoading(false);
+};
 
   if (!isLoaded || loading) {
     return (

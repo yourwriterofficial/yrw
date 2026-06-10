@@ -43,7 +43,7 @@ const formatDateTime = (iso: string | null): string => {
 export default function ClientDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
-  const [user, setUser] = useState<any>(null); // Supabase user object, can be kept as any or import User type
+  const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [orders, setOrders] = useState<AdminOrderView[]>([]);
   const [currentOrder, setCurrentOrder] = useState<AdminOrderView | null>(null);
@@ -62,8 +62,15 @@ export default function ClientDashboard() {
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/login'); return; }
+      if (!user) {
+        router.push('/login');
+        return;
+      }
       setUser(user);
+      if (!user.email) {
+        router.push('/login');
+        return;
+      }
       const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
       if (profile) setIsAdmin(!!profile.is_admin);
       const savedTheme = localStorage.getItem('yrw_theme') as 'light' | 'dark' | 'auto' | null;
@@ -106,7 +113,7 @@ export default function ClientDashboard() {
   useEffect(() => {
     if (!currentOrder || !currentOrder.Deadline) return;
     const interval = setInterval(() => {
-      const deadline = new Date(currentOrder.Deadline);
+      const deadline = new Date(currentOrder.Deadline!); // Fixed: non-null assertion
       const now = new Date();
       const diff = deadline.getTime() - now.getTime();
       if (diff <= 0) {
@@ -326,7 +333,7 @@ export default function ClientDashboard() {
             ))}
           </div>
         )}
-        {/* Main grid – exactly the same JSX as the user's original, no changes needed besides types. */}
+        {/* Main grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className={`rounded-2xl p-6 ${isLight ? 'bg-white/80 border border-slate-200' : 'bg-white/5 border border-white/10'} backdrop-blur-sm`}>
@@ -416,7 +423,7 @@ export default function ClientDashboard() {
                 <div className="text-center"><div className="w-24 h-24 mx-auto"><Doughnut data={{ labels: ['AI', 'Human'], datasets: [{ data: [scores.ai || 0, 100 - (scores.ai || 0)], backgroundColor: ['#f59e0b', '#334155'], borderWidth: 0 }] }} options={{ cutout: '75%', plugins: { legend: { display: false } } }} /></div><div className="text-2xl font-black bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent mt-2">{scores.ai !== null ? scores.ai.toFixed(1) : '—'}%</div><p className="text-[8px] uppercase tracking-widest text-slate-500">AI Detection</p></div>
               </div>
             </div>
-            {/* Corrections, Quick Support, Request Corrections, Download Receipt – identical to original */}
+            {/* Corrections, Quick Support, Request Corrections, Download Receipt */}
             {currentOrder['Corrections Status'] && currentOrder['Corrections Status'] !== 'None' && (
               <div className={`rounded-2xl p-6 ${isLight ? 'bg-white/80 border border-slate-200' : 'bg-white/5 border border-white/10'}`}>
                 <h3 className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-2">✏️ Corrections</h3>

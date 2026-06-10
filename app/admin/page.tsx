@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import * as lucide from 'lucide-react';
-import type { AdminOrderView, PromoCode, ReferenceStyle, FontStyle, WorkflowStatus, ServiceTier } from '@/lib/types';
+import type { AdminOrderView, PromoCode, ReferenceStyle, FontStyle, WorkflowStatus, ServiceTier, CorrectionsStatus } from '@/lib/types';
 
 // Helper functions
 const renderBool = (val: any): boolean => val === true || val === 'Yes' || val === 'true';
@@ -153,20 +153,20 @@ export default function AdminPage() {
       );
     }
     filtered.sort((a, b) => {
-  let aVal: any = a[sortColumn as keyof AdminOrderView];
-  let bVal: any = b[sortColumn as keyof AdminOrderView];
-  if (sortColumn === 'Timestamp' || sortColumn === 'Deadline') {
-    aVal = new Date(aVal || 0);
-    bVal = new Date(bVal || 0);
-  }
-  if (sortColumn === 'Financial Quote') {
-    aVal = parsePriceStr(a['Financial Quote']);
-    bVal = parsePriceStr(b['Financial Quote']);
-  }
-  if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-  if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-  return 0;
-});
+      let aVal: any = a[sortColumn as keyof AdminOrderView];
+      let bVal: any = b[sortColumn as keyof AdminOrderView];
+      if (sortColumn === 'Timestamp' || sortColumn === 'Deadline') {
+        aVal = new Date(aVal || 0);
+        bVal = new Date(bVal || 0);
+      }
+      if (sortColumn === 'Financial Quote') {
+        aVal = parsePriceStr(a['Financial Quote']);
+        bVal = parsePriceStr(b['Financial Quote']);
+      }
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
     setFilteredOrders(filtered);
     setCurrentPage(1);
   }, [orders, statusFilter, tierFilter, paymentFilter, searchTerm, sortColumn, sortDirection]);
@@ -183,9 +183,9 @@ export default function AdminPage() {
     if (!editingOrder) return;
     const updates = {
       workflow_status: editingOrder['Workflow Status'],
-      sixty_percent_paid: editingOrder['60% Paid'] === 'Yes',
-      forty_percent_paid: editingOrder['40% Paid'] === 'Yes',
-      work_submitted: editingOrder['Work Submitted'] === 'Yes',
+      sixty_percent_paid: editingOrder['60% Paid'],
+      forty_percent_paid: editingOrder['40% Paid'],
+      work_submitted: editingOrder['Work Submitted'],
       corrections_status: editingOrder['Corrections Status'],
       vault_status: editingOrder['Vault Status'],
     };
@@ -273,9 +273,6 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-['Inter']">
-      {/* Header, Tools, Filters, Stats, Table – same JSX as original, but with proper types */}
-      {/* For brevity, we keep the exact same JSX as the user provided, because no changes were needed except removing the broken receipt button. */}
-      {/* The receipt button is already removed in this version. */}
       <header className="p-5 border-b border-white/5 sticky top-0 bg-[#050505]/90 z-40 flex justify-between items-center backdrop-blur-sm">
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
@@ -310,7 +307,6 @@ export default function AdminPage() {
             </div>
           </div>
         )}
-        {/* Filters and Stats – same as original */}
         <div className="flex flex-wrap gap-3 mb-4 items-center">
           <span className="text-[10px] font-bold text-slate-500">Filter:</span>
           <select className="bg-[#0a0a0a] border border-white/10 rounded-lg px-3 py-2 text-xs" value={statusFilter} onChange={e => setStatusFilter(e.target.value as WorkflowStatus | '')}>
@@ -334,7 +330,6 @@ export default function AdminPage() {
           <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-slate-500">Total Value</div><div className="text-xl font-black">₦{filteredOrders.reduce((a,o)=>a+parsePriceStr(o['Financial Quote']),0).toLocaleString()}</div></div>
           <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-slate-500">Outstanding</div><div className="text-xl font-black">₦0</div></div>
         </div>
-        {/* Orders Table */}
         <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -376,7 +371,6 @@ export default function AdminPage() {
           </div>
         </div>
       </main>
-      {/* Edit Modal, Promo Modal, Style Modals, Delivery Modal – same JSX as original */}
       {editingOrder && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#050505] border border-white/10 rounded-3xl p-8 max-w-lg w-full">
@@ -396,7 +390,11 @@ export default function AdminPage() {
                 <div><label>40% Balance</label><select className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl p-3" value={editingOrder['40% Paid'] === true ? 'Yes' : (editingOrder['40% Paid'] === false ? 'No' : 'None')} onChange={e => setEditingOrder({...editingOrder, '40% Paid': e.target.value === 'Yes'})}><option>None</option><option>Yes</option><option>No</option></select></div>
               </div>
               <div><label>Work Submitted</label><select className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl p-3" value={editingOrder['Work Submitted'] === true ? 'Yes' : (editingOrder['Work Submitted'] === false ? 'No' : 'None')} onChange={e => setEditingOrder({...editingOrder, 'Work Submitted': e.target.value === 'Yes'})}><option>None</option><option>Yes</option><option>No</option></select></div>
-              <div><label>Corrections Status</label><select className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl p-3" value={editingOrder['Corrections Status']} onChange={e => setEditingOrder({...editingOrder, 'Corrections Status': e.target.value})}><option>None</option><option>Requested</option><option>In Progress</option><option>Resubmitted</option></select></div>
+              <div><label>Corrections Status</label>
+                <select className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl p-3" value={editingOrder['Corrections Status']} onChange={e => setEditingOrder({...editingOrder, 'Corrections Status': e.target.value as CorrectionsStatus})}>
+                  <option>None</option><option>Requested</option><option>In Progress</option><option>Resubmitted</option>
+                </select>
+              </div>
             </div>
             <div className="flex gap-3 mt-8">
               <button onClick={saveOrder} className="flex-1 py-3 bg-emerald-500 text-black font-bold rounded-xl">Save Changes</button>
@@ -405,7 +403,6 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-      {/* Promo Modal, Style Modals, Delivery Modal – identical to original, omitted for brevity */}
       {showPromoModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#050505] border border-white/10 rounded-3xl p-8 max-w-md w-full">

@@ -24,7 +24,7 @@ export async function POST(request: Request): Promise<NextResponse<SendEmailResp
     const parsed = emailRequestSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'Validation failed', details: parsed.error.errors },
+        { success: false, error: 'Validation failed', details: parsed.error.issues },
         { status: 400 }
       );
     }
@@ -32,7 +32,7 @@ export async function POST(request: Request): Promise<NextResponse<SendEmailResp
     const { to, subject, html, orderId } = parsed.data;
 
     const senderEmail = process.env.NODE_ENV === 'production'
-      ? 'YourWriterOfficial <noreply@yourwriterofficial.com>'
+      ? 'YourWriterOfficial <noreply@yourresearchwriter.com.ng>'
       : 'YourWriterOfficial <onboarding@resend.dev>';
 
     const { data, error } = await resend.emails.send({
