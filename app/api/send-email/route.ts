@@ -32,8 +32,8 @@ export async function POST(request: Request): Promise<NextResponse<SendEmailResp
     const { to, subject, html, orderId } = parsed.data;
 
     const senderEmail = process.env.NODE_ENV === 'production'
-      ? 'YourWriterOfficial <noreply@yourresearchwriter.com.ng>'
-      : 'YourWriterOfficial <onboarding@resend.dev>';
+      ? 'YourResearchWriter <noreply@yourresearchwriter.com.ng>'
+      : 'YourResearchWriter <onboarding@resend.dev>';
 
     const { data, error } = await resend.emails.send({
       from: senderEmail,

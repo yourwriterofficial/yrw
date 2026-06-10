@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "YourWriterOfficial | Academic Research",
+  title: "YourResearchWriter | Academic Research",
   description: "Human-only research writing for MSc and PhD scholars",
 };
 

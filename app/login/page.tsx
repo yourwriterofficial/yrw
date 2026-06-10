@@ -47,7 +47,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="bg-zinc-900 p-8 rounded-2xl w-full max-w-md border border-white/10">
-        <h1 className="text-2xl font-bold text-white mb-6">Login to YourWriterOfficial</h1>
+        <h1 className="text-2xl font-bold text-white mb-6">Login to YourResearchWriter</h1>
         <form onSubmit={handleLogin} className="space-y-4">
           <input
             type="email"

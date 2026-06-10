@@ -26,7 +26,7 @@ export const InvoicePDF = ({ order, amount, type }: InvoicePDFProps) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <View style={styles.header}>
-        <Text style={styles.title}>YourWriterOfficial</Text>
+        <Text style={styles.title}>YourResearchWriter</Text>
         <Text style={styles.subtitle}>Official Invoice</Text>
       </View>
       <View>

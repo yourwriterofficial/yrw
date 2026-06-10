@@ -40,7 +40,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#050505] text-white font-['Inter'] overflow-x-hidden">
       {/* Navigation */}
       <nav className="p-6 border-b border-white/5 sticky top-0 bg-[#050505]/90 z-50 flex justify-between items-center backdrop-blur-md flex-wrap gap-4">
-        <div className="font-black text-xl italic tracking-tighter cursor-pointer">YourWriterOfficial</div>
+        <div className="font-black text-xl italic tracking-tighter cursor-pointer">YourResearchWriter</div>
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest flex-wrap">
             <button className="hover:text-emerald-500 transition px-3 py-1 rounded-full bg-white/5">Home</button>

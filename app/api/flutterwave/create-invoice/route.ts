@@ -54,7 +54,7 @@ export async function POST(request: Request): Promise<NextResponse<CreateInvoice
         redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client`,
         customer: { email, name: name || 'Client' },
         customizations: {
-          title: `YourWriter - ${type === 'DEPOSIT' ? '60% Deposit' : '40% Balance'}`,
+          title: `YourResearchWriter - ${type === 'DEPOSIT' ? '60% Deposit' : '40% Balance'}`,
           description: `Invoice for Order: ${orderId}`,
         },
       }),
