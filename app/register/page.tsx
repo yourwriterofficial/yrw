@@ -21,10 +21,7 @@ export default function RegisterPage() {
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { full_name: fullName },
-        // For new sign‑ups, we can also set persistSession, but it's handled after email confirmation
-      },
+      options: { data: { full_name: fullName } },
     });
 
     if (signUpError) {
@@ -50,72 +47,81 @@ export default function RegisterPage() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        persistSession: rememberMe,
-      },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) {
-      console.error('Google sign-up error:', error);
       setError(error.message);
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="bg-zinc-900 p-8 rounded-2xl w-full max-w-md border border-white/10">
-        <h1 className="text-2xl font-bold text-white mb-6 text-center">Create Account</h1>
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 font-['Inter']">
+      <div className="bg-[#0a0a0a] border border-zinc-800 p-8 rounded-3xl w-full max-w-md shadow-2xl">
+        <div className="text-center mb-8">
+          <div className="inline-block px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Registration</div>
+          <h1 className="text-2xl font-black text-white tracking-tight">Create Account</h1>
+        </div>
+        
         <form onSubmit={handleRegister} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="w-full bg-black border border-white/20 rounded-xl p-3 text-white"
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-black border border-white/20 rounded-xl p-3 text-white"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-black border border-white/20 rounded-xl p-3 text-white"
-            required
-          />
-          <label className="flex items-center gap-2 cursor-pointer">
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 ml-1">Full Name</label>
+            <input
+              type="text"
+              placeholder="John Doe"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-emerald-500 transition"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 ml-1">Email Address</label>
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-emerald-500 transition"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 ml-1">Password</label>
+            <input
+              type="password"
+              placeholder="At least 6 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-emerald-500 transition"
+              required
+            />
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer pt-2">
             <input
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="accent-emerald-500 w-4 h-4"
+              className="accent-emerald-500 bg-black border-zinc-800 rounded w-4 h-4"
             />
-            <span className="text-sm text-slate-300">Remember me on this device</span>
+            <span className="text-xs font-bold text-zinc-400">Remember me on this device</span>
           </label>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-red-500 text-xs font-bold bg-red-500/10 p-3 rounded-lg border border-red-500/20">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition disabled:opacity-50"
+            className="w-full bg-emerald-500 text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-xl hover:bg-emerald-400 transition mt-2 disabled:opacity-50"
           >
-            {loading ? 'Creating account...' : 'Register'}
+            {loading ? 'Processing...' : 'Register'}
           </button>
         </form>
 
-        <div className="relative my-6">
+        <div className="relative my-8">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/10"></div>
+            <div className="w-full border-t border-zinc-800"></div>
           </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-zinc-900 px-2 text-slate-400">OR</span>
+          <div className="relative flex justify-center text-[10px] font-black tracking-widest uppercase">
+            <span className="bg-[#0a0a0a] px-4 text-zinc-600">Or Continue With</span>
           </div>
         </div>
 
@@ -123,20 +129,20 @@ export default function RegisterPage() {
           type="button"
           onClick={handleGoogleSignUp}
           disabled={loading}
-          className="w-full bg-white text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 transition disabled:opacity-50"
+          className="w-full bg-white text-black font-black uppercase tracking-widest text-[11px] py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-200 transition disabled:opacity-50"
         >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
-          Sign up with Google
+          Google Authentication
         </button>
 
-        <p className="text-center text-sm text-slate-400 mt-6">
+        <p className="text-center text-xs text-zinc-500 mt-8">
           Already have an account?{' '}
-          <a href="/login" className="text-emerald-500 hover:underline">Login</a>
+          <a href="/login" className="text-emerald-500 hover:text-emerald-400 font-bold transition">Login securely</a>
         </p>
       </div>
     </div>

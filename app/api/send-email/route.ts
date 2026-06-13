@@ -35,6 +35,7 @@ export async function POST(request: Request): Promise<NextResponse<SendEmailResp
       ? 'YourResearchWriter <noreply@yourresearchwriter.com.ng>'
       : 'YourResearchWriter <onboarding@resend.dev>';
 
+    // Send the email via Resend
     const { data, error } = await resend.emails.send({
       from: senderEmail,
       to: [to],
@@ -47,15 +48,25 @@ export async function POST(request: Request): Promise<NextResponse<SendEmailResp
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
+    // Safely log the email in the database
     if (orderId) {
-      const { error: logError } = await supabase.from('email_logs').insert({
-        order_id: orderId.replace('RW-', ''),
-        recipient: to,
-        subject,
-        status: 'sent',
-        sent_at: new Date().toISOString(),
-      });
-      if (logError) console.warn('Failed to log email:', logError.message);
+      // Look up the internal numeric ID first to prevent foreign key crashes
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('order_id', orderId)
+        .single();
+
+      if (orderData) {
+        const { error: logError } = await supabase.from('email_logs').insert({
+          order_id: orderData.id,
+          recipient: to,
+          subject,
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+        });
+        if (logError) console.warn('Failed to log email:', logError.message);
+      }
     }
 
     return NextResponse.json({ success: true, data }, { status: 200 });

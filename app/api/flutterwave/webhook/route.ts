@@ -50,17 +50,18 @@ export async function POST(request: Request) {
         .update({ status: 'PAID', paid_at: new Date().toISOString() })
         .eq('flutterwave_transaction_ref', tx_ref);
 
+      // Get order info for emails
+      const { data: orderInfo } = await supabase
+        .from('orders')
+        .select('email, legal_name, financial_quote')
+        .eq('order_id', orderStringId)
+        .single();
+
       if (paymentType === 'DEPOSIT') {
         await supabase
           .from('orders')
           .update({ sixty_percent_paid: true, workflow_status: 'Synthesis Active' })
           .eq('order_id', orderStringId);
-
-        const { data: orderInfo } = await supabase
-          .from('orders')
-          .select('email, legal_name, financial_quote')
-          .eq('order_id', orderStringId)
-          .single();
 
         if (orderInfo) {
           const depositAmount = orderInfo.financial_quote * 0.6;
@@ -86,6 +87,25 @@ export async function POST(request: Request) {
           .from('orders')
           .update({ forty_percent_paid: true })
           .eq('order_id', orderStringId);
+
+        if (orderInfo) {
+          fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/send-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: orderInfo.email,
+              orderId: orderStringId,
+              subject: `Vault Unlocked: Order ${orderStringId}`,
+              html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #050505; color: #ffffff; padding: 30px; border-radius: 10px; border: 1px solid #10b981;">
+                <h2 style="color: #10b981;">Final Balance Cleared</h2>
+                <p>Hello ${orderInfo.legal_name},</p>
+                <p>Your 40% balance has been successfully processed. Thank you!</p>
+                <p>The secure delivery vault is now <strong>Unlocked</strong>. You can instantly download your final editable documents from your dashboard.</p>
+                <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" style="display: inline-block; background: #10b981; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 5px;">Access Delivery Vault</a>
+              </div>`,
+            }),
+          }).catch(err => console.error('Email send failed:', err));
+        }
       }
     }
 

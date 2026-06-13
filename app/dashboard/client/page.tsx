@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import * as lucide from 'lucide-react';
@@ -42,6 +42,7 @@ const formatDateTime = (iso: string | null): string => {
 
 export default function ClientDashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState<boolean>(true);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -58,8 +59,17 @@ export default function ClientDashboard() {
   const [downloading, setDownloading] = useState<boolean>(false);
   const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'auto'>('auto');
   const [isLight, setIsLight] = useState<boolean>(false);
+  const [showVerifiedBanner, setShowVerifiedBanner] = useState<boolean>(false);
 
   useEffect(() => {
+    // Check for verification success in URL
+    if (searchParams.get('verified') === 'true') {
+      setShowVerifiedBanner(true);
+      // Clean up the URL quietly without triggering a full page reload
+      window.history.replaceState(null, '', '/dashboard/client');
+      setTimeout(() => setShowVerifiedBanner(false), 8000);
+    }
+
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -81,7 +91,7 @@ export default function ClientDashboard() {
       await fetchOrders(user.email);
     };
     init();
-  }, []);
+  }, [searchParams, router]);
 
   const fetchOrders = async (email: string) => {
     setLoading(true);
@@ -113,7 +123,7 @@ export default function ClientDashboard() {
   useEffect(() => {
     if (!currentOrder || !currentOrder.Deadline) return;
     const interval = setInterval(() => {
-      const deadline = new Date(currentOrder.Deadline!); // Fixed: non-null assertion
+      const deadline = new Date(currentOrder.Deadline!);
       const now = new Date();
       const diff = deadline.getTime() - now.getTime();
       if (diff <= 0) {
@@ -285,6 +295,7 @@ export default function ClientDashboard() {
   };
 
   if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading dashboard...</div>;
+
   if (!currentOrder) {
     return (
       <div className="min-h-screen bg-black text-white p-8 flex flex-col items-center justify-center">
@@ -308,6 +319,18 @@ export default function ClientDashboard() {
 
   return (
     <div className={`min-h-screen p-4 transition-colors ${isLight ? 'bg-gradient-to-br from-slate-50 to-slate-200 text-slate-900' : 'bg-gradient-to-br from-[#050505] to-[#0a0a0a] text-white'}`}>
+      
+      {showVerifiedBanner && (
+        <div className="max-w-6xl mx-auto mb-6 bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 px-4 py-3 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
+          <lucide.CheckCircle2 className="w-5 h-5" />
+          <div>
+            <p className="font-bold text-sm">Account Verified Successfully!</p>
+            <p className="text-xs opacity-80">Welcome to your secure client dashboard.</p>
+          </div>
+          <button onClick={() => setShowVerifiedBanner(false)} className="ml-auto opacity-50 hover:opacity-100 transition"><lucide.X className="w-4 h-4" /></button>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
@@ -329,7 +352,7 @@ export default function ClientDashboard() {
         {orders.length > 1 && (
           <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
             {orders.map(order => (
-              <button key={order['Order ID']} onClick={() => setCurrentOrder(order)} className={`px-4 py-2 rounded-full text-xs font-bold transition ${currentOrder['Order ID'] === order['Order ID'] ? 'bg-emerald-500 text-black' : 'bg-white/5 hover:bg-white/10'}`}>{order['Order ID']}</button>
+              <button key={order['Order ID']} onClick={() => setCurrentOrder(order)} className={`px-4 py-2 rounded-full text-xs font-bold transition whitespace-nowrap ${currentOrder['Order ID'] === order['Order ID'] ? 'bg-emerald-500 text-black' : 'bg-white/5 hover:bg-white/10'}`}>{order['Order ID']}</button>
             ))}
           </div>
         )}
@@ -352,7 +375,7 @@ export default function ClientDashboard() {
                 {['briefing', 'payment', 'synthesis', 'complete'].map((step, idx) => (
                   <div key={step} className={`text-center progress-step ${getProgressStepClass(step)}`}>
                     <div className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center text-sm font-black transition-colors ${getProgressStepClass(step) ? 'bg-emerald-500/30 text-emerald-500' : 'bg-white/5'}`}>{getProgressStepClass(step) ? '✓' : idx + 1}</div>
-                    <p className="text-[9px] uppercase mt-1">{step.charAt(0).toUpperCase() + step.slice(1)}</p>
+                    <p className="text-[9px] uppercase mt-1 hidden sm:block">{step.charAt(0).toUpperCase() + step.slice(1)}</p>
                   </div>
                 ))}
               </div>
@@ -370,16 +393,18 @@ export default function ClientDashboard() {
                 <div><span className="text-slate-500 block text-[10px] uppercase">Est. Completion</span><span className="font-medium">{currentOrder['Workflow Status'] === 'Completed' ? 'Completed' : formatDate(currentOrder['Deadline'])}</span></div>
                 <div><span className="text-slate-500 block text-[10px] uppercase">Last Activity</span><span className="font-medium">{formatDateTime(currentOrder['Last Activity'] || currentOrder['Timestamp'])}</span></div>
                 <div><span className="text-slate-500 block text-[10px] uppercase">Media Link</span><span className="font-medium">{currentOrder['Media Sync'] && currentOrder['Media Sync'] !== 'None' ? <a href={currentOrder['Media Sync']} target="_blank" className="text-emerald-500 underline">View</a> : 'None'}</span></div>
-                <div><span className="text-slate-500 block text-[10px] uppercase">Additional Info</span><span className="font-medium">{currentOrder['Additional Info'] || '—'}</span></div>
-                <div><span className="text-slate-500 block text-[10px] uppercase">Work Submitted</span><span className={`font-bold ${workSubmitted ? 'text-emerald-500' : 'text-amber-500'}`}>{workSubmitted ? '✅ File Sent' : '⏳ Pending'}</span></div>
+                <div className="col-span-2"><span className="text-slate-500 block text-[10px] uppercase">Additional Info</span><span className="font-medium">{currentOrder['Additional Info'] || '—'}</span></div>
+                <div className="col-span-2"><span className="text-slate-500 block text-[10px] uppercase">Work Submitted</span><span className={`font-bold ${workSubmitted ? 'text-emerald-500' : 'text-amber-500'}`}>{workSubmitted ? '✅ File Sent' : '⏳ Pending'}</span></div>
               </div>
-              <div className="mt-4">
-                <div className="flex justify-between text-[10px]"><span>Overall Progress</span><span id="word-progress-text">0%</span></div>
+              <div className="mt-6">
+                <div className="flex justify-between text-[10px]"><span>Overall Progress</span><span id="word-progress-text">
+                  {currentOrder['Workflow Status'] === 'Completed' ? '100%' : currentOrder['Workflow Status'] === 'Internal Audit' ? '90%' : currentOrder['Workflow Status'] === 'Synthesis Active' ? '50%' : '20%'}
+                </span></div>
                 <div className="w-full bg-white/10 rounded-full h-2 mt-1"><div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${currentOrder['Workflow Status'] === 'Completed' ? 100 : currentOrder['Workflow Status'] === 'Internal Audit' ? 90 : currentOrder['Workflow Status'] === 'Synthesis Active' ? 50 : 20}%` }}></div></div>
               </div>
             </div>
             <div className={`rounded-2xl p-6 ${isLight ? 'bg-white/80 border border-slate-200' : 'bg-white/5 border border-white/10'}`}>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">📝 Your Private Notes <span className="text-[9px] font-normal normal-case">(only visible to you)</span></h3>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">📌 Your Private Notes <span className="text-[9px] font-normal normal-case">(only visible to you)</span></h3>
               <textarea rows={3} className="w-full rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-transparent border border-white/10" value={clientNotes} onChange={e => setClientNotes(e.target.value)} placeholder="Write your personal notes about this project..."></textarea>
               <button onClick={saveClientNotes} className="mt-2 text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 px-3 py-1.5 rounded-lg transition">Save Notes</button>
             </div>

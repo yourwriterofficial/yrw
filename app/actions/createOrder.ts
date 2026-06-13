@@ -83,14 +83,13 @@ export async function createSecureOrder(
   const secureOrderData = {
     ...orderData,
     financial_quote: finalQuote,
-    client_id: null, // No user ID for guests
+    client_id: null, // No user ID for guests initially
     legal_name: orderData.legal_name.trim(),
     email: orderData.email.toLowerCase().trim(),
     topic: orderData.topic.trim(),
   };
 
-  // Remove order_id if you want the trigger to generate it; but if you provide one, it's fine
-  // If the trigger fails, you can also generate it here manually:
+  // Generate order ID if not provided
   if (!secureOrderData.order_id) {
     secureOrderData.order_id = 'RW-' + Math.floor(100000 + Math.random() * 900000).toString();
   }
@@ -107,5 +106,35 @@ export async function createSecureOrder(
     console.error('Supabase insert error:', error);
     return { success: false, error: error.message };
   }
+
+  // --- ADMIN NOTIFICATION TRIGGER ---
+  // Silently ping the internal email API route to notify the project service email.
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    await fetch(`${baseUrl}/api/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: 'subskription.noreply@gmail.com',
+        orderId: data.order_id,
+        subject: `🚨 NEW ORDER RECEIVED: ${data.order_id}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2 style="color: #1DB954;">New Order Notification</h2>
+            <p><strong>Order ID:</strong> ${data.order_id}</p>
+            <p><strong>Client:</strong> ${data.legal_name} (${data.email})</p>
+            <p><strong>Topic:</strong> ${data.topic}</p>
+            <p><strong>Tier:</strong> ${data.service_tier}</p>
+            <p><strong>Quote:</strong> ₦${finalQuote.toLocaleString()}</p>
+            <br/>
+            <p>Please log in to your admin dashboard to review the brief and files.</p>
+          </div>
+        `
+      })
+    });
+  } catch (emailErr) {
+    console.warn('Silent failure on admin email notification. Order still created.', emailErr);
+  }
+
   return { success: true, orderDbId: data.id, orderStringId: data.order_id, finalQuote };
 }

@@ -1,10 +1,10 @@
 'use client';
 import OrderForm from '@/app/components/OrderForm';
 
-export default function Home() {
+export default function AcademicOrderPage() {
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-[#050505] text-white">
       <OrderForm />
     </main>
   );
-} 
+}

@@ -1,166 +1,149 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { BookOpen, ShieldCheck, BarChart3, Fingerprint, Settings } from 'lucide-react';
-
-const testimonials = [
-  { name: "Oluwaseun A., MSc", uni: "University of Ibadan", text: "The internal audit caught things my supervisor missed. Absolutely flawless synthesis." },
-  { name: "Dr. Sarah Jenkins", uni: "King's College London", text: "I needed high-level theoretical editing to bypass AI detection protocols. They delivered perfectly." },
-  { name: "Chioma E., LLM", uni: "UNIZIK", text: "Their adherence to the NALT citation guide was impeccable. Saved my legal dissertation." },
-  { name: "Wei Chen, MA", uni: "University of Toronto", text: "Fast, incredibly secure, and the human prose was completely undetectable by Turnitin." },
-  { name: "Michael T., PhD Candidate", uni: "Obafemi Awolowo University", text: "The vault sync and zero-trace policy gave me total peace of mind. Excellent data analysis." },
-];
+import Link from 'next/link';
+import { BookOpen, LineChart, PenTool, Briefcase, ArrowRight, CheckCircle2, Shield, Clock } from 'lucide-react';
 
 export default function LandingPage() {
-  const router = useRouter();
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  const [time, setTime] = useState('--:--');
+  const [scrolled, setScrolled] = useState(false);
 
-  // Handle Clock
   useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setTime(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Handle Testimonial Rotation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
-    return () => clearInterval(interval);
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-['Inter'] overflow-x-hidden">
-      {/* Navigation */}
-      <nav className="p-6 border-b border-white/5 sticky top-0 bg-[#050505]/90 z-50 flex justify-between items-center backdrop-blur-md flex-wrap gap-4">
-        <div className="font-black text-xl italic tracking-tighter cursor-pointer">YourResearchWriter</div>
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest flex-wrap">
-            <button className="hover:text-emerald-500 transition px-3 py-1 rounded-full bg-white/5">Home</button>
-            <button onClick={() => router.push('/order')} className="hover:text-emerald-500 transition px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500">Start Order</button>
-            <a href="https://wa.me/2348121443666" target="_blank" rel="noreferrer" className="hover:text-emerald-500 transition px-3 py-1 rounded-full bg-white/5">Contact Us</a>
-            <button onClick={() => router.push('/login')} className="hover:text-emerald-500 transition px-3 py-1 rounded-full bg-white/5 border border-white/10">Client Login</button>
+    <div className="min-h-screen bg-[#050505] text-white font-['Inter'] selection:bg-emerald-500/30">
+      {/* Dynamic Navbar */}
+      <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-md border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
+        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+          <div className="text-xl font-black tracking-tighter flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-lg flex items-center justify-center text-black">RW</div>
+            ResearchWriter<span className="text-emerald-500">.</span>
           </div>
-          <div className="flex items-center gap-3 bg-white/5 px-4 py-1.5 rounded-full border border-white/10">
-            <Settings className="w-4 h-4 text-slate-400" />
-            <div className="w-[1px] h-4 bg-white/20" />
-            <div className="flex flex-col text-[8px] font-bold tracking-widest uppercase text-slate-400">
-              <div className="flex items-center gap-1">
-                <span>{time}</span>
-                <span className="text-slate-400">Local</span>
-              </div>
-              <span className="text-emerald-500">HQ (WAT)</span>
-            </div>
+          <div className="hidden md:flex items-center gap-8 text-xs font-bold text-zinc-400 uppercase tracking-widest">
+            <a href="#services" className="hover:text-emerald-400 transition">Services</a>
+            <a href="#process" className="hover:text-emerald-400 transition">How it Works</a>
+            <Link href="/login" className="text-white hover:text-emerald-400 transition">Client Login</Link>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Secured Sync</span>
-          </div>
+          <Link href="#services" className="bg-white text-black px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-wider hover:bg-emerald-400 transition">
+            Start Project
+          </Link>
         </div>
       </nav>
 
-      <main className="container mx-auto py-12 px-6 max-w-6xl">
-        {/* Hero Section */}
-        <section className="text-center py-20 mb-12">
-          <div className="inline-block bg-emerald-500/10 text-emerald-500 px-4 py-1.5 rounded-full mb-8 text-[10px] font-black uppercase tracking-widest">
-            Elite Academic Syndicate
+      {/* Hero Section */}
+      <section className="relative pt-40 pb-20 px-6 overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <div className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
+            Premium Writing & Research Agency
           </div>
-          <h1 className="text-7xl md:text-9xl font-black mb-8 tracking-tighter leading-[0.85]">
-            Research.<br /><span className="text-emerald-500 italic">Human Only.</span>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-8 leading-[1.1]">
+            Elevate your <span className="bg-gradient-to-r from-emerald-400 to-teal-600 bg-clip-text text-transparent">Academic</span> & <span className="bg-gradient-to-r from-emerald-400 to-teal-600 bg-clip-text text-transparent">Professional</span> trajectory.
           </h1>
-          <p className="max-w-2xl mx-auto text-slate-400 mb-12 text-lg leading-relaxed text-center font-medium">
-            Raw intellectual labor for MSc and PhD scholars. We bypass AI detection protocols via deep human auditing.
+          <p className="text-lg md:text-xl text-zinc-400 mb-12 max-w-2xl mx-auto leading-relaxed">
+            From complex dissertations and statistical data analysis to executive resumes and creative content. Expertly crafted, rigorously vetted, and delivered on time.
           </p>
-          <div className="flex flex-wrap justify-center gap-4 mb-24">
-            <button 
-              onClick={() => router.push('/order')} 
-              className="bg-[#1DB954] text-black font-black uppercase text-[11px] tracking-[1.5px] px-12 py-5 rounded-full shadow-xl shadow-emerald-500/10 hover:scale-105 transition"
-            >
-              Start Normal Order
-            </button>
-            <button 
-              onClick={() => router.push('/order')} 
-              className="bg-white/5 border border-white/10 px-12 py-5 rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-white/10 transition"
-            >
-              Start Custom Proposal
-            </button>
-          </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Services Grid */}
-        <div className="grid md:grid-cols-3 gap-6 mb-24">
-          <div className="p-10 bg-white/5 backdrop-blur-md rounded-[40px] border border-white/5">
-            <BookOpen className="w-10 h-10 text-emerald-500 mb-6" />
-            <h3 className="text-xl font-black mb-4 uppercase text-xs tracking-widest">Dissertations</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">Full MSc & PhD support. Pure human intelligence with deep theoretical synthesis.</p>
+      {/* Services Hub (Routing to the 4 distinct forms) */}
+      <section id="services" className="py-24 px-6 bg-[#0a0a0a] border-y border-white/5 relative">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-black mb-4">Select Your Service</h2>
+            <p className="text-zinc-400 text-sm">Choose the dedicated pipeline that fits your project requirements.</p>
           </div>
-          <div className="p-10 bg-white/5 backdrop-blur-md rounded-[40px] border border-white/5">
-            <ShieldCheck className="w-10 h-10 text-emerald-500 mb-6" />
-            <h3 className="text-xl font-black mb-4 uppercase text-xs tracking-widest">Audit & Polishing</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">Reworking AI-flagged content into authentic human prose.</p>
-          </div>
-          <div className="p-10 bg-white/5 backdrop-blur-md rounded-[40px] border border-white/5">
-            <BarChart3 className="w-10 h-10 text-emerald-500 mb-6" />
-            <h3 className="text-xl font-black mb-4 uppercase text-xs tracking-widest">Data Analysis</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">Specialized SPSS and Stata modeling for high-impact research findings.</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* 1. Standard Academic */}
+            <Link href="/order/academic" className="group block p-8 rounded-[32px] bg-black border border-zinc-800 hover:border-emerald-500/50 transition duration-300 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-100 transition transform translate-x-4 group-hover:translate-x-0"><ArrowRight className="text-emerald-500" /></div>
+              <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-6 border border-emerald-500/20">
+                <BookOpen className="w-6 h-6 text-emerald-400" />
+              </div>
+              <h3 className="text-xl font-black mb-3">Standard Academic Research</h3>
+              <p className="text-sm text-zinc-400 mb-6 leading-relaxed">Essays, term papers, and standard university assignments. Includes automated volume discounts and strict plagiarism checks.</p>
+              <ul className="space-y-2 text-xs font-medium text-zinc-500">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> Instant dynamic quotes</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> APA, MLA, Harvard formatting</li>
+              </ul>
+            </Link>
+
+            {/* 2. Complex & Custom Data (The new form) */}
+            <Link href="/order/custom" className="group block p-8 rounded-[32px] bg-black border border-zinc-800 hover:border-purple-500/50 transition duration-300 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-100 transition transform translate-x-4 group-hover:translate-x-0"><ArrowRight className="text-purple-500" /></div>
+              <div className="w-14 h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-6 border border-purple-500/20">
+                <LineChart className="w-6 h-6 text-purple-400" />
+              </div>
+              <h3 className="text-xl font-black mb-3">Complex Data & Fieldwork</h3>
+              <p className="text-sm text-zinc-400 mb-6 leading-relaxed">For massive projects requiring custom add-ons. Request SPSS analysis, fieldwork, survey gathering, and PowerPoint summaries.</p>
+              <ul className="space-y-2 text-xs font-medium text-zinc-500">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-500" /> Add-on toggles (Slides, Data)</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-500" /> Bespoke emergency pricing</li>
+              </ul>
+            </Link>
+
+            {/* 3. Content Writing */}
+            <Link href="/order/content" className="group block p-8 rounded-[32px] bg-black border border-zinc-800 hover:border-amber-500/50 transition duration-300 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-100 transition transform translate-x-4 group-hover:translate-x-0"><ArrowRight className="text-amber-500" /></div>
+              <div className="w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center mb-6 border border-amber-500/20">
+                <PenTool className="w-6 h-6 text-amber-400" />
+              </div>
+              <h3 className="text-xl font-black mb-3">Content & Creative Writing</h3>
+              <p className="text-sm text-zinc-400 mb-6 leading-relaxed">eBooks, web copy, fictional narratives, and SEO articles. Tailored tone of voice and distinct stylistic requirements.</p>
+              <ul className="space-y-2 text-xs font-medium text-zinc-500">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-500" /> SEO-optimized structuring</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-500" /> Commercial copyright transfer</li>
+              </ul>
+            </Link>
+
+            {/* 4. Resumes & CVs */}
+            <Link href="/order/resume" className="group block p-8 rounded-[32px] bg-black border border-zinc-800 hover:border-blue-500/50 transition duration-300 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-100 transition transform translate-x-4 group-hover:translate-x-0"><ArrowRight className="text-blue-500" /></div>
+              <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/20">
+                <Briefcase className="w-6 h-6 text-blue-400" />
+              </div>
+              <h3 className="text-xl font-black mb-3">Executive CVs & Resumes</h3>
+              <p className="text-sm text-zinc-400 mb-6 leading-relaxed">ATS-friendly resumes, Cover Letters, and LinkedIn profile optimization designed to bypass automated filters and secure interviews.</p>
+              <ul className="space-y-2 text-xs font-medium text-zinc-500">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-500" /> ATS compatibility</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-500" /> Industry-specific keywords</li>
+              </ul>
+            </Link>
+
           </div>
         </div>
+      </section>
 
-        {/* Confidentiality Section */}
-        <div className="mb-24 p-12 bg-white/5 backdrop-blur-md rounded-[50px] border border-emerald-500/20 grid md:grid-cols-2 gap-12 items-center">
+      {/* Trust Section */}
+      <section className="py-24 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
           <div>
-            <h2 className="text-4xl font-black mb-6 tracking-tight leading-tight">The Confidentiality <br /><span className="text-emerald-500 italic">Stratum.</span></h2>
-            <p className="text-sm text-slate-400 leading-relaxed mb-10">Your identity is protected by an encrypted briefing protocol. Files are synced to a private Drive Vault with a strict Zero-Trace policy.</p>
-            <div className="flex gap-4">
-              <div className="bg-white/5 p-6 rounded-[30px] w-full text-center">
-                <div className="text-2xl font-black">100%</div>
-                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Anonymity</div>
-              </div>
-              <div className="bg-white/5 p-6 rounded-[30px] w-full text-center border border-white/5">
-                <div className="text-2xl font-black">Vault</div>
-                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Sync</div>
-              </div>
-            </div>
+            <Shield className="w-10 h-10 text-emerald-500 mx-auto mb-4" />
+            <h4 className="font-bold mb-2">Vault Security</h4>
+            <p className="text-xs text-zinc-400 leading-relaxed">Every document is heavily encrypted. Final deliverables remain securely locked until payment balance is cleared.</p>
           </div>
-          <div className="bg-emerald-500/5 p-12 rounded-[50px] border border-emerald-500/10 text-center">
-            <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-8">
-              <Fingerprint className="text-emerald-500 w-10 h-10" />
-            </div>
-            <h4 className="font-black mb-2 uppercase text-xs tracking-widest">Human Intelligence Only</h4>
-            <p className="text-xs text-slate-500">Adhering to raw, critical academic research standards.</p>
+          <div>
+            <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-4" />
+            <h4 className="font-bold mb-2">Plagiarism Free</h4>
+            <p className="text-xs text-zinc-400 leading-relaxed">All works are passed through advanced originality scanners and delivered with verifiable AI/Similarity reports.</p>
+          </div>
+          <div>
+            <Clock className="w-10 h-10 text-emerald-500 mx-auto mb-4" />
+            <h4 className="font-bold mb-2">On-Time Delivery</h4>
+            <p className="text-xs text-zinc-400 leading-relaxed">Strict adherence to deadlines with real-time countdown tracking available inside your client dashboard.</p>
           </div>
         </div>
+      </section>
 
-        {/* Testimonials */}
-        <div className="mb-24 py-12 bg-white/5 backdrop-blur-md rounded-[50px] border border-emerald-500/10 text-center relative overflow-hidden">
-          <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-6">Global & Local Verification</div>
-          <div className="min-h-[120px] flex items-center justify-center px-8">
-            <div className="transition-opacity duration-500 animate-in fade-in zoom-in-95" key={currentTestimonial}>
-              <p className="text-lg md:text-2xl font-medium italic text-white mb-4 leading-relaxed max-w-3xl mx-auto">
-                "{testimonials[currentTestimonial].text}"
-              </p>
-              <p className="text-xs font-black text-emerald-500 uppercase tracking-widest">{testimonials[currentTestimonial].name}</p>
-              <p className="text-[10px] text-slate-400">{testimonials[currentTestimonial].uni}</p>
-            </div>
-          </div>
-          <div className="flex justify-center gap-2 mt-8">
-            {testimonials.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentTestimonial(i)}
-                className={`h-2 rounded-full transition-all duration-300 ${i === currentTestimonial ? 'bg-emerald-500 w-6' : 'bg-white/20 w-2'}`}
-              />
-            ))}
-          </div>
-        </div>
-      </main>
+      {/* Footer */}
+      <footer className="border-t border-white/5 py-12 px-6 text-center text-xs text-zinc-600">
+        <p>© {new Date().getFullYear()} ResearchWriter. All rights reserved.</p>
+      </footer>
     </div>
   );
 }

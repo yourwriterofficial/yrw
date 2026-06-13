@@ -51,7 +51,8 @@ export async function POST(request: Request): Promise<NextResponse<CreateInvoice
         tx_ref,
         amount,
         currency: 'NGN',
-        redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client`,
+        // FIX: Route to the callback page to trigger the new animated success UI
+        redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback`,
         customer: { email, name: name || 'Client' },
         customizations: {
           title: `YourResearchWriter - ${type === 'DEPOSIT' ? '60% Deposit' : '40% Balance'}`,

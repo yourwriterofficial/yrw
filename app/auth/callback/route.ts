@@ -22,10 +22,7 @@ export async function GET(request: NextRequest) {
               cookiesToSet.forEach(({ name, value, options }) =>
                 cookieStore.set(name, value, options)
               );
-            } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing user sessions.
-            }
+            } catch {}
           },
         },
       }
@@ -34,13 +31,12 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
       console.error('Auth callback error:', error);
-      // Redirect to login with error message
       return NextResponse.redirect(
-        `${requestUrl.origin}/login?message=Unable to authenticate. Please try again.`
+        `${requestUrl.origin}/login?message=Verification link expired or invalid. Please log in or request a new one.`
       );
     }
   }
 
-  // Redirect to the dashboard after successful OAuth login
-  return NextResponse.redirect(`${requestUrl.origin}/dashboard/client`);
+  // Redirect to the dashboard with a verified success parameter
+  return NextResponse.redirect(`${requestUrl.origin}/dashboard/client?verified=true`);
 }

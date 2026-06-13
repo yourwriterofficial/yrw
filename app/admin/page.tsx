@@ -284,8 +284,9 @@ export default function AdminPage() {
           <lucide.Search className="w-4 h-4 text-slate-500 mr-2" />
           <input type="text" placeholder="Search ID, Client, Topic..." className="bg-transparent border-none outline-none text-xs text-white w-full" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <a href="/dashboard/client" className="px-5 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-full text-[10px] font-bold uppercase flex items-center gap-2">View Client UI</a>
+          <button onClick={() => router.push('/admin/settings')} className="px-5 py-2.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-full text-[10px] font-bold uppercase flex items-center gap-2"><lucide.Settings className="w-3 h-3" /> Settings</button>
           <button onClick={() => setShowTools(!showTools)} className="px-5 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] font-bold uppercase flex items-center gap-2"><lucide.Wrench className="w-3 h-3" /> Tools</button>
           <button onClick={fetchOrders} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full text-[10px] font-bold uppercase flex items-center gap-2"><lucide.RefreshCw className="w-3 h-3" /> Refresh</button>
         </div>
@@ -298,12 +299,11 @@ export default function AdminPage() {
               <button onClick={() => setShowTools(false)}><lucide.X className="w-5 h-5 text-slate-500" /></button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <button onClick={() => router.push('/admin/settings')} className="bg-purple-500/10 border border-purple-500/20 text-purple-400 p-4 rounded-2xl text-left hover:bg-purple-500/20 transition text-xs font-bold">⚙️ Platform Settings</button>
               <button onClick={fetchOrders} className="bg-white/5 p-4 rounded-2xl text-left hover:border-emerald-500 transition text-xs">Refresh Orders</button>
-              <button onClick={() => alert('Export CSV coming soon')} className="bg-white/5 p-4 rounded-2xl text-left text-xs">Export CSV</button>
               <button onClick={() => setShowPromoModal(true)} className="bg-white/5 p-4 rounded-2xl text-left text-xs">Manage Promos</button>
               <button onClick={() => openStyleModal(null, 'ref')} className="bg-white/5 p-4 rounded-2xl text-left text-xs">📖 Manage Ref Styles</button>
               <button onClick={() => openStyleModal(null, 'font')} className="bg-white/5 p-4 rounded-2xl text-left text-xs">🔤 Manage Font Styles</button>
-              <button onClick={() => {}} className="bg-white/5 p-4 rounded-2xl text-left text-xs">Financial Dashboard</button>
             </div>
           </div>
         )}
