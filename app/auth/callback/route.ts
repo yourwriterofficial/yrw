@@ -29,7 +29,29 @@ export async function GET(request: NextRequest) {
     );
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) {
+    if (!error) {
+      // Fetch the newly logged-in user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // --- MASTER ADMIN OVERRIDE ---
+        const isAdminEmail = user.email?.toLowerCase() === 'yourwriterofficial@gmail.com';
+
+        // Secure their profile in the database
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+          is_admin: isAdminEmail,
+        });
+
+        // Route admins to the admin panel, route clients to the client dashboard
+        if (isAdminEmail) {
+          return NextResponse.redirect(`${requestUrl.origin}/admin`);
+        } else {
+          return NextResponse.redirect(`${requestUrl.origin}/dashboard/client?verified=true`);
+        }
+      }
+    } else {
       console.error('Auth callback error:', error);
       return NextResponse.redirect(
         `${requestUrl.origin}/login?message=Verification link expired or invalid. Please log in or request a new one.`
@@ -37,6 +59,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Redirect to the dashboard with a verified success parameter
-  return NextResponse.redirect(`${requestUrl.origin}/dashboard/client?verified=true`);
+  // Fallback redirect
+  return NextResponse.redirect(`${requestUrl.origin}/dashboard/client`);
 }

@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation'; // Added router for smooth redirects
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,30 +28,31 @@ export default function LoginPage() {
     }
 
     const user = data.user;
-
     if (!user) {
       setError('No user returned');
       setLoading(false);
       return;
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .maybeSingle();
+    // --- MASTER ADMIN OVERRIDE ---
+    const isAdminEmail = user.email?.toLowerCase() === 'yourwriterofficial@gmail.com';
 
-    if (profileError || !profile) {
-      await supabase.from('profiles').upsert({
-        id: user.id,
-        full_name: user.email?.split('@')[0] || 'User',
-        is_admin: false,
-      });
+    // Update profile and ensure the admin status is always correct
+    await supabase.from('profiles').upsert({
+      id: user.id,
+      full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+      is_admin: isAdminEmail,
+    });
+
+    // Smooth Next.js redirect based on authority
+    if (isAdminEmail) {
+      router.push('/admin');
+    } else {
+      router.push('/dashboard/client');
     }
-
-    const isAdmin = profile?.is_admin === true;
-    const redirectUrl = isAdmin ? '/admin' : '/dashboard/client';
-    window.location.href = redirectUrl;
+    
+    // Refresh the router to catch the new auth state
+    router.refresh();
   };
 
   const handleGoogleLogin = async () => {
