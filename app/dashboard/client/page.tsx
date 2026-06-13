@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Doughnut } from 'react-chartjs-2';
@@ -40,7 +40,7 @@ const formatDateTime = (iso: string | null): string => {
   } catch { return iso; }
 };
 
-export default function ClientDashboard() {
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState<boolean>(true);
@@ -478,5 +478,19 @@ export default function ClientDashboard() {
         </div>
       </div>
     </div>
+  );
+}
+export default function ClientDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center font-['Inter']">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4" />
+          <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 animate-pulse">Loading Secure Dashboard...</div>
+        </div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }
