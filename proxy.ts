@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,56 +10,49 @@ export async function proxy(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll();
+          return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
+            request.cookies.set(name, value)
+          })
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
         },
       },
     }
-  );
+  )
 
-  const { data: { user } } = await supabase.auth.getUser();
-  const path = request.nextUrl.pathname;
+  // ✅ Use getUser() – not getClaims()
+  const { data: { user } } = await supabase.auth.getUser()
+  const path = request.nextUrl.pathname
 
-  // Allow unauthenticated access to complete-registration page
-  if (path === '/complete-registration') {
-    return response;
+  // ✅ Allow public routes and API routes
+  const publicPaths = ['/', '/login', '/register', '/auth/callback', '/complete-registration']
+  if (publicPaths.includes(path) || path.startsWith('/api/')) {
+    return supabaseResponse
   }
 
   // Protect dashboard and admin routes
   if ((path.startsWith('/dashboard') || path.startsWith('/admin')) && !user) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Role-based routing for authenticated users
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single();
-
-    const isAdmin = profile?.is_admin === true;
-
-    if (path.startsWith('/admin') && !isAdmin) {
-      return NextResponse.redirect(new URL('/dashboard/client', request.url));
-    }
-
-    if (path === '/login' || path === '/register') {
-      if (isAdmin) {
-        return NextResponse.redirect(new URL('/admin', request.url));
-      } else {
-        return NextResponse.redirect(new URL('/dashboard/client', request.url));
-      }
-    }
+  // Redirect admin users to /admin if they land on /dashboard
+  if (user && user.email?.toLowerCase() === 'yourwriterofficial@gmail.com' && !path.startsWith('/admin')) {
+    return NextResponse.redirect(new URL('/admin', request.url))
   }
 
-  return response;
+  // Redirect regular users to /dashboard/client if they land on /admin
+  if (user && user.email?.toLowerCase() !== 'yourwriterofficial@gmail.com' && path.startsWith('/admin')) {
+    return NextResponse.redirect(new URL('/dashboard/client', request.url))
+  }
+
+  return supabaseResponse
 }
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
-};
+}

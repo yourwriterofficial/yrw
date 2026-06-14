@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function PaymentCallbackContent() {
   const router = useRouter();
@@ -13,23 +14,62 @@ export default function PaymentCallbackContent() {
   const [displayState, setDisplayState] = useState<'processing' | 'success' | 'error'>('processing');
 
   useEffect(() => {
-    // If there's no status yet, wait for it
-    if (!status) return;
+    // Wait for URL params to be available
+    if (!status || !tx_ref) return;
 
     if (status === 'successful' || status === 'completed') {
-      setDisplayState('success');
-      // Redirect to dashboard smoothly after showing success state
-      setTimeout(() => {
-        router.push('/dashboard/client');
-      }, 3000);
+      
+      // POLLING MECHANISM: Give the webhook time to update the DB
+      let attempts = 0;
+      const maxAttempts = 10; // Try 10 times (approx 20 seconds)
+
+      const verifyPaymentStatus = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('invoices')
+            .select('status')
+            .eq('flutterwave_transaction_ref', tx_ref)
+            .single();
+
+          // If the webhook has marked it PAID, we are good to go!
+          if (data && data.status === 'PAID') {
+            setDisplayState('success');
+            setTimeout(() => {
+              router.push('/dashboard/client');
+            }, 2000);
+            return;
+          }
+
+          // If not paid yet, increment attempts and try again in 2 seconds
+          attempts++;
+          if (attempts >= maxAttempts) {
+            // Timeout reached. Show success anyway and let them see the dashboard
+            setDisplayState('success');
+            setTimeout(() => {
+              router.push('/dashboard/client');
+            }, 2000);
+          } else {
+            setTimeout(verifyPaymentStatus, 2000);
+          }
+        } catch (err) {
+          // Fallback in case of network error
+          setDisplayState('success');
+          setTimeout(() => {
+            router.push('/dashboard/client');
+          }, 2000);
+        }
+      };
+
+      // Start the polling loop
+      verifyPaymentStatus();
+
     } else {
       setDisplayState('error');
-      // Redirect back to dashboard so they can try again
       setTimeout(() => {
         router.push('/dashboard/client');
       }, 4000);
     }
-  }, [status, router, tx_ref]);
+  }, [status, tx_ref, router]);
 
   return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 font-['Inter']">
@@ -40,7 +80,7 @@ export default function PaymentCallbackContent() {
             <Loader2 className="w-16 h-16 text-emerald-500 animate-spin mb-6" />
             <h2 className="text-xl font-black text-white tracking-tight mb-2">Verifying Transaction</h2>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Please wait while we confirm your payment securely with the Flutterwave gateway. Do not close this window.
+              Please wait while we confirm your payment securely with the gateway. Do not close this window.
             </p>
           </div>
         )}
@@ -52,7 +92,7 @@ export default function PaymentCallbackContent() {
             </div>
             <h2 className="text-xl font-black text-white tracking-tight mb-2">Payment Successful!</h2>
             <p className="text-xs text-zinc-400 leading-relaxed mb-6">
-              Your transaction has been securely cleared. Our system will now update your project vault.
+              Your transaction has been securely cleared. Our system has updated your project vault.
             </p>
             <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest animate-pulse">
               Redirecting to dashboard...

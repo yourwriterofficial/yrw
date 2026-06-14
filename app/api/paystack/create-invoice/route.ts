@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import type { CreateInvoiceRequest, CreateInvoiceResponse } from '@/lib/types';
 
 const invoiceRequestSchema = z.object({
   orderId: z.string().min(5),
@@ -16,19 +15,17 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function POST(request: Request): Promise<NextResponse<CreateInvoiceResponse | { error: string }>> {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
     const parsed = invoiceRequestSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: parsed.error.issues },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Validation failed' }, { status: 400 });
     }
 
     const { orderId, amount, email, name, type } = parsed.data;
 
+    // 1. Verify order exists
     const { data: orderData, error: lookupError } = await supabase
       .from('orders')
       .select('id')
@@ -41,40 +38,44 @@ export async function POST(request: Request): Promise<NextResponse<CreateInvoice
 
     const tx_ref = `INV_${orderId}_${type}_${Date.now()}`;
 
-    const response = await fetch('https://api.flutterwave.com/v3/payments', {
+    // 2. Call Paystack API
+    const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        tx_ref,
-        amount,
-        currency: 'NGN',
-        // FIX: Route to the callback page to trigger the new animated success UI
-        redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback`,
-        customer: { email, name: name || 'Client' },
-        customizations: {
-          title: `YourResearchWriter - ${type === 'DEPOSIT' ? '60% Deposit' : '40% Balance'}`,
-          description: `Invoice for Order: ${orderId}`,
-        },
+        reference: tx_ref,
+        amount: amount * 100, // Paystack requires amount in Kobo/Cents
+        email: email,
+        callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback?tx_ref=${tx_ref}`,
+        metadata: {
+          custom_fields: [
+            { display_name: "Client Name", variable_name: "client_name", value: name },
+            { display_name: "Order ID", variable_name: "order_id", value: orderId },
+            { display_name: "Invoice Type", variable_name: "invoice_type", value: type }
+          ]
+        }
       }),
     });
 
-    const flwData = await response.json();
+    const paystackData = await response.json();
 
-    if (flwData.status === 'success') {
+    if (paystackData.status === true) {
+      // 3. Log the pending invoice
       await supabase.from('invoices').insert({
         order_id: orderData.id,
         amount,
         type,
-        flutterwave_transaction_ref: tx_ref,
+        // We reuse the flutterwave column name here so you don't have to rewrite your SQL database schema
+        flutterwave_transaction_ref: tx_ref, 
         status: 'PENDING',
-        invoice_pdf_url: flwData.data.link,
       });
-      return NextResponse.json({ link: flwData.data.link, tx_ref });
+
+      return NextResponse.json({ link: paystackData.data.authorization_url, tx_ref });
     } else {
-      throw new Error(flwData.message || 'Flutterwave API Error');
+      throw new Error(paystackData.message || 'Paystack API Error');
     }
   } catch (err: any) {
     console.error('Invoice Generation Error:', err);

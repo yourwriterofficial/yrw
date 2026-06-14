@@ -1,7 +1,7 @@
 {
   "name": "research-writer",
   "version": "0.1.0",
-  "type": "module", 
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -27,6 +27,7 @@
     "react-hook-form": "^7.78.0",
     "resend": "^6.12.4",
     "sharp": "^0.35.1",
+    "xss": "^1.0.15",
     "zod": "^4.4.3"
   },
   "devDependencies": {

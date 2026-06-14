@@ -22,6 +22,7 @@ export default function OrderForm() {
   const [step, setStep] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const [termsText, setTermsText] = useState<string>(''); // dynamic TOS
 
   // Form Metadata States
   const [name, setName] = useState<string>('');
@@ -50,28 +51,76 @@ export default function OrderForm() {
 
   const isCustom = plan === 'CUSTOM';
 
-  // Fetch admin styles & load draft (only once)
+  // Fetch admin styles, draft, and Terms of Service
   useEffect(() => {
-    const fetchAdminOverrides = async () => {
+    const fetchInitialData = async () => {
+      // Reference & font styles
       const { data: refs } = await supabase.from('reference_styles').select('name').eq('active', true).order('sort_order');
       const { data: fonts } = await supabase.from('font_styles').select('name').eq('active', true).order('sort_order');
       if (refs) setDbRefStyles(refs.map(r => r.name));
       if (fonts) setDbFontStyles(fonts.map(f => f.name));
-    };
-    fetchAdminOverrides();
 
-    const savedDraft = localStorage.getItem('rw_order_draft');
-    if (savedDraft && !name && !email && !whatsapp && !topic) {
-      try {
-        const parsed = JSON.parse(savedDraft);
-        if (parsed.name && parsed.name.trim()) setName(parsed.name);
-        if (parsed.email && parsed.email.trim()) setEmail(parsed.email);
-        if (parsed.whatsapp && parsed.whatsapp.trim()) setWhatsapp(parsed.whatsapp);
-        if (parsed.topic && parsed.topic.trim()) setTopic(parsed.topic);
-        if (parsed.words && !isNaN(parseInt(parsed.words))) setWords(parseInt(parsed.words));
-      } catch (e) {}
-    }
-    setIsLoaded(true);
+      // Terms of Service (academic pipeline)
+      const { data: tos } = await supabase
+        .from('site_content')
+        .select('content_text')
+        .eq('content_key', 'academic_tos')
+        .single();
+      if (tos && tos.content_text) {
+        setTermsText(tos.content_text);
+      } else {
+        // Fallback static TOS (in case DB is empty)
+        setTermsText(`Welcome to Your Research Writer. By providing an upfront payment, you acknowledge that you have read, understood, and agreed to be bound by the following terms and conditions. This payment constitutes a legally binding contract between the client and the agency.
+
+1. Payment and Delivery Protocol
+- A non-negotiable 60% deposit is required before any work commences.
+- Upon completion, a similarities PDF report preview (AI and Plagiarism report) of the work will be provided for your review.
+- The editable Word document will be released only upon receipt of the remaining 40% balance.
+- Please refer to our official profile for our current working days and hours of operation.
+
+2. Contract Scope and Refund Policy
+- Each task is treated as an individual contract. Terms, briefs, or credits cannot be transferred.
+- Termination of a contract while work is in progress is not permitted and does not qualify for a refund.
+- Refunds are only issued in the event of a documented failure on our part (e.g., missed deadline or plagiarism exceeding pre‑agreed limits).
+- We do not guarantee specific grades. No refund will be issued if a poor result is caused by vague requirements or faulty instructions from the client.
+
+3. Client Obligations
+- Include task outlines, lecture keynotes, and supplementary verbal instructions.
+- We do not log into student portals. Clients must transmit materials directly.
+- Word count and deadlines must be specific. We charge per word, not per page.
+- All instructions must be submitted before work begins. Post‑commencement requirements may incur "Interference Fees".
+
+4. Thesis and Dissertation Special Terms
+- Default delivery is simultaneous for holistic feedback.
+- Chapter‑based delivery is treated and billed as separate contracts with individual deposits and balances.
+
+5. Communication Guidelines
+- Communication is strictly limited to WhatsApp text or voice notes. Voice calls are prohibited to ensure a documented paper trail.
+
+6. Feedback and Post‑Submission Review
+- Clients have three (3) days to request revisions. Afterward, the contract is finalized.
+- Payment of the final balance constitutes formal acceptance.
+- All feedback must be compiled into a single batch directly into the Word document using the "Comments" feature. We do not accept staggered feedback or complete document revisions via WhatsApp text.
+
+Note: As the student, you are the primary link between the classroom and the writer. By working within these parameters, we ensure the best possible outcome for your academic success.`);
+      }
+
+      // Load draft from localStorage
+      const savedDraft = localStorage.getItem('rw_order_draft');
+      if (savedDraft && !name && !email && !whatsapp && !topic) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          if (parsed.name && parsed.name.trim()) setName(parsed.name);
+          if (parsed.email && parsed.email.trim()) setEmail(parsed.email);
+          if (parsed.whatsapp && parsed.whatsapp.trim()) setWhatsapp(parsed.whatsapp);
+          if (parsed.topic && parsed.topic.trim()) setTopic(parsed.topic);
+          if (parsed.words && !isNaN(parseInt(parsed.words))) setWords(parseInt(parsed.words));
+        } catch (e) {}
+      }
+      setIsLoaded(true);
+    };
+
+    fetchInitialData();
   }, []);
 
   // Auto-save draft
@@ -313,7 +362,7 @@ export default function OrderForm() {
                 <div className="text-[10px] text-emerald-500 bg-emerald-500/10 inline-block px-2 py-1 rounded font-bold">6% discount for projects &gt; 10,000 words</div>
               </div>
 
-              {/* CUSTOM PLAN / EMERGENCY */}
+              {/* CUSTOM PLAN */}
               <div onClick={() => setPlan('CUSTOM')} className={`col-span-1 md:col-span-2 p-6 rounded-2xl border cursor-pointer transition relative ${plan === 'CUSTOM' ? 'border-purple-500 bg-purple-500/5 shadow-[0_0_20px_rgba(168,85,247,0.1)]' : 'border-zinc-800 bg-[#0a0a0a] hover:border-zinc-700'}`}>
                 {plan === 'CUSTOM' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-purple-500" /></div>}
                 <h3 className="text-sm font-black uppercase tracking-wider text-purple-500 mb-1">CUSTOM / EMERGENCY ORDERS</h3>
@@ -504,7 +553,7 @@ export default function OrderForm() {
               </div>
             </div>
           </div>
-          
+
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest block ml-1">Project Deadline</label>
             <input type="date" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-[16px] text-sm text-white outline-none focus:border-emerald-500 [color-scheme:dark]" value={deadline} onChange={e => setDeadline(e.target.value)} min={new Date().toISOString().split('T')[0]} required />
@@ -525,60 +574,79 @@ export default function OrderForm() {
             {promoMsg && <p className={`text-[10px] font-bold mt-2.5 ml-1 ${promoMsg.includes('❌') ? 'text-red-500' : 'text-emerald-400'}`}>{promoMsg}</p>}
           </div>
 
-          <div className="bg-emerald-500/5 p-8 rounded-[30px] border border-emerald-500/10 text-center shadow-inner relative">
-            <div className="text-5xl font-black text-emerald-500 tracking-tight">₦{getUiTotalPrice().toLocaleString()}</div>
-            <p className="text-[9px] uppercase font-black text-zinc-500 mt-2 tracking-widest">{isCustom ? 'Proposed Budget' : 'Total Quote'}</p>
-            {isCustom && <div className="mt-3 inline-block bg-amber-500/10 border border-amber-500/20 text-amber-500 font-bold px-3 py-1 rounded-full text-[9px] uppercase tracking-wider">Subject to Team Approval</div>}
-          </div>
+          {/* DISCOUNT AND PRICE BREAKDOWN */}
+          {(() => {
+            if (isCustom) {
+              const deposit = customPrice * 0.6;
+              const balance = customPrice * 0.4;
+              return (
+                <div className="bg-purple-500/5 p-6 rounded-[30px] border border-purple-500/10 text-center space-y-3">
+                  <div className="text-4xl font-black text-purple-500 tracking-tight">₦{customPrice.toLocaleString()}</div>
+                  <p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest">Proposed Budget</p>
+                  <div className="flex justify-between text-sm text-zinc-400 border-t border-purple-500/20 pt-3 mt-2">
+                    <span>60% Deposit (due now)</span>
+                    <span>₦{deposit.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-zinc-400">
+                    <span>40% Balance (on completion)</span>
+                    <span>₦{balance.toLocaleString()}</span>
+                  </div>
+                  <div className="mt-3 inline-block bg-amber-500/10 border border-amber-500/20 text-amber-500 font-bold px-3 py-1 rounded-full text-[9px] uppercase tracking-wider">Subject to Team Approval</div>
+                </div>
+              );
+            }
 
-          {/* Fully Embedded Terms of Service */}
+            const originalPrice = words * PLAN_RATES[plan as Exclude<Plan, 'CUSTOM'>];
+            const volumeDiscountPercent = words >= 10000 ? PLAN_DISCOUNTS[plan as Exclude<Plan, 'CUSTOM'>] : 0;
+            const volumeSaved = originalPrice * (volumeDiscountPercent / 100);
+            const afterVolume = originalPrice - volumeSaved;
+            const promoAmount = afterVolume * (promoDiscount / 100);
+            const finalQuote = getUiTotalPrice();
+            const depositAmount = finalQuote * 0.6;
+            const balanceAmount = finalQuote * 0.4;
+
+            return (
+              <div className="bg-emerald-500/5 p-6 rounded-[30px] border border-emerald-500/10">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Base price ({words.toLocaleString()} words × ₦{PLAN_RATES[plan]})</span>
+                    <span>₦{originalPrice.toLocaleString()}</span>
+                  </div>
+                  {volumeDiscountPercent > 0 && (
+                    <div className="flex justify-between text-emerald-400">
+                      <span>Volume discount ({volumeDiscountPercent}%)</span>
+                      <span>- ₦{Math.round(volumeSaved).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {promoDiscount > 0 && (
+                    <div className="flex justify-between text-emerald-400">
+                      <span>Promo code ({promoDiscount}%)</span>
+                      <span>- ₦{Math.round(promoAmount).toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-emerald-500/20">
+                    <span>Total Quote</span>
+                    <span className="text-emerald-500">₦{finalQuote.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-zinc-400 mt-2">
+                    <span>60% Deposit (due now)</span>
+                    <span>₦{depositAmount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-zinc-400">
+                    <span>40% Balance (on completion)</span>
+                    <span>₦{balanceAmount.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* TERMS OF SERVICE - DYNAMIC WITH FORMATTING */}
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest block ml-1">Terms of Service</label>
-            <div className="max-h-64 overflow-y-auto bg-black border border-zinc-800 rounded-2xl p-6 text-xs text-zinc-400 space-y-4 pr-4 custom-scrollbar">
-              <p>Welcome to <em>Your Research Writer</em>. By providing an upfront payment, you acknowledge that you have read, understood, and agreed to be bound by the following terms and conditions. This payment constitutes a legally binding contract between the client and the agency.</p>
-              
-              <h4 className="text-white font-bold uppercase mt-4 mb-2">1. Payment and Delivery Protocol</h4>
-              <ul className="list-disc pl-4 space-y-2">
-                <li><strong>Upfront Payment:</strong> A non-negotiable 60% deposit is required before any work commences.</li>
-                <li><strong>Project Preview:</strong> Upon completion, a similarities PDF report preview (AI and Plagiarism report) of the work will be provided for your review.</li>
-                <li><strong>Final Delivery:</strong> The editable Word document will be released only upon receipt of the remaining 40% balance.</li>
-                <li><strong>Operating Hours:</strong> Please refer to our official profile for our current working days and hours of operation.</li>
-              </ul>
-
-              <h4 className="text-white font-bold uppercase mt-4 mb-2">2. Contract Scope and Refund Policy</h4>
-              <ul className="list-disc pl-4 space-y-2">
-                <li><strong>Independent Contracts:</strong> Each task is treated as an individual contract. Terms, briefs, or credits cannot be transferred.</li>
-                <li><strong>Mid-Project Termination:</strong> Termination of a contract while work is in progress is not permitted and does not qualify for a refund.</li>
-                <li><strong>Refund Eligibility:</strong> Refunds are only issued in the event of a documented failure on our part (e.g., missed deadline or plagiarism exceeding pre-agreed limits).</li>
-                <li><strong>Performance Disclaimer:</strong> We do not guarantee specific grades. No refund will be issued if a poor result is caused by vague requirements or faulty instructions from the client.</li>
-              </ul>
-
-              <h4 className="text-white font-bold uppercase mt-4 mb-2">3. Client Obligations</h4>
-              <ul className="list-disc pl-4 space-y-2">
-                <li><strong>Comprehensive Brief:</strong> Include task outlines, lecture keynotes, and supplementary verbal instructions.</li>
-                <li><strong>Data Privacy:</strong> We do not log into student portals. Clients must transmit materials directly.</li>
-                <li><strong>Clear Specifications:</strong> Word count and deadlines must be specific. We charge per word, not per page.</li>
-                <li><strong>Finality of Requirements:</strong> All instructions must be submitted before work begins. Post-commencement requirements may incur "Interference Fees".</li>
-              </ul>
-
-              <h4 className="text-white font-bold uppercase mt-4 mb-2">4. Thesis and Dissertation Special Terms</h4>
-              <ul className="list-disc pl-4 space-y-2">
-                <li><strong>Standard Delivery:</strong> Default delivery is simultaneous for holistic feedback.</li>
-                <li><strong>Chapter-Based Delivery:</strong> Treated and billed as separate contracts with individual deposits and balances.</li>
-              </ul>
-
-              <h4 className="text-white font-bold uppercase mt-4 mb-2">5. Communication Guidelines</h4>
-              <ul className="list-disc pl-4 space-y-2">
-                <li>Communication is strictly limited to <strong>WhatsApp text or voice notes</strong>. Voice calls are prohibited to ensure a documented paper trail.</li>
-              </ul>
-
-              <h4 className="text-white font-bold uppercase mt-4 mb-2">6. Feedback and Post-Submission Review</h4>
-              <ul className="list-disc pl-4 space-y-2">
-                <li><strong>Review Window:</strong> Clients have three (3) days to request revisions. Afterward, the contract is finalized.</li>
-                <li><strong>Acceptance of Quality:</strong> Payment of the final balance constitutes formal acceptance.</li>
-                <li><strong>Revision Process:</strong> All feedback must be compiled into a single batch directly into the Word document using the "Comments" feature. We do not accept staggered feedback or complete document revisions via WhatsApp text.</li>
-              </ul>
-              <p className="mt-4 border-t border-zinc-800 pt-4 italic">Note: As the student, you are the primary link between the classroom and the writer. By working within these parameters, we ensure the best possible outcome for your academic success.</p>
+            <div className="max-h-64 overflow-y-auto bg-black border border-zinc-800 rounded-2xl p-6 text-xs text-zinc-400 pr-4 custom-scrollbar"
+                 style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+              {termsText}
             </div>
           </div>
 
@@ -588,7 +656,7 @@ export default function OrderForm() {
               <span className="text-sm text-zinc-300 font-bold leading-relaxed">I have read, understand, and agree to the Terms of Service. I authorize processing under the 60%/40% deposit structure.</span>
             </label>
           </div>
-          
+
           <div className="flex gap-4 pt-4">
             <button onClick={submitOrder} disabled={!acceptTerms || loading} className="bg-[#1DB954] text-black font-black uppercase text-[11px] tracking-[1.5px] py-5 rounded-full flex-1 shadow-2xl shadow-emerald-500/20 hover:bg-[#1ed760] transition disabled:opacity-50 disabled:cursor-not-allowed">Confirm Order & Proceed</button>
             <button onClick={() => goToStep(4)} className="bg-zinc-950 text-zinc-400 border border-zinc-800 px-6 rounded-full font-bold text-xs flex items-center gap-1"><ChevronLeft className="w-4 h-4" /> Back</button>

@@ -2,10 +2,8 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useRouter } from 'next/navigation'; // Added router for smooth redirects
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,25 +32,24 @@ export default function LoginPage() {
       return;
     }
 
-    // --- MASTER ADMIN OVERRIDE ---
     const isAdminEmail = user.email?.toLowerCase() === 'yourwriterofficial@gmail.com';
 
-    // Update profile and ensure the admin status is always correct
+    // Ensure profile exists and set admin flag
     await supabase.from('profiles').upsert({
       id: user.id,
       full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
       is_admin: isAdminEmail,
     });
 
-    // Smooth Next.js redirect based on authority
+    // Small delay to let session propagate
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Hard redirect to avoid router issues
     if (isAdminEmail) {
-      router.push('/admin');
+      window.location.href = '/admin';
     } else {
-      router.push('/dashboard/client');
+      window.location.href = '/dashboard/client';
     }
-    
-    // Refresh the router to catch the new auth state
-    router.refresh();
   };
 
   const handleGoogleLogin = async () => {
@@ -74,7 +71,7 @@ export default function LoginPage() {
           <div className="inline-block px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Client Portal</div>
           <h1 className="text-2xl font-black text-white tracking-tight">Welcome Back</h1>
         </div>
-        
+
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 ml-1">Email Address</label>

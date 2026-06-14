@@ -1,15 +1,7 @@
-import { Resend } from 'resend';
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { sendSystemEmail } from '@/lib/emailService';
 import type { SendEmailResponse } from '@/lib/types';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 const emailRequestSchema = z.object({
   to: z.string().email(),
@@ -22,6 +14,7 @@ export async function POST(request: Request): Promise<NextResponse<SendEmailResp
   try {
     const body = await request.json();
     const parsed = emailRequestSchema.safeParse(body);
+    
     if (!parsed.success) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: parsed.error.issues },
@@ -31,43 +24,8 @@ export async function POST(request: Request): Promise<NextResponse<SendEmailResp
 
     const { to, subject, html, orderId } = parsed.data;
 
-    const senderEmail = process.env.NODE_ENV === 'production'
-      ? 'YourResearchWriter <noreply@yourresearchwriter.com.ng>'
-      : 'YourResearchWriter <onboarding@resend.dev>';
-
-    // Send the email via Resend
-    const { data, error } = await resend.emails.send({
-      from: senderEmail,
-      to: [to],
-      subject,
-      html,
-    });
-
-    if (error) {
-      console.error('Resend Transmission Error:', error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
-
-    // Safely log the email in the database
-    if (orderId) {
-      // Look up the internal numeric ID first to prevent foreign key crashes
-      const { data: orderData } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('order_id', orderId)
-        .single();
-
-      if (orderData) {
-        const { error: logError } = await supabase.from('email_logs').insert({
-          order_id: orderData.id,
-          recipient: to,
-          subject,
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-        });
-        if (logError) console.warn('Failed to log email:', logError.message);
-      }
-    }
+    // Call the shared service
+    const data = await sendSystemEmail({ to, subject, html, orderId });
 
     return NextResponse.json({ success: true, data }, { status: 200 });
   } catch (err: any) {

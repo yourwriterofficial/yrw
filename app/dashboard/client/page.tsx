@@ -1,24 +1,19 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import * as lucide from 'lucide-react';
-import { pdf } from '@react-pdf/renderer';
-import { InvoicePDF } from '@/app/components/InvoicePDF';
-import type { AdminOrderView, WorkflowStatus, CorrectionsStatus } from '@/lib/types';
+import type { AdminOrderView } from '@/lib/types';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
-
-// Helper functions
+// ==========================================
+// 1. BULLETPROOF HELPER FUNCTIONS
+// ==========================================
 const renderBool = (val: any): boolean => {
-  if (val === true) return true;
+  if (val === true || val === 1) return true;
   if (typeof val === 'string') {
-    const lower = val.toLowerCase().trim();
-    if (lower === 'none') return false;
-    return lower === 'yes' || lower === 'true' || lower === '1';
+    const s = val.toLowerCase().trim();
+    return ['yes', 'true', '1', 't', 'y'].includes(s);
   }
   return false;
 };
@@ -27,470 +22,525 @@ const parsePriceStr = (s: any): number => parseFloat(String(s).replace(/[^0-9.-]
 const formatNaira = (amount: number): string => '₦' + Math.round(amount).toLocaleString('en-NG');
 const formatDate = (iso: string | null): string => {
   if (!iso || iso === 'Not set') return 'Not set';
-  try {
-    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  } catch { return iso; }
-};
-const formatDateTime = (iso: string | null): string => {
-  if (!iso) return 'Never';
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return iso;
-    return d.toLocaleString('en-GB');
-  } catch { return iso; }
+  try { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return iso; }
 };
 
+// ==========================================
+// 2. MAIN COMPONENT EXPORT
+// ==========================================
+export default function ClientDashboard() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+        <span className="text-emerald-500 text-xs font-black uppercase tracking-widest animate-pulse">Initializing Workspace...</span>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 3. DASHBOARD LOGIC & UI
+// ==========================================
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [loading, setLoading] = useState<boolean>(true);
+  
+  // State
   const [user, setUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [profile, setProfile] = useState<any>(null);
   const [orders, setOrders] = useState<AdminOrderView[]>([]);
-  const [currentOrder, setCurrentOrder] = useState<AdminOrderView | null>(null);
-  const [countdown, setCountdown] = useState<string>('');
-  const [countdownClass, setCountdownClass] = useState<string>('');
-  const [lastKnownStatus, setLastKnownStatus] = useState<WorkflowStatus | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
-  const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
-  const [clientNotes, setClientNotes] = useState<string>('');
-  const [correctionText, setCorrectionText] = useState<string>('');
-  const [processingPayment, setProcessingPayment] = useState<boolean>(false);
-  const [downloading, setDownloading] = useState<boolean>(false);
-  const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'auto'>('auto');
-  const [isLight, setIsLight] = useState<boolean>(false);
-  const [showVerifiedBanner, setShowVerifiedBanner] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'vault' | 'profile'>('dashboard');
+  const [processingPayment, setProcessingPayment] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<AdminOrderView | null>(null);
 
+  // Initialize
   useEffect(() => {
-    // Check for verification success in URL
-    if (searchParams.get('verified') === 'true') {
-      setShowVerifiedBanner(true);
-      // Clean up the URL quietly without triggering a full page reload
-      window.history.replaceState(null, '', '/dashboard/client');
-      setTimeout(() => setShowVerifiedBanner(false), 8000);
-    }
-
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
+      if (!user) return router.push('/login');
       setUser(user);
-      if (!user.email) {
-        router.push('/login');
-        return;
-      }
-      const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
-      if (profile) setIsAdmin(!!profile.is_admin);
-      const savedTheme = localStorage.getItem('yrw_theme') as 'light' | 'dark' | 'auto' | null;
-      if (savedTheme) setThemeMode(savedTheme);
-      else setThemeMode('auto');
-      const savedNotif = localStorage.getItem('yrw_notifications');
-      if (savedNotif !== null) setNotificationsEnabled(savedNotif === 'true');
-      await fetchOrders(user.email);
+
+      const { data: userProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      setProfile(userProfile);
+
+      await fetchOrders(user.email!);
+      setLoading(false);
     };
     init();
-  }, [searchParams, router]);
+
+    // Auto-refresh when returning to tab (e.g., after Flutterwave redirect)
+    const handleFocus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) fetchOrders(session.user.email);
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [router]);
 
   const fetchOrders = async (email: string) => {
-    setLoading(true);
     const { data, error } = await supabase
       .from('admin_orders_view')
       .select('*')
       .eq('Email', email)
       .order('Timestamp', { ascending: false });
-    if (!error && data) {
-      setOrders(data as AdminOrderView[]);
-      if (data.length > 0) setCurrentOrder(data[0] as AdminOrderView);
-    }
-    setLoading(false);
+    if (!error && data) setOrders(data as AdminOrderView[]);
   };
 
-  useEffect(() => {
-    const updateTheme = () => {
-      let light = false;
-      if (themeMode === 'light') light = true;
-      else if (themeMode === 'dark') light = false;
-      else light = window.matchMedia('(prefers-color-scheme: light)').matches;
-      setIsLight(light);
-    };
-    updateTheme();
-    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', updateTheme);
-    return () => window.matchMedia('(prefers-color-scheme: light)').removeEventListener('change', updateTheme);
-  }, [themeMode]);
-
-  useEffect(() => {
-    if (!currentOrder || !currentOrder.Deadline) return;
-    const interval = setInterval(() => {
-      const deadline = new Date(currentOrder.Deadline!);
-      const now = new Date();
-      const diff = deadline.getTime() - now.getTime();
-      if (diff <= 0) {
-        setCountdown('Overdue');
-        setCountdownClass('text-red-500 font-bold');
-      } else {
-        const days = Math.floor(diff / 86400000);
-        const hours = Math.floor((diff % 86400000) / 3600000);
-        const minutes = Math.floor((diff % 3600000) / 60000);
-        const seconds = Math.floor((diff % 60000) / 1000);
-        let str = '';
-        if (days > 0) str += `${days}d `;
-        str += `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        setCountdown(str);
-        setCountdownClass(days < 1 ? 'text-amber-500 font-bold' : 'text-emerald-500');
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [currentOrder]);
-
-  useEffect(() => {
-    if (!currentOrder) return;
-    const newStatus = currentOrder['Workflow Status'] as WorkflowStatus;
-    if (lastKnownStatus && lastKnownStatus !== newStatus && notificationsEnabled) {
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(`Order ${currentOrder['Order ID']} updated`, {
-          body: `Status changed from ${lastKnownStatus} to ${newStatus}`,
-        });
-      }
-    }
-    setLastKnownStatus(newStatus);
-  }, [currentOrder, lastKnownStatus, notificationsEnabled]);
-
-  useEffect(() => {
-    if (!autoRefresh) return;
-    const interval = setInterval(() => {
-      if (user?.email) fetchOrders(user.email);
-    }, 300000);
-    return () => clearInterval(interval);
-  }, [autoRefresh, user]);
-
-  useEffect(() => {
-    if (currentOrder) {
-      const saved = localStorage.getItem(`client_notes_${currentOrder['Order ID']}`);
-      setClientNotes(saved || '');
-    }
-  }, [currentOrder]);
-
-  const saveClientNotes = () => {
-    if (currentOrder) {
-      localStorage.setItem(`client_notes_${currentOrder['Order ID']}`, clientNotes);
-      alert('Notes saved locally');
-    }
-  };
-
-  const toggleTheme = () => {
-    let newMode: 'light' | 'dark' | 'auto';
-    if (themeMode === 'auto') newMode = 'dark';
-    else if (themeMode === 'dark') newMode = 'light';
-    else newMode = 'auto';
-    setThemeMode(newMode);
-    localStorage.setItem('yrw_theme', newMode);
-  };
-
-  const sendWhatsApp = (msg: string) => {
-    if (!currentOrder) return;
-    const phone = '+2348121443666';
-    const text = `${msg} (Order: ${currentOrder['Order ID']}, ${currentOrder['Legal Name']})`;
-    window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
-  };
-
-  const handleBalancePayment = async () => {
-    if (!currentOrder) return;
-    setProcessingPayment(true);
-    try {
-      const amount = parsePriceStr(currentOrder['Financial Quote']) * 0.4;
-      const res = await fetch('/api/flutterwave/create-invoice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: currentOrder['Order ID'],
-          amount,
-          email: currentOrder['Email'],
-          name: currentOrder['Legal Name'],
-          type: 'BALANCE'
-        }),
-      });
-      const data = await res.json();
-      if (data.link) window.location.href = data.link;
-      else alert(`Error: ${data.error}`);
-    } catch (e) {
-      alert("Network error processing payment.");
-    }
-    setProcessingPayment(false);
-  };
-
-  const downloadFinalFiles = async () => {
-    if (!currentOrder) return;
-    setDownloading(true);
-    try {
-      const { data: files, error: listError } = await supabase.storage
-        .from('final-deliverables')
-        .list(currentOrder['Order ID']);
-      if (listError || !files || files.length === 0) {
-        alert("No files found in the vault. Please contact admin.");
-        setDownloading(false);
-        return;
-      }
-      const { data: linkData, error: linkError } = await supabase.storage
-        .from('final-deliverables')
-        .createSignedUrl(`${currentOrder['Order ID']}/${files[0].name}`, 60);
-      if (linkError) alert("Error unlocking file.");
-      else window.open(linkData.signedUrl, '_blank');
-    } catch (e) {
-      alert("System error accessing vault.");
-    }
-    setDownloading(false);
-  };
-
-  const downloadReceipt = async () => {
-    if (!currentOrder) return;
-    const amount = parsePriceStr(currentOrder['Financial Quote']);
-    const type = renderBool(currentOrder['60% Paid']) ? 'BALANCE' : 'DEPOSIT';
-    const blob = await pdf(<InvoicePDF order={currentOrder} amount={amount} type={type} />).toBlob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `invoice_${currentOrder['Order ID']}_${type}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const getPaymentChartData = () => {
-    if (!currentOrder) return { labels: [], datasets: [] };
-    const total = parsePriceStr(currentOrder['Financial Quote']);
-    const paid60 = renderBool(currentOrder['60% Paid']);
-    const paid40 = renderBool(currentOrder['40% Paid']);
-    const depositPaid = paid60 ? total * 0.6 : 0;
-    const balancePaid = paid40 ? total * 0.4 : 0;
-    const remaining = Math.max(0, total - depositPaid - balancePaid);
-    return {
-      labels: ['Deposit Paid', 'Balance Paid', 'Remaining'],
-      datasets: [{
-        data: [depositPaid, balancePaid, remaining],
-        backgroundColor: ['#1DB954', '#10b981', '#ef4444'],
-        borderWidth: 0,
-      }],
-    };
-  };
-
-  const getScores = () => {
-    if (!currentOrder) return { plagiarism: null, ai: null };
-    const vault = currentOrder['Vault Status'] || '';
-    const pMatch = vault.match(/P:(\d+(\.\d+)?)%/);
-    const aiMatch = vault.match(/AI:(\d+(\.\d+)?)%/);
-    const plagiarism = pMatch ? parseFloat(pMatch[1]) : null;
-    const ai = aiMatch ? parseFloat(aiMatch[1]) : null;
-    return { plagiarism, ai };
-  };
-
-  const getProgressStepClass = (step: string): string => {
-    if (!currentOrder) return '';
-    const status = currentOrder['Workflow Status'];
-    if (step === 'briefing' && status !== 'Briefing Received') return 'completed';
-    if (step === 'payment' && (renderBool(currentOrder['60% Paid']) || status.includes('Synthesis') || status.includes('Audit') || status === 'Completed')) return 'completed';
-    if (step === 'synthesis' && (status.includes('Synthesis') || status.includes('Audit') || status === 'Completed')) return 'completed';
-    if (step === 'complete' && status === 'Completed') return 'completed';
-    return '';
-  };
-
-  if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading dashboard...</div>;
-
-  if (!currentOrder) {
-    return (
-      <div className="min-h-screen bg-black text-white p-8 flex flex-col items-center justify-center">
-        <lucide.Inbox className="w-16 h-16 text-slate-500 mb-4" />
-        <h2 className="text-xl font-bold mb-2">No orders found</h2>
-        <p className="text-slate-400 mb-6">We couldn’t find any orders linked to <strong>{user?.email}</strong>.</p>
-        <div className="space-y-3 text-center">
-          <a href="/" className="inline-block px-6 py-3 bg-emerald-500 text-black font-bold rounded-full">Place a new order</a>
-          <p className="text-xs text-slate-500">If you have an existing order, make sure you used the same email address when placing it.</p>
-        </div>
-      </div>
-    );
+  const handlePayment = async (orderId: string, amount: number, email: string, name: string, type: 'DEPOSIT' | 'BALANCE') => {
+  setProcessingPayment(orderId);
+  try {
+    const res = await fetch('/api/paystack/create-invoice', { // <-- Changed URL
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, amount, email, name, type }),
+    });
+    const data = await res.json();
+    if (data.link) window.location.href = data.link;
+    else alert(`Payment initiation failed: ${data.error}`);
+  } catch (err) {
+    alert('Network error communicating with payment gateway.');
   }
+  setProcessingPayment(null);
+};
 
-  const scores = getScores();
-  const total = parsePriceStr(currentOrder['Financial Quote']);
-  const paid60 = renderBool(currentOrder['60% Paid']);
-  const paid40 = renderBool(currentOrder['40% Paid']);
-  const workSubmitted = renderBool(currentOrder['Work Submitted']);
-  const remaining = total - (paid60 ? total * 0.6 : 0) - (paid40 ? total * 0.4 : 0);
+  const downloadFile = async (orderId: string) => {
+    try {
+      const { data: files } = await supabase.storage.from('final-deliverables').list(orderId);
+      if (!files || files.length === 0) return alert('No files found in the vault yet.');
+      
+      const { data: linkData } = await supabase.storage.from('final-deliverables').createSignedUrl(`${orderId}/${files[0].name}`, 60);
+      if (linkData) window.open(linkData.signedUrl, '_blank');
+    } catch (error) {
+      alert('Error accessing the secure vault.');
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+  };
+
+  if (loading) return <LoadingScreen />;
+
+  // Derived metrics
+  const activeOrders = orders.filter(o => o['Workflow Status'] !== 'Completed' && o['Workflow Status'] !== 'Cancelled');
+  const completedOrders = orders.filter(o => o['Workflow Status'] === 'Completed');
+  const vaultItems = orders.filter(o => renderBool(o['Work Submitted']) || o['Workflow Status'] === 'Completed');
 
   return (
-    <div className={`min-h-screen p-4 transition-colors ${isLight ? 'bg-gradient-to-br from-slate-50 to-slate-200 text-slate-900' : 'bg-gradient-to-br from-[#050505] to-[#0a0a0a] text-white'}`}>
+    <div className="min-h-screen bg-[#050505] text-white flex flex-col md:flex-row font-['Inter'] selection:bg-emerald-500/30">
       
-      {showVerifiedBanner && (
-        <div className="max-w-6xl mx-auto mb-6 bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 px-4 py-3 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
-          <lucide.CheckCircle2 className="w-5 h-5" />
+      {/* ================= SIDEBAR (DESKTOP) ================= */}
+      <aside className="hidden md:flex flex-col w-64 bg-black border-r border-white/5 h-screen sticky top-0 p-6">
+        <div className="flex items-center gap-3 mb-12">
+          <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-black font-black text-xl">Y</div>
           <div>
-            <p className="font-bold text-sm">Account Verified Successfully!</p>
-            <p className="text-xs opacity-80">Welcome to your secure client dashboard.</p>
+            <h1 className="font-black tracking-tight leading-none text-lg">YRW</h1>
+            <p className="text-[10px] text-emerald-500 uppercase tracking-widest font-bold">Client Portal</p>
           </div>
-          <button onClick={() => setShowVerifiedBanner(false)} className="ml-auto opacity-50 hover:opacity-100 transition"><lucide.X className="w-4 h-4" /></button>
+        </div>
+
+        <nav className="flex flex-col gap-2 flex-1">
+          <SidebarBtn active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<lucide.LayoutDashboard />} label="Dashboard" />
+          <SidebarBtn active={activeTab === 'vault'} onClick={() => setActiveTab('vault')} icon={<lucide.Lock />} label="Secure Vault" badge={vaultItems.length} />
+          <SidebarBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<lucide.User />} label="My Profile" />
+        </nav>
+
+        <div className="border-t border-white/10 pt-6 mt-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700">
+              <lucide.User className="w-5 h-5 text-zinc-400" />
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-sm font-bold truncate">{profile?.full_name || 'Client'}</p>
+              <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="w-full flex items-center gap-3 text-red-400 hover:text-red-300 transition text-sm font-bold p-2 rounded-lg hover:bg-red-500/10">
+            <lucide.LogOut className="w-4 h-4" /> Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* ================= MOBILE TOPBAR ================= */}
+      <div className="md:hidden bg-black border-b border-white/5 p-4 flex justify-between items-center sticky top-0 z-50">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-black font-black">Y</div>
+          <span className="font-bold">Portal</span>
+        </div>
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-white">
+          {mobileMenuOpen ? <lucide.X /> : <lucide.Menu />}
+        </button>
+      </div>
+
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-black border-b border-white/5 p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px]">
+          <SidebarBtn active={activeTab === 'dashboard'} onClick={() => {setActiveTab('dashboard'); setMobileMenuOpen(false);}} icon={<lucide.LayoutDashboard />} label="Dashboard" />
+          <SidebarBtn active={activeTab === 'vault'} onClick={() => {setActiveTab('vault'); setMobileMenuOpen(false);}} icon={<lucide.Lock />} label="Secure Vault" />
+          <SidebarBtn active={activeTab === 'profile'} onClick={() => {setActiveTab('profile'); setMobileMenuOpen(false);}} icon={<lucide.User />} label="My Profile" />
+          <button onClick={handleLogout} className="mt-4 p-3 text-red-400 font-bold text-left flex items-center gap-2"><lucide.LogOut className="w-4 h-4"/> Sign Out</button>
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl font-black bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">Project Dashboard</h1>
-            <p className="text-xs uppercase tracking-widest text-slate-500">{currentOrder['Order ID']} | {currentOrder['Legal Name']}</p>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={toggleTheme} className="p-2 rounded-full transition-colors hover:bg-white/10">{themeMode === 'light' ? '☀️' : themeMode === 'dark' ? '🌙' : '⚙️'}</button>
-            <button onClick={() => setAutoRefresh(!autoRefresh)} className={`p-2 rounded-full transition-colors ${autoRefresh ? 'text-emerald-500' : ''}`}><lucide.RefreshCw className="w-5 h-5" /></button>
-            <button onClick={() => setNotificationsEnabled(!notificationsEnabled)} className="p-2 rounded-full transition-colors">{notificationsEnabled ? '🔔' : '🔕'}</button>
-            {isAdmin && <a href="/admin" className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 rounded-full text-[10px] font-bold uppercase flex items-center gap-1"><lucide.LayoutDashboard className="w-3 h-3" /> Admin Panel</a>}
-            <button onClick={() => sendWhatsApp('Hello, I have a question about my order.')} className="px-4 py-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/20 rounded-full text-[10px] font-bold uppercase flex items-center gap-1"><lucide.MessageCircle className="w-3 h-3" /> WhatsApp</button>
-            <a href="/" className="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 rounded-full text-[10px] font-bold uppercase flex items-center gap-1"><lucide.Plus className="w-3 h-3" /> New Order</a>
-            <button onClick={() => supabase.auth.signOut().then(() => router.push('/'))} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-[10px] font-bold uppercase">Logout</button>
-          </div>
-        </div>
-        {/* Order tabs */}
-        {orders.length > 1 && (
-          <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-            {orders.map(order => (
-              <button key={order['Order ID']} onClick={() => setCurrentOrder(order)} className={`px-4 py-2 rounded-full text-xs font-bold transition whitespace-nowrap ${currentOrder['Order ID'] === order['Order ID'] ? 'bg-emerald-500 text-black' : 'bg-white/5 hover:bg-white/10'}`}>{order['Order ID']}</button>
-            ))}
-          </div>
-        )}
-        {/* Main grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className={`rounded-2xl p-6 ${isLight ? 'bg-white/80 border border-slate-200' : 'bg-white/5 border border-white/10'} backdrop-blur-sm`}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Current Status</h3>
-                <span className={`px-3 py-1 rounded-full text-xs font-black uppercase ${currentOrder['Workflow Status'] === 'Completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>{currentOrder['Workflow Status']}</span>
-              </div>
-              <p className="text-sm leading-relaxed border-l-2 border-emerald-500 pl-4 py-1">
-                {currentOrder['Workflow Status'] === 'Briefing Received' && 'Your project details have been securely logged. Expect a quote within 24 hours.'}
-                {currentOrder['Workflow Status'] === 'Quote Sent' && 'Your custom quote is ready. Please make the 60% deposit to begin work.'}
-                {currentOrder['Workflow Status'] === 'Synthesis Active' && 'Work has officially begun! Our researchers are drafting your document.'}
-                {currentOrder['Workflow Status'] === 'Internal Audit' && 'Your completed work is undergoing quality assurance.'}
-                {currentOrder['Workflow Status'] === 'Completed' && 'Congratulations! Your project is complete.'}
-              </p>
-              <div className="grid grid-cols-4 gap-2 mt-6">
-                {['briefing', 'payment', 'synthesis', 'complete'].map((step, idx) => (
-                  <div key={step} className={`text-center progress-step ${getProgressStepClass(step)}`}>
-                    <div className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center text-sm font-black transition-colors ${getProgressStepClass(step) ? 'bg-emerald-500/30 text-emerald-500' : 'bg-white/5'}`}>{getProgressStepClass(step) ? '✓' : idx + 1}</div>
-                    <p className="text-[9px] uppercase mt-1 hidden sm:block">{step.charAt(0).toUpperCase() + step.slice(1)}</p>
-                  </div>
-                ))}
-              </div>
+      {/* ================= MAIN CONTENT AREA ================= */}
+      <main className="flex-1 p-6 md:p-10 overflow-y-auto relative">
+        
+        {/* === TAB: DASHBOARD === */}
+        {activeTab === 'dashboard' && (
+          <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
+            <header className="mb-10">
+              <h2 className="text-3xl font-black text-white">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
+              <p className="text-zinc-400 mt-1">Here is the current status of your research pipeline.</p>
+            </header>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+              <StatCard label="Total Orders" value={orders.length} icon={<lucide.Layers />} />
+              <StatCard label="Active" value={activeOrders.length} icon={<lucide.Activity />} color="text-amber-400" />
+              <StatCard label="Completed" value={completedOrders.length} icon={<lucide.CheckCircle2 />} color="text-emerald-400" />
+              <StatCard label="In Vault" value={vaultItems.length} icon={<lucide.Lock />} color="text-purple-400" />
             </div>
-            <div className={`rounded-2xl p-6 ${isLight ? 'bg-white/80 border border-slate-200' : 'bg-white/5 border border-white/10'}`}>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Project Brief</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><span className="text-slate-500 block text-[10px] uppercase">Topic</span><span className="font-medium">{currentOrder['Research Topic'] || '—'}</span></div>
-                <div><span className="text-slate-500 block text-[10px] uppercase">Service Tier</span><span className="font-medium">{currentOrder['Service Tier'] || '—'}</span></div>
-                <div><span className="text-slate-500 block text-[10px] uppercase">Word Count</span><span className="font-medium">{currentOrder['Word Count']?.toLocaleString() || '—'} words</span></div>
-                <div><span className="text-slate-500 block text-[10px] uppercase">Citation</span><span className="font-medium">{currentOrder['Reference Style'] || '—'}</span></div>
-                <div><span className="text-slate-500 block text-[10px] uppercase">Font</span><span className="font-medium">{currentOrder['Font Specification'] || '—'}</span></div>
-                <div><span className="text-slate-500 block text-[10px] uppercase">Deadline</span><span className="font-medium">{formatDate(currentOrder['Deadline'])}</span></div>
-                <div className="col-span-2"><span className="text-slate-500 block text-[10px] uppercase">Time Remaining</span><span className={`font-mono font-bold text-xl ${countdownClass}`}>{countdown}</span></div>
-                <div><span className="text-slate-500 block text-[10px] uppercase">Est. Completion</span><span className="font-medium">{currentOrder['Workflow Status'] === 'Completed' ? 'Completed' : formatDate(currentOrder['Deadline'])}</span></div>
-                <div><span className="text-slate-500 block text-[10px] uppercase">Last Activity</span><span className="font-medium">{formatDateTime(currentOrder['Last Activity'] || currentOrder['Timestamp'])}</span></div>
-                <div><span className="text-slate-500 block text-[10px] uppercase">Media Link</span><span className="font-medium">{currentOrder['Media Sync'] && currentOrder['Media Sync'] !== 'None' ? <a href={currentOrder['Media Sync']} target="_blank" className="text-emerald-500 underline">View</a> : 'None'}</span></div>
-                <div className="col-span-2"><span className="text-slate-500 block text-[10px] uppercase">Additional Info</span><span className="font-medium">{currentOrder['Additional Info'] || '—'}</span></div>
-                <div className="col-span-2"><span className="text-slate-500 block text-[10px] uppercase">Work Submitted</span><span className={`font-bold ${workSubmitted ? 'text-emerald-500' : 'text-amber-500'}`}>{workSubmitted ? '✅ File Sent' : '⏳ Pending'}</span></div>
+
+            {/* Orders List */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-black">Active Projects</h3>
+                <button onClick={() => window.location.href = '/'} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-bold transition flex items-center gap-2">
+                  <lucide.Plus className="w-3 h-3" /> New Order
+                </button>
               </div>
-              <div className="mt-6">
-                <div className="flex justify-between text-[10px]"><span>Overall Progress</span><span id="word-progress-text">
-                  {currentOrder['Workflow Status'] === 'Completed' ? '100%' : currentOrder['Workflow Status'] === 'Internal Audit' ? '90%' : currentOrder['Workflow Status'] === 'Synthesis Active' ? '50%' : '20%'}
-                </span></div>
-                <div className="w-full bg-white/10 rounded-full h-2 mt-1"><div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${currentOrder['Workflow Status'] === 'Completed' ? 100 : currentOrder['Workflow Status'] === 'Internal Audit' ? 90 : currentOrder['Workflow Status'] === 'Synthesis Active' ? 50 : 20}%` }}></div></div>
-              </div>
-            </div>
-            <div className={`rounded-2xl p-6 ${isLight ? 'bg-white/80 border border-slate-200' : 'bg-white/5 border border-white/10'}`}>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">📌 Your Private Notes <span className="text-[9px] font-normal normal-case">(only visible to you)</span></h3>
-              <textarea rows={3} className="w-full rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-transparent border border-white/10" value={clientNotes} onChange={e => setClientNotes(e.target.value)} placeholder="Write your personal notes about this project..."></textarea>
-              <button onClick={saveClientNotes} className="mt-2 text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 px-3 py-1.5 rounded-lg transition">Save Notes</button>
-            </div>
-          </div>
-          <div className="space-y-6">
-            {/* Vault Card */}
-            <div className={`rounded-2xl p-6 border ${isLight ? 'bg-white border-slate-200' : 'bg-[#0a0a0a] border-white/10'} ${workSubmitted && !paid40 ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : ''}`}>
-              <h3 className="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-4 flex items-center gap-2"><lucide.Lock className="w-4 h-4" /> Secure Delivery Vault</h3>
-              {!workSubmitted ? (
-                <div className="text-center py-4 opacity-50"><lucide.FileX className="w-8 h-8 mx-auto mb-2 text-slate-500" /><p className="text-xs text-slate-400">Vault is empty.<br/>Researchers are actively drafting.</p></div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl flex items-center gap-3"><lucide.FileCheck className="w-6 h-6 text-emerald-500" /><div><p className="text-xs font-bold text-emerald-400">Final Documents Uploaded</p><p className="text-[10px] text-slate-400">Ready for secure download.</p></div></div>
-                  {!paid40 ? (
-                    <div className="space-y-3"><p className="text-[10px] text-amber-500 font-bold bg-amber-500/10 p-2 rounded-lg text-center">Vault locked. Clear 40% balance to access files.</p><button onClick={handleBalancePayment} disabled={processingPayment} className="w-full py-3 bg-amber-500 text-black font-black uppercase text-[11px] tracking-widest rounded-xl hover:bg-amber-400 transition">{processingPayment ? 'Processing...' : 'Pay Balance to Unlock'}</button></div>
-                  ) : (
-                    <button onClick={downloadFinalFiles} disabled={downloading} className="w-full py-3 bg-emerald-500 text-black font-black uppercase text-[11px] tracking-widest rounded-xl hover:bg-emerald-400 transition flex justify-center items-center gap-2 shadow-lg shadow-emerald-500/20"><lucide.Download className="w-4 h-4" /> {downloading ? 'Decrypting...' : 'Download Final Files'}</button>
-                  )}
+
+              {orders.length === 0 ? (
+                <div className="border border-dashed border-white/10 rounded-3xl p-12 text-center bg-[#0a0a0a]">
+                  <lucide.Inbox className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                  <h4 className="text-lg font-bold text-white mb-2">No projects yet</h4>
+                  <p className="text-zinc-400 text-sm mb-6">Your workspace is empty. Submit a brief to get started.</p>
+                  <button onClick={() => window.location.href = '/'} className="px-6 py-3 bg-emerald-500 text-black font-black rounded-full text-sm uppercase tracking-wider hover:bg-emerald-400 transition">Place First Order</button>
                 </div>
+              ) : (
+                orders.map(order => <OrderCard 
+                  key={order['Order ID']} 
+                  order={order} 
+                  handlePayment={handlePayment} 
+                  processingPayment={processingPayment === order['Order ID']} 
+                  openDetails={() => setSelectedOrderDetails(order)}
+                />)
               )}
             </div>
-            {/* Payment Summary */}
-            <div className={`rounded-2xl p-6 ${isLight ? 'bg-white/80 border border-slate-200' : 'bg-white/5 border border-white/10'}`}>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Payment Summary</h3>
-              <div className="flex flex-col items-center">
-                <div className="w-48 h-48"><Doughnut data={getPaymentChartData()} options={{ cutout: '65%', plugins: { legend: { display: false } } }} /></div>
-                {remaining <= 0 && total > 0 && <div className="mt-2 p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-center w-full"><span className="text-emerald-400 font-bold text-sm">🎉 Fully Paid! Thank you.</span></div>}
-                <div className="w-full space-y-3 mt-4">
-                  <div className="flex justify-between items-end"><span className="text-sm">Total Quote</span><span className="text-xl font-black text-emerald-500">{formatNaira(total)}</span></div>
-                  <div className="flex justify-between border-t border-white/10 pt-2"><span>60% Deposit</span><span className={paid60 ? 'text-emerald-500 font-bold' : 'text-amber-500'}>{paid60 ? '✅ Paid' : '❌ Pending'}</span></div>
-                  <div className="flex justify-between"><span>40% Balance</span><span className={paid40 ? 'text-emerald-500 font-bold' : 'text-amber-500'}>{paid40 ? '✅ Paid' : '❌ Pending'}</span></div>
-                  <div className="flex justify-between border-t border-white/10 pt-2"><span className="font-bold">Remaining</span><span className="text-lg font-black text-red-400">{formatNaira(remaining)}</span></div>
+          </div>
+        )}
+
+        {/* === TAB: VAULT === */}
+        {activeTab === 'vault' && (
+          <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
+            <header className="mb-10">
+              <h2 className="text-3xl font-black text-white flex items-center gap-3"><lucide.Lock className="text-emerald-500" /> Secure Vault</h2>
+              <p className="text-zinc-400 mt-1">Encrypted storage for all your completed deliverables.</p>
+            </header>
+            
+            {vaultItems.length === 0 ? (
+              <div className="border border-white/5 bg-[#0a0a0a] rounded-3xl p-12 text-center">
+                <lucide.Shield className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+                <p className="text-zinc-400">Your vault is currently empty. Files will appear here once drafting is complete.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {vaultItems.map(order => {
+                  const paid40 = renderBool(order['40% Paid']);
+                  return (
+                    <div key={order['Order ID']} className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24" /></div>
+                      <h4 className="font-bold text-lg mb-1 relative z-10">{order['Order ID']}</h4>
+                      <p className="text-xs text-zinc-400 mb-6 relative z-10 line-clamp-1">{order['Research Topic']}</p>
+                      
+                      {paid40 ? (
+                        <button onClick={() => downloadFile(order['Order ID'])} className="w-full py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition relative z-10">
+                          <lucide.Download className="w-4 h-4" /> Download Package
+                        </button>
+                      ) : (
+                        <button onClick={() => handlePayment(order['Order ID'], parsePriceStr(order['Financial Quote']) * 0.4, order['Email'], order['Legal Name'], 'BALANCE')} className="w-full py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition relative z-10">
+                          <lucide.Unlock className="w-4 h-4" /> Pay Balance to Unlock
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* === TAB: PROFILE === */}
+        {activeTab === 'profile' && (
+          <div className="animate-in fade-in duration-500 max-w-2xl mx-auto">
+            <header className="mb-10">
+              <h2 className="text-3xl font-black text-white">Profile Settings</h2>
+              <p className="text-zinc-400 mt-1">Manage your personal information and account security.</p>
+            </header>
+            
+            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-8">
+              <div className="flex items-center gap-6 mb-8 border-b border-white/5 pb-8">
+                <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-500 font-black text-2xl">
+                  {profile?.full_name?.charAt(0) || 'U'}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">{profile?.full_name}</h3>
+                  <p className="text-zinc-400 text-sm">Account Type: Client</p>
+                  {renderBool(profile?.is_admin) && <span className="inline-block mt-2 px-2 py-1 bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase rounded-md">Admin</span>}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Email Address</label>
+                  <div className="p-3 bg-black border border-white/10 rounded-xl text-zinc-300 mt-1">{user?.email}</div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Account ID</label>
+                  <div className="p-3 bg-black border border-white/10 rounded-xl text-zinc-500 font-mono text-xs mt-1">{user?.id}</div>
+                </div>
+                <div className="pt-4">
+                  <button onClick={() => window.open('https://wa.me/2348121443666', '_blank')} className="px-6 py-3 bg-[#25D366]/10 text-[#25D366] font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-[#25D366]/20 transition">
+                    <lucide.MessageCircle className="w-4 h-4" /> Contact Support to Update Details
+                  </button>
                 </div>
               </div>
             </div>
-            {/* Originality Report */}
-            <div className={`rounded-2xl p-6 ${isLight ? 'bg-white/80 border border-slate-200' : 'bg-white/5 border border-white/10'}`}>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">🔬 Originality Report</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center"><div className="w-24 h-24 mx-auto"><Doughnut data={{ labels: ['Similarity', 'Original'], datasets: [{ data: [scores.plagiarism || 0, 100 - (scores.plagiarism || 0)], backgroundColor: ['#ef4444', '#334155'], borderWidth: 0 }] }} options={{ cutout: '75%', plugins: { legend: { display: false } } }} /></div><div className="text-2xl font-black bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent mt-2">{scores.plagiarism !== null ? scores.plagiarism.toFixed(1) : '—'}%</div><p className="text-[8px] uppercase tracking-widest text-slate-500">Plagiarism</p></div>
-                <div className="text-center"><div className="w-24 h-24 mx-auto"><Doughnut data={{ labels: ['AI', 'Human'], datasets: [{ data: [scores.ai || 0, 100 - (scores.ai || 0)], backgroundColor: ['#f59e0b', '#334155'], borderWidth: 0 }] }} options={{ cutout: '75%', plugins: { legend: { display: false } } }} /></div><div className="text-2xl font-black bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent mt-2">{scores.ai !== null ? scores.ai.toFixed(1) : '—'}%</div><p className="text-[8px] uppercase tracking-widest text-slate-500">AI Detection</p></div>
+          </div>
+        )}
+
+        {/* ================= ORDER DETAILS MODAL (LOGS & HISTORY) ================= */}
+        {selectedOrderDetails && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-end">
+            <div className="bg-[#050505] w-full max-w-md h-full border-l border-white/10 flex flex-col animate-in slide-in-from-right duration-300">
+              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black">
+                <div>
+                  <h3 className="font-black text-lg">{selectedOrderDetails['Order ID']}</h3>
+                  <p className="text-xs text-emerald-500 uppercase tracking-widest font-bold">Activity Log</p>
+                </div>
+                <button onClick={() => setSelectedOrderDetails(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition"><lucide.X className="w-5 h-5" /></button>
               </div>
-            </div>
-            {/* Corrections, Quick Support, Request Corrections, Download Receipt */}
-            {currentOrder['Corrections Status'] && currentOrder['Corrections Status'] !== 'None' && (
-              <div className={`rounded-2xl p-6 ${isLight ? 'bg-white/80 border border-slate-200' : 'bg-white/5 border border-white/10'}`}>
-                <h3 className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-2">✏️ Corrections</h3>
-                <p className="text-sm">Status: {currentOrder['Corrections Status']}. Check your email/WhatsApp for details.</p>
+              
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="mb-8">
+                  <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Topic</h4>
+                  <p className="text-sm bg-[#0a0a0a] p-4 rounded-xl border border-white/5">{selectedOrderDetails['Research Topic']}</p>
+                </div>
+
+                <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6">Workflow History</h4>
+                
+                {/* Visual Timeline based on status */}
+                <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-zinc-800">
+                  
+                  <TimelineItem title="Order Placed" desc="Briefing received by system." date={formatDate(selectedOrderDetails['Timestamp'])} done={true} />
+                  
+                  <TimelineItem 
+                    title="Quote Generated" 
+                    desc={`Financial assessment: ₦${parsePriceStr(selectedOrderDetails['Financial Quote']).toLocaleString()}`} 
+                    date="Logged" 
+                    done={parsePriceStr(selectedOrderDetails['Financial Quote']) > 0 && selectedOrderDetails['Workflow Status'] !== 'Briefing Received'} 
+                  />
+                  
+                  <TimelineItem 
+                    title="Deposit Cleared" 
+                    desc="60% payment verified. Synthesis started." 
+                    date="Logged" 
+                    done={renderBool(selectedOrderDetails['60% Paid'])} 
+                  />
+                  
+                  <TimelineItem 
+                    title="Drafting & Quality Audit" 
+                    desc="Research compilation in progress." 
+                    date="Logged" 
+                    done={selectedOrderDetails['Workflow Status'].includes('Synthesis') || renderBool(selectedOrderDetails['Work Submitted'])} 
+                  />
+
+                  <TimelineItem 
+                    title="Vault Secured" 
+                    desc="Final files uploaded to encrypted vault." 
+                    date="Logged" 
+                    done={renderBool(selectedOrderDetails['Work Submitted']) || selectedOrderDetails['Workflow Status'] === 'Completed'} 
+                  />
+
+                  <TimelineItem 
+                    title="Completed" 
+                    desc="Balance cleared and contract fulfilled." 
+                    date="Logged" 
+                    done={selectedOrderDetails['Workflow Status'] === 'Completed'} 
+                  />
+                </div>
               </div>
-            )}
-            <div className={`rounded-2xl p-6 ${isLight ? 'bg-white/80 border border-slate-200' : 'bg-white/5 border border-white/10'}`}>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">⚡ Quick Support</h3>
-              <div className="space-y-2">
-                <button onClick={() => sendWhatsApp('What is the current status of my order?')} className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-emerald-400 text-[10px] font-bold flex items-center justify-center gap-1">📊 Order Status</button>
-                <button onClick={() => sendWhatsApp('Can you confirm the deadline for my order?')} className="w-full py-2.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl text-blue-400 text-[10px] font-bold">⏰ Deadline Inquiry</button>
-                <button onClick={() => sendWhatsApp('I have a question about the payment breakdown.')} className="w-full py-2.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 rounded-xl text-purple-400 text-[10px] font-bold">💰 Payment Question</button>
-                <button onClick={() => sendWhatsApp('Could you please provide a sample of the work so far?')} className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl text-amber-400 text-[10px] font-bold">📄 Request Sample</button>
-              </div>
-            </div>
-            {workSubmitted && paid40 && (
-              <div className={`rounded-2xl p-6 ${isLight ? 'bg-white/80 border border-slate-200' : 'bg-white/5 border border-white/10'}`}>
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">✏️ Request Corrections</h3>
-                <textarea rows={3} className="w-full bg-transparent border border-white/10 rounded-xl p-3 text-sm resize-none mb-3 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="Describe what needs to be changed..." value={correctionText} onChange={e => setCorrectionText(e.target.value)}></textarea>
-                <button onClick={async () => { await supabase.from('orders').update({ corrections_status: 'Requested' }).eq('order_id', currentOrder['Order ID']); sendWhatsApp(`Correction Request:\n${correctionText}`); setCorrectionText(''); alert("Correction request submitted!"); }} className="w-full py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl text-amber-400 text-xs font-bold">Send Correction Request</button>
-              </div>
-            )}
-            <div className={`rounded-2xl p-6 ${isLight ? 'bg-white/80 border border-slate-200' : 'bg-white/5 border border-white/10'}`}>
-              <button onClick={downloadReceipt} className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-slate-300 text-xs font-bold flex items-center justify-center gap-2"><lucide.FileText className="w-4 h-4" /> Download Receipt</button>
             </div>
           </div>
-        </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+// ==========================================
+// 4. SUB-COMPONENTS
+// ==========================================
+
+function SidebarBtn({ active, onClick, icon, label, badge }: any) {
+  return (
+    <button onClick={onClick} className={`w-full flex items-center justify-between p-3 rounded-xl transition font-bold text-sm ${active ? 'bg-emerald-500/10 text-emerald-500' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}>
+      <div className="flex items-center gap-3">
+        {icon} <span>{label}</span>
+      </div>
+      {badge !== undefined && badge > 0 && <span className="px-2 py-0.5 bg-emerald-500 text-black rounded-md text-[10px]">{badge}</span>}
+    </button>
+  );
+}
+
+function StatCard({ label, value, icon, color = "text-emerald-500" }: any) {
+  return (
+    <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5 flex flex-col justify-between">
+      <div className="flex justify-between items-start mb-4">
+        <div className={`p-2 rounded-lg bg-black border border-white/5 ${color}`}>{icon}</div>
+      </div>
+      <div>
+        <div className="text-3xl font-black">{value}</div>
+        <div className="text-xs text-zinc-500 uppercase tracking-widest font-bold mt-1">{label}</div>
       </div>
     </div>
   );
 }
-export default function ClientDashboard() {
+
+function TimelineItem({ title, desc, date, done }: any) {
+  if (!done) return (
+    <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+      <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-zinc-800 bg-black text-zinc-600 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow"><lucide.Circle className="w-4 h-4"/></div>
+      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-white/5 bg-black opacity-50">
+        <div className="flex justify-between mb-1"><span className="font-bold text-sm text-zinc-500">{title}</span></div>
+        <div className="text-xs text-zinc-600">{desc}</div>
+      </div>
+    </div>
+  );
+
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center font-['Inter']">
-        <div className="flex flex-col items-center">
-          <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4" />
-          <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 animate-pulse">Loading Secure Dashboard...</div>
+    <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+      <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-emerald-500 bg-emerald-500/20 text-emerald-500 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow"><lucide.Check className="w-5 h-5"/></div>
+      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+        <div className="flex justify-between mb-1"><span className="font-bold text-sm text-emerald-400">{title}</span><span className="text-[10px] text-zinc-500">{date}</span></div>
+        <div className="text-xs text-zinc-400">{desc}</div>
+      </div>
+    </div>
+  );
+}
+
+function OrderCard({ order, handlePayment, processingPayment, openDetails }: any) {
+  const total = parsePriceStr(order['Financial Quote']);
+  const paid60 = renderBool(order['60% Paid']);
+  const paid40 = renderBool(order['40% Paid']);
+  const workSubmitted = renderBool(order['Work Submitted']);
+  
+  // LOGIC LOCK: Admin Approval Check
+  // If the status is still "Briefing Received" OR the admin hasn't set a price yet, lock payments.
+  const awaitingAdminApproval = order['Workflow Status'] === 'Briefing Received' || total <= 0;
+
+  const depositAmount = total * 0.6;
+  const balanceAmount = total * 0.4;
+
+  return (
+    <div className="bg-[#0a0a0a] border border-white/10 hover:border-emerald-500/50 transition-colors rounded-3xl p-6 md:p-8 relative overflow-hidden group">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <h3 className="text-xl font-black tracking-tight">{order['Order ID']}</h3>
+            <span className={`text-[10px] px-3 py-1 rounded-md font-black uppercase tracking-widest ${
+              order['Workflow Status'] === 'Completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+              awaitingAdminApproval ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+              'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+            }`}>
+              {awaitingAdminApproval ? 'Awaiting Quote' : order['Workflow Status']}
+            </span>
+          </div>
+          <p className="text-zinc-400 text-sm max-w-2xl leading-relaxed">{order['Research Topic']}</p>
+        </div>
+
+        <div className="text-left md:text-right shrink-0">
+          <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Financial Quote</div>
+          <div className="text-3xl font-black text-white">
+            {awaitingAdminApproval ? 'Pending...' : formatNaira(total)}
+          </div>
         </div>
       </div>
-    }>
-      <DashboardContent />
-    </Suspense>
+
+      {/* Progress Bar */}
+      <div className="mb-8">
+        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">
+          <span className={paid60 ? 'text-emerald-500' : ''}>1. Deposit</span>
+          <span className={workSubmitted ? 'text-emerald-500' : ''}>2. Research</span>
+          <span className={paid40 ? 'text-emerald-500' : ''}>3. Delivery</span>
+        </div>
+        <div className="w-full bg-black border border-white/5 rounded-full h-2 overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-out relative" 
+            style={{ width: paid40 && workSubmitted ? '100%' : paid60 && workSubmitted ? '75%' : paid60 ? '33%' : '0%' }}>
+            <div className="absolute inset-0 bg-white/20 w-full h-full animate-[shimmer_2s_infinite]"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Actions */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-white/5">
+        <div className="flex items-center gap-6 text-xs w-full md:w-auto">
+          <div><span className="text-zinc-500 block mb-1">Deadline</span> <span className="font-bold text-white">{formatDate(order['Deadline'])}</span></div>
+          <div><span className="text-zinc-500 block mb-1">Deposit</span> <span className={paid60 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>{paid60 ? 'Cleared' : 'Pending'}</span></div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <button onClick={openDetails} className="px-4 py-2.5 bg-black border border-white/10 hover:bg-white/5 text-white text-xs font-bold rounded-xl transition flex items-center gap-2">
+            <lucide.Activity className="w-4 h-4" /> View Logs
+          </button>
+
+          {/* ADMIN LOCK LOGIC APPLIED HERE */}
+          {awaitingAdminApproval ? (
+            <div className="px-5 py-2.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-xl text-xs font-bold flex items-center gap-2">
+              <lucide.Clock className="w-4 h-4" /> Admin Reviewing Brief
+            </div>
+          ) : (
+            <>
+              {!paid60 && (
+                <button
+                  onClick={() => handlePayment(order['Order ID'], depositAmount, order['Email'], order['Legal Name'], 'DEPOSIT')}
+                  disabled={processingPayment}
+                  className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50"
+                >
+                  {processingPayment ? 'Connecting...' : `Pay Deposit (${formatNaira(depositAmount)})`}
+                </button>
+              )}
+              {paid60 && !paid40 && workSubmitted && (
+                <button
+                  onClick={() => handlePayment(order['Order ID'], balanceAmount, order['Email'], order['Legal Name'], 'BALANCE')}
+                  disabled={processingPayment}
+                  className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 flex items-center gap-2"
+                >
+                  <lucide.Unlock className="w-4 h-4" /> {processingPayment ? 'Connecting...' : `Clear Balance & Unlock Vault`}
+                </button>
+              )}
+              {paid60 && paid40 && workSubmitted && (
+                <div className="px-5 py-2.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold flex items-center gap-2">
+                  <lucide.CheckCircle2 className="w-4 h-4" /> Contract Fulfilled
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

@@ -2,9 +2,10 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import xss from 'xss';
 import type { CreateOrderServerActionResponse } from '@/lib/types';
+import { emailTemplates } from '@/lib/emailTemplates';
 
-// Use service role key to bypass RLS entirely (safe for server actions)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -52,6 +53,7 @@ export async function createSecureOrder(
     return { success: false, error: 'Deadline must be in the future.' };
   }
 
+  // Calculate quote
   if (orderData.service_tier === 'CUSTOM') {
     const customQuote = Number(orderData.financial_quote);
     if (isNaN(customQuote) || customQuote < MIN_CUSTOM_QUOTE) {
@@ -80,22 +82,51 @@ export async function createSecureOrder(
     finalQuote = Math.round(afterVolume);
   }
 
-  const secureOrderData = {
-    ...orderData,
-    financial_quote: finalQuote,
-    client_id: null, // No user ID for guests initially
-    legal_name: orderData.legal_name.trim(),
-    email: orderData.email.toLowerCase().trim(),
-    topic: orderData.topic.trim(),
+  // 🛡️ SANITIZE ALL USER INPUTS (XSS protection)
+  const sanitized = {
+    legal_name: xss(orderData.legal_name.trim()),
+    email: xss(orderData.email.toLowerCase().trim()),
+    topic: xss(orderData.topic.trim()),
+    additional_info: xss(orderData.additional_info || ''),
+    media_link: xss(orderData.media_link || ''),
+    reference_style: xss(orderData.reference_style || ''),
+    font_specification: xss(orderData.font_specification || ''),
+    guest_name: xss(orderData.guest_name || ''),
+    guest_email: xss(orderData.guest_email || ''),
+    guest_whatsapp: xss(orderData.guest_whatsapp || ''),
+    whatsapp_sync: xss(orderData.whatsapp_sync || ''),
+    vault_status: xss(orderData.vault_status || 'Secured in Vault'),
+    corrections_status: xss(orderData.corrections_status || 'None'),
+    workflow_status: xss(orderData.workflow_status || 'Briefing Received'),
   };
 
-  // Generate order ID if not provided
+  const secureOrderData = {
+    ...orderData,
+    ...sanitized,
+    financial_quote: finalQuote,
+    client_id: null, // No user ID for guests initially
+    // Override with sanitized values
+    legal_name: sanitized.legal_name,
+    email: sanitized.email,
+    topic: sanitized.topic,
+    additional_info: sanitized.additional_info,
+    media_link: sanitized.media_link,
+    reference_style: sanitized.reference_style,
+    font_specification: sanitized.font_specification,
+    guest_name: sanitized.guest_name,
+    guest_email: sanitized.guest_email,
+    guest_whatsapp: sanitized.guest_whatsapp,
+    whatsapp_sync: sanitized.whatsapp_sync,
+    vault_status: sanitized.vault_status,
+    corrections_status: sanitized.corrections_status,
+    workflow_status: sanitized.workflow_status,
+  };
+
   if (!secureOrderData.order_id) {
     secureOrderData.order_id = 'RW-' + Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  console.log('Inserting order with service role:', secureOrderData);
-
+  // Insert into database
   const { data, error } = await supabase
     .from('orders')
     .insert(secureOrderData)
@@ -107,34 +138,43 @@ export async function createSecureOrder(
     return { success: false, error: error.message };
   }
 
-  // --- ADMIN NOTIFICATION TRIGGER ---
-  // Silently ping the internal email API route to notify the project service email.
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    await fetch(`${baseUrl}/api/send-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: 'subskription.noreply@gmail.com',
-        orderId: data.order_id,
-        subject: `🚨 NEW ORDER RECEIVED: ${data.order_id}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; padding: 20px;">
-            <h2 style="color: #1DB954;">New Order Notification</h2>
-            <p><strong>Order ID:</strong> ${data.order_id}</p>
-            <p><strong>Client:</strong> ${data.legal_name} (${data.email})</p>
-            <p><strong>Topic:</strong> ${data.topic}</p>
-            <p><strong>Tier:</strong> ${data.service_tier}</p>
-            <p><strong>Quote:</strong> ₦${finalQuote.toLocaleString()}</p>
-            <br/>
-            <p>Please log in to your admin dashboard to review the brief and files.</p>
-          </div>
-        `
-      })
-    });
-  } catch (emailErr) {
-    console.warn('Silent failure on admin email notification. Order still created.', emailErr);
-  }
+  // Send emails (unchanged)
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const orderEmailData = {
+    order_id: data.order_id,
+    legal_name: data.legal_name,
+    email: data.email,
+    topic: data.topic,
+    financial_quote: finalQuote,
+    service_tier: data.service_tier,
+    deadline: data.deadline,
+  };
+
+  // 1. Send confirmation to client
+  const clientTemplate = emailTemplates.clientOrderConfirmation(orderEmailData);
+  await fetch(`${baseUrl}/api/send-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      to: data.email,
+      orderId: data.order_id,
+      subject: clientTemplate.subject,
+      html: clientTemplate.html,
+    }),
+  }).catch(e => console.warn('Client email failed', e));
+
+  // 2. Send notification to admin
+  const adminTemplate = emailTemplates.adminNewOrder(orderEmailData);
+  await fetch(`${baseUrl}/api/send-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      to: 'subskription.noreply@gmail.com',
+      orderId: data.order_id,
+      subject: adminTemplate.subject,
+      html: adminTemplate.html,
+    }),
+  }).catch(e => console.warn('Admin email failed', e));
 
   return { success: true, orderDbId: data.id, orderStringId: data.order_id, finalQuote };
 }
