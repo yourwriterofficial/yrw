@@ -421,7 +421,7 @@ function AdminDashboardContent() {
                   <div className="flex gap-4 items-end">
                     <div className="flex-1">
                       <label className="text-[10px] text-zinc-400 uppercase font-bold ml-1 block mb-2">Final Financial Quote (₦)</label>
-                      <input type="number" className="w-full bg-black border border-white/10 rounded-xl p-4 font-black text-lg focus:border-purple-500 outline-none text-white" value={editingOrder['Financial Quote']} onChange={e => setEditingOrder({...editingOrder, 'Financial Quote': parseFloat(e.target.value)})} />
+                      <input type="number" className="w-full bg-black border border-white/10 rounded-xl p-4 font-black text-lg focus:border-purple-500 outline-none text-white" value={editingOrder['Financial Quote'] ?? ''} onChange={e => setEditingOrder({...editingOrder, 'Financial Quote': parseFloat(e.target.value)})} />
                     </div>
                     <div className="flex-1">
                       <label className="text-[10px] text-zinc-400 uppercase font-bold ml-1 block mb-2">Workflow State</label>
@@ -460,8 +460,8 @@ function AdminDashboardContent() {
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-4 border-b border-white/5 pb-2">Manual Actions</h3>
                   <div className="flex gap-3">
-                    <button onClick={() => generateInvoice(editingOrder['Order ID'], editingOrder['Financial Quote'] * 0.6, editingOrder['Email'], editingOrder['Legal Name'], 'DEPOSIT')} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition border border-white/5 flex items-center justify-center gap-2"><lucide.Send className="w-4 h-4" /> Force 60% Invoice Link</button>
-                    <button onClick={() => generateInvoice(editingOrder['Order ID'], editingOrder['Financial Quote'] * 0.4, editingOrder['Email'], editingOrder['Legal Name'], 'BALANCE')} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition border border-white/5 flex items-center justify-center gap-2"><lucide.Send className="w-4 h-4" /> Force 40% Invoice Link</button>
+                    <button onClick={() => generateInvoice(editingOrder['Order ID'], (editingOrder['Financial Quote'] ?? 0) * 0.6, editingOrder['Email'], editingOrder['Legal Name'], 'DEPOSIT')} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition border border-white/5 flex items-center justify-center gap-2"><lucide.Send className="w-4 h-4" /> Force 60% Invoice Link</button>
+<button onClick={() => generateInvoice(editingOrder['Order ID'], (editingOrder['Financial Quote'] ?? 0) * 0.4, editingOrder['Email'], editingOrder['Legal Name'], 'BALANCE')} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition border border-white/5 flex items-center justify-center gap-2"><lucide.Send className="w-4 h-4" /> Force 40% Invoice Link</button>
                   </div>
                 </div>
 
