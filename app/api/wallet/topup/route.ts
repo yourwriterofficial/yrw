@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         email,
-        amount: amount * 100, // convert to kobo
+        amount: amount * 100,
         reference,
         callback_url: callbackUrl,
         metadata: { type: 'wallet_topup', userId, amount },
