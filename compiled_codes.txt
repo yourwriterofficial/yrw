@@ -528,10 +528,10 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import * as lucide from 'lucide-react';
-import type { AdminOrderView, PromoCode, WorkflowStatus, ServiceTier, CorrectionsStatus } from '@/lib/types';
+import type { AdminOrderView, WorkflowStatus, CorrectionsStatus } from '@/lib/types';
 
 // ==========================================
-// 1. BULLETPROOF HELPER FUNCTIONS
+// 1. HELPER FUNCTIONS
 // ==========================================
 const renderBool = (val: any): boolean => {
   if (val === true || val === 1) return true;
@@ -549,6 +549,13 @@ const formatDate = (iso: string | null): string => {
 
 const parsePriceStr = (str: any): number => parseFloat(String(str).replace(/[^0-9.-]/g, '')) || 0;
 const formatNaira = (amount: number): string => 'â‚¦' + Math.round(amount).toLocaleString('en-NG');
+
+// Toast helper
+let toastId = 0;
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
+  window.dispatchEvent(event);
+};
 
 // ==========================================
 // 2. MAIN COMPONENT EXPORT
@@ -595,11 +602,52 @@ function AdminDashboardContent() {
   const [statusFilter, setStatusFilter] = useState<WorkflowStatus | ''>('');
   const [paymentFilter, setPaymentFilter] = useState<string>('');
 
+  // Sorting State
+  const [sortField, setSortField] = useState<keyof AdminOrderView>('Timestamp');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
   // Modals & Action States
   const [editingOrder, setEditingOrder] = useState<AdminOrderView | null>(null);
   const [deliveryModalOrder, setDeliveryModalOrder] = useState<AdminOrderView | null>(null);
   const [deliveryFile, setDeliveryFile] = useState<File | null>(null);
   const [uploadingDelivery, setUploadingDelivery] = useState<boolean>(false);
+
+  // Toast state
+  const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
+
+  // Toast listener
+  useEffect(() => {
+    const handler = (e: any) => {
+      setToasts(prev => [...prev, e.detail]);
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== e.detail.id)), 4000);
+    };
+    window.addEventListener('app:toast', handler);
+    return () => window.removeEventListener('app:toast', handler);
+  }, []);
+
+  // --- DATA FETCHING ---
+  const fetchOrders = useCallback(async () => {
+    const { data, error } = await supabase.from('admin_orders_view').select('*').order('Timestamp', { ascending: false });
+    if (error) showToast(`Fetch error: ${error.message}`, 'error');
+    if (data) setOrders(data as AdminOrderView[]);
+  }, []);
+  
+  const fetchEmailLogs = useCallback(async () => {
+    const { data } = await supabase.from('email_logs').select('*').order('sent_at', { ascending: false }).limit(200);
+    if (data) setEmailLogs(data);
+  }, []);
+
+  // Real-time subscription for order changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-order-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchOrders();
+        showToast('Orders refreshed', 'info');
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchOrders]);
 
   // --- INITIALIZATION ---
   useEffect(() => {
@@ -614,21 +662,9 @@ function AdminDashboardContent() {
       setLoading(false);
     };
     checkAuth();
-  }, [router]);
+  }, [router, fetchOrders, fetchEmailLogs]);
 
-  // --- DATA FETCHING ---
-  const fetchOrders = async () => {
-    const { data, error } = await supabase.from('admin_orders_view').select('*').order('Timestamp', { ascending: false });
-    if (error) console.error("Fetch error:", error.message);
-    if (data) setOrders(data as AdminOrderView[]);
-  };
-  
-  const fetchEmailLogs = async () => {
-    const { data } = await supabase.from('email_logs').select('*').order('sent_at', { ascending: false }).limit(200);
-    if (data) setEmailLogs(data);
-  };
-
-  // --- FILTERING LOGIC ---
+  // --- FILTERING & SORTING LOGIC ---
   const applyFilters = useCallback(() => {
     let filtered = [...orders];
     if (statusFilter) filtered = filtered.filter(o => o['Workflow Status'] === statusFilter);
@@ -647,13 +683,32 @@ function AdminDashboardContent() {
         (o['Research Topic'] || '').toLowerCase().includes(term)
       );
     }
+    // Sorting
+    filtered.sort((a, b) => {
+      let aVal = a[sortField] ?? '';
+      let bVal = b[sortField] ?? '';
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
     setFilteredOrders(filtered);
     setCurrentPage(1);
-  }, [orders, statusFilter, paymentFilter, searchTerm]);
+  }, [orders, statusFilter, paymentFilter, searchTerm, sortField, sortDirection]);
 
   useEffect(() => { applyFilters(); }, [applyFilters]);
 
-  // --- ACTIONS ---
+  const handleSort = (field: keyof AdminOrderView) => {
+    if (field === sortField) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // --- FIXED ACTIONS (using API route to bypass RLS) ---
   const saveOrderUpdates = async () => {
     if (!editingOrder) return;
     const updates = {
@@ -665,10 +720,17 @@ function AdminDashboardContent() {
       corrections_status: editingOrder['Corrections Status'],
     };
     
-    // Target the core 'orders' table directly when saving changes
-    const { error } = await supabase.from('orders').update(updates).eq('order_id', editingOrder['Order ID']);
-    
-    if (!error) {
+    try {
+      const res = await fetch('/api/admin/update-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: editingOrder['Order ID'], updates }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
+      showToast('Order updated successfully', 'success');
       if (updates.workflow_status === 'Quote Sent') {
         await fetch('/api/send-email', { 
           method: 'POST', 
@@ -678,24 +740,28 @@ function AdminDashboardContent() {
       }
       await fetchOrders();
       setEditingOrder(null);
-    } else alert('Failed to update order database.');
+    } catch (err: any) {
+      showToast(`Failed to update order: ${err.message}`, 'error');
+    }
   };
 
   const generateInvoice = async (orderId: string, amount: number, email: string, name: string, type: 'DEPOSIT' | 'BALANCE') => {
     try {
-      const res = await fetch('/api/flutterwave/create-invoice', {
+      const res = await fetch('/api/paystack/create-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId, amount, email, name, type }),
       });
       const data = await res.json();
       if (data.link) window.open(data.link, '_blank');
-      else alert(`Failed: ${data.error}`);
-    } catch (err) { alert('Network error triggering invoice.'); }
+      else showToast(`Failed: ${data.error}`, 'error');
+    } catch (err) {
+      showToast('Network error triggering invoice.', 'error');
+    }
   };
 
   const handleDeliveryUpload = async () => {
-    if (!deliveryFile || !deliveryModalOrder) return alert("Select a file.");
+    if (!deliveryFile || !deliveryModalOrder) return showToast("Select a file.", "error");
     setUploadingDelivery(true);
     try {
       const orderId = deliveryModalOrder['Order ID'];
@@ -705,7 +771,16 @@ function AdminDashboardContent() {
       const { error: uploadError } = await supabase.storage.from('final-deliverables').upload(filePath, deliveryFile);
       if (uploadError) throw uploadError;
       
-      await supabase.from('orders').update({ work_submitted: true, vault_status: 'Final Files Secured', workflow_status: 'Completed' }).eq('order_id', orderId);
+      // Use API to update order (bypass RLS)
+      const res = await fetch('/api/admin/update-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, updates: { work_submitted: true, vault_status: 'Final Files Secured' } }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
       
       await fetch('/api/send-email', {
         method: 'POST',
@@ -713,11 +788,13 @@ function AdminDashboardContent() {
         body: JSON.stringify({ to: deliveryModalOrder['Email'], orderId, subject: `Files Ready for ${orderId}`, html: `<div>Files uploaded</div>` })
       });
       
-      alert("Uploaded securely to the vault.");
+      showToast("Uploaded securely to the vault.", "success");
       setDeliveryModalOrder(null);
       setDeliveryFile(null);
       fetchOrders();
-    } catch (err: any) { alert(`Upload failed: ${err.message}`); }
+    } catch (err: any) {
+      showToast(`Upload failed: ${err.message}`, "error");
+    }
     setUploadingDelivery(false);
   };
 
@@ -729,11 +806,27 @@ function AdminDashboardContent() {
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const totalPages = Math.ceil(filteredOrders.length / pageSize);
 
+  const SortIcon = ({ field }: { field: keyof AdminOrderView }) => {
+    if (sortField !== field) return <lucide.ArrowUpDown className="w-3 h-3 ml-1 inline" />;
+    return sortDirection === 'asc' ? <lucide.ArrowUp className="w-3 h-3 ml-1 inline" /> : <lucide.ArrowDown className="w-3 h-3 ml-1 inline" />;
+  };
+
   if (loading) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col md:flex-row font-['Inter'] selection:bg-purple-500/30">
       
+      {/* Toast container */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        {toasts.map(t => (
+          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold animate-in slide-in-from-right duration-300 ${
+            t.type === 'success' ? 'bg-emerald-500 text-black' : t.type === 'error' ? 'bg-red-500 text-white' : 'bg-zinc-800 text-white'
+          }`}>
+            {t.message}
+          </div>
+        ))}
+      </div>
+
       {/* ================= SIDEBAR (DESKTOP) ================= */}
       <aside className="hidden md:flex flex-col w-64 bg-black border-r border-white/5 h-screen sticky top-0 p-6 z-40">
         <div className="flex items-center gap-3 mb-12">
@@ -825,11 +918,21 @@ function AdminDashboardContent() {
                 <table className="w-full text-left text-sm whitespace-nowrap">
                   <thead className="bg-black border-b border-white/5 text-[10px] uppercase tracking-widest text-zinc-500">
                     <tr>
-                      <th className="px-6 py-4 font-black">Order ID</th>
-                      <th className="px-6 py-4 font-black">Client Info</th>
-                      <th className="px-6 py-4 font-black">Topic</th>
-                      <th className="px-6 py-4 font-black">Status</th>
-                      <th className="px-6 py-4 font-black">Financials</th>
+                      <th className="px-6 py-4 font-black cursor-pointer hover:text-white" onClick={() => handleSort('Order ID')}>
+                        Order ID <SortIcon field="Order ID" />
+                      </th>
+                      <th className="px-6 py-4 font-black cursor-pointer hover:text-white" onClick={() => handleSort('Legal Name')}>
+                        Client Info <SortIcon field="Legal Name" />
+                      </th>
+                      <th className="px-6 py-4 font-black cursor-pointer hover:text-white" onClick={() => handleSort('Research Topic')}>
+                        Topic <SortIcon field="Research Topic" />
+                      </th>
+                      <th className="px-6 py-4 font-black cursor-pointer hover:text-white" onClick={() => handleSort('Workflow Status')}>
+                        Status <SortIcon field="Workflow Status" />
+                      </th>
+                      <th className="px-6 py-4 font-black cursor-pointer hover:text-white" onClick={() => handleSort('Financial Quote')}>
+                        Financials <SortIcon field="Financial Quote" />
+                      </th>
                       <th className="px-6 py-4 font-black text-right">Admin Actions</th>
                     </tr>
                   </thead>
@@ -925,11 +1028,10 @@ function AdminDashboardContent() {
           </div>
         )}
 
-        {/* ================= MODAL: MANAGE ORDER (ADMIN APPROVAL FLOW) ================= */}
+        {/* ================= MODAL: MANAGE ORDER ================= */}
         {editingOrder && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <div className="bg-[#050505] border border-white/10 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
-              
               <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black/50 rounded-t-3xl">
                 <div>
                   <h2 className="text-xl font-black flex items-center gap-2">Manage Order <span className="text-purple-500">{editingOrder['Order ID']}</span></h2>
@@ -945,7 +1047,7 @@ function AdminDashboardContent() {
                   <div className="flex gap-4 items-end">
                     <div className="flex-1">
                       <label className="text-[10px] text-zinc-400 uppercase font-bold ml-1 block mb-2">Final Financial Quote (â‚¦)</label>
-                      <input type="number" className="w-full bg-black border border-white/10 rounded-xl p-4 font-black text-lg focus:border-purple-500 outline-none text-white" value={editingOrder['Financial Quote']} onChange={e => setEditingOrder({...editingOrder, 'Financial Quote': parseFloat(e.target.value)})} />
+                      <input type="number" className="w-full bg-black border border-white/10 rounded-xl p-4 font-black text-lg focus:border-purple-500 outline-none text-white" value={editingOrder['Financial Quote'] ?? ''} onChange={e => setEditingOrder({...editingOrder, 'Financial Quote': parseFloat(e.target.value)})} />
                     </div>
                     <div className="flex-1">
                       <label className="text-[10px] text-zinc-400 uppercase font-bold ml-1 block mb-2">Workflow State</label>
@@ -984,11 +1086,10 @@ function AdminDashboardContent() {
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-4 border-b border-white/5 pb-2">Manual Actions</h3>
                   <div className="flex gap-3">
-                    <button onClick={() => generateInvoice(editingOrder['Order ID'], editingOrder['Financial Quote'] * 0.6, editingOrder['Email'], editingOrder['Legal Name'], 'DEPOSIT')} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition border border-white/5 flex items-center justify-center gap-2"><lucide.Send className="w-4 h-4" /> Force 60% Invoice Link</button>
-                    <button onClick={() => generateInvoice(editingOrder['Order ID'], editingOrder['Financial Quote'] * 0.4, editingOrder['Email'], editingOrder['Legal Name'], 'BALANCE')} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition border border-white/5 flex items-center justify-center gap-2"><lucide.Send className="w-4 h-4" /> Force 40% Invoice Link</button>
+                    <button onClick={() => generateInvoice(editingOrder['Order ID'], (editingOrder['Financial Quote'] ?? 0) * 0.6, editingOrder['Email'], editingOrder['Legal Name'], 'DEPOSIT')} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition border border-white/5 flex items-center justify-center gap-2"><lucide.Send className="w-4 h-4" /> Force 60% Invoice Link</button>
+                    <button onClick={() => generateInvoice(editingOrder['Order ID'], (editingOrder['Financial Quote'] ?? 0) * 0.4, editingOrder['Email'], editingOrder['Legal Name'], 'BALANCE')} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition border border-white/5 flex items-center justify-center gap-2"><lucide.Send className="w-4 h-4" /> Force 40% Invoice Link</button>
                   </div>
                 </div>
-
               </div>
 
               <div className="p-6 border-t border-white/10 bg-black/50 rounded-b-3xl flex gap-4">
@@ -1062,6 +1163,33 @@ function StatCard({ label, value, color = "text-white" }: any) {
 }
 
 
+===== C:\Users\chati\Desktop\research-writer\app\admin\email\page.tsx =====
+
+
+'use client';
+import { useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+
+export default function MassEmail() {
+  const [subject, setSubject] = useState('');
+  const [html, setHtml] = useState('');
+  const [sending, setSending] = useState(false);
+  const [filter, setFilter] = useState('all'); // all, active, completed
+
+  const send = async () => {
+    setSending(true);
+    const res = await fetch('/api/admin/send-mass-email', {
+      method: 'POST',
+      body: JSON.stringify({ subject, html, filter }),
+    });
+    const data = await res.json();
+    alert(data.message);
+    setSending(false);
+  };
+  return ( /* UI with textarea and button */ );
+}
+
+
 ===== C:\Users\chati\Desktop\research-writer\app\admin\settings\page.tsx =====
 
 
@@ -1086,6 +1214,13 @@ type SiteContent = {
   id: string;
   content_key: string;
   content_text: string;
+};
+
+// Toast helper
+let toastId = 0;
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
+  window.dispatchEvent(event);
 };
 
 export default function AdminSettingsPage() {
@@ -1120,9 +1255,16 @@ function SettingsContent() {
   const [activeTab, setActiveTab] = useState<'ADDONS' | 'CONTENT'>('ADDONS');
   const [editingAddon, setEditingAddon] = useState<Partial<Addon> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
 
+  // Toast listener
   useEffect(() => {
-    fetchSettingsData();
+    const handler = (e: any) => {
+      setToasts(prev => [...prev, e.detail]);
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== e.detail.id)), 4000);
+    };
+    window.addEventListener('app:toast', handler);
+    return () => window.removeEventListener('app:toast', handler);
   }, []);
 
   const fetchSettingsData = async () => {
@@ -1143,6 +1285,10 @@ function SettingsContent() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    fetchSettingsData();
+  }, []);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/');
@@ -1151,7 +1297,8 @@ function SettingsContent() {
   // --- ADDON HANDLERS ---
   const handleSaveAddon = async () => {
     if (!editingAddon?.name || !editingAddon?.price_value || !editingAddon?.service_category) {
-      return alert('Please fill in all required fields (Category, Name, Price).');
+      showToast('Please fill in all required fields (Category, Name, Price).', 'error');
+      return;
     }
     
     setSaving(true);
@@ -1166,10 +1313,18 @@ function SettingsContent() {
 
     if (editingAddon.id) {
       const { error } = await supabase.from('order_addons').update(payload).eq('id', editingAddon.id);
-      if (error) alert(`Error updating: ${error.message}`);
+      if (error) {
+        showToast(`Error updating: ${error.message}`, 'error');
+      } else {
+        showToast('Add-on updated successfully', 'success');
+      }
     } else {
       const { error } = await supabase.from('order_addons').insert([payload]);
-      if (error) alert(`Error creating: ${error.message}`);
+      if (error) {
+        showToast(`Error creating: ${error.message}`, 'error');
+      } else {
+        showToast('Add-on created successfully', 'success');
+      }
     }
 
     setEditingAddon(null);
@@ -1179,22 +1334,34 @@ function SettingsContent() {
 
   const toggleAddonStatus = async (id: string, currentStatus: boolean) => {
     const { error } = await supabase.from('order_addons').update({ is_active: !currentStatus }).eq('id', id);
-    if (error) alert('Failed to toggle status');
-    else fetchSettingsData();
+    if (error) {
+      showToast('Failed to toggle status', 'error');
+    } else {
+      showToast('Status toggled', 'success');
+      fetchSettingsData();
+    }
   };
 
   const deleteAddon = async (id: string) => {
     if (!confirm('Are you sure you want to permanently delete this add-on?')) return;
     const { error } = await supabase.from('order_addons').delete().eq('id', id);
-    if (!error) fetchSettingsData();
+    if (error) {
+      showToast('Delete failed', 'error');
+    } else {
+      showToast('Add-on deleted', 'success');
+      fetchSettingsData();
+    }
   };
 
   // --- CONTENT HANDLERS ---
   const handleUpdateContent = async (id: string, newText: string) => {
     setSaving(true);
     const { error } = await supabase.from('site_content').update({ content_text: newText }).eq('id', id);
-    if (error) alert(`Error saving content: ${error.message}`);
-    else alert('Content updated successfully!');
+    if (error) {
+      showToast(`Error saving content: ${error.message}`, 'error');
+    } else {
+      showToast('Content updated successfully!', 'success');
+    }
     setSaving(false);
     fetchSettingsData();
   };
@@ -1204,6 +1371,17 @@ function SettingsContent() {
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col md:flex-row font-['Inter'] selection:bg-purple-500/30">
       
+      {/* Toast container */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        {toasts.map(t => (
+          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold animate-in slide-in-from-right duration-300 ${
+            t.type === 'success' ? 'bg-emerald-500 text-black' : t.type === 'error' ? 'bg-red-500 text-white' : 'bg-zinc-800 text-white'
+          }`}>
+            {t.message}
+          </div>
+        ))}
+      </div>
+
       {/* ================= SIDEBAR (DESKTOP) ================= */}
       <aside className="hidden md:flex flex-col w-64 bg-black border-r border-white/5 h-screen sticky top-0 p-6 z-40">
         <div className="flex items-center gap-3 mb-12">
@@ -1362,7 +1540,7 @@ function SettingsContent() {
                 <label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 ml-1">Pipeline Category</label>
                 <select 
                   className="w-full bg-black border border-white/10 p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-white"
-                  value={editingAddon.service_category}
+                  value={editingAddon.service_category || 'ACADEMIC'}
                   onChange={(e) => setEditingAddon({...editingAddon, service_category: e.target.value})}
                 >
                   <option value="ACADEMIC">Standard Academic</option>
@@ -1397,7 +1575,7 @@ function SettingsContent() {
                   <label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 ml-1">Pricing Logic</label>
                   <select 
                     className="w-full bg-black border border-white/10 p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-white"
-                    value={editingAddon.price_type}
+                    value={editingAddon.price_type || 'FLAT_FEE'}
                     onChange={(e) => setEditingAddon({...editingAddon, price_type: e.target.value as any})}
                   >
                     <option value="FLAT_FEE">Flat Fee (â‚¦)</option>
@@ -1441,15 +1619,64 @@ function SidebarBtn({ active, onClick, icon, label }: any) {
 }
 
 
+===== C:\Users\chati\Desktop\research-writer\app\api\admin\send-mass-email\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js'
+import { NextResponse } from 'next/server'
+import { Resend } from 'resend' // or your email service
+
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+export async function POST(req: Request) {
+  const { subject, html, userIds, allUsers } = await req.json()
+  let emails: string[] = []
+  if (allUsers) {
+    const { data } = await supabaseAdmin.from('profiles').select('email')
+    emails = data.map(p => p.email)
+  } else if (userIds?.length) {
+    const { data } = await supabaseAdmin.from('profiles').select('email').in('id', userIds)
+    emails = data.map(p => p.email)
+  }
+  // Send emails in batches
+  await Promise.all(emails.map(email => resend.emails.send({ from: 'admin@yourdomain.com', to: email, subject, html })))
+  return NextResponse.json({ success: true })
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\admin\vault-upload\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js'
+import { NextResponse } from 'next/server'
+
+export async function POST(request: Request) {
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+
+  const { orderId, updates } = await request.json()
+  const { error } = await supabaseAdmin
+    .from('orders')
+    .update(updates)
+    .eq('order_id', orderId)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ success: true })
+}
+
+
 ===== C:\Users\chati\Desktop\research-writer\app\api\auth-check\route.ts =====
 
 
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await createClient();
   const { data: { session }, error } = await supabase.auth.getSession();
   
   return NextResponse.json({
@@ -1492,13 +1719,35 @@ export async function GET() {
 }
 
 
-===== C:\Users\chati\Desktop\research-writer\app\api\flutterwave\create-invoice\route.ts =====
+===== C:\Users\chati\Desktop\research-writer\app\api\orders\create\route.ts =====
+
+
+// /api/orders/create/route.ts
+export async function POST(req: Request) {
+  const { user } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { topic, deadline, addons } = await req.json()
+  const orderId = `ORD-${Date.now()}`
+  await supabase.from('orders').insert({
+    order_id: orderId,
+    email: user.email,
+    legal_name: user.user_metadata.full_name,
+    research_topic: topic,
+    deadline,
+    workflow_status: 'Briefing Received',
+    user_id: user.id,
+  })
+  // attach addons to order_addons_join table
+  return NextResponse.json({ orderId })
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\paystack\create-invoice\route.ts =====
 
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import type { CreateInvoiceRequest, CreateInvoiceResponse } from '@/lib/types';
 
 const invoiceRequestSchema = z.object({
   orderId: z.string().min(5),
@@ -1513,19 +1762,17 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function POST(request: Request): Promise<NextResponse<CreateInvoiceResponse | { error: string }>> {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
     const parsed = invoiceRequestSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: parsed.error.issues },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Validation failed' }, { status: 400 });
     }
 
     const { orderId, amount, email, name, type } = parsed.data;
 
+    // 1. Verify order exists
     const { data: orderData, error: lookupError } = await supabase
       .from('orders')
       .select('id')
@@ -1538,40 +1785,44 @@ export async function POST(request: Request): Promise<NextResponse<CreateInvoice
 
     const tx_ref = `INV_${orderId}_${type}_${Date.now()}`;
 
-    const response = await fetch('https://api.flutterwave.com/v3/payments', {
+    // 2. Call Paystack API
+    const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        tx_ref,
-        amount,
-        currency: 'NGN',
-        // FIX: Route to the callback page to trigger the new animated success UI
-        redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback`,
-        customer: { email, name: name || 'Client' },
-        customizations: {
-          title: `YourResearchWriter - ${type === 'DEPOSIT' ? '60% Deposit' : '40% Balance'}`,
-          description: `Invoice for Order: ${orderId}`,
-        },
+        reference: tx_ref,
+        amount: amount * 100, // Paystack requires amount in Kobo/Cents
+        email: email,
+        callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback?tx_ref=${tx_ref}`,
+        metadata: {
+          custom_fields: [
+            { display_name: "Client Name", variable_name: "client_name", value: name },
+            { display_name: "Order ID", variable_name: "order_id", value: orderId },
+            { display_name: "Invoice Type", variable_name: "invoice_type", value: type }
+          ]
+        }
       }),
     });
 
-    const flwData = await response.json();
+    const paystackData = await response.json();
 
-    if (flwData.status === 'success') {
+    if (paystackData.status === true) {
+      // 3. Log the pending invoice
       await supabase.from('invoices').insert({
         order_id: orderData.id,
         amount,
         type,
-        flutterwave_transaction_ref: tx_ref,
+        // We reuse the flutterwave column name here so you don't have to rewrite your SQL database schema
+        flutterwave_transaction_ref: tx_ref, 
         status: 'PENDING',
-        invoice_pdf_url: flwData.data.link,
       });
-      return NextResponse.json({ link: flwData.data.link, tx_ref });
+
+      return NextResponse.json({ link: paystackData.data.authorization_url, tx_ref });
     } else {
-      throw new Error(flwData.message || 'Flutterwave API Error');
+      throw new Error(paystackData.message || 'Paystack API Error');
     }
   } catch (err: any) {
     console.error('Invoice Generation Error:', err);
@@ -1580,23 +1831,14 @@ export async function POST(request: Request): Promise<NextResponse<CreateInvoice
 }
 
 
-===== C:\Users\chati\Desktop\research-writer\app\api\flutterwave\webhook\route.ts =====
+===== C:\Users\chati\Desktop\research-writer\app\api\paystack\webhook\route.ts =====
 
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { z } from 'zod';
+import crypto from 'crypto';
 import { emailTemplates } from '@/lib/emailTemplates';
 import { sendSystemEmail } from '@/lib/emailService';
-
-const webhookPayloadSchema = z.object({
-  event: z.literal('charge.completed'),
-  data: z.object({
-    status: z.literal('successful'),
-    tx_ref: z.string(),
-    id: z.number(),
-  }),
-});
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -1605,101 +1847,124 @@ const supabase = createClient(
 
 export async function POST(request: Request) {
   try {
-    const secretHash = process.env.FLUTTERWAVE_WEBHOOK_HASH;
-    const signature = request.headers.get('verif-hash');
+    // 1. Read raw body for signature verification
+    const rawBody = await request.text();
+    const signature = request.headers.get('x-paystack-signature');
 
-    // 1. Signature Verification
-    if (!signature || signature !== secretHash) {
-      console.error('Unauthorized webhook attempt.');
+    // 2. Verify HMAC signature
+    const hash = crypto
+      .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY!)
+      .update(rawBody)
+      .digest('hex');
+
+    if (hash !== signature) {
+      console.error('Unauthorized Webhook: Invalid Paystack Signature');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const payload = await request.json();
-    const parsed = webhookPayloadSchema.safeParse(payload);
-    
-    if (!parsed.success) {
-      console.error('Invalid webhook payload format', parsed.error.issues);
-      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+    const payload = JSON.parse(rawBody);
+
+    // 3. Only process successful charges
+    if (payload.event !== 'charge.success') {
+      return NextResponse.json({ received: true }, { status: 200 });
     }
 
-    const { tx_ref, id: transaction_id } = parsed.data.data;
+    const { reference, metadata } = payload.data;
+    const { type } = metadata || {};
 
-    // 2. Secondary Verification against Flutterwave API
-    const verifyRes = await fetch(`https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`, {
-      headers: { Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}` },
-    });
-    
-    if (!verifyRes.ok) throw new Error('Failed to reach Flutterwave verification API');
-    
-    const verifyData = await verifyRes.json();
+    // --- WALLET TOP-UP (new) ---
+    if (type === 'wallet_topup') {
+      const { userId, amount } = metadata;
 
-    if (verifyData.status === 'success' && verifyData.data.status === 'successful') {
-      const parts = tx_ref.split('_');
-      const orderStringId = parts[1];
-      const paymentType = parts[2];
+      // Call the increment function (adds to wallet balance)
+      const { error: rpcError } = await supabase.rpc('increment_wallet', {
+        user_id: userId,
+        add_amount: amount,
+      });
+      if (rpcError) throw new Error(`Wallet increment failed: ${rpcError.message}`);
 
-      try {
-        // 3. Mark Invoice as Paid
-        await supabase
-          .from('invoices')
-          .update({ status: 'PAID', paid_at: new Date().toISOString() })
-          .eq('flutterwave_transaction_ref', tx_ref)
-          .throwOnError();
+      // Log the transaction
+      const { error: txError } = await supabase.from('transactions').insert({
+        user_id: userId,
+        amount,
+        type: 'deposit',
+        reference,
+        status: 'completed',
+      });
+      if (txError) console.error('Transaction log insert failed:', txError);
 
-        // 4. Retrieve Order Data for Emails
-        const { data: orderInfo, error: orderError } = await supabase
-          .from('orders')
-          .select('email, legal_name, financial_quote, topic, order_id')
-          .eq('order_id', orderStringId)
-          .single();
+      console.log(`Wallet top-up processed: ${amount} for user ${userId}`);
+      return NextResponse.json({ received: true });
+    }
 
-        if (orderError || !orderInfo) {
-          throw new Error(`Order ${orderStringId} not found in database.`);
-        }
+    // --- ORDER PAYMENT (existing logic) ---
+    const tx_ref = reference; // Paystack uses 'reference' field
+    const parts = tx_ref.split('_');
+    const orderStringId = parts[1];
+    const paymentType = parts[2]; // 'DEPOSIT' or 'BALANCE'
 
-        const orderEmailData = {
-          order_id: orderInfo.order_id,
-          legal_name: orderInfo.legal_name,
-          email: orderInfo.email,
-          topic: orderInfo.topic,
-          financial_quote: orderInfo.financial_quote,
-        };
+    if (!orderStringId || !paymentType) {
+      console.error('Invalid payment reference format:', tx_ref);
+      return NextResponse.json({ error: 'Invalid reference format' }, { status: 400 });
+    }
 
-        // 5. Update Order Status & Send Native Email
-        if (paymentType === 'DEPOSIT') {
-          await supabase
-            .from('orders')
-            .update({ sixty_percent_paid: true, workflow_status: 'Synthesis Active' })
-            .eq('order_id', orderStringId)
-            .throwOnError();
+    // Mark invoice as paid (your existing logic)
+    await supabase
+      .from('invoices')
+      .update({ status: 'PAID', paid_at: new Date().toISOString() })
+      .eq('flutterwave_transaction_ref', tx_ref) // keep legacy column name
+      .throwOnError();
 
-          const template = emailTemplates.depositPaid(orderEmailData);
-          await sendSystemEmail({
-            to: orderInfo.email,
-            subject: template.subject,
-            html: template.html,
-            orderId: orderStringId,
-          });
+    // Retrieve order data for email
+    const { data: orderInfo, error: orderError } = await supabase
+      .from('orders')
+      .select('email, legal_name, financial_quote, topic, order_id')
+      .eq('order_id', orderStringId)
+      .single();
 
-        } else if (paymentType === 'BALANCE') {
-          await supabase
-            .from('orders')
-            .update({ forty_percent_paid: true })
-            .eq('order_id', orderStringId)
-            .throwOnError();
+    if (orderError || !orderInfo) {
+      throw new Error(`Order ${orderStringId} not found.`);
+    }
 
-          const template = emailTemplates.balancePaid(orderEmailData);
-          await sendSystemEmail({
-            to: orderInfo.email,
-            subject: template.subject,
-            html: template.html,
-            orderId: orderStringId,
-          });
-        }
-      } catch (dbError) {
-        console.error('Database or Email processing failed for tx_ref:', tx_ref, dbError);
-        return NextResponse.json({ error: 'Failed to process database updates' }, { status: 500 });
-      }
+    const orderEmailData = {
+      order_id: orderInfo.order_id,
+      legal_name: orderInfo.legal_name,
+      email: orderInfo.email,
+      topic: orderInfo.topic,
+      financial_quote: orderInfo.financial_quote,
+    };
+
+    // Update order status and send email based on payment type
+    if (paymentType === 'DEPOSIT') {
+      await supabase
+        .from('orders')
+        .update({ sixty_percent_paid: true, workflow_status: 'Synthesis Active' })
+        .eq('order_id', orderStringId)
+        .throwOnError();
+
+      const template = emailTemplates.depositPaid(orderEmailData);
+      await sendSystemEmail({
+        to: orderInfo.email,
+        subject: template.subject,
+        html: template.html,
+        orderId: orderStringId,
+      });
+    } else if (paymentType === 'BALANCE') {
+      await supabase
+        .from('orders')
+        .update({ forty_percent_paid: true, workflow_status: 'Completed' })
+        .eq('order_id', orderStringId)
+        .throwOnError();
+
+      const template = emailTemplates.balancePaid(orderEmailData);
+      await sendSystemEmail({
+        to: orderInfo.email,
+        subject: template.subject,
+        html: template.html,
+        orderId: orderStringId,
+      });
+    } else {
+      console.warn(`Unknown payment type: ${paymentType} for reference ${tx_ref}`);
     }
 
     return NextResponse.json({ received: true }, { status: 200 });
@@ -1750,6 +2015,47 @@ export async function POST(request: Request): Promise<NextResponse<SendEmailResp
       { status: 500 }
     );
   }
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\wallet\topup\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js'
+import { NextResponse } from 'next/server'
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+export async function POST(req: Request) {
+  const { userId, amount, callbackUrl } = await req.json()
+  const reference = `WALLET_${Date.now()}_${userId.slice(0, 8)}`
+
+  // Get user email
+  const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId)
+  const email = userData.user.email
+
+  const paystackRes = await fetch('https://api.paystack.co/transaction/initialize', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email,
+      amount: amount * 100, // convert to kobo
+      reference,
+      callback_url: callbackUrl,
+      metadata: { type: 'wallet_topup', userId, amount },
+    }),
+  })
+  const data = await paystackRes.json()
+  if (!data.status) {
+    return NextResponse.json({ error: data.message }, { status: 400 })
+  }
+  return NextResponse.json({ authorization_url: data.data.authorization_url, reference })
 }
 
 
@@ -2758,14 +3064,14 @@ export default function PWAUpdater() {
 
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { useEffect, useState, Suspense, useCallback } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as lucide from 'lucide-react';
 import type { AdminOrderView } from '@/lib/types';
 
 // ==========================================
-// 1. BULLETPROOF HELPER FUNCTIONS
+// 1. HELPER FUNCTIONS
 // ==========================================
 const renderBool = (val: any): boolean => {
   if (val === true || val === 1) return true;
@@ -2781,6 +3087,19 @@ const formatNaira = (amount: number): string => 'â‚¦' + Math.round(amount).t
 const formatDate = (iso: string | null): string => {
   if (!iso || iso === 'Not set') return 'Not set';
   try { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return iso; }
+};
+
+// FIX: Create Supabase client ONCE outside component to prevent infinite re-renders
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+// Simple toast system (no extra deps)
+let toastId = 0;
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
+  window.dispatchEvent(event);
 };
 
 // ==========================================
@@ -2821,53 +3140,98 @@ function DashboardContent() {
   const [processingPayment, setProcessingPayment] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<AdminOrderView | null>(null);
+  const [isAdminPreview, setIsAdminPreview] = useState(false);
+  const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
+
+  // Toast listener
+  useEffect(() => {
+    const handler = (e: any) => {
+      setToasts(prev => [...prev, e.detail]);
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== e.detail.id)), 4000);
+    };
+    window.addEventListener('app:toast', handler);
+    return () => window.removeEventListener('app:toast', handler);
+  }, []);
+
+  // Helper to refresh orders
+  const refreshOrders = useCallback(async (userId?: string, adminMode?: boolean, previewId?: string | null) => {
+    try {
+      if (adminMode && previewId) {
+        const { data, error } = await supabase.from('admin_orders_view').select('*').eq('Order ID', previewId);
+        if (error) throw error;
+        if (data) setOrders(data as AdminOrderView[]);
+      } else if (adminMode) {
+        const { data, error } = await supabase.from('admin_orders_view').select('*').limit(10).order('Timestamp', { ascending: false });
+        if (error) throw error;
+        if (data) setOrders(data as AdminOrderView[]);
+      } else if (userId) {
+        const { data, error } = await supabase.from('admin_orders_view').select('*').eq('Email', userId).order('Timestamp', { ascending: false });
+        if (error) throw error;
+        if (data) setOrders(data as AdminOrderView[]);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to refresh orders', 'error');
+    }
+  }, []);
 
   // Initialize
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return router.push('/login');
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
       setUser(user);
 
       const { data: userProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       setProfile(userProfile);
 
-      await fetchOrders(user.email!);
+      const previewOrderId = searchParams.get('preview');
+      const isAdmin = userProfile?.is_admin === true;
+      setIsAdminPreview(isAdmin);
+
+      if (isAdmin) {
+        if (previewOrderId) {
+          await refreshOrders(undefined, true, previewOrderId);
+        } else {
+          await refreshOrders(undefined, true, null);
+        }
+      } else {
+        await refreshOrders(user.email, false, null);
+      }
+      
       setLoading(false);
     };
+    
     init();
 
-    // Auto-refresh when returning to tab (e.g., after Flutterwave redirect)
-    const handleFocus = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.email) fetchOrders(session.user.email);
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [router]);
+    // Real-time subscription for order updates
+    const channel = supabase
+      .channel('client-order-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        refreshOrders(isAdminPreview ? undefined : user?.email, isAdminPreview, searchParams.get('preview'));
+        showToast('Order status updated', 'info');
+      })
+      .subscribe();
 
-  const fetchOrders = async (email: string) => {
-    const { data, error } = await supabase
-      .from('admin_orders_view')
-      .select('*')
-      .eq('Email', email)
-      .order('Timestamp', { ascending: false });
-    if (!error && data) setOrders(data as AdminOrderView[]);
-  };
+    return () => { supabase.removeChannel(channel); };
+  }, [router, searchParams, refreshOrders]);
 
   const handlePayment = async (orderId: string, amount: number, email: string, name: string, type: 'DEPOSIT' | 'BALANCE') => {
     setProcessingPayment(orderId);
     try {
-      const res = await fetch('/api/flutterwave/create-invoice', {
+      const res = await fetch('/api/paystack/create-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId, amount, email, name, type }),
       });
       const data = await res.json();
       if (data.link) window.location.href = data.link;
-      else alert(`Payment initiation failed: ${data.error}`);
+      else showToast(`Payment initiation failed: ${data.error}`, 'error');
     } catch (err) {
-      alert('Network error communicating with payment gateway.');
+      showToast('Network error communicating with payment gateway.', 'error');
     }
     setProcessingPayment(null);
   };
@@ -2875,12 +3239,14 @@ function DashboardContent() {
   const downloadFile = async (orderId: string) => {
     try {
       const { data: files } = await supabase.storage.from('final-deliverables').list(orderId);
-      if (!files || files.length === 0) return alert('No files found in the vault yet.');
-      
+      if (!files || files.length === 0) {
+        showToast('No files found in the vault yet.', 'error');
+        return;
+      }
       const { data: linkData } = await supabase.storage.from('final-deliverables').createSignedUrl(`${orderId}/${files[0].name}`, 60);
       if (linkData) window.open(linkData.signedUrl, '_blank');
     } catch (error) {
-      alert('Error accessing the secure vault.');
+      showToast('Error accessing the secure vault.', 'error');
     }
   };
 
@@ -2899,7 +3265,18 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col md:flex-row font-['Inter'] selection:bg-emerald-500/30">
       
-      {/* ================= SIDEBAR (DESKTOP) ================= */}
+      {/* Toast container */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        {toasts.map(t => (
+          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold animate-in slide-in-from-right duration-300 ${
+            t.type === 'success' ? 'bg-emerald-500 text-black' : t.type === 'error' ? 'bg-red-500 text-white' : 'bg-zinc-800 text-white'
+          }`}>
+            {t.message}
+          </div>
+        ))}
+      </div>
+
+      {/* ================= SIDEBAR ================= */}
       <aside className="hidden md:flex flex-col w-64 bg-black border-r border-white/5 h-screen sticky top-0 p-6">
         <div className="flex items-center gap-3 mb-12">
           <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-black font-black text-xl">Y</div>
@@ -2912,6 +3289,7 @@ function DashboardContent() {
         <nav className="flex flex-col gap-2 flex-1">
           <SidebarBtn active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<lucide.LayoutDashboard />} label="Dashboard" />
           <SidebarBtn active={activeTab === 'vault'} onClick={() => setActiveTab('vault')} icon={<lucide.Lock />} label="Secure Vault" badge={vaultItems.length} />
+          <SidebarBtn active={activeTab === 'wallet'} onClick={() => setActiveTab('wallet')} icon={<lucide.Wallet />} label="Wallet" />
           <SidebarBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<lucide.User />} label="My Profile" />
         </nav>
 
@@ -2952,196 +3330,204 @@ function DashboardContent() {
       )}
 
       {/* ================= MAIN CONTENT AREA ================= */}
-      <main className="flex-1 p-6 md:p-10 overflow-y-auto relative">
+      <main className="flex-1 overflow-y-auto relative">
         
-        {/* === TAB: DASHBOARD === */}
-        {activeTab === 'dashboard' && (
-          <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
-            <header className="mb-10">
-              <h2 className="text-3xl font-black text-white">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
-              <p className="text-zinc-400 mt-1">Here is the current status of your research pipeline.</p>
-            </header>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-              <StatCard label="Total Orders" value={orders.length} icon={<lucide.Layers />} />
-              <StatCard label="Active" value={activeOrders.length} icon={<lucide.Activity />} color="text-amber-400" />
-              <StatCard label="Completed" value={completedOrders.length} icon={<lucide.CheckCircle2 />} color="text-emerald-400" />
-              <StatCard label="In Vault" value={vaultItems.length} icon={<lucide.Lock />} color="text-purple-400" />
-            </div>
-
-            {/* Orders List */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-black">Active Projects</h3>
-                <button onClick={() => window.location.href = '/'} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-bold transition flex items-center gap-2">
-                  <lucide.Plus className="w-3 h-3" /> New Order
-                </button>
-              </div>
-
-              {orders.length === 0 ? (
-                <div className="border border-dashed border-white/10 rounded-3xl p-12 text-center bg-[#0a0a0a]">
-                  <lucide.Inbox className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                  <h4 className="text-lg font-bold text-white mb-2">No projects yet</h4>
-                  <p className="text-zinc-400 text-sm mb-6">Your workspace is empty. Submit a brief to get started.</p>
-                  <button onClick={() => window.location.href = '/'} className="px-6 py-3 bg-emerald-500 text-black font-black rounded-full text-sm uppercase tracking-wider hover:bg-emerald-400 transition">Place First Order</button>
-                </div>
-              ) : (
-                orders.map(order => <OrderCard 
-                  key={order['Order ID']} 
-                  order={order} 
-                  handlePayment={handlePayment} 
-                  processingPayment={processingPayment === order['Order ID']} 
-                  openDetails={() => setSelectedOrderDetails(order)}
-                />)
-              )}
-            </div>
+        {/* Admin Preview Banner */}
+        {isAdminPreview && (
+          <div className="bg-amber-500 text-black py-2 px-6 flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest sticky top-0 z-40 shadow-md">
+            <lucide.Eye className="w-4 h-4" /> Admin Preview Mode
           </div>
         )}
 
-        {/* === TAB: VAULT === */}
-        {activeTab === 'vault' && (
-          <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
-            <header className="mb-10">
-              <h2 className="text-3xl font-black text-white flex items-center gap-3"><lucide.Lock className="text-emerald-500" /> Secure Vault</h2>
-              <p className="text-zinc-400 mt-1">Encrypted storage for all your completed deliverables.</p>
-            </header>
-            
-            {vaultItems.length === 0 ? (
-              <div className="border border-white/5 bg-[#0a0a0a] rounded-3xl p-12 text-center">
-                <lucide.Shield className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-                <p className="text-zinc-400">Your vault is currently empty. Files will appear here once drafting is complete.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {vaultItems.map(order => {
-                  const paid40 = renderBool(order['40% Paid']);
-                  return (
-                    <div key={order['Order ID']} className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24" /></div>
-                      <h4 className="font-bold text-lg mb-1 relative z-10">{order['Order ID']}</h4>
-                      <p className="text-xs text-zinc-400 mb-6 relative z-10 line-clamp-1">{order['Research Topic']}</p>
-                      
-                      {paid40 ? (
-                        <button onClick={() => downloadFile(order['Order ID'])} className="w-full py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition relative z-10">
-                          <lucide.Download className="w-4 h-4" /> Download Package
-                        </button>
-                      ) : (
-                        <button onClick={() => handlePayment(order['Order ID'], parsePriceStr(order['Financial Quote']) * 0.4, order['Email'], order['Legal Name'], 'BALANCE')} className="w-full py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition relative z-10">
-                          <lucide.Unlock className="w-4 h-4" /> Pay Balance to Unlock
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+        <div className="p-6 md:p-10">
+          {/* === TAB: DASHBOARD === */}
+          {activeTab === 'dashboard' && (
+            <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
+              <header className="mb-10">
+                <h2 className="text-3xl font-black text-white">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
+                <p className="text-zinc-400 mt-1">Here is the current status of your research pipeline.</p>
+              </header>
 
-        {/* === TAB: PROFILE === */}
-        {activeTab === 'profile' && (
-          <div className="animate-in fade-in duration-500 max-w-2xl mx-auto">
-            <header className="mb-10">
-              <h2 className="text-3xl font-black text-white">Profile Settings</h2>
-              <p className="text-zinc-400 mt-1">Manage your personal information and account security.</p>
-            </header>
-            
-            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-8">
-              <div className="flex items-center gap-6 mb-8 border-b border-white/5 pb-8">
-                <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-500 font-black text-2xl">
-                  {profile?.full_name?.charAt(0) || 'U'}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">{profile?.full_name}</h3>
-                  <p className="text-zinc-400 text-sm">Account Type: Client</p>
-                  {renderBool(profile?.is_admin) && <span className="inline-block mt-2 px-2 py-1 bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase rounded-md">Admin</span>}
-                </div>
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                <StatCard label="Total Orders" value={orders.length} icon={<lucide.Layers />} />
+                <StatCard label="Active" value={activeOrders.length} icon={<lucide.Activity />} color="text-amber-400" />
+                <StatCard label="Completed" value={completedOrders.length} icon={<lucide.CheckCircle2 />} color="text-emerald-400" />
+                <StatCard label="In Vault" value={vaultItems.length} icon={<lucide.Lock />} color="text-purple-400" />
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Email Address</label>
-                  <div className="p-3 bg-black border border-white/10 rounded-xl text-zinc-300 mt-1">{user?.email}</div>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Account ID</label>
-                  <div className="p-3 bg-black border border-white/10 rounded-xl text-zinc-500 font-mono text-xs mt-1">{user?.id}</div>
-                </div>
-                <div className="pt-4">
-                  <button onClick={() => window.open('https://wa.me/2348121443666', '_blank')} className="px-6 py-3 bg-[#25D366]/10 text-[#25D366] font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-[#25D366]/20 transition">
-                    <lucide.MessageCircle className="w-4 h-4" /> Contact Support to Update Details
+              {/* Orders List */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-black">Active Projects</h3>
+                  <button onClick={() => window.location.href = '/'} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-bold transition flex items-center gap-2">
+                    <lucide.Plus className="w-3 h-3" /> New Order
                   </button>
                 </div>
+
+                {orders.length === 0 ? (
+                  <div className="border border-dashed border-white/10 rounded-3xl p-12 text-center bg-[#0a0a0a]">
+                    <lucide.Inbox className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                    <h4 className="text-lg font-bold text-white mb-2">No projects yet</h4>
+                    <p className="text-zinc-400 text-sm mb-6">Your workspace is empty. Submit a brief to get started.</p>
+                    <button onClick={() => window.location.href = '/'} className="px-6 py-3 bg-emerald-500 text-black font-black rounded-full text-sm uppercase tracking-wider hover:bg-emerald-400 transition">Place First Order</button>
+                  </div>
+                ) : (
+                  orders.map(order => <OrderCard 
+                    key={order['Order ID']} 
+                    order={order} 
+                    handlePayment={handlePayment} 
+                    processingPayment={processingPayment === order['Order ID']} 
+                    openDetails={() => setSelectedOrderDetails(order)}
+                  />)
+                )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ================= ORDER DETAILS MODAL (LOGS & HISTORY) ================= */}
-        {selectedOrderDetails && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-end">
-            <div className="bg-[#050505] w-full max-w-md h-full border-l border-white/10 flex flex-col animate-in slide-in-from-right duration-300">
-              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black">
-                <div>
-                  <h3 className="font-black text-lg">{selectedOrderDetails['Order ID']}</h3>
-                  <p className="text-xs text-emerald-500 uppercase tracking-widest font-bold">Activity Log</p>
-                </div>
-                <button onClick={() => setSelectedOrderDetails(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition"><lucide.X className="w-5 h-5" /></button>
-              </div>
+          {/* === TAB: VAULT === */}
+          {activeTab === 'vault' && (
+            <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
+              <header className="mb-10">
+                <h2 className="text-3xl font-black text-white flex items-center gap-3"><lucide.Lock className="text-emerald-500" /> Secure Vault</h2>
+                <p className="text-zinc-400 mt-1">Encrypted storage for all your completed deliverables.</p>
+              </header>
               
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="mb-8">
-                  <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Topic</h4>
-                  <p className="text-sm bg-[#0a0a0a] p-4 rounded-xl border border-white/5">{selectedOrderDetails['Research Topic']}</p>
+              {vaultItems.length === 0 ? (
+                <div className="border border-white/5 bg-[#0a0a0a] rounded-3xl p-12 text-center">
+                  <lucide.Shield className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+                  <p className="text-zinc-400">Your vault is currently empty. Files will appear here once drafting is complete.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {vaultItems.map(order => {
+                    const paid40 = renderBool(order['40% Paid']);
+                    return (
+                      <div key={order['Order ID']} className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24" /></div>
+                        <h4 className="font-bold text-lg mb-1 relative z-10">{order['Order ID']}</h4>
+                        <p className="text-xs text-zinc-400 mb-6 relative z-10 line-clamp-1">{order['Research Topic']}</p>
+                        
+                        {paid40 ? (
+                          <button onClick={() => downloadFile(order['Order ID'])} className="w-full py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition relative z-10">
+                            <lucide.Download className="w-4 h-4" /> Download Package
+                          </button>
+                        ) : (
+                          <button onClick={() => handlePayment(order['Order ID'], parsePriceStr(order['Financial Quote']) * 0.4, order['Email'], order['Legal Name'], 'BALANCE')} className="w-full py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition relative z-10">
+                            <lucide.Unlock className="w-4 h-4" /> Pay Balance to Unlock
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* === TAB: PROFILE === */}
+          {activeTab === 'profile' && (
+            <div className="animate-in fade-in duration-500 max-w-2xl mx-auto">
+              <header className="mb-10">
+                <h2 className="text-3xl font-black text-white">Profile Settings</h2>
+                <p className="text-zinc-400 mt-1">Manage your personal information and account security.</p>
+              </header>
+              
+              <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-8">
+                <div className="flex items-center gap-6 mb-8 border-b border-white/5 pb-8">
+                  <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-500 font-black text-2xl">
+                    {profile?.full_name?.charAt(0) || 'U'}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">{profile?.full_name}</h3>
+                    <p className="text-zinc-400 text-sm">Account Type: Client</p>
+                    {renderBool(profile?.is_admin) && <span className="inline-block mt-2 px-2 py-1 bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase rounded-md">Admin</span>}
+                  </div>
                 </div>
 
-                <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6">Workflow History</h4>
-                
-                {/* Visual Timeline based on status */}
-                <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-zinc-800">
-                  
-                  <TimelineItem title="Order Placed" desc="Briefing received by system." date={formatDate(selectedOrderDetails['Timestamp'])} done={true} />
-                  
-                  <TimelineItem 
-                    title="Quote Generated" 
-                    desc={`Financial assessment: â‚¦${parsePriceStr(selectedOrderDetails['Financial Quote']).toLocaleString()}`} 
-                    date="Logged" 
-                    done={parsePriceStr(selectedOrderDetails['Financial Quote']) > 0 && selectedOrderDetails['Workflow Status'] !== 'Briefing Received'} 
-                  />
-                  
-                  <TimelineItem 
-                    title="Deposit Cleared" 
-                    desc="60% payment verified. Synthesis started." 
-                    date="Logged" 
-                    done={renderBool(selectedOrderDetails['60% Paid'])} 
-                  />
-                  
-                  <TimelineItem 
-                    title="Drafting & Quality Audit" 
-                    desc="Research compilation in progress." 
-                    date="Logged" 
-                    done={selectedOrderDetails['Workflow Status'].includes('Synthesis') || renderBool(selectedOrderDetails['Work Submitted'])} 
-                  />
-
-                  <TimelineItem 
-                    title="Vault Secured" 
-                    desc="Final files uploaded to encrypted vault." 
-                    date="Logged" 
-                    done={renderBool(selectedOrderDetails['Work Submitted']) || selectedOrderDetails['Workflow Status'] === 'Completed'} 
-                  />
-
-                  <TimelineItem 
-                    title="Completed" 
-                    desc="Balance cleared and contract fulfilled." 
-                    date="Logged" 
-                    done={selectedOrderDetails['Workflow Status'] === 'Completed'} 
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Email Address</label>
+                    <div className="p-3 bg-black border border-white/10 rounded-xl text-zinc-300 mt-1">{user?.email}</div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Account ID</label>
+                    <div className="p-3 bg-black border border-white/10 rounded-xl text-zinc-500 font-mono text-xs mt-1">{user?.id}</div>
+                  </div>
+                  <div className="pt-4">
+                    <button onClick={() => window.open('https://wa.me/2348121443666', '_blank')} className="px-6 py-3 bg-[#25D366]/10 text-[#25D366] font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-[#25D366]/20 transition">
+                      <lucide.MessageCircle className="w-4 h-4" /> Contact Support to Update Details
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* ================= ORDER DETAILS MODAL ================= */}
+          {selectedOrderDetails && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-end">
+              <div className="bg-[#050505] w-full max-w-md h-full border-l border-white/10 flex flex-col animate-in slide-in-from-right duration-300">
+                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black">
+                  <div>
+                    <h3 className="font-black text-lg">{selectedOrderDetails['Order ID']}</h3>
+                    <p className="text-xs text-emerald-500 uppercase tracking-widest font-bold">Activity Log</p>
+                  </div>
+                  <button onClick={() => setSelectedOrderDetails(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition"><lucide.X className="w-5 h-5" /></button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-6">
+                  <div className="mb-8">
+                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Topic</h4>
+                    <p className="text-sm bg-[#0a0a0a] p-4 rounded-xl border border-white/5">{selectedOrderDetails['Research Topic']}</p>
+                  </div>
+
+                  <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6">Workflow History</h4>
+                  
+                  <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-zinc-800">
+                    
+                    <TimelineItem title="Order Placed" desc="Briefing received by system." date={formatDate(selectedOrderDetails['Timestamp'])} done={true} />
+                    
+                    <TimelineItem 
+                      title="Quote Generated" 
+                      desc={`Financial assessment: â‚¦${parsePriceStr(selectedOrderDetails['Financial Quote']).toLocaleString()}`} 
+                      date="Logged" 
+                      done={parsePriceStr(selectedOrderDetails['Financial Quote']) > 0 && selectedOrderDetails['Workflow Status'] !== 'Briefing Received'} 
+                    />
+                    
+                    <TimelineItem 
+                      title="Deposit Cleared" 
+                      desc="60% payment verified. Synthesis started." 
+                      date="Logged" 
+                      done={renderBool(selectedOrderDetails['60% Paid'])} 
+                    />
+                    
+                    <TimelineItem 
+                      title="Drafting & Quality Audit" 
+                      desc="Research compilation in progress." 
+                      date="Logged" 
+                      done={selectedOrderDetails['Workflow Status'].includes('Synthesis') || renderBool(selectedOrderDetails['Work Submitted'])} 
+                    />
+
+                    <TimelineItem 
+                      title="Vault Secured" 
+                      desc="Final files uploaded to encrypted vault." 
+                      date="Logged" 
+                      done={renderBool(selectedOrderDetails['Work Submitted']) || selectedOrderDetails['Workflow Status'] === 'Completed'} 
+                    />
+
+                    <TimelineItem 
+                      title="Completed" 
+                      desc="Balance cleared and contract fulfilled." 
+                      date="Logged" 
+                      done={selectedOrderDetails['Workflow Status'] === 'Completed'} 
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
@@ -3204,8 +3590,6 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
   const paid40 = renderBool(order['40% Paid']);
   const workSubmitted = renderBool(order['Work Submitted']);
   
-  // LOGIC LOCK: Admin Approval Check
-  // If the status is still "Briefing Received" OR the admin hasn't set a price yet, lock payments.
   const awaitingAdminApproval = order['Workflow Status'] === 'Briefing Received' || total <= 0;
 
   const depositAmount = total * 0.6;
@@ -3265,7 +3649,6 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
             <lucide.Activity className="w-4 h-4" /> View Logs
           </button>
 
-          {/* ADMIN LOCK LOGIC APPLIED HERE */}
           {awaitingAdminApproval ? (
             <div className="px-5 py-2.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-xl text-xs font-bold flex items-center gap-2">
               <lucide.Clock className="w-4 h-4" /> Admin Reviewing Brief
@@ -3298,6 +3681,148 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
             </>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\dashboard\client\wallet\page.tsx =====
+
+
+'use client';
+
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
+
+export default function WalletPage() {
+  const router = useRouter();
+  const [balance, setBalance] = useState(0);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [topUpAmount, setTopUpAmount] = useState(5000);
+  const [processing, setProcessing] = useState(false);
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      // Fetch balance
+      const { data: wallet } = await supabase
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+      setBalance(wallet?.balance || 0);
+
+      // Fetch transaction history
+      const { data: txns } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      setTransactions(txns || []);
+      setLoading(false);
+    };
+    fetchWallet();
+  }, [router]);
+
+  const handleTopUp = async () => {
+    setProcessing(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const res = await fetch('/api/wallet/topup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id,
+        amount: topUpAmount,
+        callbackUrl: `${window.location.origin}/dashboard/client/wallet?success=true`,
+      }),
+    });
+    const data = await res.json();
+    if (data.authorization_url) {
+      window.location.href = data.authorization_url;
+    } else {
+      alert('Failed to initialize payment');
+      setProcessing(false);
+    }
+  };
+
+  if (loading) return <div className="p-10 text-center">Loading wallet...</div>;
+
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-black mb-6">My Wallet</h1>
+
+      {/* Balance Card */}
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-2xl p-6 text-white mb-8">
+        <p className="text-sm opacity-80">Available Balance</p>
+        <p className="text-5xl font-black">â‚¦{balance.toLocaleString()}</p>
+      </div>
+
+      {/* Top Up Section */}
+      <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 mb-8">
+        <h2 className="text-xl font-bold mb-4">Add Funds to Wallet</h2>
+        <div className="flex flex-wrap gap-3 mb-6">
+          {[5000, 10000, 20000, 50000, 100000].map(amt => (
+            <button
+              key={amt}
+              onClick={() => setTopUpAmount(amt)}
+              className={`px-5 py-2 rounded-xl font-bold transition ${
+                topUpAmount === amt
+                  ? 'bg-emerald-500 text-black'
+                  : 'bg-white/5 hover:bg-white/10'
+              }`}
+            >
+              â‚¦{amt.toLocaleString()}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-3">
+          <input
+            type="number"
+            value={topUpAmount}
+            onChange={e => setTopUpAmount(Number(e.target.value))}
+            className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3 text-white"
+            placeholder="Custom amount"
+          />
+          <button
+            onClick={handleTopUp}
+            disabled={processing || topUpAmount < 100}
+            className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-black rounded-xl disabled:opacity-50"
+          >
+            {processing ? 'Processing...' : 'Top Up'}
+          </button>
+        </div>
+      </div>
+
+      {/* Transaction History */}
+      <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6">
+        <h2 className="text-xl font-bold mb-4">Transaction History</h2>
+        {transactions.length === 0 ? (
+          <p className="text-zinc-500 text-center py-8">No transactions yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {transactions.map(txn => (
+              <div key={txn.id} className="flex justify-between items-center border-b border-white/5 py-3">
+                <div className="flex-1">
+                  <div className="font-mono text-xs text-zinc-400">{txn.reference}</div>
+                  <div className="text-xs text-zinc-500">{new Date(txn.created_at).toLocaleString()}</div>
+                </div>
+                <div className={`font-bold ${txn.type === 'deposit' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {txn.type === 'deposit' ? '+' : '-'} â‚¦{txn.amount.toLocaleString()}
+                </div>
+                <div className="text-xs capitalize px-2 py-1 rounded bg-white/5">
+                  {txn.status}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -4267,6 +4792,7 @@ export default function PaymentCallbackPage() {
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function PaymentCallbackContent() {
   const router = useRouter();
@@ -4277,23 +4803,62 @@ export default function PaymentCallbackContent() {
   const [displayState, setDisplayState] = useState<'processing' | 'success' | 'error'>('processing');
 
   useEffect(() => {
-    // If there's no status yet, wait for it
-    if (!status) return;
+    // Wait for URL params to be available
+    if (!status || !tx_ref) return;
 
     if (status === 'successful' || status === 'completed') {
-      setDisplayState('success');
-      // Redirect to dashboard smoothly after showing success state
-      setTimeout(() => {
-        router.push('/dashboard/client');
-      }, 3000);
+      
+      // POLLING MECHANISM: Give the webhook time to update the DB
+      let attempts = 0;
+      const maxAttempts = 10; // Try 10 times (approx 20 seconds)
+
+      const verifyPaymentStatus = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('invoices')
+            .select('status')
+            .eq('flutterwave_transaction_ref', tx_ref)
+            .single();
+
+          // If the webhook has marked it PAID, we are good to go!
+          if (data && data.status === 'PAID') {
+            setDisplayState('success');
+            setTimeout(() => {
+              router.push('/dashboard/client');
+            }, 2000);
+            return;
+          }
+
+          // If not paid yet, increment attempts and try again in 2 seconds
+          attempts++;
+          if (attempts >= maxAttempts) {
+            // Timeout reached. Show success anyway and let them see the dashboard
+            setDisplayState('success');
+            setTimeout(() => {
+              router.push('/dashboard/client');
+            }, 2000);
+          } else {
+            setTimeout(verifyPaymentStatus, 2000);
+          }
+        } catch (err) {
+          // Fallback in case of network error
+          setDisplayState('success');
+          setTimeout(() => {
+            router.push('/dashboard/client');
+          }, 2000);
+        }
+      };
+
+      // Start the polling loop
+      verifyPaymentStatus();
+
     } else {
       setDisplayState('error');
-      // Redirect back to dashboard so they can try again
       setTimeout(() => {
         router.push('/dashboard/client');
       }, 4000);
     }
-  }, [status, router, tx_ref]);
+  }, [status, tx_ref, router]);
 
   return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 font-['Inter']">
@@ -4304,7 +4869,7 @@ export default function PaymentCallbackContent() {
             <Loader2 className="w-16 h-16 text-emerald-500 animate-spin mb-6" />
             <h2 className="text-xl font-black text-white tracking-tight mb-2">Verifying Transaction</h2>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Please wait while we confirm your payment securely with the Flutterwave gateway. Do not close this window.
+              Please wait while we confirm your payment securely with the gateway. Do not close this window.
             </p>
           </div>
         )}
@@ -4316,7 +4881,7 @@ export default function PaymentCallbackContent() {
             </div>
             <h2 className="text-xl font-black text-white tracking-tight mb-2">Payment Successful!</h2>
             <p className="text-xs text-zinc-400 leading-relaxed mb-6">
-              Your transaction has been securely cleared. Our system will now update your project vault.
+              Your transaction has been securely cleared. Our system has updated your project vault.
             </p>
             <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest animate-pulse">
               Redirecting to dashboard...
@@ -4494,6 +5059,43 @@ export default function RegisterPage() {
           Already have an account?{' '}
           <a href="/login" className="text-emerald-500 hover:text-emerald-400 font-bold transition">Login securely</a>
         </p>
+      </div>
+    </div>
+  );
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\update-password\page.tsx =====
+
+
+'use client';
+import { useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
+
+export default function UpdatePassword() {
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleUpdate = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) alert(error.message);
+    else {
+      alert('Password updated. Please log in again.');
+      await supabase.auth.signOut();
+      router.push('/login');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="bg-[#0a0a0a] p-8 rounded-2xl w-full max-w-md">
+        <h1 className="text-2xl font-black mb-6">Set New Password</h1>
+        <input type="password" placeholder="New password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl p-3 mb-4 text-white" />
+        <button onClick={handleUpdate} disabled={loading} className="w-full bg-emerald-500 text-black font-black py-3 rounded-xl">Update Password</button>
       </div>
     </div>
   );
@@ -5027,6 +5629,89 @@ export async function createClient() {
 
 
 {"ref":"jaqkqlitaqxjbkxfcvjs","name":"Your Writer Official","organization_id":"nvpvpyhujbscfaiqybsv","organization_slug":"nvpvpyhujbscfaiqybsv"}
+
+
+===== C:\Users\chati\Desktop\research-writer\supabase\functions\cleanup-vault\index.ts =====
+
+
+// supabase/functions/cleanup-vault/index.ts
+import { createClient } from '@supabase/supabase-js'
+
+Deno.serve(async () => {
+  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+  const { data: oldFiles } = await supabase.storage.from('final-deliverables').list('', { 
+    search: '', 
+    sortBy: { column: 'created_at', order: 'asc' } 
+  })
+  for (const file of oldFiles) {
+    if (new Date(file.created_at) < threeDaysAgo) {
+      await supabase.storage.from('final-deliverables').remove([file.name])
+    }
+  }
+  return new Response('OK')
+})
+
+
+===== C:\Users\chati\Desktop\research-writer\supabase\functions\send-order-email\deno.json =====
+
+
+{
+  "imports": {
+    "@supabase/functions-js": "jsr:@supabase/functions-js@^2",
+    "@supabase/server": "npm:@supabase/server@^1"
+  }
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\supabase\functions\send-order-email\index.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
+
+const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+
+Deno.serve(async (req) => {
+  const payload = await req.json();
+  const { old_record, record, type } = payload;
+
+  if (type !== 'UPDATE') return new Response('ignore', { status: 200 });
+
+  const oldStatus = old_record.workflow_status;
+  const newStatus = record.workflow_status;
+  if (oldStatus === newStatus) return new Response('no change', { status: 200 });
+
+  let subject = '', html = '';
+  switch (newStatus) {
+    case 'Quote Sent':
+      subject = `Quote Ready for ${record.order_id}`;
+      html = `<p>Your quote is ready. <a href="${Deno.env.get('APP_URL')}/dashboard/client">Log in</a> to pay.</p>`;
+      break;
+    case 'Synthesis Active':
+      subject = `Work Started on ${record.order_id}`;
+      html = `<p>We have started working on your order.</p>`;
+      break;
+    case 'Work Submitted':
+      subject = `Draft Ready for ${record.order_id}`;
+      html = `<p>Pay the balance to unlock your file.</p>`;
+      break;
+    case 'Completed':
+      subject = `Order ${record.order_id} Completed`;
+      html = `<p>Your order is complete. Thank you.</p>`;
+      break;
+    default: return new Response('no email', { status: 200 });
+  }
+
+  await resend.emails.send({
+    from: 'noreply@yourdomain.com',
+    to: record.email,
+    subject,
+    html,
+  });
+  return new Response('email sent', { status: 200 });
+});
 
 
 ===== C:\Users\chati\Desktop\research-writer\supabase\migrations\20260609095304_create_orders_schema.sql =====

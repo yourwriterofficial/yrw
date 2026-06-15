@@ -12,12 +12,9 @@ const supabase = createClient(
 export async function sendSystemEmail(params: { to: string; subject: string; html: string; orderId?: string }) {
   const { to, subject, html, orderId } = params;
 
-  // Utilize the verified service address
-  const senderEmail = process.env.NODE_ENV === 'production'
-    ? 'YourResearchWriter <subskription.noreply@gmail.com>'
-    : 'YourResearchWriter <onboarding@resend.dev>';
+  // Always use your verified domain
+  const senderEmail = 'YourResearchWriter <noreply@yourresearchwriter.com.ng>';
 
-  // 1. Dispatch Email via Resend
   const { data, error } = await resend.emails.send({
     from: senderEmail,
     to: [to],

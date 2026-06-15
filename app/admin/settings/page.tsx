@@ -21,6 +21,13 @@ type SiteContent = {
   content_text: string;
 };
 
+// Toast helper
+let toastId = 0;
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
+  window.dispatchEvent(event);
+};
+
 export default function AdminSettingsPage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -31,7 +38,7 @@ export default function AdminSettingsPage() {
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+    <div className="flex items-center justify-center min-h-[60vh]">
       <div className="flex flex-col items-center gap-4">
         <div className="w-12 h-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin" />
         <span className="text-purple-500 text-xs font-black uppercase tracking-widest animate-pulse">Loading Config...</span>
@@ -43,7 +50,6 @@ function LoadingScreen() {
 function SettingsContent() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Data States
   const [addons, setAddons] = useState<Addon[]>([]);
@@ -53,9 +59,16 @@ function SettingsContent() {
   const [activeTab, setActiveTab] = useState<'ADDONS' | 'CONTENT'>('ADDONS');
   const [editingAddon, setEditingAddon] = useState<Partial<Addon> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
 
+  // Toast listener
   useEffect(() => {
-    fetchSettingsData();
+    const handler = (e: any) => {
+      setToasts(prev => [...prev, e.detail]);
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== e.detail.id)), 4000);
+    };
+    window.addEventListener('app:toast', handler);
+    return () => window.removeEventListener('app:toast', handler);
   }, []);
 
   const fetchSettingsData = async () => {
@@ -76,15 +89,15 @@ function SettingsContent() {
     setLoading(false);
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-  };
+  useEffect(() => {
+    fetchSettingsData();
+  }, []);
 
   // --- ADDON HANDLERS ---
   const handleSaveAddon = async () => {
     if (!editingAddon?.name || !editingAddon?.price_value || !editingAddon?.service_category) {
-      return alert('Please fill in all required fields (Category, Name, Price).');
+      showToast('Please fill in all required fields (Category, Name, Price).', 'error');
+      return;
     }
     
     setSaving(true);
@@ -99,10 +112,18 @@ function SettingsContent() {
 
     if (editingAddon.id) {
       const { error } = await supabase.from('order_addons').update(payload).eq('id', editingAddon.id);
-      if (error) alert(`Error updating: ${error.message}`);
+      if (error) {
+        showToast(`Error updating: ${error.message}`, 'error');
+      } else {
+        showToast('Add-on updated successfully', 'success');
+      }
     } else {
       const { error } = await supabase.from('order_addons').insert([payload]);
-      if (error) alert(`Error creating: ${error.message}`);
+      if (error) {
+        showToast(`Error creating: ${error.message}`, 'error');
+      } else {
+        showToast('Add-on created successfully', 'success');
+      }
     }
 
     setEditingAddon(null);
@@ -112,76 +133,55 @@ function SettingsContent() {
 
   const toggleAddonStatus = async (id: string, currentStatus: boolean) => {
     const { error } = await supabase.from('order_addons').update({ is_active: !currentStatus }).eq('id', id);
-    if (error) alert('Failed to toggle status');
-    else fetchSettingsData();
+    if (error) {
+      showToast('Failed to toggle status', 'error');
+    } else {
+      showToast('Status toggled', 'success');
+      fetchSettingsData();
+    }
   };
 
   const deleteAddon = async (id: string) => {
     if (!confirm('Are you sure you want to permanently delete this add-on?')) return;
     const { error } = await supabase.from('order_addons').delete().eq('id', id);
-    if (!error) fetchSettingsData();
+    if (error) {
+      showToast('Delete failed', 'error');
+    } else {
+      showToast('Add-on deleted', 'success');
+      fetchSettingsData();
+    }
   };
 
   // --- CONTENT HANDLERS ---
   const handleUpdateContent = async (id: string, newText: string) => {
     setSaving(true);
     const { error } = await supabase.from('site_content').update({ content_text: newText }).eq('id', id);
-    if (error) alert(`Error saving content: ${error.message}`);
-    else alert('Content updated successfully!');
+    if (error) {
+      showToast(`Error saving content: ${error.message}`, 'error');
+    } else {
+      showToast('Content updated successfully!', 'success');
+    }
     setSaving(false);
     fetchSettingsData();
   };
 
   if (loading) return <LoadingScreen />;
 
+  // ===== MAIN CONTENT (NO SIDEBAR – PROVIDED BY LAYOUT) =====
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col md:flex-row font-['Inter'] selection:bg-purple-500/30">
-      
-      {/* ================= SIDEBAR (DESKTOP) ================= */}
-      <aside className="hidden md:flex flex-col w-64 bg-black border-r border-white/5 h-screen sticky top-0 p-6 z-40">
-        <div className="flex items-center gap-3 mb-12">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl"><lucide.Shield className="w-5 h-5" /></div>
-          <div>
-            <h1 className="font-black tracking-tight leading-none text-lg">YRW</h1>
-            <p className="text-[10px] text-purple-500 uppercase tracking-widest font-bold">SysAdmin</p>
+    <>
+      {/* Toast container */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        {toasts.map(t => (
+          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold animate-in slide-in-from-right duration-300 ${
+            t.type === 'success' ? 'bg-emerald-500 text-black' : t.type === 'error' ? 'bg-red-500 text-white' : 'bg-zinc-800 text-white'
+          }`}>
+            {t.message}
           </div>
-        </div>
-
-        <nav className="flex flex-col gap-2 flex-1">
-          <SidebarBtn active={false} onClick={() => router.push('/admin')} icon={<lucide.Database />} label="Order Management" />
-          <div className="my-4 border-t border-white/5"></div>
-          <SidebarBtn active={true} onClick={() => {}} icon={<lucide.Settings />} label="Platform Settings" />
-          <SidebarBtn active={false} onClick={() => window.open('/dashboard/client', '_blank')} icon={<lucide.ExternalLink />} label="View Client UI" />
-        </nav>
-
-        <div className="border-t border-white/10 pt-6 mt-6">
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 text-red-400 hover:text-red-300 transition text-sm font-bold p-2 rounded-lg hover:bg-red-500/10">
-            <lucide.LogOut className="w-4 h-4" /> Terminate Session
-          </button>
-        </div>
-      </aside>
-
-      {/* ================= MOBILE TOPBAR ================= */}
-      <div className="md:hidden bg-black border-b border-white/5 p-4 flex justify-between items-center sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center text-white font-black"><lucide.Shield className="w-4 h-4" /></div>
-          <span className="font-bold text-sm uppercase tracking-widest text-purple-500">Settings</span>
-        </div>
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-white">
-          {mobileMenuOpen ? <lucide.X /> : <lucide.Menu />}
-        </button>
+        ))}
       </div>
 
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-black border-b border-white/5 p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px]">
-          <SidebarBtn active={false} onClick={() => {router.push('/admin'); setMobileMenuOpen(false);}} icon={<lucide.Database />} label="Order Management" />
-          <SidebarBtn active={true} onClick={() => {}} icon={<lucide.Settings />} label="Platform Settings" />
-          <SidebarBtn active={false} onClick={() => window.open('/dashboard/client', '_blank')} icon={<lucide.ExternalLink />} label="View Client UI" />
-        </div>
-      )}
-
-      {/* ================= MAIN CONTENT AREA ================= */}
-      <main className="flex-1 p-6 md:p-10 overflow-y-auto relative max-w-[1600px]">
+      <div className="p-6 md:p-10 overflow-y-auto relative max-w-[1600px]">
         <div className="animate-in fade-in duration-300">
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6 mb-8">
@@ -279,7 +279,7 @@ function SettingsContent() {
             </div>
           )}
         </div>
-      </main>
+      </div>
 
       {/* --- EDIT / ADD MODAL --- */}
       {editingAddon && (
@@ -295,7 +295,7 @@ function SettingsContent() {
                 <label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 ml-1">Pipeline Category</label>
                 <select 
                   className="w-full bg-black border border-white/10 p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-white"
-                  value={editingAddon.service_category}
+                  value={editingAddon.service_category || 'ACADEMIC'}
                   onChange={(e) => setEditingAddon({...editingAddon, service_category: e.target.value})}
                 >
                   <option value="ACADEMIC">Standard Academic</option>
@@ -330,7 +330,7 @@ function SettingsContent() {
                   <label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 ml-1">Pricing Logic</label>
                   <select 
                     className="w-full bg-black border border-white/10 p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-white"
-                    value={editingAddon.price_type}
+                    value={editingAddon.price_type || 'FLAT_FEE'}
                     onChange={(e) => setEditingAddon({...editingAddon, price_type: e.target.value as any})}
                   >
                     <option value="FLAT_FEE">Flat Fee (₦)</option>
@@ -359,16 +359,6 @@ function SettingsContent() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function SidebarBtn({ active, onClick, icon, label }: any) {
-  return (
-    <button onClick={onClick} className={`w-full flex items-center p-3 rounded-xl transition font-bold text-sm ${active ? 'bg-purple-500/10 text-purple-400' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}>
-      <div className="flex items-center gap-3">
-        {icon} <span>{label}</span>
-      </div>
-    </button>
+    </>
   );
 }

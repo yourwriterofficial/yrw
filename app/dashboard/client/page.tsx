@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { useEffect, useState, Suspense, useCallback } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as lucide from 'lucide-react';
 import type { AdminOrderView } from '@/lib/types';
+import WalletPage from './wallet/page'; // Import the wallet component
 
 // ==========================================
-// 1. BULLETPROOF HELPER FUNCTIONS
+// 1. HELPER FUNCTIONS
 // ==========================================
 const renderBool = (val: any): boolean => {
   if (val === true || val === 1) return true;
@@ -23,6 +24,19 @@ const formatNaira = (amount: number): string => '₦' + Math.round(amount).toLoc
 const formatDate = (iso: string | null): string => {
   if (!iso || iso === 'Not set') return 'Not set';
   try { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return iso; }
+};
+
+// FIX: Create Supabase client ONCE outside component to prevent infinite re-renders
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+// Simple toast system (no extra deps)
+let toastId = 0;
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
+  window.dispatchEvent(event);
 };
 
 // ==========================================
@@ -59,76 +73,139 @@ function DashboardContent() {
   const [profile, setProfile] = useState<any>(null);
   const [orders, setOrders] = useState<AdminOrderView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'vault' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'vault' | 'wallet' | 'profile'>('dashboard');
   const [processingPayment, setProcessingPayment] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<AdminOrderView | null>(null);
+  const [isAdminPreview, setIsAdminPreview] = useState(false);
+  const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
+
+  // Toast listener
+  useEffect(() => {
+    const handler = (e: any) => {
+      setToasts(prev => [...prev, e.detail]);
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== e.detail.id)), 4000);
+    };
+    window.addEventListener('app:toast', handler);
+    return () => window.removeEventListener('app:toast', handler);
+  }, []);
+
+  // Helper to refresh orders
+  const refreshOrders = useCallback(async (userId?: string, adminMode?: boolean, previewId?: string | null) => {
+    try {
+      if (adminMode && previewId) {
+        const { data, error } = await supabase.from('admin_orders_view').select('*').eq('Order ID', previewId);
+        if (error) throw error;
+        if (data) setOrders(data as AdminOrderView[]);
+      } else if (adminMode) {
+        const { data, error } = await supabase.from('admin_orders_view').select('*').limit(10).order('Timestamp', { ascending: false });
+        if (error) throw error;
+        if (data) setOrders(data as AdminOrderView[]);
+      } else if (userId) {
+        const { data, error } = await supabase.from('admin_orders_view').select('*').eq('Email', userId).order('Timestamp', { ascending: false });
+        if (error) throw error;
+        if (data) setOrders(data as AdminOrderView[]);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to refresh orders', 'error');
+    }
+  }, []);
 
   // Initialize
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return router.push('/login');
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
       setUser(user);
 
       const { data: userProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       setProfile(userProfile);
 
-      await fetchOrders(user.email!);
+      const previewOrderId = searchParams.get('preview');
+      const isAdmin = userProfile?.is_admin === true;
+      setIsAdminPreview(isAdmin);
+
+      if (isAdmin) {
+        if (previewOrderId) {
+          await refreshOrders(undefined, true, previewOrderId);
+        } else {
+          await refreshOrders(undefined, true, null);
+        }
+      } else {
+        await refreshOrders(user.email, false, null);
+      }
+      
       setLoading(false);
     };
+    
     init();
 
-    // Auto-refresh when returning to tab (e.g., after Flutterwave redirect)
-    const handleFocus = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.email) fetchOrders(session.user.email);
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [router]);
+    // Real-time subscription for order updates
+    const channel = supabase
+      .channel('client-order-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        refreshOrders(isAdminPreview ? undefined : user?.email, isAdminPreview, searchParams.get('preview'));
+        showToast('Order status updated', 'info');
+      })
+      .subscribe();
 
-  const fetchOrders = async (email: string) => {
-    const { data, error } = await supabase
-      .from('admin_orders_view')
-      .select('*')
-      .eq('Email', email)
-      .order('Timestamp', { ascending: false });
-    if (!error && data) setOrders(data as AdminOrderView[]);
-  };
+    return () => { supabase.removeChannel(channel); };
+  }, [router, searchParams, refreshOrders]);
 
   const handlePayment = async (orderId: string, amount: number, email: string, name: string, type: 'DEPOSIT' | 'BALANCE') => {
-  setProcessingPayment(orderId);
-  try {
-    const res = await fetch('/api/paystack/create-invoice', { // <-- Changed URL
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId, amount, email, name, type }),
-    });
-    const data = await res.json();
-    if (data.link) window.location.href = data.link;
-    else alert(`Payment initiation failed: ${data.error}`);
-  } catch (err) {
-    alert('Network error communicating with payment gateway.');
-  }
-  setProcessingPayment(null);
-};
+    setProcessingPayment(orderId);
+    try {
+      const res = await fetch('/api/paystack/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, amount, email, name, type }),
+      });
+      const data = await res.json();
+      if (data.link) window.location.href = data.link;
+      else showToast(`Payment initiation failed: ${data.error}`, 'error');
+    } catch (err) {
+      showToast('Network error communicating with payment gateway.', 'error');
+    }
+    setProcessingPayment(null);
+  };
 
   const downloadFile = async (orderId: string) => {
     try {
       const { data: files } = await supabase.storage.from('final-deliverables').list(orderId);
-      if (!files || files.length === 0) return alert('No files found in the vault yet.');
-      
+      if (!files || files.length === 0) {
+        showToast('No files found in the vault yet.', 'error');
+        return;
+      }
       const { data: linkData } = await supabase.storage.from('final-deliverables').createSignedUrl(`${orderId}/${files[0].name}`, 60);
       if (linkData) window.open(linkData.signedUrl, '_blank');
     } catch (error) {
-      alert('Error accessing the secure vault.');
+      showToast('Error accessing the secure vault.', 'error');
     }
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/');
+  };
+
+  // Password and email reset handlers
+  const handleResetPassword = async () => {
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${window.location.origin}/update-password`,
+    });
+    if (error) showToast(error.message, 'error');
+    else showToast('Password reset email sent. Check your inbox.', 'success');
+  };
+
+  const handleUpdateEmail = async (newEmail: string) => {
+    if (!newEmail) return showToast('Enter new email', 'error');
+    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    if (error) showToast(error.message, 'error');
+    else showToast('Verification email sent. Please confirm your new address.', 'success');
   };
 
   if (loading) return <LoadingScreen />;
@@ -141,7 +218,18 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col md:flex-row font-['Inter'] selection:bg-emerald-500/30">
       
-      {/* ================= SIDEBAR (DESKTOP) ================= */}
+      {/* Toast container */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        {toasts.map(t => (
+          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold animate-in slide-in-from-right duration-300 ${
+            t.type === 'success' ? 'bg-emerald-500 text-black' : t.type === 'error' ? 'bg-red-500 text-white' : 'bg-zinc-800 text-white'
+          }`}>
+            {t.message}
+          </div>
+        ))}
+      </div>
+
+      {/* ================= SIDEBAR ================= */}
       <aside className="hidden md:flex flex-col w-64 bg-black border-r border-white/5 h-screen sticky top-0 p-6">
         <div className="flex items-center gap-3 mb-12">
           <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-black font-black text-xl">Y</div>
@@ -152,10 +240,12 @@ function DashboardContent() {
         </div>
 
         <nav className="flex flex-col gap-2 flex-1">
-          <SidebarBtn active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<lucide.LayoutDashboard />} label="Dashboard" />
-          <SidebarBtn active={activeTab === 'vault'} onClick={() => setActiveTab('vault')} icon={<lucide.Lock />} label="Secure Vault" badge={vaultItems.length} />
-          <SidebarBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<lucide.User />} label="My Profile" />
-        </nav>
+  <SidebarBtn active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<lucide.LayoutDashboard />} label="Dashboard" />
+  <SidebarBtn active={false} onClick={() => router.push('/dashboard/client/order/new')} icon={<lucide.PlusCircle />} label="New Order" />
+  <SidebarBtn active={activeTab === 'vault'} onClick={() => setActiveTab('vault')} icon={<lucide.Lock />} label="Secure Vault" badge={vaultItems.length} />
+  <SidebarBtn active={activeTab === 'wallet'} onClick={() => setActiveTab('wallet')} icon={<lucide.Wallet />} label="Wallet" />
+  <SidebarBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<lucide.User />} label="My Profile" />
+</nav>
 
         <div className="border-t border-white/10 pt-6 mt-6">
           <div className="flex items-center gap-3 mb-6">
@@ -188,211 +278,263 @@ function DashboardContent() {
         <div className="md:hidden bg-black border-b border-white/5 p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px]">
           <SidebarBtn active={activeTab === 'dashboard'} onClick={() => {setActiveTab('dashboard'); setMobileMenuOpen(false);}} icon={<lucide.LayoutDashboard />} label="Dashboard" />
           <SidebarBtn active={activeTab === 'vault'} onClick={() => {setActiveTab('vault'); setMobileMenuOpen(false);}} icon={<lucide.Lock />} label="Secure Vault" />
+          <SidebarBtn active={activeTab === 'wallet'} onClick={() => {setActiveTab('wallet'); setMobileMenuOpen(false);}} icon={<lucide.Wallet />} label="Wallet" />
           <SidebarBtn active={activeTab === 'profile'} onClick={() => {setActiveTab('profile'); setMobileMenuOpen(false);}} icon={<lucide.User />} label="My Profile" />
           <button onClick={handleLogout} className="mt-4 p-3 text-red-400 font-bold text-left flex items-center gap-2"><lucide.LogOut className="w-4 h-4"/> Sign Out</button>
         </div>
       )}
 
       {/* ================= MAIN CONTENT AREA ================= */}
-      <main className="flex-1 p-6 md:p-10 overflow-y-auto relative">
+      <main className="flex-1 overflow-y-auto relative">
         
-        {/* === TAB: DASHBOARD === */}
-        {activeTab === 'dashboard' && (
-          <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
-            <header className="mb-10">
-              <h2 className="text-3xl font-black text-white">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
-              <p className="text-zinc-400 mt-1">Here is the current status of your research pipeline.</p>
-            </header>
+        {/* Admin Preview Banner */}
+        {isAdminPreview && (
+          <div className="bg-amber-500 text-black py-2 px-6 flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest sticky top-0 z-40 shadow-md">
+            <lucide.Eye className="w-4 h-4" /> Admin Preview Mode
+          </div>
+        )}
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-              <StatCard label="Total Orders" value={orders.length} icon={<lucide.Layers />} />
-              <StatCard label="Active" value={activeOrders.length} icon={<lucide.Activity />} color="text-amber-400" />
-              <StatCard label="Completed" value={completedOrders.length} icon={<lucide.CheckCircle2 />} color="text-emerald-400" />
-              <StatCard label="In Vault" value={vaultItems.length} icon={<lucide.Lock />} color="text-purple-400" />
-            </div>
+        <div className="p-6 md:p-10">
+          {/* === TAB: DASHBOARD === */}
+          {activeTab === 'dashboard' && (
+            <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
+              <header className="mb-10">
+                <h2 className="text-3xl font-black text-white">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
+                <p className="text-zinc-400 mt-1">Here is the current status of your research pipeline.</p>
+              </header>
 
-            {/* Orders List */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-black">Active Projects</h3>
-                <button onClick={() => window.location.href = '/'} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-bold transition flex items-center gap-2">
-                  <lucide.Plus className="w-3 h-3" /> New Order
-                </button>
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                <StatCard label="Total Orders" value={orders.length} icon={<lucide.Layers />} />
+                <StatCard label="Active" value={activeOrders.length} icon={<lucide.Activity />} color="text-amber-400" />
+                <StatCard label="Completed" value={completedOrders.length} icon={<lucide.CheckCircle2 />} color="text-emerald-400" />
+                <StatCard label="In Vault" value={vaultItems.length} icon={<lucide.Lock />} color="text-purple-400" />
               </div>
 
-              {orders.length === 0 ? (
-                <div className="border border-dashed border-white/10 rounded-3xl p-12 text-center bg-[#0a0a0a]">
-                  <lucide.Inbox className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                  <h4 className="text-lg font-bold text-white mb-2">No projects yet</h4>
-                  <p className="text-zinc-400 text-sm mb-6">Your workspace is empty. Submit a brief to get started.</p>
-                  <button onClick={() => window.location.href = '/'} className="px-6 py-3 bg-emerald-500 text-black font-black rounded-full text-sm uppercase tracking-wider hover:bg-emerald-400 transition">Place First Order</button>
+              {/* Orders List */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-black">Active Projects</h3>
+                  <button onClick={() => router.push('/dashboard/client/order/new')} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-bold transition flex items-center gap-2">
+  <lucide.Plus className="w-3 h-3" /> New Order
+</button>
+                </div>
+
+                {orders.length === 0 ? (
+                  <div className="border border-dashed border-white/10 rounded-3xl p-12 text-center bg-[#0a0a0a]">
+                    <lucide.Inbox className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                    <h4 className="text-lg font-bold text-white mb-2">No projects yet</h4>
+                    <p className="text-zinc-400 text-sm mb-6">Your workspace is empty. Submit a brief to get started.</p>
+                    <button onClick={() => window.location.href = '/'} className="px-6 py-3 bg-emerald-500 text-black font-black rounded-full text-sm uppercase tracking-wider hover:bg-emerald-400 transition">Place First Order</button>
+                  </div>
+                ) : (
+                  orders.map(order => <OrderCard 
+                    key={order['Order ID']} 
+                    order={order} 
+                    handlePayment={handlePayment} 
+                    processingPayment={processingPayment === order['Order ID']} 
+                    openDetails={() => setSelectedOrderDetails(order)}
+                  />)
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* === TAB: VAULT === */}
+          {activeTab === 'vault' && (
+            <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
+              <header className="mb-10">
+                <h2 className="text-3xl font-black text-white flex items-center gap-3"><lucide.Lock className="text-emerald-500" /> Secure Vault</h2>
+                <p className="text-zinc-400 mt-1">Encrypted storage for all your completed deliverables.</p>
+              </header>
+              
+              {vaultItems.length === 0 ? (
+                <div className="border border-white/5 bg-[#0a0a0a] rounded-3xl p-12 text-center">
+                  <lucide.Shield className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+                  <p className="text-zinc-400">Your vault is currently empty. Files will appear here once drafting is complete.</p>
                 </div>
               ) : (
-                orders.map(order => <OrderCard 
-                  key={order['Order ID']} 
-                  order={order} 
-                  handlePayment={handlePayment} 
-                  processingPayment={processingPayment === order['Order ID']} 
-                  openDetails={() => setSelectedOrderDetails(order)}
-                />)
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {vaultItems.map(order => {
+                    const paid40 = renderBool(order['40% Paid']);
+                    return (
+                      <div key={order['Order ID']} className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24" /></div>
+                        <h4 className="font-bold text-lg mb-1 relative z-10">{order['Order ID']}</h4>
+                        <p className="text-xs text-zinc-400 mb-6 relative z-10 line-clamp-1">{order['Research Topic']}</p>
+                        
+                        {paid40 ? (
+                          <button onClick={() => downloadFile(order['Order ID'])} className="w-full py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition relative z-10">
+                            <lucide.Download className="w-4 h-4" /> Download Package
+                          </button>
+                        ) : (
+                          <button onClick={() => handlePayment(order['Order ID'], parsePriceStr(order['Financial Quote']) * 0.4, order['Email'], order['Legal Name'], 'BALANCE')} className="w-full py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition relative z-10">
+                            <lucide.Unlock className="w-4 h-4" /> Pay Balance to Unlock
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* === TAB: VAULT === */}
-        {activeTab === 'vault' && (
-          <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
-            <header className="mb-10">
-              <h2 className="text-3xl font-black text-white flex items-center gap-3"><lucide.Lock className="text-emerald-500" /> Secure Vault</h2>
-              <p className="text-zinc-400 mt-1">Encrypted storage for all your completed deliverables.</p>
-            </header>
-            
-            {vaultItems.length === 0 ? (
-              <div className="border border-white/5 bg-[#0a0a0a] rounded-3xl p-12 text-center">
-                <lucide.Shield className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-                <p className="text-zinc-400">Your vault is currently empty. Files will appear here once drafting is complete.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {vaultItems.map(order => {
-                  const paid40 = renderBool(order['40% Paid']);
-                  return (
-                    <div key={order['Order ID']} className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24" /></div>
-                      <h4 className="font-bold text-lg mb-1 relative z-10">{order['Order ID']}</h4>
-                      <p className="text-xs text-zinc-400 mb-6 relative z-10 line-clamp-1">{order['Research Topic']}</p>
-                      
-                      {paid40 ? (
-                        <button onClick={() => downloadFile(order['Order ID'])} className="w-full py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition relative z-10">
-                          <lucide.Download className="w-4 h-4" /> Download Package
-                        </button>
-                      ) : (
-                        <button onClick={() => handlePayment(order['Order ID'], parsePriceStr(order['Financial Quote']) * 0.4, order['Email'], order['Legal Name'], 'BALANCE')} className="w-full py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition relative z-10">
-                          <lucide.Unlock className="w-4 h-4" /> Pay Balance to Unlock
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* === TAB: PROFILE === */}
-        {activeTab === 'profile' && (
-          <div className="animate-in fade-in duration-500 max-w-2xl mx-auto">
-            <header className="mb-10">
-              <h2 className="text-3xl font-black text-white">Profile Settings</h2>
-              <p className="text-zinc-400 mt-1">Manage your personal information and account security.</p>
-            </header>
-            
-            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-8">
-              <div className="flex items-center gap-6 mb-8 border-b border-white/5 pb-8">
-                <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-500 font-black text-2xl">
-                  {profile?.full_name?.charAt(0) || 'U'}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">{profile?.full_name}</h3>
-                  <p className="text-zinc-400 text-sm">Account Type: Client</p>
-                  {renderBool(profile?.is_admin) && <span className="inline-block mt-2 px-2 py-1 bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase rounded-md">Admin</span>}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Email Address</label>
-                  <div className="p-3 bg-black border border-white/10 rounded-xl text-zinc-300 mt-1">{user?.email}</div>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Account ID</label>
-                  <div className="p-3 bg-black border border-white/10 rounded-xl text-zinc-500 font-mono text-xs mt-1">{user?.id}</div>
-                </div>
-                <div className="pt-4">
-                  <button onClick={() => window.open('https://wa.me/2348121443666', '_blank')} className="px-6 py-3 bg-[#25D366]/10 text-[#25D366] font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-[#25D366]/20 transition">
-                    <lucide.MessageCircle className="w-4 h-4" /> Contact Support to Update Details
-                  </button>
-                </div>
-              </div>
+          {/* === TAB: WALLET === */}
+          {activeTab === 'wallet' && (
+            <div className="animate-in fade-in duration-500">
+              <WalletPage />
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ================= ORDER DETAILS MODAL (LOGS & HISTORY) ================= */}
-        {selectedOrderDetails && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-end">
-            <div className="bg-[#050505] w-full max-w-md h-full border-l border-white/10 flex flex-col animate-in slide-in-from-right duration-300">
-              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black">
-                <div>
-                  <h3 className="font-black text-lg">{selectedOrderDetails['Order ID']}</h3>
-                  <p className="text-xs text-emerald-500 uppercase tracking-widest font-bold">Activity Log</p>
-                </div>
-                <button onClick={() => setSelectedOrderDetails(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition"><lucide.X className="w-5 h-5" /></button>
-              </div>
+          {/* === TAB: PROFILE (with password/email reset) === */}
+          {activeTab === 'profile' && (
+            <div className="animate-in fade-in duration-500 max-w-2xl mx-auto">
+              <header className="mb-10">
+                <h2 className="text-3xl font-black text-white">Profile Settings</h2>
+                <p className="text-zinc-400 mt-1">Manage your personal information and account security.</p>
+              </header>
               
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="mb-8">
-                  <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Topic</h4>
-                  <p className="text-sm bg-[#0a0a0a] p-4 rounded-xl border border-white/5">{selectedOrderDetails['Research Topic']}</p>
+              <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-8">
+                <div className="flex items-center gap-6 mb-8 border-b border-white/5 pb-8">
+                  <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-500 font-black text-2xl">
+                    {profile?.full_name?.charAt(0) || 'U'}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">{profile?.full_name}</h3>
+                    <p className="text-zinc-400 text-sm">Account Type: Client</p>
+                    {renderBool(profile?.is_admin) && <span className="inline-block mt-2 px-2 py-1 bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase rounded-md">Admin</span>}
+                  </div>
                 </div>
 
-                <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6">Workflow History</h4>
-                
-                {/* Visual Timeline based on status */}
-                <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-zinc-800">
-                  
-                  <TimelineItem title="Order Placed" desc="Briefing received by system." date={formatDate(selectedOrderDetails['Timestamp'])} done={true} />
-                  
-                  <TimelineItem 
-                    title="Quote Generated" 
-                    desc={`Financial assessment: ₦${parsePriceStr(selectedOrderDetails['Financial Quote']).toLocaleString()}`} 
-                    date="Logged" 
-                    done={parsePriceStr(selectedOrderDetails['Financial Quote']) > 0 && selectedOrderDetails['Workflow Status'] !== 'Briefing Received'} 
-                  />
-                  
-                  <TimelineItem 
-                    title="Deposit Cleared" 
-                    desc="60% payment verified. Synthesis started." 
-                    date="Logged" 
-                    done={renderBool(selectedOrderDetails['60% Paid'])} 
-                  />
-                  
-                  <TimelineItem 
-                    title="Drafting & Quality Audit" 
-                    desc="Research compilation in progress." 
-                    date="Logged" 
-                    done={selectedOrderDetails['Workflow Status'].includes('Synthesis') || renderBool(selectedOrderDetails['Work Submitted'])} 
-                  />
+                <div className="space-y-6">
+                  {/* Email display */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Email Address</label>
+                    <div className="p-3 bg-black border border-white/10 rounded-xl text-zinc-300 mt-1">{user?.email}</div>
+                  </div>
 
-                  <TimelineItem 
-                    title="Vault Secured" 
-                    desc="Final files uploaded to encrypted vault." 
-                    date="Logged" 
-                    done={renderBool(selectedOrderDetails['Work Submitted']) || selectedOrderDetails['Workflow Status'] === 'Completed'} 
-                  />
+                  {/* Change Email */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Change Email Address</label>
+                    <div className="flex gap-3 mt-2">
+                      <input
+                        type="email"
+                        id="newEmail"
+                        placeholder="newemail@example.com"
+                        className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                      />
+                      <button
+                        onClick={async () => {
+                          const newEmail = (document.getElementById('newEmail') as HTMLInputElement).value;
+                          await handleUpdateEmail(newEmail);
+                        }}
+                        className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-xl text-xs"
+                      >
+                        Update Email
+                      </button>
+                    </div>
+                  </div>
 
-                  <TimelineItem 
-                    title="Completed" 
-                    desc="Balance cleared and contract fulfilled." 
-                    date="Logged" 
-                    done={selectedOrderDetails['Workflow Status'] === 'Completed'} 
-                  />
+                  {/* Reset Password */}
+                  <div className="pt-2">
+                    <button
+                      onClick={handleResetPassword}
+                      className="px-4 py-2 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl text-xs font-bold"
+                    >
+                      Reset Password
+                    </button>
+                  </div>
+
+                  {/* Account ID */}
+                  <div className="pt-4 border-t border-white/5">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Account ID</label>
+                    <div className="p-3 bg-black border border-white/10 rounded-xl text-zinc-500 font-mono text-xs mt-1">{user?.id}</div>
+                  </div>
+
+                  {/* Support contact */}
+                  <div className="pt-4">
+                    <button onClick={() => window.open('https://wa.me/2348121443666', '_blank')} className="px-6 py-3 bg-[#25D366]/10 text-[#25D366] font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-[#25D366]/20 transition">
+                      <lucide.MessageCircle className="w-4 h-4" /> Contact Support to Update Details
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* ================= ORDER DETAILS MODAL ================= */}
+          {selectedOrderDetails && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-end">
+              <div className="bg-[#050505] w-full max-w-md h-full border-l border-white/10 flex flex-col animate-in slide-in-from-right duration-300">
+                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black">
+                  <div>
+                    <h3 className="font-black text-lg">{selectedOrderDetails['Order ID']}</h3>
+                    <p className="text-xs text-emerald-500 uppercase tracking-widest font-bold">Activity Log</p>
+                  </div>
+                  <button onClick={() => setSelectedOrderDetails(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition"><lucide.X className="w-5 h-5" /></button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-6">
+                  <div className="mb-8">
+                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Topic</h4>
+                    <p className="text-sm bg-[#0a0a0a] p-4 rounded-xl border border-white/5">{selectedOrderDetails['Research Topic']}</p>
+                  </div>
+
+                  <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6">Workflow History</h4>
+                  
+                  <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-zinc-800">
+                    
+                    <TimelineItem title="Order Placed" desc="Briefing received by system." date={formatDate(selectedOrderDetails['Timestamp'])} done={true} />
+                    
+                    <TimelineItem 
+                      title="Quote Generated" 
+                      desc={`Financial assessment: ₦${parsePriceStr(selectedOrderDetails['Financial Quote']).toLocaleString()}`} 
+                      date="Logged" 
+                      done={parsePriceStr(selectedOrderDetails['Financial Quote']) > 0 && selectedOrderDetails['Workflow Status'] !== 'Briefing Received'} 
+                    />
+                    
+                    <TimelineItem 
+                      title="Deposit Cleared" 
+                      desc="60% payment verified. Synthesis started." 
+                      date="Logged" 
+                      done={renderBool(selectedOrderDetails['60% Paid'])} 
+                    />
+                    
+                    <TimelineItem 
+                      title="Drafting & Quality Audit" 
+                      desc="Research compilation in progress." 
+                      date="Logged" 
+                      done={selectedOrderDetails['Workflow Status'].includes('Synthesis') || renderBool(selectedOrderDetails['Work Submitted'])} 
+                    />
+
+                    <TimelineItem 
+                      title="Vault Secured" 
+                      desc="Final files uploaded to encrypted vault." 
+                      date="Logged" 
+                      done={renderBool(selectedOrderDetails['Work Submitted']) || selectedOrderDetails['Workflow Status'] === 'Completed'} 
+                    />
+
+                    <TimelineItem 
+                      title="Completed" 
+                      desc="Balance cleared and contract fulfilled." 
+                      date="Logged" 
+                      done={selectedOrderDetails['Workflow Status'] === 'Completed'} 
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
 }
 
 // ==========================================
-// 4. SUB-COMPONENTS
+// 4. SUB-COMPONENTS (unchanged)
 // ==========================================
-
 function SidebarBtn({ active, onClick, icon, label, badge }: any) {
   return (
     <button onClick={onClick} className={`w-full flex items-center justify-between p-3 rounded-xl transition font-bold text-sm ${active ? 'bg-emerald-500/10 text-emerald-500' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}>
@@ -446,8 +588,6 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
   const paid40 = renderBool(order['40% Paid']);
   const workSubmitted = renderBool(order['Work Submitted']);
   
-  // LOGIC LOCK: Admin Approval Check
-  // If the status is still "Briefing Received" OR the admin hasn't set a price yet, lock payments.
   const awaitingAdminApproval = order['Workflow Status'] === 'Briefing Received' || total <= 0;
 
   const depositAmount = total * 0.6;
@@ -507,7 +647,6 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
             <lucide.Activity className="w-4 h-4" /> View Logs
           </button>
 
-          {/* ADMIN LOCK LOGIC APPLIED HERE */}
           {awaitingAdminApproval ? (
             <div className="px-5 py-2.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-xl text-xs font-bold flex items-center gap-2">
               <lucide.Clock className="w-4 h-4" /> Admin Reviewing Brief
