@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import ThemeToggle from './components/ThemeToggle';
 import { Menu, X, BookOpen, LineChart, PenTool, Briefcase, ArrowRight, CheckCircle2, Shield, Clock } from 'lucide-react';
 
 export default function LandingPage() {
@@ -51,19 +52,20 @@ export default function LandingPage() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8 text-xs font-bold text-zinc-400 uppercase tracking-widest">
-            <a href="#services" className="hover:text-emerald-400 transition">Services</a>
-            <a href="#process" className="hover:text-emerald-400 transition">How it Works</a>
-            {user ? (
-              <>
-                <Link href={isAdmin ? "/admin" : "/dashboard/client"} className="text-white hover:text-emerald-400 transition">
-                  Dashboard
-                </Link>
-                <button onClick={handleLogout} className="text-white hover:text-red-400 transition">Logout</button>
-              </>
-            ) : (
-              <Link href="/login" className="text-white hover:text-emerald-400 transition">Client Login</Link>
-            )}
-          </div>
+  <a href="#services" className="hover:text-emerald-400 transition">Services</a>
+  <a href="#process" className="hover:text-emerald-400 transition">How it Works</a>
+  <ThemeToggle />
+  {user ? (
+    <>
+      <Link href={isAdmin ? "/admin" : "/dashboard/client"} className="text-white hover:text-emerald-400 transition">
+        Dashboard
+      </Link>
+      <button onClick={handleLogout} className="text-white hover:text-red-400 transition">Logout</button>
+    </>
+  ) : (
+    <Link href="/login" className="text-white hover:text-emerald-400 transition">Client Login</Link>
+  )}
+</div>
 
           {/* Mobile Menu Button */}
           <button className="md:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -79,20 +81,21 @@ export default function LandingPage() {
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-black/95 backdrop-blur-md border-b border-white/10 py-4 px-6 flex flex-col gap-4 text-sm font-bold">
-            <a href="#services" onClick={() => setMobileMenuOpen(false)} className="text-zinc-300 hover:text-emerald-400 py-2">Services</a>
-            <a href="#process" onClick={() => setMobileMenuOpen(false)} className="text-zinc-300 hover:text-emerald-400 py-2">How it Works</a>
-            {user ? (
-              <>
-                <Link href={isAdmin ? "/admin" : "/dashboard/client"} onClick={() => setMobileMenuOpen(false)} className="text-white hover:text-emerald-400 py-2">Dashboard</Link>
-                <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="text-red-400 hover:text-red-300 text-left py-2">Logout</button>
-              </>
-            ) : (
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-white hover:text-emerald-400 py-2">Client Login</Link>
-            )}
-            <Link href="#services" onClick={() => setMobileMenuOpen(false)} className="bg-emerald-500 text-black text-center py-3 rounded-full font-black uppercase tracking-wider mt-2">
-              Start Project
-            </Link>
-          </div>
+  <a href="#services" onClick={() => setMobileMenuOpen(false)} className="text-zinc-300 hover:text-emerald-400 py-2">Services</a>
+  <a href="#process" onClick={() => setMobileMenuOpen(false)} className="text-zinc-300 hover:text-emerald-400 py-2">How it Works</a>
+  <ThemeToggle />
+  {user ? (
+    <>
+      <Link href={isAdmin ? "/admin" : "/dashboard/client"} onClick={() => setMobileMenuOpen(false)} className="text-white hover:text-emerald-400 py-2">Dashboard</Link>
+      <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="text-red-400 hover:text-red-300 text-left py-2">Logout</button>
+    </>
+  ) : (
+    <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-white hover:text-emerald-400 py-2">Client Login</Link>
+  )}
+  <Link href="#services" onClick={() => setMobileMenuOpen(false)} className="bg-emerald-500 text-black text-center py-3 rounded-full font-black uppercase tracking-wider mt-2">
+    Start Project
+  </Link>
+</div>
         )}
       </nav>
 

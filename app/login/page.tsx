@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
+import ThemeToggle from '@/app/components/ThemeToggle';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,17 +37,14 @@ export default function LoginPage() {
 
     const isAdminEmail = user.email?.toLowerCase() === 'yourwriterofficial@gmail.com';
 
-    // Ensure profile exists and set admin flag
     await supabase.from('profiles').upsert({
       id: user.id,
       full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
       is_admin: isAdminEmail,
     });
 
-    // Small delay to let session propagate
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Hard redirect to avoid router issues
     if (isAdminEmail) {
       window.location.href = '/admin';
     } else {
@@ -65,33 +65,42 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 font-['Inter']">
-      <div className="bg-[#0a0a0a] border border-zinc-800 p-8 rounded-3xl w-full max-w-md shadow-2xl">
+    <div className="min-h-screen bg-primary text-primary flex items-center justify-center p-4 font-['Inter']">
+      <div className="bg-secondary border border-theme p-8 rounded-3xl w-full max-w-md shadow-2xl">
+        <div className="flex justify-end mb-4">
+          <ThemeToggle />
+        </div>
         <div className="text-center mb-8">
-          <div className="inline-block px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Client Portal</div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Welcome Back</h1>
+          <div className="inline-block px-3 py-1 bg-accent/10 text-accent border border-accent/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
+            Client Portal
+          </div>
+          <h1 className="text-2xl font-black tracking-tight">Welcome Back</h1>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 ml-1">Email Address</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-secondary mb-2 ml-1">
+              Email Address
+            </label>
             <input
               type="email"
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-emerald-500 transition"
+              className="input-box"
               required
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 ml-1">Password</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-secondary mb-2 ml-1">
+              Password
+            </label>
             <input
               type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-emerald-500 transition"
+              className="input-box"
               required
             />
           </div>
@@ -99,7 +108,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-500 text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-xl hover:bg-emerald-400 transition mt-2 disabled:opacity-50"
+            className="w-full bg-accent text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-xl hover:bg-accent-hover transition mt-2 disabled:opacity-50"
           >
             {loading ? 'Authenticating...' : 'Secure Login'}
           </button>
@@ -107,10 +116,10 @@ export default function LoginPage() {
 
         <div className="relative my-8">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-zinc-800"></div>
+            <div className="w-full border-t border-theme"></div>
           </div>
           <div className="relative flex justify-center text-[10px] font-black tracking-widest uppercase">
-            <span className="bg-[#0a0a0a] px-4 text-zinc-600">Or Continue With</span>
+            <span className="bg-secondary px-4 text-secondary">Or Continue With</span>
           </div>
         </div>
 
@@ -129,9 +138,11 @@ export default function LoginPage() {
           Google Authentication
         </button>
 
-        <p className="text-center text-xs text-zinc-500 mt-8">
+        <p className="text-center text-xs text-secondary mt-8">
           Don't have an account?{' '}
-          <a href="/register" className="text-emerald-500 hover:text-emerald-400 font-bold transition">Create one</a>
+          <a href="/register" className="text-accent hover:text-accent-hover font-bold transition">
+            Create one
+          </a>
         </p>
       </div>
     </div>

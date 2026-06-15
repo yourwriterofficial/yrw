@@ -5,7 +5,8 @@ import { createBrowserClient } from '@supabase/ssr';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as lucide from 'lucide-react';
 import type { AdminOrderView } from '@/lib/types';
-import WalletPage from './wallet/page'; // Import the wallet component
+import ThemeToggle from '@/app/components/ThemeToggle';
+import WalletPage from './wallet/page';
 
 // ==========================================
 // 1. HELPER FUNCTIONS
@@ -26,13 +27,11 @@ const formatDate = (iso: string | null): string => {
   try { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return iso; }
 };
 
-// FIX: Create Supabase client ONCE outside component to prevent infinite re-renders
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Simple toast system (no extra deps)
 let toastId = 0;
 const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
   const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
@@ -52,7 +51,7 @@ export default function ClientDashboard() {
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+    <div className="min-h-screen bg-primary text-primary flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
         <span className="text-emerald-500 text-xs font-black uppercase tracking-widest animate-pulse">Initializing Workspace...</span>
@@ -68,7 +67,6 @@ function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // State
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [orders, setOrders] = useState<AdminOrderView[]>([]);
@@ -80,7 +78,6 @@ function DashboardContent() {
   const [isAdminPreview, setIsAdminPreview] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
 
-  // Toast listener
   useEffect(() => {
     const handler = (e: any) => {
       setToasts(prev => [...prev, e.detail]);
@@ -90,7 +87,6 @@ function DashboardContent() {
     return () => window.removeEventListener('app:toast', handler);
   }, []);
 
-  // Helper to refresh orders
   const refreshOrders = useCallback(async (userId?: string, adminMode?: boolean, previewId?: string | null) => {
     try {
       if (adminMode && previewId) {
@@ -112,7 +108,6 @@ function DashboardContent() {
     }
   }, []);
 
-  // Initialize
   useEffect(() => {
     const init = async () => {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -144,7 +139,6 @@ function DashboardContent() {
     
     init();
 
-    // Real-time subscription for order updates
     const channel = supabase
       .channel('client-order-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
@@ -192,7 +186,6 @@ function DashboardContent() {
     router.push('/');
   };
 
-  // Password and email reset handlers
   const handleResetPassword = async () => {
     const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
       redirectTo: `${window.location.origin}/update-password`,
@@ -210,19 +203,18 @@ function DashboardContent() {
 
   if (loading) return <LoadingScreen />;
 
-  // Derived metrics
   const activeOrders = orders.filter(o => o['Workflow Status'] !== 'Completed' && o['Workflow Status'] !== 'Cancelled');
   const completedOrders = orders.filter(o => o['Workflow Status'] === 'Completed');
   const vaultItems = orders.filter(o => renderBool(o['Work Submitted']) || o['Workflow Status'] === 'Completed');
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col md:flex-row font-['Inter'] selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row font-['Inter'] selection:bg-emerald-500/30">
       
       {/* Toast container */}
       <div className="fixed bottom-4 right-4 z-50 space-y-2">
         {toasts.map(t => (
           <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold animate-in slide-in-from-right duration-300 ${
-            t.type === 'success' ? 'bg-emerald-500 text-black' : t.type === 'error' ? 'bg-red-500 text-white' : 'bg-zinc-800 text-white'
+            t.type === 'success' ? 'bg-emerald-500 text-black' : t.type === 'error' ? 'bg-red-500 text-white' : 'bg-card text-primary'
           }`}>
             {t.message}
           </div>
@@ -230,7 +222,7 @@ function DashboardContent() {
       </div>
 
       {/* ================= SIDEBAR ================= */}
-      <aside className="hidden md:flex flex-col w-64 bg-black border-r border-white/5 h-screen sticky top-0 p-6">
+      <aside className="hidden md:flex flex-col w-64 bg-secondary border-r border-theme h-screen sticky top-0 p-6">
         <div className="flex items-center gap-3 mb-12">
           <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-black font-black text-xl">Y</div>
           <div>
@@ -240,21 +232,24 @@ function DashboardContent() {
         </div>
 
         <nav className="flex flex-col gap-2 flex-1">
-  <SidebarBtn active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<lucide.LayoutDashboard />} label="Dashboard" />
-  <SidebarBtn active={false} onClick={() => router.push('/dashboard/client/order/new')} icon={<lucide.PlusCircle />} label="New Order" />
-  <SidebarBtn active={activeTab === 'vault'} onClick={() => setActiveTab('vault')} icon={<lucide.Lock />} label="Secure Vault" badge={vaultItems.length} />
-  <SidebarBtn active={activeTab === 'wallet'} onClick={() => setActiveTab('wallet')} icon={<lucide.Wallet />} label="Wallet" />
-  <SidebarBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<lucide.User />} label="My Profile" />
-</nav>
+          <SidebarBtn active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<lucide.LayoutDashboard />} label="Dashboard" />
+          <SidebarBtn active={false} onClick={() => router.push('/dashboard/client/order/new')} icon={<lucide.PlusCircle />} label="New Order" />
+          <SidebarBtn active={activeTab === 'vault'} onClick={() => setActiveTab('vault')} icon={<lucide.Lock />} label="Secure Vault" badge={vaultItems.length} />
+          <SidebarBtn active={activeTab === 'wallet'} onClick={() => setActiveTab('wallet')} icon={<lucide.Wallet />} label="Wallet" />
+          <SidebarBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<lucide.User />} label="My Profile" />
+        </nav>
 
-        <div className="border-t border-white/10 pt-6 mt-6">
+        <div className="border-t border-theme pt-6 mt-6">
+          <div className="mb-4">
+            <ThemeToggle />
+          </div>
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700">
-              <lucide.User className="w-5 h-5 text-zinc-400" />
+            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center border border-theme">
+              <lucide.User className="w-5 h-5 text-secondary" />
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-bold truncate">{profile?.full_name || 'Client'}</p>
-              <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
+              <p className="text-xs text-secondary truncate">{user?.email}</p>
             </div>
           </div>
           <button onClick={handleLogout} className="w-full flex items-center gap-3 text-red-400 hover:text-red-300 transition text-sm font-bold p-2 rounded-lg hover:bg-red-500/10">
@@ -264,22 +259,23 @@ function DashboardContent() {
       </aside>
 
       {/* ================= MOBILE TOPBAR ================= */}
-      <div className="md:hidden bg-black border-b border-white/5 p-4 flex justify-between items-center sticky top-0 z-50">
+      <div className="md:hidden bg-secondary border-b border-theme p-4 flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-black font-black">Y</div>
-          <span className="font-bold">Portal</span>
+          <span className="font-bold text-primary">Portal</span>
         </div>
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-white">
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-primary">
           {mobileMenuOpen ? <lucide.X /> : <lucide.Menu />}
         </button>
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-black border-b border-white/5 p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px]">
+        <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px]">
           <SidebarBtn active={activeTab === 'dashboard'} onClick={() => {setActiveTab('dashboard'); setMobileMenuOpen(false);}} icon={<lucide.LayoutDashboard />} label="Dashboard" />
           <SidebarBtn active={activeTab === 'vault'} onClick={() => {setActiveTab('vault'); setMobileMenuOpen(false);}} icon={<lucide.Lock />} label="Secure Vault" />
           <SidebarBtn active={activeTab === 'wallet'} onClick={() => {setActiveTab('wallet'); setMobileMenuOpen(false);}} icon={<lucide.Wallet />} label="Wallet" />
           <SidebarBtn active={activeTab === 'profile'} onClick={() => {setActiveTab('profile'); setMobileMenuOpen(false);}} icon={<lucide.User />} label="My Profile" />
+          <ThemeToggle />
           <button onClick={handleLogout} className="mt-4 p-3 text-red-400 font-bold text-left flex items-center gap-2"><lucide.LogOut className="w-4 h-4"/> Sign Out</button>
         </div>
       )}
@@ -299,8 +295,8 @@ function DashboardContent() {
           {activeTab === 'dashboard' && (
             <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
               <header className="mb-10">
-                <h2 className="text-3xl font-black text-white">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
-                <p className="text-zinc-400 mt-1">Here is the current status of your research pipeline.</p>
+                <h2 className="text-3xl font-black text-primary">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
+                <p className="text-secondary mt-1">Here is the current status of your research pipeline.</p>
               </header>
 
               {/* Quick Stats */}
@@ -316,15 +312,15 @@ function DashboardContent() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-black">Active Projects</h3>
                   <button onClick={() => router.push('/dashboard/client/order/new')} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-bold transition flex items-center gap-2">
-  <lucide.Plus className="w-3 h-3" /> New Order
-</button>
+                    <lucide.Plus className="w-3 h-3" /> New Order
+                  </button>
                 </div>
 
                 {orders.length === 0 ? (
-                  <div className="border border-dashed border-white/10 rounded-3xl p-12 text-center bg-[#0a0a0a]">
-                    <lucide.Inbox className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                    <h4 className="text-lg font-bold text-white mb-2">No projects yet</h4>
-                    <p className="text-zinc-400 text-sm mb-6">Your workspace is empty. Submit a brief to get started.</p>
+                  <div className="border border-dashed border-theme rounded-3xl p-12 text-center bg-card">
+                    <lucide.Inbox className="w-12 h-12 text-secondary mx-auto mb-4" />
+                    <h4 className="text-lg font-bold text-primary mb-2">No projects yet</h4>
+                    <p className="text-secondary text-sm mb-6">Your workspace is empty. Submit a brief to get started.</p>
                     <button onClick={() => window.location.href = '/'} className="px-6 py-3 bg-emerald-500 text-black font-black rounded-full text-sm uppercase tracking-wider hover:bg-emerald-400 transition">Place First Order</button>
                   </div>
                 ) : (
@@ -344,24 +340,24 @@ function DashboardContent() {
           {activeTab === 'vault' && (
             <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
               <header className="mb-10">
-                <h2 className="text-3xl font-black text-white flex items-center gap-3"><lucide.Lock className="text-emerald-500" /> Secure Vault</h2>
-                <p className="text-zinc-400 mt-1">Encrypted storage for all your completed deliverables.</p>
+                <h2 className="text-3xl font-black text-primary flex items-center gap-3"><lucide.Lock className="text-emerald-500" /> Secure Vault</h2>
+                <p className="text-secondary mt-1">Encrypted storage for all your completed deliverables.</p>
               </header>
               
               {vaultItems.length === 0 ? (
-                <div className="border border-white/5 bg-[#0a0a0a] rounded-3xl p-12 text-center">
-                  <lucide.Shield className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-                  <p className="text-zinc-400">Your vault is currently empty. Files will appear here once drafting is complete.</p>
+                <div className="border border-theme bg-card rounded-3xl p-12 text-center">
+                  <lucide.Shield className="w-12 h-12 text-secondary mx-auto mb-4" />
+                  <p className="text-secondary">Your vault is currently empty. Files will appear here once drafting is complete.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {vaultItems.map(order => {
                     const paid40 = renderBool(order['40% Paid']);
                     return (
-                      <div key={order['Order ID']} className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24" /></div>
-                        <h4 className="font-bold text-lg mb-1 relative z-10">{order['Order ID']}</h4>
-                        <p className="text-xs text-zinc-400 mb-6 relative z-10 line-clamp-1">{order['Research Topic']}</p>
+                      <div key={order['Order ID']} className="bg-card border border-theme rounded-2xl p-6 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24 text-secondary" /></div>
+                        <h4 className="font-bold text-lg mb-1 relative z-10 text-primary">{order['Order ID']}</h4>
+                        <p className="text-xs text-secondary mb-6 relative z-10 line-clamp-1">{order['Research Topic']}</p>
                         
                         {paid40 ? (
                           <button onClick={() => downloadFile(order['Order ID'])} className="w-full py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition relative z-10">
@@ -391,38 +387,36 @@ function DashboardContent() {
           {activeTab === 'profile' && (
             <div className="animate-in fade-in duration-500 max-w-2xl mx-auto">
               <header className="mb-10">
-                <h2 className="text-3xl font-black text-white">Profile Settings</h2>
-                <p className="text-zinc-400 mt-1">Manage your personal information and account security.</p>
+                <h2 className="text-3xl font-black text-primary">Profile Settings</h2>
+                <p className="text-secondary mt-1">Manage your personal information and account security.</p>
               </header>
               
-              <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl p-8">
-                <div className="flex items-center gap-6 mb-8 border-b border-white/5 pb-8">
+              <div className="bg-card border border-theme rounded-3xl p-8">
+                <div className="flex items-center gap-6 mb-8 border-b border-theme pb-8">
                   <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-500 font-black text-2xl">
                     {profile?.full_name?.charAt(0) || 'U'}
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold">{profile?.full_name}</h3>
-                    <p className="text-zinc-400 text-sm">Account Type: Client</p>
+                    <h3 className="text-xl font-bold text-primary">{profile?.full_name}</h3>
+                    <p className="text-secondary text-sm">Account Type: Client</p>
                     {renderBool(profile?.is_admin) && <span className="inline-block mt-2 px-2 py-1 bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase rounded-md">Admin</span>}
                   </div>
                 </div>
 
                 <div className="space-y-6">
-                  {/* Email display */}
                   <div>
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Email Address</label>
-                    <div className="p-3 bg-black border border-white/10 rounded-xl text-zinc-300 mt-1">{user?.email}</div>
+                    <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Email Address</label>
+                    <div className="p-3 bg-secondary border border-theme rounded-xl text-primary mt-1">{user?.email}</div>
                   </div>
 
-                  {/* Change Email */}
                   <div>
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Change Email Address</label>
+                    <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Change Email Address</label>
                     <div className="flex gap-3 mt-2">
                       <input
                         type="email"
                         id="newEmail"
                         placeholder="newemail@example.com"
-                        className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none"
+                        className="flex-1 bg-secondary border border-theme rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none text-primary"
                       />
                       <button
                         onClick={async () => {
@@ -436,7 +430,6 @@ function DashboardContent() {
                     </div>
                   </div>
 
-                  {/* Reset Password */}
                   <div className="pt-2">
                     <button
                       onClick={handleResetPassword}
@@ -446,13 +439,11 @@ function DashboardContent() {
                     </button>
                   </div>
 
-                  {/* Account ID */}
-                  <div className="pt-4 border-t border-white/5">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Account ID</label>
-                    <div className="p-3 bg-black border border-white/10 rounded-xl text-zinc-500 font-mono text-xs mt-1">{user?.id}</div>
+                  <div className="pt-4 border-t border-theme">
+                    <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Account ID</label>
+                    <div className="p-3 bg-secondary border border-theme rounded-xl text-secondary font-mono text-xs mt-1">{user?.id}</div>
                   </div>
 
-                  {/* Support contact */}
                   <div className="pt-4">
                     <button onClick={() => window.open('https://wa.me/2348121443666', '_blank')} className="px-6 py-3 bg-[#25D366]/10 text-[#25D366] font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-[#25D366]/20 transition">
                       <lucide.MessageCircle className="w-4 h-4" /> Contact Support to Update Details
@@ -466,55 +457,49 @@ function DashboardContent() {
           {/* ================= ORDER DETAILS MODAL ================= */}
           {selectedOrderDetails && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-end">
-              <div className="bg-[#050505] w-full max-w-md h-full border-l border-white/10 flex flex-col animate-in slide-in-from-right duration-300">
-                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black">
+              <div className="bg-primary w-full max-w-md h-full border-l border-theme flex flex-col animate-in slide-in-from-right duration-300">
+                <div className="p-6 border-b border-theme flex justify-between items-center bg-secondary">
                   <div>
-                    <h3 className="font-black text-lg">{selectedOrderDetails['Order ID']}</h3>
+                    <h3 className="font-black text-lg text-primary">{selectedOrderDetails['Order ID']}</h3>
                     <p className="text-xs text-emerald-500 uppercase tracking-widest font-bold">Activity Log</p>
                   </div>
-                  <button onClick={() => setSelectedOrderDetails(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition"><lucide.X className="w-5 h-5" /></button>
+                  <button onClick={() => setSelectedOrderDetails(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition"><lucide.X className="w-5 h-5 text-secondary" /></button>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-6">
                   <div className="mb-8">
-                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Topic</h4>
-                    <p className="text-sm bg-[#0a0a0a] p-4 rounded-xl border border-white/5">{selectedOrderDetails['Research Topic']}</p>
+                    <h4 className="text-xs font-bold text-secondary uppercase tracking-widest mb-2">Topic</h4>
+                    <p className="text-sm bg-card p-4 rounded-xl border border-theme text-primary">{selectedOrderDetails['Research Topic']}</p>
                   </div>
 
-                  <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6">Workflow History</h4>
+                  <h4 className="text-xs font-bold text-secondary uppercase tracking-widest mb-6">Workflow History</h4>
                   
                   <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-zinc-800">
-                    
                     <TimelineItem title="Order Placed" desc="Briefing received by system." date={formatDate(selectedOrderDetails['Timestamp'])} done={true} />
-                    
                     <TimelineItem 
                       title="Quote Generated" 
                       desc={`Financial assessment: ₦${parsePriceStr(selectedOrderDetails['Financial Quote']).toLocaleString()}`} 
                       date="Logged" 
                       done={parsePriceStr(selectedOrderDetails['Financial Quote']) > 0 && selectedOrderDetails['Workflow Status'] !== 'Briefing Received'} 
                     />
-                    
                     <TimelineItem 
                       title="Deposit Cleared" 
                       desc="60% payment verified. Synthesis started." 
                       date="Logged" 
                       done={renderBool(selectedOrderDetails['60% Paid'])} 
                     />
-                    
                     <TimelineItem 
                       title="Drafting & Quality Audit" 
                       desc="Research compilation in progress." 
                       date="Logged" 
                       done={selectedOrderDetails['Workflow Status'].includes('Synthesis') || renderBool(selectedOrderDetails['Work Submitted'])} 
                     />
-
                     <TimelineItem 
                       title="Vault Secured" 
                       desc="Final files uploaded to encrypted vault." 
                       date="Logged" 
                       done={renderBool(selectedOrderDetails['Work Submitted']) || selectedOrderDetails['Workflow Status'] === 'Completed'} 
                     />
-
                     <TimelineItem 
                       title="Completed" 
                       desc="Balance cleared and contract fulfilled." 
@@ -533,11 +518,11 @@ function DashboardContent() {
 }
 
 // ==========================================
-// 4. SUB-COMPONENTS (unchanged)
+// 4. SUB-COMPONENTS
 // ==========================================
 function SidebarBtn({ active, onClick, icon, label, badge }: any) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center justify-between p-3 rounded-xl transition font-bold text-sm ${active ? 'bg-emerald-500/10 text-emerald-500' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}>
+    <button onClick={onClick} className={`w-full flex items-center justify-between p-3 rounded-xl transition font-bold text-sm ${active ? 'bg-emerald-500/10 text-emerald-500' : 'text-secondary hover:bg-white/5 hover:text-primary'}`}>
       <div className="flex items-center gap-3">
         {icon} <span>{label}</span>
       </div>
@@ -548,13 +533,13 @@ function SidebarBtn({ active, onClick, icon, label, badge }: any) {
 
 function StatCard({ label, value, icon, color = "text-emerald-500" }: any) {
   return (
-    <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5 flex flex-col justify-between">
+    <div className="bg-card border border-theme rounded-2xl p-5 flex flex-col justify-between">
       <div className="flex justify-between items-start mb-4">
-        <div className={`p-2 rounded-lg bg-black border border-white/5 ${color}`}>{icon}</div>
+        <div className={`p-2 rounded-lg bg-secondary border border-theme ${color}`}>{icon}</div>
       </div>
       <div>
-        <div className="text-3xl font-black">{value}</div>
-        <div className="text-xs text-zinc-500 uppercase tracking-widest font-bold mt-1">{label}</div>
+        <div className="text-3xl font-black text-primary">{value}</div>
+        <div className="text-xs text-secondary uppercase tracking-widest font-bold mt-1">{label}</div>
       </div>
     </div>
   );
@@ -563,10 +548,10 @@ function StatCard({ label, value, icon, color = "text-emerald-500" }: any) {
 function TimelineItem({ title, desc, date, done }: any) {
   if (!done) return (
     <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-      <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-zinc-800 bg-black text-zinc-600 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow"><lucide.Circle className="w-4 h-4"/></div>
-      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-white/5 bg-black opacity-50">
-        <div className="flex justify-between mb-1"><span className="font-bold text-sm text-zinc-500">{title}</span></div>
-        <div className="text-xs text-zinc-600">{desc}</div>
+      <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-theme bg-secondary text-secondary shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow"><lucide.Circle className="w-4 h-4"/></div>
+      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-theme bg-secondary opacity-50">
+        <div className="flex justify-between mb-1"><span className="font-bold text-sm text-secondary">{title}</span></div>
+        <div className="text-xs text-secondary">{desc}</div>
       </div>
     </div>
   );
@@ -575,8 +560,8 @@ function TimelineItem({ title, desc, date, done }: any) {
     <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
       <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-emerald-500 bg-emerald-500/20 text-emerald-500 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow"><lucide.Check className="w-5 h-5"/></div>
       <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
-        <div className="flex justify-between mb-1"><span className="font-bold text-sm text-emerald-400">{title}</span><span className="text-[10px] text-zinc-500">{date}</span></div>
-        <div className="text-xs text-zinc-400">{desc}</div>
+        <div className="flex justify-between mb-1"><span className="font-bold text-sm text-emerald-400">{title}</span><span className="text-[10px] text-secondary">{date}</span></div>
+        <div className="text-xs text-secondary">{desc}</div>
       </div>
     </div>
   );
@@ -594,13 +579,13 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
   const balanceAmount = total * 0.4;
 
   return (
-    <div className="bg-[#0a0a0a] border border-white/10 hover:border-emerald-500/50 transition-colors rounded-3xl p-6 md:p-8 relative overflow-hidden group">
+    <div className="bg-card border border-theme hover:border-emerald-500/50 transition-colors rounded-3xl p-6 md:p-8 relative overflow-hidden group">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <h3 className="text-xl font-black tracking-tight">{order['Order ID']}</h3>
+            <h3 className="text-xl font-black tracking-tight text-primary">{order['Order ID']}</h3>
             <span className={`text-[10px] px-3 py-1 rounded-md font-black uppercase tracking-widest ${
               order['Workflow Status'] === 'Completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
               awaitingAdminApproval ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
@@ -609,12 +594,12 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
               {awaitingAdminApproval ? 'Awaiting Quote' : order['Workflow Status']}
             </span>
           </div>
-          <p className="text-zinc-400 text-sm max-w-2xl leading-relaxed">{order['Research Topic']}</p>
+          <p className="text-secondary text-sm max-w-2xl leading-relaxed">{order['Research Topic']}</p>
         </div>
 
         <div className="text-left md:text-right shrink-0">
-          <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Financial Quote</div>
-          <div className="text-3xl font-black text-white">
+          <div className="text-xs font-bold text-secondary uppercase tracking-widest mb-1">Financial Quote</div>
+          <div className="text-3xl font-black text-primary">
             {awaitingAdminApproval ? 'Pending...' : formatNaira(total)}
           </div>
         </div>
@@ -622,12 +607,12 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
 
       {/* Progress Bar */}
       <div className="mb-8">
-        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">
+        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">
           <span className={paid60 ? 'text-emerald-500' : ''}>1. Deposit</span>
           <span className={workSubmitted ? 'text-emerald-500' : ''}>2. Research</span>
           <span className={paid40 ? 'text-emerald-500' : ''}>3. Delivery</span>
         </div>
-        <div className="w-full bg-black border border-white/5 rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-secondary border border-theme rounded-full h-2 overflow-hidden">
           <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-out relative" 
             style={{ width: paid40 && workSubmitted ? '100%' : paid60 && workSubmitted ? '75%' : paid60 ? '33%' : '0%' }}>
             <div className="absolute inset-0 bg-white/20 w-full h-full animate-[shimmer_2s_infinite]"></div>
@@ -636,14 +621,14 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
       </div>
 
       {/* Footer Actions */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-white/5">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-theme">
         <div className="flex items-center gap-6 text-xs w-full md:w-auto">
-          <div><span className="text-zinc-500 block mb-1">Deadline</span> <span className="font-bold text-white">{formatDate(order['Deadline'])}</span></div>
-          <div><span className="text-zinc-500 block mb-1">Deposit</span> <span className={paid60 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>{paid60 ? 'Cleared' : 'Pending'}</span></div>
+          <div><span className="text-secondary block mb-1">Deadline</span> <span className="font-bold text-primary">{formatDate(order['Deadline'])}</span></div>
+          <div><span className="text-secondary block mb-1">Deposit</span> <span className={paid60 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>{paid60 ? 'Cleared' : 'Pending'}</span></div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <button onClick={openDetails} className="px-4 py-2.5 bg-black border border-white/10 hover:bg-white/5 text-white text-xs font-bold rounded-xl transition flex items-center gap-2">
+          <button onClick={openDetails} className="px-4 py-2.5 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition flex items-center gap-2">
             <lucide.Activity className="w-4 h-4" /> View Logs
           </button>
 

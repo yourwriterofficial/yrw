@@ -72,7 +72,7 @@ export default function PromoCodesPage() {
     fetchCodes();
   };
 
-  if (loading) return <div className="p-10 text-center">Loading...</div>;
+  if (loading) return <div className="p-10 text-center text-primary">Loading...</div>;
 
   return (
     <div className="p-6 md:p-10">
@@ -86,25 +86,25 @@ export default function PromoCodesPage() {
 
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-black">Promo Codes</h1>
+          <h1 className="text-3xl font-black text-primary">Promo Codes</h1>
           <button onClick={() => setEditingCode(null)} className="px-4 py-2 bg-purple-500 text-black rounded-xl font-bold text-sm">+ New Code</button>
         </div>
 
         {/* Add/Edit Form */}
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 mb-8">
+        <div className="bg-secondary border border-theme rounded-2xl p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-[10px] uppercase font-black text-zinc-500">Code</label>
-              <input type="text" value={newCode.code} onChange={e => setNewCode({ ...newCode, code: e.target.value.toUpperCase() })} placeholder="SUMMER20" className="w-full bg-black border border-white/10 rounded-xl p-3 mt-1" />
+              <label className="text-[10px] uppercase font-black text-secondary">Code</label>
+              <input type="text" value={newCode.code} onChange={e => setNewCode({ ...newCode, code: e.target.value.toUpperCase() })} placeholder="SUMMER20" className="w-full bg-primary border border-theme rounded-xl p-3 mt-1 text-primary" />
             </div>
             <div>
-              <label className="text-[10px] uppercase font-black text-zinc-500">Discount %</label>
-              <input type="number" value={newCode.discount_percent} onChange={e => setNewCode({ ...newCode, discount_percent: Number(e.target.value) })} className="w-full bg-black border border-white/10 rounded-xl p-3 mt-1" />
+              <label className="text-[10px] uppercase font-black text-secondary">Discount %</label>
+              <input type="number" value={newCode.discount_percent} onChange={e => setNewCode({ ...newCode, discount_percent: Number(e.target.value) })} className="w-full bg-primary border border-theme rounded-xl p-3 mt-1 text-primary" />
             </div>
             <div className="flex items-end">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={newCode.active} onChange={e => setNewCode({ ...newCode, active: e.target.checked })} className="w-4 h-4 accent-purple-500" />
-                <span className="text-sm">Active</span>
+                <span className="text-sm text-primary">Active</span>
               </label>
             </div>
           </div>
@@ -112,31 +112,31 @@ export default function PromoCodesPage() {
         </div>
 
         {/* List of Codes */}
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
+        <div className="bg-secondary border border-theme rounded-2xl overflow-hidden">
           <table className="w-full">
-            <thead className="bg-black border-b border-white/5 text-[10px] uppercase text-zinc-500">
+            <thead className="bg-primary border-b border-theme text-[10px] uppercase text-secondary">
               <tr><th className="px-6 py-4">Code</th><th className="px-6 py-4">Discount</th><th className="px-6 py-4">Status</th><th className="px-6 py-4">Created</th><th className="px-6 py-4">Actions</th></tr>
             </thead>
             <tbody>
               {codes.map(code => (
-                <tr key={code.code} className="border-b border-white/5">
-                  <td className="px-6 py-4 font-mono font-bold">{code.code}</td>
-                  <td className="px-6 py-4">{code.discount_percent}%</td>
+                <tr key={code.code} className="border-b border-theme">
+                  <td className="px-6 py-4 font-mono font-bold text-primary">{code.code}</td>
+                  <td className="px-6 py-4 text-primary">{code.discount_percent}%</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded text-[10px] font-bold ${code.active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
                       {code.active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-xs">{new Date(code.created_at).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 text-xs text-primary">{new Date(code.created_at).toLocaleDateString()}</td>
                   <td className="px-6 py-4 space-x-2">
-                    <button onClick={() => toggleStatus(code.code, code.active)} className="text-xs bg-white/5 px-3 py-1 rounded">{code.active ? 'Deactivate' : 'Activate'}</button>
+                    <button onClick={() => toggleStatus(code.code, code.active)} className="text-xs bg-white/5 px-3 py-1 rounded text-primary">{code.active ? 'Deactivate' : 'Activate'}</button>
                     <button onClick={() => deleteCode(code.code)} className="text-xs bg-red-500/20 text-red-400 px-3 py-1 rounded">Delete</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {codes.length === 0 && <div className="p-8 text-center text-zinc-500">No promo codes yet.</div>}
+          {codes.length === 0 && <div className="p-8 text-center text-secondary">No promo codes yet.</div>}
         </div>
       </div>
     </div>

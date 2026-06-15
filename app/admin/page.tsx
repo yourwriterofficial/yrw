@@ -32,26 +32,26 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
-  if (loading) return <div className="p-10 text-center">Loading dashboard...</div>;
+  if (loading) return <div className="p-10 text-center text-primary">Loading dashboard...</div>;
 
   return (
     <div className="p-6 md:p-10">
-      <h1 className="text-3xl font-black mb-6">Dashboard</h1>
+      <h1 className="text-3xl font-black text-primary mb-6">Dashboard</h1>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6"><div className="text-2xl font-black">{stats.totalOrders}</div><div className="text-xs text-zinc-500">Total Orders</div></div>
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6"><div className="text-2xl font-black text-purple-400">{stats.pendingBriefs}</div><div className="text-xs text-zinc-500">Awaiting Brief</div></div>
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6"><div className="text-2xl font-black text-emerald-400">{stats.completedOrders}</div><div className="text-xs text-zinc-500">Completed</div></div>
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6"><div className="text-2xl font-black">{formatNaira(stats.totalValue)}</div><div className="text-xs text-zinc-500">Pipeline Value</div></div>
+        <div className="bg-card border border-theme rounded-2xl p-6"><div className="text-2xl font-black text-primary">{stats.totalOrders}</div><div className="text-xs text-secondary">Total Orders</div></div>
+        <div className="bg-card border border-theme rounded-2xl p-6"><div className="text-2xl font-black text-purple-400">{stats.pendingBriefs}</div><div className="text-xs text-secondary">Awaiting Brief</div></div>
+        <div className="bg-card border border-theme rounded-2xl p-6"><div className="text-2xl font-black text-emerald-400">{stats.completedOrders}</div><div className="text-xs text-secondary">Completed</div></div>
+        <div className="bg-card border border-theme rounded-2xl p-6"><div className="text-2xl font-black text-primary">{formatNaira(stats.totalValue)}</div><div className="text-xs text-secondary">Pipeline Value</div></div>
       </div>
 
-      <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6">
-        <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-black">Recent Orders</h2><Link href="/admin/orders" className="text-purple-400 text-sm">View All</Link></div>
+      <div className="bg-card border border-theme rounded-2xl p-6">
+        <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-black text-primary">Recent Orders</h2><Link href="/admin/orders" className="text-purple-400 text-sm">View All</Link></div>
         <div className="space-y-2">
           {recentOrders.map(order => (
-            <div key={order['Order ID']} className="flex justify-between items-center border-b border-white/5 py-3">
-              <div><span className="font-mono text-sm">{order['Order ID']}</span><div className="text-xs text-zinc-500">{order['Legal Name']}</div></div>
+            <div key={order['Order ID']} className="flex justify-between items-center border-b border-theme py-3">
+              <div><span className="font-mono text-sm text-primary">{order['Order ID']}</span><div className="text-xs text-secondary">{order['Legal Name']}</div></div>
               <div><span className={`text-xs px-2 py-1 rounded ${order['Workflow Status'] === 'Completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>{order['Workflow Status']}</span></div>
-              <div className="font-mono text-sm">{formatNaira(parseFloat(order['Financial Quote']) || 0)}</div>
+              <div className="font-mono text-sm text-primary">{formatNaira(parseFloat(order['Financial Quote']) || 0)}</div>
             </div>
           ))}
         </div>

@@ -68,20 +68,20 @@ export default function MassEmailPage() {
         ))}
       </div>
 
-      <h1 className="text-3xl font-black mb-6">Mass Email</h1>
+      <h1 className="text-3xl font-black text-primary mb-6">Mass Email</h1>
 
-      <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 space-y-6">
+      <div className="bg-secondary border border-theme rounded-2xl p-6 space-y-6">
         <div>
-          <label className="text-[10px] uppercase font-black text-zinc-500">Recipients</label>
+          <label className="text-[10px] uppercase font-black text-secondary">Recipients</label>
           <div className="flex gap-4 mt-2">
-            <label className="flex items-center gap-2"><input type="radio" name="filter" value="all" checked={filter === 'all'} onChange={() => setFilter('all')} /> All Users</label>
-            <label className="flex items-center gap-2"><input type="radio" name="filter" value="active" checked={filter === 'active'} onChange={() => setFilter('active')} /> Active Users (has orders)</label>
-            <label className="flex items-center gap-2"><input type="radio" name="filter" value="selected" checked={filter === 'selected'} onChange={() => setFilter('selected')} /> Selected Users</label>
+            <label className="flex items-center gap-2"><input type="radio" name="filter" value="all" checked={filter === 'all'} onChange={() => setFilter('all')} /> <span className="text-primary">All Users</span></label>
+            <label className="flex items-center gap-2"><input type="radio" name="filter" value="active" checked={filter === 'active'} onChange={() => setFilter('active')} /> <span className="text-primary">Active Users (has orders)</span></label>
+            <label className="flex items-center gap-2"><input type="radio" name="filter" value="selected" checked={filter === 'selected'} onChange={() => setFilter('selected')} /> <span className="text-primary">Selected Users</span></label>
           </div>
           {filter === 'selected' && (
-            <div className="mt-4 border border-white/10 rounded-xl p-4 max-h-48 overflow-y-auto">
+            <div className="mt-4 border border-theme rounded-xl p-4 max-h-48 overflow-y-auto bg-primary">
               {users.map(user => (
-                <label key={user.id} className="flex items-center gap-2 py-1">
+                <label key={user.id} className="flex items-center gap-2 py-1 text-primary">
                   <input type="checkbox" value={user.id} checked={userIds.includes(user.id)} onChange={e => {
                     if (e.target.checked) setUserIds([...userIds, user.id]);
                     else setUserIds(userIds.filter(id => id !== user.id));
@@ -94,13 +94,13 @@ export default function MassEmailPage() {
         </div>
 
         <div>
-          <label className="text-[10px] uppercase font-black text-zinc-500">Subject</label>
-          <input type="text" value={subject} onChange={e => setSubject(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl p-3 mt-1" placeholder="Your email subject" />
+          <label className="text-[10px] uppercase font-black text-secondary">Subject</label>
+          <input type="text" value={subject} onChange={e => setSubject(e.target.value)} className="w-full bg-primary border border-theme rounded-xl p-3 mt-1 text-primary" placeholder="Your email subject" />
         </div>
 
         <div>
-          <label className="text-[10px] uppercase font-black text-zinc-500">HTML Content</label>
-          <textarea value={html} onChange={e => setHtml(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl p-3 mt-1 h-64 font-mono text-sm" placeholder="<p>Hello,</p><p>Your message here...</p>" />
+          <label className="text-[10px] uppercase font-black text-secondary">HTML Content</label>
+          <textarea value={html} onChange={e => setHtml(e.target.value)} className="w-full bg-primary border border-theme rounded-xl p-3 mt-1 h-64 font-mono text-sm text-primary" placeholder="<p>Hello,</p><p>Your message here...</p>" />
         </div>
 
         <button onClick={sendEmail} disabled={sending} className="w-full py-3 bg-purple-500 text-black font-black rounded-xl">

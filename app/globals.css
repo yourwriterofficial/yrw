@@ -1,33 +1,45 @@
 @import "tailwindcss";
 
-/* Force dark theme as default – no white backgrounds anywhere */
 :root {
-  --background: #050505;
-  --foreground: #ededed;
+  --bg-primary: #050505;
+  --bg-secondary: #0a0a0a;
+  --bg-card: #0f0f0f;
+  --border: #333;
+  --text-primary: #ededed;
+  --text-secondary: #a1a1aa;
+  --accent: #1DB954;
+  --accent-hover: #17a44b;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-/* Optional: keep system preference only if you want light mode, but we disable it */
-@media (prefers-color-scheme: light) {
-  :root {
-    --background: #050505;
-    --foreground: #ededed;
-  }
+[data-theme="light"] {
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --border: #e2e8f0;
+  --text-primary: #171717;
+  --text-secondary: #3f3f46;
+  --accent: #10b981;
+  --accent-hover: #059669;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
-/* Custom scrollbar for better UX */
+/* Utility classes – use these in your components */
+.bg-primary { background: var(--bg-primary); }
+.bg-secondary { background: var(--bg-secondary); }
+.bg-card { background: var(--bg-card); }
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.border-theme { border-color: var(--border); }
+.accent { color: var(--accent); }
+.accent-bg { background: var(--accent); }
+
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -36,34 +48,34 @@ body {
   background: #1a1a1a;
   border-radius: 4px;
 }
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #e2e8f0;
+}
 ::-webkit-scrollbar-thumb {
-  background: #1DB954;
+  background: var(--accent);
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #17a44b;
-}
 
-/* Input styles (kept from original, but ensure dark) */
+/* Input styles */
 .input-box {
   width: 100%;
-  background: #0f0f0f;
-  border: 1px solid #333;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   padding: 18px;
   border-radius: 20px;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 12px;
   outline: none;
   font-size: 14px;
   transition: all 0.3s ease;
 }
 .input-box:focus {
-  border-color: #1DB954;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15);
-  background: #141414;
+  background: var(--bg-secondary);
 }
 .spotify-green {
-  background: #1DB954;
+  background: var(--accent);
   color: #000;
   font-weight: 800;
   border-radius: 50px;
@@ -76,5 +88,26 @@ body {
   transition: 0.3s;
 }
 .spotify-green:hover {
-  background: #17a44b;
+  background: var(--accent-hover);
+}
+
+/* Prose styles for terms */
+.prose {
+  max-width: none;
+  color: var(--text-secondary);
+}
+.prose ul, .prose ol {
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.prose li {
+  margin-bottom: 0.25rem;
+}
+.prose h3 {
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--accent);
 }

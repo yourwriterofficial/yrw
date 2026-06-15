@@ -60,21 +60,21 @@ export default function WalletPage() {
     }
   };
 
-  if (loading) return <div className="p-10 text-center">Loading wallet...</div>;
+  if (loading) return <div className="p-10 text-center text-primary">Loading wallet...</div>;
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-black mb-6">My Wallet</h1>
+      <h1 className="text-3xl font-black text-primary mb-6">My Wallet</h1>
 
-      {/* Balance Card */}
+      {/* Balance Card – stays gradient (not theme‑dependent) */}
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-2xl p-6 text-white mb-8">
         <p className="text-sm opacity-80">Available Balance</p>
         <p className="text-5xl font-black">₦{balance.toLocaleString()}</p>
       </div>
 
       {/* Top Up Section */}
-      <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 mb-8">
-        <h2 className="text-xl font-bold mb-4">Add Funds to Wallet</h2>
+      <div className="bg-secondary border border-theme rounded-2xl p-6 mb-8">
+        <h2 className="text-xl font-bold text-primary mb-4">Add Funds to Wallet</h2>
         <div className="flex flex-wrap gap-3 mb-6">
           {[5000, 10000, 20000, 50000, 100000].map(amt => (
             <button
@@ -83,7 +83,7 @@ export default function WalletPage() {
               className={`px-5 py-2 rounded-xl font-bold transition ${
                 topUpAmount === amt
                   ? 'bg-emerald-500 text-black'
-                  : 'bg-white/5 hover:bg-white/10'
+                  : 'bg-white/5 text-primary hover:bg-white/10'
               }`}
             >
               ₦{amt.toLocaleString()}
@@ -95,7 +95,7 @@ export default function WalletPage() {
             type="number"
             value={topUpAmount}
             onChange={e => setTopUpAmount(Number(e.target.value))}
-            className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3 text-white"
+            className="flex-1 bg-primary border border-theme rounded-xl px-4 py-3 text-primary focus:border-emerald-500 outline-none"
             placeholder="Custom amount"
           />
           <button
@@ -109,22 +109,22 @@ export default function WalletPage() {
       </div>
 
       {/* Transaction History */}
-      <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6">
-        <h2 className="text-xl font-bold mb-4">Transaction History</h2>
+      <div className="bg-secondary border border-theme rounded-2xl p-6">
+        <h2 className="text-xl font-bold text-primary mb-4">Transaction History</h2>
         {transactions.length === 0 ? (
-          <p className="text-zinc-500 text-center py-8">No transactions yet.</p>
+          <p className="text-secondary text-center py-8">No transactions yet.</p>
         ) : (
           <div className="space-y-3">
             {transactions.map(txn => (
-              <div key={txn.id} className="flex justify-between items-center border-b border-white/5 py-3">
+              <div key={txn.id} className="flex justify-between items-center border-b border-theme py-3">
                 <div className="flex-1">
-                  <div className="font-mono text-xs text-zinc-400">{txn.reference}</div>
-                  <div className="text-xs text-zinc-500">{new Date(txn.created_at).toLocaleString()}</div>
+                  <div className="font-mono text-xs text-secondary">{txn.reference}</div>
+                  <div className="text-xs text-secondary">{new Date(txn.created_at).toLocaleString()}</div>
                 </div>
                 <div className={`font-bold ${txn.type === 'deposit' ? 'text-emerald-400' : 'text-amber-400'}`}>
                   {txn.type === 'deposit' ? '+' : '-'} ₦{txn.amount.toLocaleString()}
                 </div>
-                <div className="text-xs capitalize px-2 py-1 rounded bg-white/5">
+                <div className="text-xs capitalize px-2 py-1 rounded bg-white/5 text-secondary">
                   {txn.status}
                 </div>
               </div>

@@ -159,37 +159,37 @@ export default function LoggedInContentOrderPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-primary flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white py-20 px-6 font-['Inter']">
+    <div className="min-h-screen bg-primary text-primary py-20 px-6 font-['Inter']">
       <div className="max-w-3xl mx-auto space-y-12">
         <div className="text-center">
           <div className="inline-block px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Creative Pipeline</div>
           <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Content & Creative Writing</h1>
-          <p className="text-zinc-400 text-sm">Tailored copy, eBooks, and SEO content designed to engage your exact audience.</p>
+          <p className="text-secondary text-sm">Tailored copy, eBooks, and SEO content designed to engage your exact audience.</p>
           <p className="text-xs text-emerald-400 mt-2">Logged in as: {profile?.full_name || user.email}</p>
         </div>
 
-        <div className="space-y-8 bg-[#0a0a0a] p-8 rounded-[32px] border border-zinc-800">
+        <div className="space-y-8 bg-secondary border border-theme p-8 rounded-[32px]">
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 block ml-1">Proposed Base Budget (₦)</label>
+            <label className="text-[10px] font-black uppercase tracking-widest text-secondary mb-2 block ml-1">Proposed Base Budget (₦)</label>
             <input
               type="number"
-              className="w-full bg-black border border-amber-500/30 p-5 rounded-2xl text-amber-500 font-black text-2xl outline-none focus:border-amber-500 transition"
+              className="w-full bg-primary border border-theme p-5 rounded-2xl text-amber-500 font-black text-2xl outline-none focus:border-amber-500 transition"
               value={baseBudget || ''}
               onChange={e => setBaseBudget(parseInt(e.target.value) || 0)}
             />
-            <p className="text-[10px] text-zinc-500 mt-2 ml-1">Enter your budget based on word count expectations.</p>
+            <p className="text-[10px] text-secondary mt-2 ml-1">Enter your budget based on word count expectations.</p>
           </div>
 
           {availableAddons.length > 0 && (
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block ml-1">Select Content Add-ons</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-secondary block ml-1">Select Content Add-ons</label>
               <div className="grid grid-cols-1 gap-3">
                 {availableAddons.map(addon => {
                   const isSelected = selectedAddons.has(addon.id);
@@ -197,19 +197,19 @@ export default function LoggedInContentOrderPage() {
                     <div
                       key={addon.id}
                       onClick={() => toggleAddon(addon.id)}
-                      className={`p-4 rounded-2xl border cursor-pointer transition flex items-start gap-4 ${isSelected ? 'border-amber-500 bg-amber-500/5' : 'border-zinc-800 bg-black hover:border-zinc-700'}`}
+                      className={`p-4 rounded-2xl border cursor-pointer transition flex items-start gap-4 ${isSelected ? 'border-amber-500 bg-amber-500/5' : 'border-theme bg-primary hover:border-zinc-700'}`}
                     >
-                      <div className={`mt-1 w-5 h-5 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-zinc-600'}`}>
+                      <div className={`mt-1 w-5 h-5 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-theme'}`}>
                         {isSelected && <CheckCircle2 className="w-3 h-3 text-black" />}
                       </div>
                       <div className="flex-1">
                         <div className="flex justify-between items-center mb-1">
-                          <h4 className={`text-sm font-bold ${isSelected ? 'text-amber-500' : 'text-zinc-300'}`}>{addon.name}</h4>
-                          <span className="text-xs font-black text-zinc-500">
+                          <h4 className={`text-sm font-bold ${isSelected ? 'text-amber-500' : 'text-primary'}`}>{addon.name}</h4>
+                          <span className="text-xs font-black text-secondary">
                             {addon.price_type === 'FLAT_FEE' ? `+₦${addon.price_value.toLocaleString()}` : `+${addon.price_value}%`}
                           </span>
                         </div>
-                        <p className="text-[10px] text-zinc-500">{addon.description}</p>
+                        <p className="text-[10px] text-secondary">{addon.description}</p>
                       </div>
                     </div>
                   );
@@ -218,10 +218,10 @@ export default function LoggedInContentOrderPage() {
             </div>
           )}
 
-          <div className="space-y-4 pt-6 border-t border-zinc-800">
+          <div className="space-y-4 pt-6 border-t border-theme">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <select
-                className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-zinc-300"
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary"
                 value={contentType}
                 onChange={e => setContentType(e.target.value)}
               >
@@ -232,7 +232,7 @@ export default function LoggedInContentOrderPage() {
                 <option>Business Plan</option>
               </select>
               <select
-                className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-zinc-300"
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary"
                 value={tone}
                 onChange={e => setTone(e.target.value)}
               >
@@ -247,7 +247,7 @@ export default function LoggedInContentOrderPage() {
             <input
               type="text"
               placeholder="Project Title or Core Subject"
-              className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none"
+              className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary"
               value={topic}
               onChange={e => setTopic(e.target.value)}
               required
@@ -255,14 +255,14 @@ export default function LoggedInContentOrderPage() {
             <input
               type="text"
               placeholder="Who is your target audience? (e.g., Tech startups, Gen Z shoppers)"
-              className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none"
+              className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary"
               value={audience}
               onChange={e => setAudience(e.target.value)}
               required
             />
             <input
               type="date"
-              className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm text-zinc-400 focus:border-amber-500 outline-none [color-scheme:dark]"
+              className="w-full bg-primary border border-theme p-4 rounded-xl text-sm text-secondary focus:border-amber-500 outline-none [color-scheme:dark]"
               value={deadline}
               onChange={e => setDeadline(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
@@ -271,14 +271,14 @@ export default function LoggedInContentOrderPage() {
 
             <textarea
               placeholder="Provide detailed context, competitor links, or stylistic preferences..."
-              className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none resize-none h-32"
+              className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none resize-none h-32 text-primary"
               value={instructions}
               onChange={e => setInstructions(e.target.value)}
             />
 
-            <label className="border-2 border-dashed border-zinc-800 hover:border-amber-500/50 bg-[#0f0f0f] rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
-              <Upload className="w-6 h-6 text-zinc-600 mb-2" />
-              <span className="text-xs font-bold text-zinc-400">Attach Brand Guidelines or References</span>
+            <label className="border-2 border-dashed border-theme hover:border-amber-500/50 bg-primary rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
+              <Upload className="w-6 h-6 text-secondary mb-2" />
+              <span className="text-xs font-bold text-secondary">Attach Brand Guidelines or References</span>
               <input type="file" className="hidden" onChange={e => setBriefFile(e.target.files?.[0] || null)} />
             </label>
             {briefFile && (
@@ -288,25 +288,24 @@ export default function LoggedInContentOrderPage() {
             )}
           </div>
 
-          <div className="space-y-4 pt-6 border-t border-zinc-800">
-            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block ml-1">Terms of Service</label>
-            <div className="h-32 overflow-y-auto bg-black border border-zinc-800 rounded-xl p-4 text-[10px] text-zinc-400 leading-relaxed">
-              {termsText || 'Loading terms...'}
-            </div>
+          <div className="space-y-4 pt-6 border-t border-theme">
+            <label className="text-[10px] font-black uppercase tracking-widest text-secondary block ml-1">Terms of Service</label>
+            <div className="h-32 overflow-y-auto bg-primary border border-theme rounded-xl p-4 leading-relaxed custom-scrollbar prose prose-invert max-w-none"
+                 dangerouslySetInnerHTML={{ __html: termsText || "Loading terms..." }} />
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={acceptTerms}
                 onChange={e => setAcceptTerms(e.target.checked)}
-                className="mt-1 w-4 h-4 accent-amber-500 bg-black border-zinc-800 rounded"
+                className="mt-1 w-4 h-4 accent-amber-500 bg-primary border border-theme rounded"
               />
-              <span className="text-xs text-zinc-300 font-bold leading-relaxed">I agree to the Content terms above.</span>
+              <span className="text-xs text-primary font-bold leading-relaxed">I agree to the Content terms above.</span>
             </label>
           </div>
 
           <div className="bg-amber-500/10 p-6 rounded-2xl border border-amber-500/20 text-center">
             <div className="text-4xl font-black text-amber-500 tracking-tight">₦{calculateTotal().toLocaleString()}</div>
-            <p className="text-[9px] uppercase font-black text-zinc-500 mt-2 tracking-widest">Calculated Custom Quote</p>
+            <p className="text-[9px] uppercase font-black text-secondary mt-2 tracking-widest">Calculated Custom Quote</p>
           </div>
 
           <button

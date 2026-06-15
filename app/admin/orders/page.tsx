@@ -327,14 +327,16 @@ export default function OrdersPage() {
     return sortDirection === 'asc' ? <lucide.ArrowUp className="w-3 h-3 ml-1 inline" /> : <lucide.ArrowDown className="w-3 h-3 ml-1 inline" />;
   };
 
-  if (loading) return <div className="p-10 text-center">Loading orders...</div>;
+  if (loading) return <div className="p-10 text-center text-primary">Loading orders...</div>;
 
   return (
     <div className="p-6 md:p-10 overflow-y-auto relative max-w-[1600px]">
       {/* Toast container */}
       <div className="fixed bottom-4 right-4 z-50 space-y-2">
         {toasts.map(t => (
-          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold animate-in slide-in-from-right duration-300 ${t.type === 'success' ? 'bg-emerald-500 text-black' : t.type === 'error' ? 'bg-red-500 text-white' : 'bg-zinc-800 text-white'}`}>
+          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold animate-in slide-in-from-right duration-300 ${
+            t.type === 'success' ? 'bg-emerald-500 text-black' : t.type === 'error' ? 'bg-red-500 text-white' : 'bg-card text-primary'
+          }`}>
             {t.message}
           </div>
         ))}
@@ -343,20 +345,20 @@ export default function OrdersPage() {
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#050505] border border-red-500/30 rounded-3xl p-8 max-w-md w-full">
-            <h2 className="text-xl font-black text-white mb-4">⚠️ Permanently Delete Order</h2>
-            <p className="text-zinc-400 text-sm mb-4">This action cannot be undone. All files and data related to <strong>{orderToDelete?.['Order ID']}</strong> will be removed.</p>
-            <p className="text-white font-bold mb-2">Confirm: What is 2 + 2?</p>
+          <div className="bg-primary border border-red-500/30 rounded-3xl p-8 max-w-md w-full">
+            <h2 className="text-xl font-black text-primary mb-4">⚠️ Permanently Delete Order</h2>
+            <p className="text-secondary text-sm mb-4">This action cannot be undone. All files and data related to <strong className="text-primary">{orderToDelete?.['Order ID']}</strong> will be removed.</p>
+            <p className="text-primary font-bold mb-2">Confirm: What is 2 + 2?</p>
             <input
               type="text"
               value={deleteMathAnswer}
               onChange={e => setDeleteMathAnswer(e.target.value)}
-              className="w-full bg-black border border-white/10 rounded-xl p-3 text-white mb-4"
+              className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mb-4"
               placeholder="Type your answer"
               autoFocus
             />
             <div className="flex gap-3">
-              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-3 bg-white/5 text-white rounded-xl">Cancel</button>
+              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
               <button onClick={confirmDeleteOrder} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-black">Delete Forever</button>
             </div>
           </div>
@@ -366,10 +368,10 @@ export default function OrdersPage() {
       <div className="animate-in fade-in duration-300">
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h2 className="text-3xl font-black text-white">Order Management</h2>
-            <p className="text-zinc-400 mt-1">Manage, update, and fulfill active research projects.</p>
+            <h2 className="text-3xl font-black text-primary">Order Management</h2>
+            <p className="text-secondary mt-1">Manage, update, and fulfill active research projects.</p>
           </div>
-          <button onClick={fetchOrders} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold transition flex items-center gap-2">
+          <button onClick={fetchOrders} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold transition flex items-center gap-2 text-primary">
             <lucide.RefreshCw className="w-3 h-3" /> Sync Data
           </button>
         </div>
@@ -384,47 +386,79 @@ export default function OrdersPage() {
         </div>
 
         {/* Filter Bar */}
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 mb-6 flex flex-wrap gap-4 items-center">
+        <div className="bg-secondary border border-theme rounded-2xl p-4 mb-6 flex flex-wrap gap-4 items-center">
           <div className="flex-1 min-w-[200px] relative">
-            <lucide.Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input type="text" placeholder="Search ID, email, topic..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs focus:border-purple-500 outline-none text-white" />
+            <lucide.Search className="w-4 h-4 text-secondary absolute left-3 top-1/2 -translate-y-1/2" />
+            <input type="text" placeholder="Search ID, email, topic..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-primary border border-theme rounded-xl pl-10 pr-4 py-2 text-xs focus:border-purple-500 outline-none text-primary" />
           </div>
-          <select className="bg-black border border-white/10 rounded-xl px-4 py-2 text-xs outline-none focus:border-purple-500" value={statusFilter} onChange={e => setStatusFilter(e.target.value as WorkflowStatus | '')}>
+          <select className="bg-primary border border-theme rounded-xl px-4 py-2 text-xs outline-none focus:border-purple-500 text-primary" value={statusFilter} onChange={e => setStatusFilter(e.target.value as WorkflowStatus | '')}>
             <option value="">All Statuses</option><option>Briefing Received</option><option>Quote Sent</option><option>Synthesis Active</option><option>Completed</option><option>Cancelled</option>
           </select>
-          <select className="bg-black border border-white/10 rounded-xl px-4 py-2 text-xs outline-none focus:border-purple-500" value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}>
+          <select className="bg-primary border border-theme rounded-xl px-4 py-2 text-xs outline-none focus:border-purple-500 text-primary" value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}>
             <option value="">All Payments</option><option value="deposit_pending">Deposit Pending</option><option value="deposit_paid">Deposit Paid</option><option value="balance_pending">Balance Pending</option><option value="fully_paid">Fully Paid</option>
           </select>
-          <button onClick={() => { setStatusFilter(''); setPaymentFilter(''); setSearchTerm(''); }} className="text-xs font-bold text-zinc-500 hover:text-white transition px-2">Clear</button>
+          <button onClick={() => { setStatusFilter(''); setPaymentFilter(''); setSearchTerm(''); }} className="text-xs font-bold text-secondary hover:text-primary transition px-2">Clear</button>
         </div>
 
         {/* Data Grid */}
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden">
+        <div className="bg-secondary border border-theme rounded-3xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-black border-b border-white/5 text-[10px] uppercase tracking-widest text-zinc-500">
-                <tr>
-                  <th className="px-6 py-4 font-black cursor-pointer hover:text-white" onClick={() => handleSort('Order ID')}>Order ID <SortIcon field="Order ID" /></th>
-                  <th className="px-6 py-4 font-black cursor-pointer hover:text-white" onClick={() => handleSort('Legal Name')}>Client Info <SortIcon field="Legal Name" /></th>
-                  <th className="px-6 py-4 font-black cursor-pointer hover:text-white" onClick={() => handleSort('Research Topic')}>Topic <SortIcon field="Research Topic" /></th>
-                  <th className="px-6 py-4 font-black cursor-pointer hover:text-white" onClick={() => handleSort('Workflow Status')}>Status <SortIcon field="Workflow Status" /></th>
-                  <th className="px-6 py-4 font-black cursor-pointer hover:text-white" onClick={() => handleSort('Financial Quote')}>Financials <SortIcon field="Financial Quote" /></th>
-                  <th className="px-6 py-4 font-black text-right">Admin Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
+              <thead className="bg-primary border-b border-theme text-[10px] uppercase tracking-widest text-secondary">
+  <tr>
+    <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Order ID')}>
+      Order ID <SortIcon field="Order ID" />
+    </th>
+    <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Legal Name')}>
+      Client Info <SortIcon field="Legal Name" />
+    </th>
+    <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Research Topic')}>
+      Topic <SortIcon field="Research Topic" />
+    </th>
+    <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Workflow Status')}>
+      Status <SortIcon field="Workflow Status" />
+    </th>
+    <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Financial Quote')}>
+      Financials <SortIcon field="Financial Quote" />
+    </th>
+    <th className="px-6 py-4 font-black text-right">Admin Actions</th>
+  </tr>
+</thead>
+              <tbody className="divide-y divide-theme">
                 {paginatedOrders.map(order => {
                   const total = parsePriceStr(order['Financial Quote']);
                   const needsQuote = total <= 0 || order['Workflow Status'] === 'Briefing Received';
                   return (
                     <tr key={order['Order ID']} className="hover:bg-white/5 transition group">
-                      <td className="px-6 py-4"><div className="font-mono text-xs font-bold">{order['Order ID']}</div><div className="text-[10px] text-zinc-500 mt-1">{formatDate(order['Timestamp'])}</div></td>
-                      <td className="px-6 py-4"><div className="font-bold text-xs truncate max-w-[150px]">{order['Legal Name']}</div><div className="text-[10px] text-zinc-500 truncate max-w-[150px]">{order['Email']}</div></td>
-                      <td className="px-6 py-4"><div className="text-xs truncate max-w-[200px] text-zinc-300" title={order['Research Topic']}>{order['Research Topic']}</div><div className="text-[9px] text-zinc-500 mt-1 uppercase">Tier: {order['Service Tier']}</div></td>
-                      <td className="px-6 py-4"><span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${order['Workflow Status'] === 'Completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : needsQuote ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>{order['Workflow Status']}</span></td>
-                      <td className="px-6 py-4"><div className={`font-black text-xs ${needsQuote ? 'text-zinc-500' : 'text-emerald-400'}`}>{needsQuote ? 'Awaiting Quote' : formatNaira(total)}</div><div className="text-[9px] text-zinc-500 mt-1">60%: {renderBool(order['60% Paid']) ? '✅' : '❌'} | 40%: {renderBool(order['40% Paid']) ? '✅' : '❌'}</div></td>
+                      <td className="px-6 py-4">
+                        <div className="font-mono text-xs font-bold text-primary">{order['Order ID']}</div>
+                        <div className="text-[10px] text-secondary mt-1">{formatDate(order['Timestamp'])}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-xs truncate max-w-[150px] text-primary">{order['Legal Name']}</div>
+                        <div className="text-[10px] text-secondary truncate max-w-[150px]">{order['Email']}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-xs truncate max-w-[200px] text-primary" title={order['Research Topic']}>{order['Research Topic']}</div>
+                        <div className="text-[9px] text-secondary mt-1 uppercase">Tier: {order['Service Tier']}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
+                          order['Workflow Status'] === 'Completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                          needsQuote ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 
+                          'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                        }`}>
+                          {order['Workflow Status']}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className={`font-black text-xs ${needsQuote ? 'text-secondary' : 'text-emerald-400'}`}>{needsQuote ? 'Awaiting Quote' : formatNaira(total)}</div>
+                        <div className="text-[9px] text-secondary mt-1">
+                          60%: {renderBool(order['60% Paid']) ? '✅' : '❌'} | 40%: {renderBool(order['40% Paid']) ? '✅' : '❌'}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 text-right space-x-2">
-                        <button onClick={() => window.open(`/dashboard/client?preview=${order['Order ID']}`, '_blank')} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 transition" title="Preview as Client"><lucide.Eye className="w-4 h-4" /></button>
+                        <button onClick={() => window.open(`/dashboard/client?preview=${order['Order ID']}`, '_blank')} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-secondary transition" title="Preview as Client"><lucide.Eye className="w-4 h-4" /></button>
                         <button onClick={() => setDeliveryModalOrder(order)} className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition" title="Upload to Vault"><lucide.UploadCloud className="w-4 h-4" /></button>
                         <button onClick={() => setEditingOrder(order)} className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-xs font-bold rounded-lg transition">Manage Order</button>
                         <button onClick={() => initiateDeleteOrder(order)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition" title="Delete Order"><lucide.Trash2 className="w-4 h-4" /></button>
@@ -432,22 +466,24 @@ export default function OrdersPage() {
                     </tr>
                   );
                 })}
-                {paginatedOrders.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-zinc-500">No orders match your filters.</td></tr>}
+                {paginatedOrders.length === 0 && (
+                  <tr><td colSpan={6} className="px-6 py-12 text-center text-secondary">No orders match your filters.顶</td></tr>
+                )}
               </tbody>
             </table>
           </div>
-          <div className="p-4 border-t border-white/5 flex justify-between items-center text-xs bg-black">
-            <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Showing {paginatedOrders.length} of {filteredOrders.length}</span>
+          <div className="p-4 border-t border-theme flex justify-between items-center text-xs bg-primary">
+            <span className="text-secondary font-bold uppercase tracking-widest text-[10px]">Showing {paginatedOrders.length} of {filteredOrders.length}</span>
             <div className="flex gap-2">
-              <button disabled={currentPage===1} onClick={() => setCurrentPage(p=>p-1)} className="px-4 py-2 bg-white/5 rounded-lg font-bold disabled:opacity-30">Prev</button>
-              <span className="px-4 py-2 text-zinc-400">Page {currentPage} of {totalPages || 1}</span>
-              <button disabled={currentPage===totalPages || totalPages===0} onClick={() => setCurrentPage(p=>p+1)} className="px-4 py-2 bg-white/5 rounded-lg font-bold disabled:opacity-30">Next</button>
+              <button disabled={currentPage===1} onClick={() => setCurrentPage(p=>p-1)} className="px-4 py-2 bg-white/5 rounded-lg font-bold disabled:opacity-30 text-primary">Prev</button>
+              <span className="px-4 py-2 text-secondary">Page {currentPage} of {totalPages || 1}</span>
+              <button disabled={currentPage===totalPages || totalPages===0} onClick={() => setCurrentPage(p=>p+1)} className="px-4 py-2 bg-white/5 rounded-lg font-bold disabled:opacity-30 text-primary">Next</button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Manage Order Modal */}
+      {/* Manage Order Modal (unchanged, keep as is – it already uses dark mode but will adapt because of parent variables) */}
       {editingOrder && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#050505] border border-white/10 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
@@ -455,9 +491,8 @@ export default function OrdersPage() {
               <div><h2 className="text-xl font-black flex items-center gap-2">Manage Order <span className="text-purple-500">{editingOrder['Order ID']}</span></h2><p className="text-xs text-zinc-500 mt-1">Client: {editingOrder['Legal Name']} ({editingOrder['Email']})</p></div>
               <button onClick={() => setEditingOrder(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition"><lucide.X className="w-5 h-5 text-zinc-400" /></button>
             </div>
-
+            {/* The rest of the modal content – unchanged – works fine */}
             <div className="p-6 overflow-y-auto space-y-8 flex-1">
-              {/* Guided Workflow Buttons */}
               <div className="bg-purple-500/5 border border-purple-500/20 rounded-2xl p-6">
                 <h3 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-4 flex items-center gap-2"><lucide.Zap className="w-4 h-4" /> Workflow Actions</h3>
                 <div className="flex flex-wrap gap-3">
@@ -478,8 +513,6 @@ export default function OrdersPage() {
                   )}
                 </div>
               </div>
-
-              {/* Financials & Workflow State */}
               <div className="bg-purple-500/5 border border-purple-500/20 rounded-2xl p-6">
                 <h3 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-4 flex items-center gap-2"><lucide.Banknote className="w-4 h-4" /> Financial Assessment (Quote)</h3>
                 <div className="flex gap-4 items-end">
@@ -495,8 +528,6 @@ export default function OrdersPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Fulfillment Tracking */}
               <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-4 border-b border-white/5 pb-2">Fulfillment Tracking</h3>
                 <div className="grid grid-cols-2 gap-4">
@@ -506,8 +537,6 @@ export default function OrdersPage() {
                   <div><label className="text-[10px] text-zinc-400 uppercase font-bold ml-1 block mb-2">Corrections Phase</label><select className="w-full bg-black border border-white/10 rounded-xl p-3 text-sm focus:border-purple-500 outline-none" value={editingOrder['Corrections Status'] || 'None'} onChange={e => setEditingOrder({...editingOrder, 'Corrections Status': e.target.value as CorrectionsStatus})}><option>None</option><option>Requested</option><option>In Progress</option><option>Resubmitted</option></select></div>
                 </div>
               </div>
-
-              {/* Manual Invoicing */}
               <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-4 border-b border-white/5 pb-2">Manual Actions</h3>
                 <div className="flex gap-3">
@@ -516,7 +545,6 @@ export default function OrdersPage() {
                 </div>
               </div>
             </div>
-
             <div className="p-6 border-t border-white/10 bg-black/50 rounded-b-3xl flex gap-4">
               <button onClick={() => setEditingOrder(null)} className="px-6 py-4 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10 transition">Cancel</button>
               <button onClick={saveOrderUpdates} className="flex-1 py-4 bg-purple-500 text-white font-black uppercase tracking-widest text-xs rounded-xl hover:bg-purple-400 transition shadow-[0_0_20px_rgba(168,85,247,0.3)]">Approve Brief & Save Changes</button>
@@ -562,9 +590,9 @@ export default function OrdersPage() {
 
 function StatCard({ label, value, color = "text-white" }: any) {
   return (
-    <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-5 flex flex-col justify-center">
+    <div className="bg-card border border-theme rounded-2xl p-5 flex flex-col justify-center">
       <div className={`text-2xl font-black ${color} truncate`}>{value}</div>
-      <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mt-1">{label}</div>
+      <div className="text-[10px] text-secondary uppercase tracking-widest font-bold mt-1">{label}</div>
     </div>
   );
 }

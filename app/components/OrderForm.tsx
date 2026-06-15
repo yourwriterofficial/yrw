@@ -17,6 +17,17 @@ const PLAN_DISCOUNTS: Record<Exclude<Plan, 'CUSTOM'>, number> = {
   GOLD: 15, SILVER: 10, BRONZE: 8, STANDARD: 6,
 };
 
+// Helper function to decode escaped HTML entities
+function decodeHtml(str: string) {
+  if (!str) return '';
+  return str
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&');
+}
+
 export default function OrderForm() {
   const router = useRouter();
   const [step, setStep] = useState<number>(1);
@@ -602,8 +613,8 @@ Note: As the student, you are the primary link between the classroom and the wri
 
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest block ml-1">Terms of Service</label>
-            <div className="max-h-64 overflow-y-auto bg-black border border-zinc-800 rounded-2xl p-6 text-xs text-zinc-400 pr-4 break-words" style={{ whiteSpace: 'pre-wrap' }}>
-              {termsText}
+            <div className="max-h-64 overflow-y-auto bg-black border border-zinc-800 rounded-2xl p-6 pr-4 custom-scrollbar prose prose-invert max-w-none">
+              <div dangerouslySetInnerHTML={{ __html: decodeHtml(termsText) }} />
             </div>
           </div>
 

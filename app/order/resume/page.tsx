@@ -14,6 +14,16 @@ type OrderAddon = {
   price_type: 'FLAT_FEE' | 'PERCENT_INCREASE';
   price_value: number;
 };
+// Helper function to decode escaped HTML entities
+function decodeHtml(str: string) {
+  if (!str) return '';
+  return str
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&');
+}
 
 export default function ResumeOrderForm() {
   const router = useRouter();
@@ -208,9 +218,9 @@ export default function ResumeOrderForm() {
 
           <div className="space-y-4 pt-6 border-t border-zinc-800">
             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block ml-1">Terms of Service</label>
-            <div className="h-32 overflow-y-auto bg-black border border-zinc-800 rounded-xl p-4 text-[10px] text-zinc-400 leading-relaxed custom-scrollbar">
-              {termsText || "Loading terms..."}
-            </div>
+            <div className="h-32 overflow-y-auto bg-black border border-zinc-800 rounded-xl p-4 leading-relaxed custom-scrollbar prose prose-invert max-w-none">
+  <div dangerouslySetInnerHTML={{ __html: decodeHtml(termsText || "Loading terms...") }} />
+</div>
             <label className="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} className="mt-1 w-4 h-4 accent-blue-500 bg-black border-zinc-800 rounded" />
               <span className="text-xs text-zinc-300 font-bold leading-relaxed">I agree to the Resume Terms of Service.</span>
