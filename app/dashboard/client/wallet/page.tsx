@@ -40,8 +40,13 @@ export default function WalletPage() {
   }, [router]);
 
   const handleTopUp = async () => {
-    setProcessing(true);
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    setProcessing(true);
     const res = await fetch('/api/wallet/topup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -66,7 +71,7 @@ export default function WalletPage() {
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-black text-primary mb-6">My Wallet</h1>
 
-      {/* Balance Card – stays gradient (not theme‑dependent) */}
+      {/* Balance Card */}
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-2xl p-6 text-white mb-8">
         <p className="text-sm opacity-80">Available Balance</p>
         <p className="text-5xl font-black">₦{balance.toLocaleString()}</p>

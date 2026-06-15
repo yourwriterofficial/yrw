@@ -197,7 +197,7 @@ export default function OrdersPage() {
           email: editingOrder['Email'],
           legal_name: editingOrder['Legal Name'],
           topic: editingOrder['Research Topic'],
-          financial_quote: editingOrder['Financial Quote'],
+          financial_quote: editingOrder['Financial Quote'] ?? 0,
         }, newStatus);
       }
       await fetchOrders();
@@ -231,7 +231,7 @@ export default function OrdersPage() {
           email: editingOrder['Email'],
           legal_name: editingOrder['Legal Name'],
           topic: editingOrder['Research Topic'],
-          financial_quote: editingOrder['Financial Quote'],
+          financial_quote: editingOrder['Financial Quote'] ?? 0,
         }, 'Quote Sent');
       }
       await fetchOrders();
@@ -278,7 +278,7 @@ export default function OrdersPage() {
         email: deliveryModalOrder['Email'],
         legal_name: deliveryModalOrder['Legal Name'],
         topic: deliveryModalOrder['Research Topic'],
-        financial_quote: deliveryModalOrder['Financial Quote'],
+        financial_quote: deliveryModalOrder['Financial Quote'] ?? 0,
       }, 'Work Submitted');
 
       showToast("Uploaded securely to the vault.", "success");
@@ -405,25 +405,25 @@ export default function OrdersPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-primary border-b border-theme text-[10px] uppercase tracking-widest text-secondary">
-  <tr>
-    <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Order ID')}>
-      Order ID <SortIcon field="Order ID" />
-    </th>
-    <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Legal Name')}>
-      Client Info <SortIcon field="Legal Name" />
-    </th>
-    <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Research Topic')}>
-      Topic <SortIcon field="Research Topic" />
-    </th>
-    <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Workflow Status')}>
-      Status <SortIcon field="Workflow Status" />
-    </th>
-    <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Financial Quote')}>
-      Financials <SortIcon field="Financial Quote" />
-    </th>
-    <th className="px-6 py-4 font-black text-right">Admin Actions</th>
-  </tr>
-</thead>
+                <tr>
+                  <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Order ID')}>
+                    Order ID <SortIcon field="Order ID" />
+                  </th>
+                  <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Legal Name')}>
+                    Client Info <SortIcon field="Legal Name" />
+                  </th>
+                  <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Research Topic')}>
+                    Topic <SortIcon field="Research Topic" />
+                  </th>
+                  <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Workflow Status')}>
+                    Status <SortIcon field="Workflow Status" />
+                  </th>
+                  <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Financial Quote')}>
+                    Financials <SortIcon field="Financial Quote" />
+                  </th>
+                  <th className="px-6 py-4 font-black text-right">Admin Actions</th>
+                </tr>
+              </thead>
               <tbody className="divide-y divide-theme">
                 {paginatedOrders.map(order => {
                   const total = parsePriceStr(order['Financial Quote']);
@@ -467,7 +467,7 @@ export default function OrdersPage() {
                   );
                 })}
                 {paginatedOrders.length === 0 && (
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-secondary">No orders match your filters.顶</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-12 text-center text-secondary">No orders match your filters.顶\n</td></tr>
                 )}
               </tbody>
             </table>
@@ -483,15 +483,15 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Manage Order Modal (unchanged, keep as is – it already uses dark mode but will adapt because of parent variables) */}
+      {/* Manage Order Modal */}
       {editingOrder && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#050505] border border-white/10 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+          <div className="bg-primary border border-white/10 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black/50 rounded-t-3xl">
               <div><h2 className="text-xl font-black flex items-center gap-2">Manage Order <span className="text-purple-500">{editingOrder['Order ID']}</span></h2><p className="text-xs text-zinc-500 mt-1">Client: {editingOrder['Legal Name']} ({editingOrder['Email']})</p></div>
               <button onClick={() => setEditingOrder(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition"><lucide.X className="w-5 h-5 text-zinc-400" /></button>
             </div>
-            {/* The rest of the modal content – unchanged – works fine */}
+
             <div className="p-6 overflow-y-auto space-y-8 flex-1">
               <div className="bg-purple-500/5 border border-purple-500/20 rounded-2xl p-6">
                 <h3 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-4 flex items-center gap-2"><lucide.Zap className="w-4 h-4" /> Workflow Actions</h3>
@@ -502,7 +502,7 @@ export default function OrdersPage() {
                   {editingOrder['Workflow Status'] === 'Quote Sent' && !renderBool(editingOrder['60% Paid']) && (
                     <button onClick={() => handleStatusAction('MARK_DEPOSIT_PAID')} className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-xl text-xs">Mark Deposit Paid (60%)</button>
                   )}
-                  {renderBool(editingOrder['60% Paid']) && editingOrder['Workflow Status'] !== 'Work Submitted' && (
+                  {renderBool(editingOrder['60% Paid']) && !renderBool(editingOrder['Work Submitted']) && (
                     <button onClick={() => handleStatusAction('UPLOAD_DRAFT')} className="px-4 py-2 bg-blue-500 text-black font-bold rounded-xl text-xs">Upload Draft / Work</button>
                   )}
                   {renderBool(editingOrder['Work Submitted']) && !renderBool(editingOrder['40% Paid']) && (
@@ -556,17 +556,17 @@ export default function OrdersPage() {
       {/* Vault Upload Modal */}
       {deliveryModalOrder && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#050505] border border-blue-500/30 rounded-3xl p-8 max-w-md w-full shadow-[0_0_40px_rgba(59,130,246,0.15)]">
+          <div className="bg-primary border border-blue-500/30 rounded-3xl p-8 max-w-md w-full shadow-[0_0_40px_rgba(59,130,246,0.15)]">
             <div className="flex justify-between items-start mb-6">
-              <div><h2 className="text-xl font-black text-white flex items-center gap-2"><lucide.ShieldCheck className="text-blue-500" /> Vault Upload</h2><p className="text-xs text-blue-500 uppercase tracking-widest mt-1 font-bold">Order: {deliveryModalOrder['Order ID']}</p></div>
-              <button onClick={() => setDeliveryModalOrder(null)}><lucide.X className="w-5 h-5 text-slate-500 hover:text-white transition" /></button>
+              <div><h2 className="text-xl font-black text-primary flex items-center gap-2"><lucide.ShieldCheck className="text-blue-500" /> Vault Upload</h2><p className="text-xs text-blue-500 uppercase tracking-widest mt-1 font-bold">Order: {deliveryModalOrder['Order ID']}</p></div>
+              <button onClick={() => setDeliveryModalOrder(null)}><lucide.X className="w-5 h-5 text-slate-500 hover:text-primary transition" /></button>
             </div>
             <div className="space-y-4">
-              <p className="text-xs text-slate-400 leading-relaxed">Uploading the final deliverable will automatically mark the project as "Work Submitted" and trigger an email prompting the client to pay their 40% balance to unlock the file.</p>
-              <label className="border-2 border-dashed border-zinc-800 hover:border-blue-500 bg-black rounded-xl p-10 flex flex-col items-center justify-center cursor-pointer transition group">
-                <lucide.UploadCloud className="w-10 h-10 text-zinc-600 group-hover:text-blue-500 mb-3 transition" />
-                <span className="text-sm font-bold text-white mb-1">Select Encrypted File</span>
-                <span className="text-[10px] text-zinc-500 uppercase">.PDF, .DOCX, .ZIP</span>
+              <p className="text-xs text-secondary leading-relaxed">Uploading the final deliverable will automatically mark the project as "Work Submitted" and trigger an email prompting the client to pay their 40% balance to unlock the file.</p>
+              <label className="border-2 border-dashed border-theme hover:border-blue-500 bg-primary rounded-xl p-10 flex flex-col items-center justify-center cursor-pointer transition group">
+                <lucide.UploadCloud className="w-10 h-10 text-secondary group-hover:text-blue-500 mb-3 transition" />
+                <span className="text-sm font-bold text-primary mb-1">Select Encrypted File</span>
+                <span className="text-[10px] text-secondary uppercase">.PDF, .DOCX, .ZIP</span>
                 <input type="file" className="hidden" onChange={(e) => setDeliveryFile(e.target.files?.[0] || null)} />
               </label>
               {deliveryFile && (
