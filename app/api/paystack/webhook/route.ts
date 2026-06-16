@@ -8,82 +8,101 @@ const supabase = createClient(
 );
 
 export async function POST(request: Request) {
+  const startTime = Date.now();
+  console.log('🔔 Webhook received at', new Date().toISOString());
   try {
     const rawBody = await request.text();
     const signature = request.headers.get('x-paystack-signature');
+    console.log('Raw body length:', rawBody.length);
+    console.log('Signature present:', !!signature);
 
+    // Verify signature
     const hash = crypto
       .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY!)
       .update(rawBody)
       .digest('hex');
 
     if (hash !== signature) {
-      console.error('Unauthorized Webhook: Invalid Paystack Signature');
+      console.error('❌ Invalid Paystack Signature');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    console.log('✅ Signature verified');
 
     const payload = JSON.parse(rawBody);
+    console.log('Event type:', payload.event);
     if (payload.event !== 'charge.success') {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
     const { reference, metadata } = payload.data;
+    console.log('Reference:', reference);
+    console.log('Full metadata:', JSON.stringify(metadata, null, 2));
+
     const { type } = metadata || {};
 
     // --- WALLET TOP-UP ---
     if (type === 'wallet_topup') {
       const { userId, amount } = metadata;
+      console.log(`💰 Wallet top-up for user ${userId}, amount ${amount}`);
+
       if (!userId || !amount) {
-        console.error('Missing userId or amount in metadata');
+        console.error('❌ Missing userId or amount in metadata');
         return NextResponse.json({ error: 'Invalid metadata' }, { status: 400 });
       }
 
-      // 1. Increment wallet balance
-      const { error: rpcError } = await supabase.rpc('increment_wallet', {
-        user_id: userId,
-        add_amount: amount,
-      });
-      if (rpcError) {
-        console.error('Wallet increment failed:', rpcError);
-        throw new Error(`Wallet increment failed: ${rpcError.message}`);
+      const numericAmount = Number(amount);
+      if (isNaN(numericAmount) || numericAmount <= 0) {
+        console.error('❌ Invalid amount:', amount);
+        return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
       }
 
-      // 2. Log transaction
-      const { error: txError } = await supabase.from('transactions').insert({
+      const { error: rpcError, data: rpcData } = await supabase.rpc('increment_wallet', {
         user_id: userId,
-        amount,
+        add_amount: numericAmount,
+      });
+
+      if (rpcError) {
+        console.error('❌ RPC error:', rpcError);
+        return NextResponse.json({ error: `RPC failed: ${rpcError.message}` }, { status: 500 });
+      }
+      console.log('✅ Wallet updated, RPC returned:', rpcData);
+
+      const { error: txError, data: txData } = await supabase.from('transactions').insert({
+        user_id: userId,
+        amount: numericAmount,
         type: 'deposit',
         reference,
         status: 'completed',
-      });
+      }).select();
+
       if (txError) {
-        console.error('Transaction log insert failed:', txError);
-        // Not throwing – wallet is already updated, but log the error
+        console.error('❌ Transaction insert error:', txError);
+      } else {
+        console.log('✅ Transaction logged:', txData);
       }
 
-      console.log(`Wallet top-up processed: ${amount} for user ${userId}, ref: ${reference}`);
+      console.log(`✅ Wallet top-up processed successfully in ${Date.now() - startTime}ms`);
       return NextResponse.json({ received: true });
     }
 
     // --- ORDER PAYMENT (existing logic) ---
+    console.log('Processing order payment...');
     const tx_ref = reference;
     const parts = tx_ref.split('_');
     const orderStringId = parts[1];
-    const paymentType = parts[2]; // 'DEPOSIT' or 'BALANCE'
+    const paymentType = parts[2];
 
     if (!orderStringId || !paymentType) {
       console.error('Invalid payment reference format:', tx_ref);
       return NextResponse.json({ error: 'Invalid reference format' }, { status: 400 });
     }
 
-    // Mark invoice as paid
     await supabase
       .from('invoices')
       .update({ status: 'PAID', paid_at: new Date().toISOString() })
       .eq('flutterwave_transaction_ref', tx_ref)
       .throwOnError();
 
-    // Retrieve order data for email
     const { data: orderInfo, error: orderError } = await supabase
       .from('orders')
       .select('email, legal_name, financial_quote, topic, order_id')
@@ -102,7 +121,6 @@ export async function POST(request: Request) {
       financial_quote: orderInfo.financial_quote,
     };
 
-    // Determine updates and send email
     let updates = {};
     let template = null;
     if (paymentType === 'DEPOSIT') {
@@ -118,7 +136,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    // Update order via central API to trigger email (optional, but we'll also call email directly)
     const updateRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/update-order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -138,9 +155,9 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({ received: true }, { status: 200 });
+    return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Critical Webhook Execution Error:', error);
+    console.error('❌ Webhook error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

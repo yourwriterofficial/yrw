@@ -12,32 +12,55 @@ export default function WalletPage() {
   const [topUpAmount, setTopUpAmount] = useState(5000);
   const [processing, setProcessing] = useState(false);
 
-  useEffect(() => {
-    const fetchWallet = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      // Fetch balance
-      const { data: wallet } = await supabase
-        .from('wallets')
-        .select('balance')
-        .eq('user_id', user.id)
-        .single();
-      setBalance(wallet?.balance || 0);
+  const fetchWallet = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/login');
+      return;
+    }
 
-      // Fetch transaction history
-      const { data: txns } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+    const { data: wallet, error: walletError } = await supabase
+      .from('wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .single();
+
+    if (walletError) {
+      console.error('Wallet fetch error:', walletError);
+      setBalance(0);
+    } else {
+      console.log('Wallet data:', wallet);
+      setBalance(wallet?.balance || 0);
+    }
+
+    const { data: txns, error: txError } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (txError) {
+      console.error('Transactions fetch error:', txError);
+    } else {
       setTransactions(txns || []);
-      setLoading(false);
-    };
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchWallet();
-  }, [router]);
+
+    // Check for success query param after redirect from Paystack
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      // Remove the query param to avoid re-triggering
+      window.history.replaceState({}, '', '/dashboard/client/wallet');
+      // Refetch data
+      fetchWallet();
+      // Optionally show a toast (if you have a toast system)
+      // showToast('Wallet funded successfully!', 'success');
+    }
+  }, []);
 
   const handleTopUp = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -71,13 +94,11 @@ export default function WalletPage() {
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-black text-primary mb-6">My Wallet</h1>
 
-      {/* Balance Card */}
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-2xl p-6 text-white mb-8">
         <p className="text-sm opacity-80">Available Balance</p>
         <p className="text-5xl font-black">₦{balance.toLocaleString()}</p>
       </div>
 
-      {/* Top Up Section */}
       <div className="bg-secondary border border-theme rounded-2xl p-6 mb-8">
         <h2 className="text-xl font-bold text-primary mb-4">Add Funds to Wallet</h2>
         <div className="flex flex-wrap gap-3 mb-6">
@@ -113,7 +134,6 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* Transaction History */}
       <div className="bg-secondary border border-theme rounded-2xl p-6">
         <h2 className="text-xl font-bold text-primary mb-4">Transaction History</h2>
         {transactions.length === 0 ? (
