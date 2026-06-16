@@ -17,7 +17,6 @@ const PLAN_DISCOUNTS: Record<Exclude<Plan, 'CUSTOM'>, number> = {
   GOLD: 15, SILVER: 10, BRONZE: 8, STANDARD: 6,
 };
 
-// Helper function to decode escaped HTML entities
 function decodeHtml(str: string) {
   if (!str) return '';
   return str
@@ -35,10 +34,12 @@ export default function OrderForm() {
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [termsText, setTermsText] = useState<string>('');
 
-  // Session detection
+  // Session & wallet
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
   const [loggedInProfile, setLoggedInProfile] = useState<any>(null);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'wallet'>('card');
 
   // Form fields
   const [name, setName] = useState<string>('');
@@ -67,7 +68,7 @@ export default function OrderForm() {
 
   const isCustom = plan === 'CUSTOM';
 
-  // Check login status on mount
+  // Check login status and fetch wallet balance
   useEffect(() => {
     const checkSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -79,6 +80,10 @@ export default function OrderForm() {
         setName(profile?.full_name || user.email?.split('@')[0] || '');
         setEmail(user.email || '');
         setWhatsapp(profile?.whatsapp || '');
+
+        // Fetch wallet balance
+        const { data: wallet } = await supabase.from('wallets').select('balance').eq('user_id', user.id).single();
+        setWalletBalance(wallet?.balance || 0);
       }
     };
     checkSession();
@@ -170,6 +175,9 @@ Note: As the student, you are the primary link between the classroom and the wri
     return Math.round(afterVolume);
   };
 
+  const depositAmount = getUiTotalPrice() * 0.6;
+  const balanceAmount = getUiTotalPrice() * 0.4;
+
   const applyPromo = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!promoCode) return;
@@ -224,6 +232,10 @@ Note: As the student, you are the primary link between the classroom and the wri
     if (!acceptTerms) return alert('You must accept the Terms of Service.');
     if (!validateStep(1)) return;
     if (!deadline) return alert('Please assign a deadline.');
+    if (paymentMethod === 'wallet' && isLoggedIn && walletBalance < depositAmount) {
+      alert('Insufficient wallet balance. Please top up or choose card payment.');
+      return;
+    }
 
     setLoading(true);
     const orderStringId = `RW-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -289,9 +301,33 @@ Note: As the student, you are the primary link between the classroom and the wri
     for (const file of extraFiles) await uploadUnit(file, 'extra');
 
     localStorage.removeItem('rw_order_draft');
-    if (isLoggedIn) {
+
+    // --- PAYMENT HANDLING ---
+    if (isLoggedIn && paymentMethod === 'wallet') {
+      // Deduct deposit from wallet
+      const { error: deductError } = await supabase.rpc('increment_wallet', {
+        user_id: loggedInUser.id,
+        add_amount: -depositAmount,
+      });
+      if (deductError) {
+        alert('Wallet deduction failed. Please contact support.');
+        setLoading(false);
+        return;
+      }
+      // Mark order as deposit paid
+      await supabase.from('orders').update({ sixty_percent_paid: true, workflow_status: 'Synthesis Active' }).eq('order_id', orderStringId);
+      // Log transaction
+      await supabase.from('transactions').insert({
+        user_id: loggedInUser.id,
+        amount: depositAmount,
+        type: 'payment',
+        reference: `DEPOSIT_${orderStringId}`,
+        status: 'completed',
+      });
+      alert('Order placed! Deposit paid from wallet.');
       router.push('/dashboard/client');
     } else {
+      // Pay with card – redirect to Paystack (guest or card payment)
       router.push(`/complete-registration?email=${encodeURIComponent(email)}&orderId=${orderStringId}`);
     }
     setLoading(false);
@@ -519,7 +555,7 @@ Note: As the student, you are the primary link between the classroom and the wri
         </div>
       )}
 
-      {/* STEP 5: Review & Terms */}
+      {/* STEP 5: Review & Terms (with wallet integration) */}
       {step === 5 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="bg-[#0a0a0a] p-6 rounded-[24px] border border-zinc-800 space-y-6">
@@ -568,7 +604,7 @@ Note: As the student, you are the primary link between the classroom and the wri
             {promoMsg && <p className={`text-[10px] font-bold mt-2.5 ml-1 ${promoMsg.includes('❌') ? 'text-red-500' : 'text-emerald-400'}`}>{promoMsg}</p>}
           </div>
 
-          {/* Price breakdown - scrollable on small screens */}
+          {/* Price breakdown (unchanged) */}
           {(() => {
             if (isCustom) {
               const deposit = customPrice * 0.6;
@@ -611,6 +647,33 @@ Note: As the student, you are the primary link between the classroom and the wri
             );
           })()}
 
+          {/* Payment Method Selection (only for logged‑in users) */}
+          {isLoggedIn && (
+            <div className="bg-[#0a0a0a] p-4 rounded-xl border border-zinc-800">
+              <div className="text-[10px] uppercase font-black text-zinc-500 tracking-widest mb-2 ml-1">Payment Method</div>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="paymentMethod" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="accent-emerald-500" />
+                  <span className="text-sm">Pay with Card (Paystack)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="paymentMethod" value="wallet" checked={paymentMethod === 'wallet'} onChange={() => setPaymentMethod('wallet')} className="accent-emerald-500" />
+                  <span className="text-sm">
+                    Pay from Wallet (Balance: ₦{walletBalance.toLocaleString()})
+                    {paymentMethod === 'wallet' && walletBalance < depositAmount && (
+                      <span className="text-red-400 ml-2">– Insufficient balance</span>
+                    )}
+                  </span>
+                </label>
+              </div>
+              {paymentMethod === 'wallet' && walletBalance >= depositAmount && (
+                <p className="text-emerald-400 text-xs mt-2">
+                  Deposit of ₦{depositAmount.toLocaleString()} will be deducted from your wallet.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest block ml-1">Terms of Service</label>
             <div className="max-h-64 overflow-y-auto bg-black border border-zinc-800 rounded-2xl p-6 pr-4 custom-scrollbar prose prose-invert max-w-none">
@@ -626,7 +689,11 @@ Note: As the student, you are the primary link between the classroom and the wri
           </div>
 
           <div className="flex gap-4 pt-4">
-            <button onClick={submitOrder} disabled={!acceptTerms || loading} className="bg-[#1DB954] text-black font-black uppercase text-[11px] tracking-[1.5px] py-5 px-4 rounded-full flex-1 shadow-2xl shadow-emerald-500/20 hover:bg-[#1ed760] transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap md:whitespace-normal">
+            <button
+              onClick={submitOrder}
+              disabled={!acceptTerms || loading || (paymentMethod === 'wallet' && walletBalance < depositAmount)}
+              className="bg-[#1DB954] text-black font-black uppercase text-[11px] tracking-[1.5px] py-5 px-4 rounded-full flex-1 shadow-2xl shadow-emerald-500/20 hover:bg-[#1ed760] transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap md:whitespace-normal"
+            >
               Confirm Order & Proceed
             </button>
             <button onClick={() => goToStep(4)} className="bg-zinc-950 text-zinc-400 border border-zinc-800 px-6 rounded-full font-bold text-xs flex items-center gap-1"><ChevronLeft className="w-4 h-4" /> Back</button>
