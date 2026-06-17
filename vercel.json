@@ -1,14 +1,8 @@
 {
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "https://jaqkqlitaqxjbkxfcvjs.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphcWtxbGl0YXF4amJreGZjdmpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDY3MjAsImV4cCI6MjA5NjUyMjcyMH0.Ylj6HhK0H9JMeqeOFFd_wkbMl1O7BHlQpI1ZloXampI"
-  },
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "framework": "nextjs"
-}
-{
+  "framework": "nextjs",
   "crons": [
     {
       "path": "/api/cron/prune-vault",

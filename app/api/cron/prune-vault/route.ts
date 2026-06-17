@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge'; // optional for Vercel Edge
+export const runtime = 'edge';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,30 +9,44 @@ const supabase = createClient(
 );
 
 export async function GET(request: Request) {
+  // Optional: Add a secret check to prevent unauthorized calls
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const expectedSecret = process.env.CRON_SECRET;
+  
+  if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
+  try {
+    const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data: toDelete, error } = await supabase
-    .from('final_deliverables')
-    .select('id, file_path')
-    .lt('downloaded_at', fourDaysAgo)
-    .not('downloaded_at', 'is', null);
+    // Find files downloaded more than 4 days ago
+    const { data: toDelete, error } = await supabase
+      .from('final_deliverables')
+      .select('id, file_path')
+      .lt('downloaded_at', fourDaysAgo)
+      .not('downloaded_at', 'is', null);
 
-  if (error) {
-    console.error(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('Prune error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    let deletedCount = 0;
+    for (const item of toDelete) {
+      // Delete from storage
+      await supabase.storage.from('final-deliverables').remove([item.file_path]);
+      // Delete record
+      await supabase.from('final_deliverables').delete().eq('id', item.id);
+      deletedCount++;
+    }
+
+    return NextResponse.json({ 
+      message: `Pruned ${deletedCount} files.`,
+      deleted: deletedCount 
+    });
+  } catch (err: any) {
+    console.error('Cron error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
-
-  let deletedCount = 0;
-  for (const item of toDelete) {
-    await supabase.storage.from('final-deliverables').remove([item.file_path]);
-    await supabase.from('final_deliverables').delete().eq('id', item.id);
-    deletedCount++;
-  }
-
-  return NextResponse.json({ message: `Pruned ${deletedCount} files.` });
 }
