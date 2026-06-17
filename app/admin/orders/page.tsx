@@ -257,39 +257,57 @@ export default function OrdersPage() {
   };
 
   const handleDeliveryUpload = async () => {
-    if (!deliveryFile || !deliveryModalOrder) return showToast("Select a file.", "error");
-    setUploadingDelivery(true);
-    try {
-      const orderId = deliveryModalOrder['Order ID'];
-      const fileExt = deliveryFile.name.split('.').pop();
-      const filePath = `${orderId}/FINAL_DELIVERY_${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('final-deliverables').upload(filePath, deliveryFile);
-      if (uploadError) throw uploadError;
+  if (!deliveryFile || !deliveryModalOrder) return showToast("Select a file.", "error");
+  setUploadingDelivery(true);
+  try {
+    const orderId = deliveryModalOrder['Order ID'];
+    const fileExt = deliveryFile.name.split('.').pop();
+    const filePath = `${orderId}/FINAL_DELIVERY_${Date.now()}.${fileExt}`;
+    
+    // 1. Upload to storage
+    const { error: uploadError } = await supabase.storage.from('final-deliverables').upload(filePath, deliveryFile);
+    if (uploadError) throw uploadError;
 
-      const res = await fetch('/api/admin/update-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, updates: { work_submitted: true, vault_status: 'Final Files Secured' } }),
+    // 2. Insert record into final_deliverables table
+    const { error: insertError } = await supabase
+      .from('final_deliverables')
+      .insert({
+        order_id: orderId,
+        file_path: filePath,
+        file_name: deliveryFile.name,
+        uploaded_at: new Date().toISOString(),
       });
-      if (!res.ok) throw new Error(await res.text());
+    if (insertError) throw insertError;
 
-      await sendStatusEmail({
-        orderId: deliveryModalOrder['Order ID'],
-        email: deliveryModalOrder['Email'],
-        legal_name: deliveryModalOrder['Legal Name'],
-        topic: deliveryModalOrder['Research Topic'],
-        financial_quote: deliveryModalOrder['Financial Quote'] ?? 0,
-      }, 'Work Submitted');
+    // 3. Update order status
+    const res = await fetch('/api/admin/update-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        orderId, 
+        updates: { work_submitted: true, vault_status: 'Final Files Secured' } 
+      }),
+    });
+    if (!res.ok) throw new Error(await res.text());
 
-      showToast("Uploaded securely to the vault.", "success");
-      setDeliveryModalOrder(null);
-      setDeliveryFile(null);
-      fetchOrders();
-    } catch (err: any) {
-      showToast(`Upload failed: ${err.message}`, "error");
-    }
-    setUploadingDelivery(false);
-  };
+    // 4. Send email notification
+    await sendStatusEmail({
+      orderId: deliveryModalOrder['Order ID'],
+      email: deliveryModalOrder['Email'],
+      legal_name: deliveryModalOrder['Legal Name'],
+      topic: deliveryModalOrder['Research Topic'],
+      financial_quote: deliveryModalOrder['Financial Quote'] ?? 0,
+    }, 'Work Submitted');
+
+    showToast("Uploaded securely to the vault.", "success");
+    setDeliveryModalOrder(null);
+    setDeliveryFile(null);
+    fetchOrders(); // refresh the order list
+  } catch (err: any) {
+    showToast(`Upload failed: ${err.message}`, "error");
+  }
+  setUploadingDelivery(false);
+};
 
   const initiateDeleteOrder = (order: AdminOrderView) => {
     setOrderToDelete(order);

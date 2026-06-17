@@ -8,3 +8,11 @@
   "installCommand": "npm install",
   "framework": "nextjs"
 }
+{
+  "crons": [
+    {
+      "path": "/api/cron/prune-vault",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

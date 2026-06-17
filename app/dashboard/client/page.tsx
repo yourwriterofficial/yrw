@@ -77,6 +77,8 @@ function DashboardContent() {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<AdminOrderView | null>(null);
   const [isAdminPreview, setIsAdminPreview] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
+  const [unviewedVaultCount, setUnviewedVaultCount] = useState(0);
+  const [vaultFiles, setVaultFiles] = useState<any[]>([]);
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -108,6 +110,54 @@ function DashboardContent() {
     }
   }, []);
 
+  // Fetch vault files for the user (improved error handling)
+  const fetchVaultFiles = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get user's order IDs
+      const { data: userOrders, error: ordersError } = await supabase
+        .from('orders')
+        .select('order_id')
+        .or(`client_id.eq.${user.id},email.eq.${user.email}`);
+
+      if (ordersError) {
+        console.error('Orders fetch error:', ordersError);
+        throw ordersError;
+      }
+
+      const orderIds = userOrders?.map(o => o.order_id) || [];
+
+      if (orderIds.length === 0) {
+        setVaultFiles([]);
+        setUnviewedVaultCount(0);
+        return;
+      }
+
+      // Fetch deliverables for these orders
+      const { data: files, error: filesError } = await supabase
+        .from('final_deliverables')
+        .select('*')
+        .in('order_id', orderIds)
+        .order('uploaded_at', { ascending: false });
+
+      if (filesError) {
+        console.error('Deliverables fetch error:', filesError);
+        throw filesError;
+      }
+
+      setVaultFiles(files || []);
+      const unviewed = files?.filter(f => f.downloaded_at === null).length || 0;
+      setUnviewedVaultCount(unviewed);
+    } catch (err) {
+      console.error('Error fetching vault files:', err);
+      // Set empty state to avoid breaking the UI
+      setVaultFiles([]);
+      setUnviewedVaultCount(0);
+    }
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -133,6 +183,9 @@ function DashboardContent() {
       } else {
         await refreshOrders(user.email, false, null);
       }
+
+      // Fetch vault files
+      await fetchVaultFiles();
       
       setLoading(false);
     };
@@ -145,10 +198,14 @@ function DashboardContent() {
         refreshOrders(isAdminPreview ? undefined : user?.email, isAdminPreview, searchParams.get('preview'));
         showToast('Order status updated', 'info');
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'final_deliverables' }, () => {
+        fetchVaultFiles();
+        showToast('Vault updated', 'info');
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [router, searchParams, refreshOrders]);
+  }, [router, searchParams, refreshOrders, fetchVaultFiles]);
 
   const handlePayment = async (orderId: string, amount: number, email: string, name: string, type: 'DEPOSIT' | 'BALANCE') => {
     setProcessingPayment(orderId);
@@ -167,17 +224,45 @@ function DashboardContent() {
     setProcessingPayment(null);
   };
 
-  const downloadFile = async (orderId: string) => {
+  // *** FIXED: downloadFile uses server API ***
+  const downloadFile = async (fileId: number) => {
     try {
-      const { data: files } = await supabase.storage.from('final-deliverables').list(orderId);
-      if (!files || files.length === 0) {
-        showToast('No files found in the vault yet.', 'error');
-        return;
+      const res = await fetch('/api/client/download-vault-file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+        await fetchVaultFiles(); // refresh badge
+        showToast('Download started', 'success');
+      } else {
+        showToast(data.error || 'Download failed', 'error');
       }
-      const { data: linkData } = await supabase.storage.from('final-deliverables').createSignedUrl(`${orderId}/${files[0].name}`, 60);
-      if (linkData) window.open(linkData.signedUrl, '_blank');
-    } catch (error) {
-      showToast('Error accessing the secure vault.', 'error');
+    } catch (err) {
+      console.error('Download error:', err);
+      showToast('Network error', 'error');
+    }
+  };
+
+  const markViewed = async (fileId: number) => {
+    try {
+      const res = await fetch('/api/client/mark-vault-viewed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId }),
+      });
+      if (res.ok) {
+        showToast('Marked as viewed', 'success');
+        await fetchVaultFiles(); // refresh to update badge
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Failed to mark as viewed', 'error');
+      }
+    } catch (err) {
+      console.error('Mark viewed error:', err);
+      showToast('Error marking as viewed', 'error');
     }
   };
 
@@ -205,7 +290,6 @@ function DashboardContent() {
 
   const activeOrders = orders.filter(o => o['Workflow Status'] !== 'Completed' && o['Workflow Status'] !== 'Cancelled');
   const completedOrders = orders.filter(o => o['Workflow Status'] === 'Completed');
-  const vaultItems = orders.filter(o => renderBool(o['Work Submitted']) || o['Workflow Status'] === 'Completed');
 
   return (
     <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row font-['Inter'] selection:bg-emerald-500/30">
@@ -234,7 +318,7 @@ function DashboardContent() {
         <nav className="flex flex-col gap-2 flex-1">
           <SidebarBtn active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<lucide.LayoutDashboard />} label="Dashboard" />
           <SidebarBtn active={false} onClick={() => router.push('/dashboard/client/order/new')} icon={<lucide.PlusCircle />} label="New Order" />
-          <SidebarBtn active={activeTab === 'vault'} onClick={() => setActiveTab('vault')} icon={<lucide.Lock />} label="Secure Vault" badge={vaultItems.length} />
+          <SidebarBtn active={activeTab === 'vault'} onClick={() => setActiveTab('vault')} icon={<lucide.Lock />} label="Secure Vault" badge={unviewedVaultCount} />
           <SidebarBtn active={activeTab === 'wallet'} onClick={() => setActiveTab('wallet')} icon={<lucide.Wallet />} label="Wallet" />
           <SidebarBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<lucide.User />} label="My Profile" />
         </nav>
@@ -272,7 +356,7 @@ function DashboardContent() {
       {mobileMenuOpen && (
         <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px]">
           <SidebarBtn active={activeTab === 'dashboard'} onClick={() => {setActiveTab('dashboard'); setMobileMenuOpen(false);}} icon={<lucide.LayoutDashboard />} label="Dashboard" />
-          <SidebarBtn active={activeTab === 'vault'} onClick={() => {setActiveTab('vault'); setMobileMenuOpen(false);}} icon={<lucide.Lock />} label="Secure Vault" />
+          <SidebarBtn active={activeTab === 'vault'} onClick={() => {setActiveTab('vault'); setMobileMenuOpen(false);}} icon={<lucide.Lock />} label="Secure Vault" badge={unviewedVaultCount} />
           <SidebarBtn active={activeTab === 'wallet'} onClick={() => {setActiveTab('wallet'); setMobileMenuOpen(false);}} icon={<lucide.Wallet />} label="Wallet" />
           <SidebarBtn active={activeTab === 'profile'} onClick={() => {setActiveTab('profile'); setMobileMenuOpen(false);}} icon={<lucide.User />} label="My Profile" />
           <ThemeToggle />
@@ -304,7 +388,7 @@ function DashboardContent() {
                 <StatCard label="Total Orders" value={orders.length} icon={<lucide.Layers />} />
                 <StatCard label="Active" value={activeOrders.length} icon={<lucide.Activity />} color="text-amber-400" />
                 <StatCard label="Completed" value={completedOrders.length} icon={<lucide.CheckCircle2 />} color="text-emerald-400" />
-                <StatCard label="In Vault" value={vaultItems.length} icon={<lucide.Lock />} color="text-purple-400" />
+                <StatCard label="In Vault" value={vaultFiles.length} icon={<lucide.Lock />} color="text-purple-400" />
               </div>
 
               {/* Orders List */}
@@ -344,30 +428,53 @@ function DashboardContent() {
                 <p className="text-secondary mt-1">Encrypted storage for all your completed deliverables.</p>
               </header>
               
-              {vaultItems.length === 0 ? (
+              {vaultFiles.length === 0 ? (
                 <div className="border border-theme bg-card rounded-3xl p-12 text-center">
                   <lucide.Shield className="w-12 h-12 text-secondary mx-auto mb-4" />
                   <p className="text-secondary">Your vault is currently empty. Files will appear here once drafting is complete.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {vaultItems.map(order => {
-                    const paid40 = renderBool(order['40% Paid']);
+                  {vaultFiles.map(file => {
+                    // Find the associated order to check payment status
+                    const order = orders.find(o => o['Order ID'] === file.order_id);
+                    const paid40 = order ? renderBool(order['40% Paid']) : false;
+                    const isViewed = file.downloaded_at !== null;
                     return (
-                      <div key={order['Order ID']} className="bg-card border border-theme rounded-2xl p-6 relative overflow-hidden group">
+                      <div key={file.id} className="bg-card border border-theme rounded-2xl p-6 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24 text-secondary" /></div>
-                        <h4 className="font-bold text-lg mb-1 relative z-10 text-primary">{order['Order ID']}</h4>
-                        <p className="text-xs text-secondary mb-6 relative z-10 line-clamp-1">{order['Research Topic']}</p>
+                        <h4 className="font-bold text-lg mb-1 relative z-10 text-primary">{file.order_id}</h4>
+                        <p className="text-xs text-secondary mb-2 relative z-10">{file.file_name}</p>
+                        <p className="text-[10px] text-secondary mb-4 relative z-10">
+                          Uploaded: {new Date(file.uploaded_at).toLocaleDateString()}
+                          {isViewed && ` • Viewed: ${new Date(file.downloaded_at).toLocaleDateString()}`}
+                        </p>
                         
-                        {paid40 ? (
-                          <button onClick={() => downloadFile(order['Order ID'])} className="w-full py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition relative z-10">
-                            <lucide.Download className="w-4 h-4" /> Download Package
-                          </button>
-                        ) : (
-                          <button onClick={() => handlePayment(order['Order ID'], parsePriceStr(order['Financial Quote']) * 0.4, order['Email'], order['Legal Name'], 'BALANCE')} className="w-full py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition relative z-10">
-                            <lucide.Unlock className="w-4 h-4" /> Pay Balance to Unlock
-                          </button>
-                        )}
+                        <div className="flex flex-col sm:flex-row gap-2 relative z-10">
+                          {paid40 ? (
+                            // *** FIXED: pass only file.id to downloadFile ***
+                            <button onClick={() => downloadFile(file.id)} className="flex-1 py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition">
+                              <lucide.Download className="w-4 h-4" /> Download Package
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => order && handlePayment(order['Order ID'], parsePriceStr(order['Financial Quote']) * 0.4, order['Email'], order['Legal Name'], 'BALANCE')} 
+                              className="flex-1 py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition"
+                            >
+                              <lucide.Unlock className="w-4 h-4" /> Pay Balance to Unlock
+                            </button>
+                          )}
+                          
+                          {!isViewed && paid40 && (
+                            <button
+                              onClick={() => markViewed(file.id)}
+                              className="px-4 py-3 bg-white/5 hover:bg-white/10 text-secondary rounded-xl text-sm flex items-center justify-center gap-2 transition whitespace-nowrap"
+                              title="Mark as viewed (clears notification badge)"
+                            >
+                              <lucide.Eye className="w-4 h-4" /> Mark Viewed
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
