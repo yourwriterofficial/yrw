@@ -7,6 +7,9 @@ import * as lucide from 'lucide-react';
 import type { AdminOrderView } from '@/lib/types';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import WalletPage from './wallet/page';
+import { DashboardSkeleton } from '@/app/components/ui/Skeleton';
+import { ToastContainer, showToast } from '@/app/components/ui/Toast';
+import StatusBadge from '@/app/components/ui/StatusBadge';
 
 // ==========================================
 // 1. HELPER FUNCTIONS
@@ -27,36 +30,120 @@ const formatDate = (iso: string | null): string => {
   try { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return iso; }
 };
 
+const parseAdditionalInfo = (raw: string | null): { notes?: string; extra_addons?: any[] } => {
+  const str = raw || '';
+  if (str.trim().startsWith('{') && str.trim().endsWith('}')) {
+    try {
+      return JSON.parse(str);
+    } catch (e) {}
+  }
+  return { notes: str, extra_addons: [] };
+};
+
+const getPipelineDetails = (order: any) => {
+  const oid = order?.['Order ID'] || order?.order_id || '';
+  const top = order?.['Research Topic'] || order?.topic || '';
+  
+  if (oid.startsWith('DEV-') || top.startsWith('[DEV]')) {
+    return {
+      category: 'Software Dev',
+      icon: 'Terminal',
+      colorClass: 'text-cyan-400',
+      bgClass: 'bg-cyan-500/10',
+      borderClass: 'border-cyan-500/20',
+      label: 'Full Stack & Custom Software',
+      steps: [
+        { title: 'Engineering Briefing', desc: 'Requirements received by engineering.' },
+        { title: 'Scope & Architecture Design', desc: 'System specs and blueprints approved.' },
+        { title: 'Active Development', desc: 'Coding modules and integrations in progress.' },
+        { title: 'QA & Staging Deployment', desc: 'Testing build verified on staging servers.' },
+        { title: 'Production Handover', desc: 'Secure repository credentials and docs ready.' },
+      ]
+    };
+  }
+  if (oid.startsWith('CT-') || top.startsWith('[CONTENT]')) {
+    return {
+      category: 'Content Writing',
+      icon: 'PenTool',
+      colorClass: 'text-amber-400',
+      bgClass: 'bg-amber-500/10',
+      borderClass: 'border-amber-500/20',
+      label: 'Content & Creative Writing',
+      steps: [
+        { title: 'Briefing Received', desc: 'Content directives and style parameters logged.' },
+        { title: 'Outline Drafting', desc: 'Content structure and outline approved.' },
+        { title: 'Copywriting & Content Synthesis', desc: 'First-pass copywriting in progress.' },
+        { title: 'Editorial Audit & SEO Scan', desc: 'Grammar check, readability and SEO audit.' },
+        { title: 'Final Copy Delivery', desc: 'Polished copy saved to final directory.' },
+      ]
+    };
+  }
+  if (oid.startsWith('CUST-') || top.startsWith('[COMPLEX]')) {
+    return {
+      category: 'Bespoke Fieldwork',
+      icon: 'LineChart',
+      colorClass: 'text-purple-400',
+      bgClass: 'bg-purple-500/10',
+      borderClass: 'border-purple-500/20',
+      label: 'Custom Data & Fieldwork',
+      steps: [
+        { title: 'Research Briefing', desc: 'Fieldwork parameters and methodologies logged.' },
+        { title: 'Data Collection & Processing', desc: 'Surveys and raw datasets compiled.' },
+        { title: 'Statistical Modeling & Analysis', desc: 'SPSS/modeling processing completed.' },
+        { title: 'Report Compiling', desc: 'Drafting findings and visualization briefs.' },
+        { title: 'Handover & File Release', desc: 'Datasets and documentation released.' },
+      ]
+    };
+  }
+  if (oid.startsWith('CV-') || top.startsWith('[RESUME]')) {
+    return {
+      category: 'Resume & CV',
+      icon: 'Briefcase',
+      colorClass: 'text-blue-400',
+      bgClass: 'bg-blue-500/10',
+      borderClass: 'border-blue-500/20',
+      label: 'Executive CVs & Resumes',
+      steps: [
+        { title: 'ATS Guidelines Logged', desc: 'Target role, LinkedIn profile, history logged.' },
+        { title: 'ATS Audit & Structuring', desc: 'Keyword alignment & outline structure draft.' },
+        { title: 'Drafting CV/Resume', desc: 'Compiling achievements and cover letter copy.' },
+        { title: 'Review & Audit Checks', desc: 'Formatting and double-audit checks finished.' },
+        { title: 'Final Handover', desc: 'ATS-optimized PDF and doc files ready.' },
+      ]
+    };
+  }
+  
+  // Default: Academic
+  return {
+    category: 'Academic Research',
+    icon: 'BookOpen',
+    colorClass: 'text-emerald-400',
+    bgClass: 'bg-emerald-500/10',
+    borderClass: 'border-emerald-500/20',
+    label: 'Standard Academic Research',
+    steps: [
+      { title: 'Order Placed', desc: 'Briefing received by system.' },
+      { title: 'Outline Drafted', desc: 'Chapter structure and thesis statement approved.' },
+      { title: 'Research & Synthesis', desc: 'Academic drafting and citation compilation.' },
+      { title: 'Plagiarism & AI Scan', desc: 'Turnitin and audit reports secured.' },
+      { title: 'Completed & Released', desc: 'Final paper available in vault.' },
+    ]
+  };
+};
+
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
-
-let toastId = 0;
-const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-  const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
-  window.dispatchEvent(event);
-};
 
 // ==========================================
 // 2. MAIN COMPONENT EXPORT
 // ==========================================
 export default function ClientDashboard() {
   return (
-    <Suspense fallback={<LoadingScreen />}>
+    <Suspense fallback={<DashboardSkeleton stats={4} rows={4} />}>
       <DashboardContent />
     </Suspense>
-  );
-}
-
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen bg-primary text-primary flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-        <span className="text-emerald-500 text-xs font-black uppercase tracking-widest animate-pulse">Initializing Workspace...</span>
-      </div>
-    </div>
   );
 }
 
@@ -76,18 +163,18 @@ function DashboardContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<AdminOrderView | null>(null);
   const [isAdminPreview, setIsAdminPreview] = useState(false);
-  const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
   const [unviewedVaultCount, setUnviewedVaultCount] = useState(0);
   const [vaultFiles, setVaultFiles] = useState<any[]>([]);
+  const [newAddonName, setNewAddonName] = useState('');
+  const [submittingAddon, setSubmittingAddon] = useState(false);
+  const [processingAddonPayment, setProcessingAddonPayment] = useState<string | null>(null);
 
   useEffect(() => {
-    const handler = (e: any) => {
-      setToasts(prev => [...prev, e.detail]);
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== e.detail.id)), 4000);
-    };
-    window.addEventListener('app:toast', handler);
-    return () => window.removeEventListener('app:toast', handler);
-  }, []);
+    const tab = searchParams.get('tab');
+    if (tab === 'vault' || tab === 'wallet' || tab === 'profile' || tab === 'dashboard') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const refreshOrders = useCallback(async (userId?: string, adminMode?: boolean, previewId?: string | null) => {
     try {
@@ -111,16 +198,20 @@ function DashboardContent() {
   }, []);
 
   // Fetch vault files for the user (improved error handling)
-  const fetchVaultFiles = useCallback(async () => {
+  const fetchVaultFiles = useCallback(async (authUser?: { id: string; email?: string | null }) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      let u = authUser;
+      if (!u) {
+        const { data } = await supabase.auth.getUser();
+        u = data.user ?? undefined;
+      }
+      if (!u) return;
 
       // Get user's order IDs
       const { data: userOrders, error: ordersError } = await supabase
         .from('orders')
         .select('order_id')
-        .or(`client_id.eq.${user.id},email.eq.${user.email}`);
+        .or(`client_id.eq.${u.id},email.eq.${u.email}`);
 
       if (ordersError) {
         console.error('Orders fetch error:', ordersError);
@@ -167,7 +258,13 @@ function DashboardContent() {
       }
       setUser(user);
 
-      const { data: userProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      // Profile is needed to decide admin vs. client orders; the vault fetch is
+      // independent, so run both in parallel (and reuse `user` to avoid a second
+      // getUser() round-trip inside fetchVaultFiles).
+      const [{ data: userProfile }] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).single(),
+        fetchVaultFiles(user),
+      ]);
       setProfile(userProfile);
 
       const previewOrderId = searchParams.get('preview');
@@ -175,18 +272,11 @@ function DashboardContent() {
       setIsAdminPreview(isAdmin);
 
       if (isAdmin) {
-        if (previewOrderId) {
-          await refreshOrders(undefined, true, previewOrderId);
-        } else {
-          await refreshOrders(undefined, true, null);
-        }
+        await refreshOrders(undefined, true, previewOrderId || null);
       } else {
         await refreshOrders(user.email, false, null);
       }
 
-      // Fetch vault files
-      await fetchVaultFiles();
-      
       setLoading(false);
     };
     
@@ -207,6 +297,14 @@ function DashboardContent() {
     return () => { supabase.removeChannel(channel); };
   }, [router, searchParams, refreshOrders, fetchVaultFiles]);
 
+  useEffect(() => {
+    const preview = searchParams.get('preview');
+    if (preview && orders.length > 0) {
+      const match = orders.find(o => o['Order ID'] === preview);
+      if (match) setSelectedOrderDetails(match);
+    }
+  }, [searchParams, orders]);
+
   const handlePayment = async (orderId: string, amount: number, email: string, name: string, type: 'DEPOSIT' | 'BALANCE') => {
     setProcessingPayment(orderId);
     try {
@@ -222,6 +320,110 @@ function DashboardContent() {
       showToast('Network error communicating with payment gateway.', 'error');
     }
     setProcessingPayment(null);
+  };
+
+  const handleRequestAddon = async (orderId: string) => {
+    if (!newAddonName.trim()) return;
+    setSubmittingAddon(true);
+    try {
+      const res = await fetch('/api/client/request-addon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, addonName: newAddonName }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Extra requirement addon requested successfully!', 'success');
+        setNewAddonName('');
+        // Refresh details modal view
+        if (selectedOrderDetails) {
+          const rawInfo = selectedOrderDetails['Additional Info'] || '';
+          let payload = { notes: '', extra_addons: [] as any[] };
+          try {
+            if (rawInfo.trim().startsWith('{')) payload = JSON.parse(rawInfo);
+            else payload = { notes: rawInfo, extra_addons: [] };
+          } catch {
+            payload = { notes: rawInfo, extra_addons: [] };
+          }
+          payload.extra_addons.push(data.addon);
+          setSelectedOrderDetails({
+            ...selectedOrderDetails,
+            ['Additional Info']: JSON.stringify(payload)
+          });
+        }
+        await refreshOrders(isAdminPreview ? undefined : user?.email, isAdminPreview, searchParams.get('preview'));
+      } else {
+        showToast(`Request failed: ${data.error}`, 'error');
+      }
+    } catch (err) {
+      showToast('Network error while requesting addon.', 'error');
+    }
+    setSubmittingAddon(false);
+  };
+
+  const handlePayAddonWallet = async (orderId: string, addonId: string, price: number) => {
+    setProcessingAddonPayment(addonId);
+    try {
+      const res = await fetch('/api/client/pay-addon-wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, addonId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Addon paid successfully from wallet balance!', 'success');
+        
+        // Refresh details modal view
+        if (selectedOrderDetails) {
+          const rawInfo = selectedOrderDetails['Additional Info'] || '';
+          let payload = { notes: '', extra_addons: [] as any[] };
+          try {
+            payload = JSON.parse(rawInfo);
+          } catch {}
+          const idx = payload.extra_addons.findIndex((a: any) => a.id === addonId);
+          if (idx !== -1) {
+            payload.extra_addons[idx].status = 'PAID';
+            setSelectedOrderDetails({
+              ...selectedOrderDetails,
+              ['Additional Info']: JSON.stringify(payload)
+            });
+          }
+        }
+        
+        await refreshOrders(isAdminPreview ? undefined : user?.email, isAdminPreview, searchParams.get('preview'));
+      } else {
+        showToast(`Wallet payment failed: ${data.error}`, 'error');
+      }
+    } catch (err) {
+      showToast('Network error while processing wallet payment.', 'error');
+    }
+    setProcessingAddonPayment(null);
+  };
+
+  const handlePayAddonCard = async (orderId: string, addonId: string, price: number) => {
+    setProcessingAddonPayment(addonId);
+    try {
+      const res = await fetch('/api/paystack/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          amount: price,
+          email: user.email,
+          name: profile?.full_name || 'Client',
+          type: `ADDON-${addonId}`
+        }),
+      });
+      const data = await res.json();
+      if (data.link) {
+        window.location.href = data.link;
+      } else {
+        showToast(`Card payment initiation failed: ${data.error}`, 'error');
+      }
+    } catch (err) {
+      showToast('Network error initiating card payment.', 'error');
+    }
+    setProcessingAddonPayment(null);
   };
 
   // *** FIXED: downloadFile uses server API ***
@@ -286,340 +488,438 @@ function DashboardContent() {
     else showToast('Verification email sent. Please confirm your new address.', 'success');
   };
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <DashboardSkeleton stats={4} rows={4} />;
 
   const activeOrders = orders.filter(o => o['Workflow Status'] !== 'Completed' && o['Workflow Status'] !== 'Cancelled');
   const completedOrders = orders.filter(o => o['Workflow Status'] === 'Completed');
 
   return (
-    <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row font-['Inter'] selection:bg-emerald-500/30">
-      
-      {/* Toast container */}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2">
-        {toasts.map(t => (
-          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold animate-in slide-in-from-right duration-300 ${
-            t.type === 'success' ? 'bg-emerald-500 text-black' : t.type === 'error' ? 'bg-red-500 text-white' : 'bg-card text-primary'
-          }`}>
-            {t.message}
-          </div>
-        ))}
-      </div>
-
-      {/* ================= SIDEBAR ================= */}
-      <aside className="hidden md:flex flex-col w-64 bg-secondary border-r border-theme h-screen sticky top-0 p-6">
-        <div className="flex items-center gap-3 mb-12">
-          <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-black font-black text-xl">Y</div>
-          <div>
-            <h1 className="font-black tracking-tight leading-none text-lg">YRW</h1>
-            <p className="text-[10px] text-emerald-500 uppercase tracking-widest font-bold">Client Portal</p>
-          </div>
-        </div>
-
-        <nav className="flex flex-col gap-2 flex-1">
-          <SidebarBtn active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<lucide.LayoutDashboard />} label="Dashboard" />
-          <SidebarBtn active={false} onClick={() => router.push('/dashboard/client/order/new')} icon={<lucide.PlusCircle />} label="New Order" />
-          <SidebarBtn active={activeTab === 'vault'} onClick={() => setActiveTab('vault')} icon={<lucide.Lock />} label="Secure Vault" badge={unviewedVaultCount} />
-          <SidebarBtn active={activeTab === 'wallet'} onClick={() => setActiveTab('wallet')} icon={<lucide.Wallet />} label="Wallet" />
-          <SidebarBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<lucide.User />} label="My Profile" />
-        </nav>
-
-        <div className="border-t border-theme pt-6 mt-6">
-          <div className="mb-4">
-            <ThemeToggle />
-          </div>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center border border-theme">
-              <lucide.User className="w-5 h-5 text-secondary" />
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-bold truncate">{profile?.full_name || 'Client'}</p>
-              <p className="text-xs text-secondary truncate">{user?.email}</p>
-            </div>
-          </div>
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 text-red-400 hover:text-red-300 transition text-sm font-bold p-2 rounded-lg hover:bg-red-500/10">
-            <lucide.LogOut className="w-4 h-4" /> Sign Out
-          </button>
-        </div>
-      </aside>
-
-      {/* ================= MOBILE TOPBAR ================= */}
-      <div className="md:hidden bg-secondary border-b border-theme p-4 flex justify-between items-center sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-black font-black">Y</div>
-          <span className="font-bold text-primary">Portal</span>
-        </div>
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-primary">
-          {mobileMenuOpen ? <lucide.X /> : <lucide.Menu />}
-        </button>
-      </div>
-
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px]">
-          <SidebarBtn active={activeTab === 'dashboard'} onClick={() => {setActiveTab('dashboard'); setMobileMenuOpen(false);}} icon={<lucide.LayoutDashboard />} label="Dashboard" />
-          <SidebarBtn active={activeTab === 'vault'} onClick={() => {setActiveTab('vault'); setMobileMenuOpen(false);}} icon={<lucide.Lock />} label="Secure Vault" badge={unviewedVaultCount} />
-          <SidebarBtn active={activeTab === 'wallet'} onClick={() => {setActiveTab('wallet'); setMobileMenuOpen(false);}} icon={<lucide.Wallet />} label="Wallet" />
-          <SidebarBtn active={activeTab === 'profile'} onClick={() => {setActiveTab('profile'); setMobileMenuOpen(false);}} icon={<lucide.User />} label="My Profile" />
-          <ThemeToggle />
-          <button onClick={handleLogout} className="mt-4 p-3 text-red-400 font-bold text-left flex items-center gap-2"><lucide.LogOut className="w-4 h-4"/> Sign Out</button>
+    <div className="p-6 md:p-10">
+      {/* Admin Preview Banner */}
+      {isAdminPreview && (
+        <div className="bg-amber-500 text-black py-2 px-6 flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest mb-6 rounded-xl shadow-md">
+          <lucide.Eye className="w-4 h-4" /> Admin Preview Mode
         </div>
       )}
 
-      {/* ================= MAIN CONTENT AREA ================= */}
-      <main className="flex-1 overflow-y-auto relative">
-        
-        {/* Admin Preview Banner */}
-        {isAdminPreview && (
-          <div className="bg-amber-500 text-black py-2 px-6 flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest sticky top-0 z-40 shadow-md">
-            <lucide.Eye className="w-4 h-4" /> Admin Preview Mode
+      {/* === TAB: DASHBOARD === */}
+      {activeTab === 'dashboard' && (
+        <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
+          <header className="mb-10">
+            <h2 className="text-3xl font-black text-primary">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
+            <p className="text-secondary mt-1">Here is the current status of your research pipeline.</p>
+          </header>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <StatCard label="Total Orders" value={orders.length} icon={<lucide.Layers />} />
+            <StatCard label="Active" value={activeOrders.length} icon={<lucide.Activity />} color="text-amber-400" />
+            <StatCard label="Completed" value={completedOrders.length} icon={<lucide.CheckCircle2 />} color="text-emerald-400" />
+            <StatCard label="In Vault" value={vaultFiles.length} icon={<lucide.Lock />} color="text-purple-400" />
           </div>
-        )}
 
-        <div className="p-6 md:p-10">
-          {/* === TAB: DASHBOARD === */}
-          {activeTab === 'dashboard' && (
-            <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
-              <header className="mb-10">
-                <h2 className="text-3xl font-black text-primary">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
-                <p className="text-secondary mt-1">Here is the current status of your research pipeline.</p>
-              </header>
+          {/* Orders List */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-black">Active Projects</h3>
+              <button onClick={() => router.push('/dashboard/client/order/new')} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-bold transition flex items-center gap-2 cursor-pointer">
+                <lucide.Plus className="w-3 h-3" /> New Order
+              </button>
+            </div>
 
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-                <StatCard label="Total Orders" value={orders.length} icon={<lucide.Layers />} />
-                <StatCard label="Active" value={activeOrders.length} icon={<lucide.Activity />} color="text-amber-400" />
-                <StatCard label="Completed" value={completedOrders.length} icon={<lucide.CheckCircle2 />} color="text-emerald-400" />
-                <StatCard label="In Vault" value={vaultFiles.length} icon={<lucide.Lock />} color="text-purple-400" />
+            {orders.length === 0 ? (
+              <div className="empty-state">
+                <lucide.Inbox className="w-12 h-12 text-secondary mx-auto mb-4" />
+                <h4 className="text-lg font-bold text-primary mb-2">No projects yet</h4>
+                <p className="text-secondary text-sm mb-6 max-w-md mx-auto">Your workspace is empty. Submit a brief to get started with your first research project.</p>
+                <button onClick={() => router.push('/dashboard/client/order/new')} className="btn-primary">Place First Order</button>
               </div>
-
-              {/* Orders List */}
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-black">Active Projects</h3>
-                  <button onClick={() => router.push('/dashboard/client/order/new')} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-bold transition flex items-center gap-2">
-                    <lucide.Plus className="w-3 h-3" /> New Order
-                  </button>
-                </div>
-
-                {orders.length === 0 ? (
-                  <div className="border border-dashed border-theme rounded-3xl p-12 text-center bg-card">
-                    <lucide.Inbox className="w-12 h-12 text-secondary mx-auto mb-4" />
-                    <h4 className="text-lg font-bold text-primary mb-2">No projects yet</h4>
-                    <p className="text-secondary text-sm mb-6">Your workspace is empty. Submit a brief to get started.</p>
-                    <button onClick={() => window.location.href = '/'} className="px-6 py-3 bg-emerald-500 text-black font-black rounded-full text-sm uppercase tracking-wider hover:bg-emerald-400 transition">Place First Order</button>
+            ) : (
+              <>
+                {activeOrders.length > 0 && (
+                  <div className="space-y-4 mb-8">
+                    {activeOrders.map(order => <OrderCard 
+                      key={order['Order ID']} 
+                      order={order} 
+                      handlePayment={handlePayment} 
+                      processingPayment={processingPayment === order['Order ID']} 
+                      openDetails={() => setSelectedOrderDetails(order)}
+                    />)}
                   </div>
-                ) : (
-                  orders.map(order => <OrderCard 
-                    key={order['Order ID']} 
-                    order={order} 
-                    handlePayment={handlePayment} 
-                    processingPayment={processingPayment === order['Order ID']} 
-                    openDetails={() => setSelectedOrderDetails(order)}
-                  />)
                 )}
-              </div>
+                {completedOrders.length > 0 && (
+                  <>
+                    <h4 className="text-sm font-black uppercase tracking-widest text-secondary mb-4">Completed ({completedOrders.length})</h4>
+                    <div className="space-y-4 opacity-90">
+                      {completedOrders.map(order => <OrderCard 
+                        key={order['Order ID']} 
+                        order={order} 
+                        handlePayment={handlePayment} 
+                        processingPayment={processingPayment === order['Order ID']} 
+                        openDetails={() => setSelectedOrderDetails(order)}
+                      />)}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* === TAB: VAULT === */}
+      {activeTab === 'vault' && (
+        <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
+          <header className="mb-10">
+            <h2 className="text-3xl font-black text-primary flex items-center gap-3"><lucide.Lock className="text-emerald-500" /> Secure Vault</h2>
+            <p className="text-secondary mt-1">Encrypted storage for all your completed deliverables.</p>
+          </header>
+          
+          {vaultFiles.length === 0 ? (
+            <div className="border border-theme bg-card rounded-3xl p-12 text-center">
+              <lucide.Shield className="w-12 h-12 text-secondary mx-auto mb-4" />
+              <p className="text-secondary">Your vault is currently empty. Files will appear here once drafting is complete.</p>
             </div>
-          )}
-
-          {/* === TAB: VAULT === */}
-          {activeTab === 'vault' && (
-            <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
-              <header className="mb-10">
-                <h2 className="text-3xl font-black text-primary flex items-center gap-3"><lucide.Lock className="text-emerald-500" /> Secure Vault</h2>
-                <p className="text-secondary mt-1">Encrypted storage for all your completed deliverables.</p>
-              </header>
-              
-              {vaultFiles.length === 0 ? (
-                <div className="border border-theme bg-card rounded-3xl p-12 text-center">
-                  <lucide.Shield className="w-12 h-12 text-secondary mx-auto mb-4" />
-                  <p className="text-secondary">Your vault is currently empty. Files will appear here once drafting is complete.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {vaultFiles.map(file => {
-                    // Find the associated order to check payment status
-                    const order = orders.find(o => o['Order ID'] === file.order_id);
-                    const paid40 = order ? renderBool(order['40% Paid']) : false;
-                    const isViewed = file.downloaded_at !== null;
-                    return (
-                      <div key={file.id} className="bg-card border border-theme rounded-2xl p-6 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24 text-secondary" /></div>
-                        <h4 className="font-bold text-lg mb-1 relative z-10 text-primary">{file.order_id}</h4>
-                        <p className="text-xs text-secondary mb-2 relative z-10">{file.file_name}</p>
-                        <p className="text-[10px] text-secondary mb-4 relative z-10">
-                          Uploaded: {new Date(file.uploaded_at).toLocaleDateString()}
-                          {isViewed && ` • Viewed: ${new Date(file.downloaded_at).toLocaleDateString()}`}
-                        </p>
-                        
-                        <div className="flex flex-col sm:flex-row gap-2 relative z-10">
-                          {paid40 ? (
-                            // *** FIXED: pass only file.id to downloadFile ***
-                            <button onClick={() => downloadFile(file.id)} className="flex-1 py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition">
-                              <lucide.Download className="w-4 h-4" /> Download Package
-                            </button>
-                          ) : (
-                            <button 
-                              onClick={() => order && handlePayment(order['Order ID'], parsePriceStr(order['Financial Quote']) * 0.4, order['Email'], order['Legal Name'], 'BALANCE')} 
-                              className="flex-1 py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition"
-                            >
-                              <lucide.Unlock className="w-4 h-4" /> Pay Balance to Unlock
-                            </button>
-                          )}
-                          
-                          {!isViewed && paid40 && (
-                            <button
-                              onClick={() => markViewed(file.id)}
-                              className="px-4 py-3 bg-white/5 hover:bg-white/10 text-secondary rounded-xl text-sm flex items-center justify-center gap-2 transition whitespace-nowrap"
-                              title="Mark as viewed (clears notification badge)"
-                            >
-                              <lucide.Eye className="w-4 h-4" /> Mark Viewed
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* === TAB: WALLET === */}
-          {activeTab === 'wallet' && (
-            <div className="animate-in fade-in duration-500">
-              <WalletPage />
-            </div>
-          )}
-
-          {/* === TAB: PROFILE (with password/email reset) === */}
-          {activeTab === 'profile' && (
-            <div className="animate-in fade-in duration-500 max-w-2xl mx-auto">
-              <header className="mb-10">
-                <h2 className="text-3xl font-black text-primary">Profile Settings</h2>
-                <p className="text-secondary mt-1">Manage your personal information and account security.</p>
-              </header>
-              
-              <div className="bg-card border border-theme rounded-3xl p-8">
-                <div className="flex items-center gap-6 mb-8 border-b border-theme pb-8">
-                  <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-500 font-black text-2xl">
-                    {profile?.full_name?.charAt(0) || 'U'}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-primary">{profile?.full_name}</h3>
-                    <p className="text-secondary text-sm">Account Type: Client</p>
-                    {renderBool(profile?.is_admin) && <span className="inline-block mt-2 px-2 py-1 bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase rounded-md">Admin</span>}
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Email Address</label>
-                    <div className="p-3 bg-secondary border border-theme rounded-xl text-primary mt-1">{user?.email}</div>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Change Email Address</label>
-                    <div className="flex gap-3 mt-2">
-                      <input
-                        type="email"
-                        id="newEmail"
-                        placeholder="newemail@example.com"
-                        className="flex-1 bg-secondary border border-theme rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none text-primary"
-                      />
-                      <button
-                        onClick={async () => {
-                          const newEmail = (document.getElementById('newEmail') as HTMLInputElement).value;
-                          await handleUpdateEmail(newEmail);
-                        }}
-                        className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-xl text-xs"
-                      >
-                        Update Email
-                      </button>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {vaultFiles.map(file => {
+                const order = orders.find(o => o['Order ID'] === file.order_id);
+                const paid40 = order ? renderBool(order['40% Paid']) : false;
+                const isViewed = file.downloaded_at !== null;
+                return (
+                  <div key={file.id} className="bg-card border border-theme rounded-2xl p-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24 text-secondary" /></div>
+                    <h4 className="font-bold text-lg mb-1 relative z-10 text-primary">{file.order_id}</h4>
+                    <p className="text-xs text-secondary mb-2 relative z-10">{file.file_name}</p>
+                    <p className="text-[10px] text-secondary mb-4 relative z-10">
+                      Uploaded: {new Date(file.uploaded_at).toLocaleDateString()}
+                      {isViewed && ` • Viewed: ${new Date(file.downloaded_at).toLocaleDateString()}`}
+                    </p>
+                    
+                    <div className="flex flex-col sm:flex-row gap-2 relative z-10">
+                      {paid40 ? (
+                        <button onClick={() => downloadFile(file.id)} className="flex-1 py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition cursor-pointer">
+                          <lucide.Download className="w-4 h-4" /> Download Package
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => order && handlePayment(order['Order ID'], parsePriceStr(order['Financial Quote']) * 0.4, order['Email'], order['Legal Name'], 'BALANCE')} 
+                          className="flex-1 py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition cursor-pointer"
+                        >
+                          <lucide.Unlock className="w-4 h-4" /> Pay Balance to Unlock
+                        </button>
+                      )}
+                      
+                      {!isViewed && paid40 && (
+                        <button
+                          onClick={() => markViewed(file.id)}
+                          className="px-4 py-3 bg-white/5 hover:bg-white/10 text-secondary rounded-xl text-sm flex items-center justify-center gap-2 transition whitespace-nowrap cursor-pointer"
+                          title="Mark as viewed (clears notification badge)"
+                        >
+                          <lucide.Eye className="w-4 h-4" /> Mark Viewed
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  <div className="pt-2">
-                    <button
-                      onClick={handleResetPassword}
-                      className="px-4 py-2 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl text-xs font-bold"
-                    >
-                      Reset Password
-                    </button>
-                  </div>
-
-                  <div className="pt-4 border-t border-theme">
-                    <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Account ID</label>
-                    <div className="p-3 bg-secondary border border-theme rounded-xl text-secondary font-mono text-xs mt-1">{user?.id}</div>
-                  </div>
-
-                  <div className="pt-4">
-                    <button onClick={() => window.open('https://wa.me/2348121443666', '_blank')} className="px-6 py-3 bg-[#25D366]/10 text-[#25D366] font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-[#25D366]/20 transition">
-                      <lucide.MessageCircle className="w-4 h-4" /> Contact Support to Update Details
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ================= ORDER DETAILS MODAL ================= */}
-          {selectedOrderDetails && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-end">
-              <div className="bg-primary w-full max-w-md h-full border-l border-theme flex flex-col animate-in slide-in-from-right duration-300">
-                <div className="p-6 border-b border-theme flex justify-between items-center bg-secondary">
-                  <div>
-                    <h3 className="font-black text-lg text-primary">{selectedOrderDetails['Order ID']}</h3>
-                    <p className="text-xs text-emerald-500 uppercase tracking-widest font-bold">Activity Log</p>
-                  </div>
-                  <button onClick={() => setSelectedOrderDetails(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition"><lucide.X className="w-5 h-5 text-secondary" /></button>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-6">
-                  <div className="mb-8">
-                    <h4 className="text-xs font-bold text-secondary uppercase tracking-widest mb-2">Topic</h4>
-                    <p className="text-sm bg-card p-4 rounded-xl border border-theme text-primary">{selectedOrderDetails['Research Topic']}</p>
-                  </div>
-
-                  <h4 className="text-xs font-bold text-secondary uppercase tracking-widest mb-6">Workflow History</h4>
-                  
-                  <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-zinc-800">
-                    <TimelineItem title="Order Placed" desc="Briefing received by system." date={formatDate(selectedOrderDetails['Timestamp'])} done={true} />
-                    <TimelineItem 
-                      title="Quote Generated" 
-                      desc={`Financial assessment: ₦${parsePriceStr(selectedOrderDetails['Financial Quote']).toLocaleString()}`} 
-                      date="Logged" 
-                      done={parsePriceStr(selectedOrderDetails['Financial Quote']) > 0 && selectedOrderDetails['Workflow Status'] !== 'Briefing Received'} 
-                    />
-                    <TimelineItem 
-                      title="Deposit Cleared" 
-                      desc="60% payment verified. Synthesis started." 
-                      date="Logged" 
-                      done={renderBool(selectedOrderDetails['60% Paid'])} 
-                    />
-                    <TimelineItem 
-                      title="Drafting & Quality Audit" 
-                      desc="Research compilation in progress." 
-                      date="Logged" 
-                      done={selectedOrderDetails['Workflow Status'].includes('Synthesis') || renderBool(selectedOrderDetails['Work Submitted'])} 
-                    />
-                    <TimelineItem 
-                      title="Vault Secured" 
-                      desc="Final files uploaded to encrypted vault." 
-                      date="Logged" 
-                      done={renderBool(selectedOrderDetails['Work Submitted']) || selectedOrderDetails['Workflow Status'] === 'Completed'} 
-                    />
-                    <TimelineItem 
-                      title="Completed" 
-                      desc="Balance cleared and contract fulfilled." 
-                      date="Logged" 
-                      done={selectedOrderDetails['Workflow Status'] === 'Completed'} 
-                    />
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
           )}
         </div>
-      </main>
+      )}
+
+      {/* === TAB: WALLET === */}
+      {activeTab === 'wallet' && (
+        <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
+          <header className="mb-8">
+            <h2 className="text-3xl font-black text-primary flex items-center gap-3">
+              <lucide.Wallet className="text-emerald-500 w-8 h-8" /> Wallet
+            </h2>
+            <p className="text-secondary mt-1 text-sm">Manage your balance and view transaction history.</p>
+          </header>
+          <WalletPage embedded />
+        </div>
+      )}
+
+      {/* === TAB: PROFILE === */}
+      {activeTab === 'profile' && (
+        <div className="animate-in fade-in duration-500 max-w-2xl mx-auto">
+          <header className="mb-10">
+            <h2 className="text-3xl font-black text-primary">Profile Settings</h2>
+            <p className="text-secondary mt-1">Manage your personal information and account security.</p>
+          </header>
+          
+          <div className="bg-card border border-theme rounded-3xl p-8">
+            <div className="flex items-center gap-6 mb-8 border-b border-theme pb-8">
+              <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-500 font-black text-2xl">
+                {profile?.full_name?.charAt(0) || 'U'}
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-primary">{profile?.full_name}</h3>
+                <p className="text-secondary text-sm">Account Type: Client</p>
+                {renderBool(profile?.is_admin) && <span className="inline-block mt-2 px-2 py-1 bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase rounded-md">Admin</span>}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Email Address</label>
+                <div className="p-3 bg-secondary border border-theme rounded-xl text-primary mt-1">{user?.email}</div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Change Email Address</label>
+                <div className="flex gap-3 mt-2">
+                  <input
+                    type="email"
+                    id="newEmail"
+                    placeholder="newemail@example.com"
+                    className="flex-1 bg-secondary border border-theme rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none text-primary"
+                  />
+                  <button
+                    onClick={async () => {
+                      const newEmail = (document.getElementById('newEmail') as HTMLInputElement).value;
+                      await handleUpdateEmail(newEmail);
+                    }}
+                    className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-xl text-xs cursor-pointer"
+                  >
+                    Update Email
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={handleResetPassword}
+                  className="px-4 py-2 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  Reset Password
+                </button>
+              </div>
+
+              <div className="pt-4 border-t border-theme">
+                <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Account ID</label>
+                <div className="p-3 bg-secondary border border-theme rounded-xl text-secondary font-mono text-xs mt-1">{user?.id}</div>
+              </div>
+
+              <div className="pt-4">
+                <button onClick={() => window.open('https://wa.me/2348121443666', '_blank')} className="px-6 py-3 bg-[#25D366]/10 text-[#25D366] font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-[#25D366]/20 transition cursor-pointer">
+                  <lucide.MessageCircle className="w-4 h-4" /> Contact Support to Update Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= ORDER DETAILS MODAL ================= */}
+      {selectedOrderDetails && (() => {
+        const details = getPipelineDetails(selectedOrderDetails);
+        const total = parsePriceStr(selectedOrderDetails['Financial Quote']);
+        const paid60 = renderBool(selectedOrderDetails['60% Paid']);
+        const paid40 = renderBool(selectedOrderDetails['40% Paid']);
+        const workSubmitted = renderBool(selectedOrderDetails['Work Submitted']);
+        const addonInfo = parseAdditionalInfo(selectedOrderDetails['Additional Info']);
+        
+        const steps = [
+          { title: details.steps[0].title, desc: details.steps[0].desc, done: true },
+          { title: details.steps[1].title, desc: details.steps[1].desc, done: total > 0 && selectedOrderDetails['Workflow Status'] !== 'Briefing Received' },
+          { title: details.steps[2].title, desc: details.steps[2].desc, done: paid60 },
+          { title: details.steps[3].title, desc: details.steps[3].desc, done: String(selectedOrderDetails['Workflow Status']).includes('Synthesis') || selectedOrderDetails['Workflow Status'] === 'Internal Audit' || workSubmitted },
+          { title: details.steps[4].title, desc: details.steps[4].desc, done: workSubmitted || selectedOrderDetails['Workflow Status'] === 'Completed' },
+          { title: 'Project Finalized', desc: 'Full payment verified & project closed.', done: selectedOrderDetails['Workflow Status'] === 'Completed' }
+        ];
+
+        return (
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-end animate-in fade-in duration-200"
+            onClick={() => setSelectedOrderDetails(null)}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div
+              className="bg-primary w-full max-w-lg h-full border-l border-theme flex flex-col animate-in slide-in-from-right duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-theme flex justify-between items-center bg-secondary">
+                <div>
+                  <h3 className="font-black text-lg text-primary flex items-center gap-2">
+                    {selectedOrderDetails['Order ID']}
+                  </h3>
+                  <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${details.bgClass} ${details.colorClass} border ${details.borderClass}`}>
+                    {details.category}
+                  </span>
+                </div>
+                <button onClick={() => setSelectedOrderDetails(null)} className="p-2 bg-secondary hover:bg-white/10 rounded-full transition cursor-pointer" aria-label="Close details"><lucide.X className="w-5 h-5 text-secondary" /></button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                {/* 1. PROJECT SPECIFICATIONS (Read-Only) */}
+                <div>
+                  <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-4 border-b border-theme pb-2 flex items-center gap-2">
+                    <lucide.FileText className="w-4 h-4 text-purple-400" /> Project Specifications
+                  </h4>
+                  <div className="space-y-4 text-xs">
+                    <div>
+                      <span className="text-secondary block mb-1 font-bold">Topic / Objective</span>
+                      <p className="text-sm bg-card p-3 rounded-xl border border-theme text-primary font-bold">{selectedOrderDetails['Research Topic']}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-secondary block mb-1 font-bold">Deadline</span>
+                        <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{formatDate(selectedOrderDetails['Deadline'])}</p>
+                      </div>
+                      <div>
+                        <span className="text-secondary block mb-1 font-bold">Service Tier</span>
+                        <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Service Tier'] || 'Custom Quote'}</p>
+                      </div>
+                    </div>
+
+                    {selectedOrderDetails['Word Count'] && selectedOrderDetails['Word Count'] > 0 && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-secondary block mb-1 font-bold">Word Count</span>
+                          <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Word Count'].toLocaleString()} Words</p>
+                        </div>
+                        <div>
+                          <span className="text-secondary block mb-1 font-bold">Estimated Pages</span>
+                          <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{Math.ceil(selectedOrderDetails['Word Count'] / 275)} Pages</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {(selectedOrderDetails['Reference Style'] || selectedOrderDetails['Font Specification']) && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-secondary block mb-1 font-bold">Reference Style</span>
+                          <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Reference Style'] || 'Standard'}</p>
+                        </div>
+                        <div>
+                          <span className="text-secondary block mb-1 font-bold">Font Preference</span>
+                          <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Font Specification'] || 'Standard'}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedOrderDetails['Media Sync'] && (
+                      <div>
+                        <span className="text-secondary block mb-1 font-bold">External Storage Link</span>
+                        <a href={selectedOrderDetails['Media Sync']} target="_blank" rel="noopener noreferrer" className="p-3 bg-secondary border border-theme rounded-xl text-blue-450 font-bold block truncate hover:underline">
+                          🔗 {selectedOrderDetails['Media Sync']}
+                        </a>
+                      </div>
+                    )}
+
+                    {addonInfo.notes && (
+                      <div>
+                        <span className="text-secondary block mb-1 font-bold">Client Notes & Instructions</span>
+                        <p className="bg-card p-4 rounded-xl border border-theme text-primary whitespace-pre-wrap leading-relaxed font-medium">{addonInfo.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. EXTRA ADD-ONS & EXTRA REQUIREMENTS */}
+                <div>
+                  <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-4 border-b border-theme pb-2 flex items-center gap-2">
+                    <lucide.PlusCircle className="w-4 h-4 text-emerald-400" /> Extra Requirements & Custom Add-ons
+                  </h4>
+                  
+                  {/* List existing addon requests */}
+                  {addonInfo.extra_addons && addonInfo.extra_addons.length > 0 ? (
+                    <div className="space-y-3 mb-6">
+                      {addonInfo.extra_addons.map((a: any) => (
+                        <div key={a.id} className="p-4 bg-secondary border border-theme rounded-2xl text-xs space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-bold text-primary">{a.name}</p>
+                              <p className="text-[10px] text-secondary mt-1">Requested {formatDate(a.created_at)}</p>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                              a.status === 'PAID' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                              a.status === 'AWAITING_PAYMENT' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                              'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                            }`}>
+                              {a.status === 'PENDING_QUOTE' ? 'Reviewing Quote' : a.status === 'AWAITING_PAYMENT' ? 'Approved & Unpaid' : 'Active / Paid'}
+                            </span>
+                          </div>
+
+                          {a.status !== 'PENDING_QUOTE' && (
+                            <div className="flex justify-between items-center bg-primary p-3 rounded-xl border border-theme">
+                              <span className="text-secondary font-bold font-black">Charge Amount:</span>
+                              <span className="font-black text-primary text-sm">{formatNaira(a.price)}</span>
+                            </div>
+                          )}
+
+                          {a.status === 'AWAITING_PAYMENT' && (
+                            <div className="flex gap-2 pt-1">
+                              <button 
+                                onClick={() => handlePayAddonWallet(selectedOrderDetails['Order ID'], a.id, a.price)}
+                                disabled={processingAddonPayment !== null}
+                                className="flex-1 py-2 bg-emerald-500 text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-400 transition cursor-pointer disabled:opacity-50"
+                              >
+                                {processingAddonPayment === a.id ? 'Processing...' : 'Pay from Wallet'}
+                              </button>
+                              <button 
+                                onClick={() => handlePayAddonCard(selectedOrderDetails['Order ID'], a.id, a.price)}
+                                disabled={processingAddonPayment !== null}
+                                className="flex-1 py-2 bg-secondary border border-theme text-primary text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-primary transition cursor-pointer disabled:opacity-50"
+                              >
+                                Pay with Card
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-secondary text-xs mb-4">No custom add-ons requested yet.</p>
+                  )}
+
+                  {/* Addon Request Form */}
+                  <div className="bg-card border border-theme p-4 rounded-2xl space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-secondary ml-1 font-bold">Request Extra Requirement</label>
+                    <textarea 
+                      placeholder="Enter details of your extra requirements (e.g. 'Add 5 slides presentation', 'Add SPSS output file' or custom software module)" 
+                      value={newAddonName} 
+                      onChange={e => setNewAddonName(e.target.value)} 
+                      rows={2}
+                      className="w-full bg-secondary border border-theme p-3 rounded-xl text-xs text-primary focus:border-emerald-500 outline-none transition font-bold"
+                    />
+                    <button 
+                      onClick={() => handleRequestAddon(selectedOrderDetails['Order ID'])}
+                      disabled={submittingAddon || !newAddonName.trim()}
+                      className="w-full py-3 bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition cursor-pointer disabled:opacity-50"
+                    >
+                      {submittingAddon ? 'Submitting Request...' : 'Submit Add-on Request'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. DYNAMIC TIMELINE */}
+                <div>
+                  <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-6 border-b border-theme pb-2 flex items-center gap-2">
+                    <lucide.Activity className="w-4 h-4 text-emerald-400" /> Pipeline Progress History
+                  </h4>
+                  
+                  <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-zinc-800">
+                    {steps.map((step, i) => (
+                      <TimelineItem 
+                        key={i}
+                        title={step.title}
+                        desc={step.desc}
+                        date={i === 0 ? formatDate(selectedOrderDetails['Timestamp']) : 'Logged'}
+                        done={step.done}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -629,11 +929,19 @@ function DashboardContent() {
 // ==========================================
 function SidebarBtn({ active, onClick, icon, label, badge }: any) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center justify-between p-3 rounded-xl transition font-bold text-sm ${active ? 'bg-emerald-500/10 text-emerald-500' : 'text-secondary hover:bg-white/5 hover:text-primary'}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full flex items-center justify-between p-3 rounded-xl transition font-bold text-sm ${
+        active ? 'bg-emerald-500/10 text-emerald-500' : 'text-secondary hover:bg-white/5 hover:text-primary'
+      }`}
+    >
       <div className="flex items-center gap-3">
         {icon} <span>{label}</span>
       </div>
-      {badge !== undefined && badge > 0 && <span className="px-2 py-0.5 bg-emerald-500 text-black rounded-md text-[10px]">{badge}</span>}
+      {badge !== undefined && badge > 0 && (
+        <span className="px-2 py-0.5 bg-emerald-500 text-black rounded-md text-[10px] font-black">{badge}</span>
+      )}
     </button>
   );
 }
@@ -685,21 +993,33 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
   const depositAmount = total * 0.6;
   const balanceAmount = total * 0.4;
 
+  const details = getPipelineDetails(order);
+
+  const renderPipelineIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'Terminal': return <lucide.Terminal className="w-4 h-4 text-cyan-450" />;
+      case 'PenTool': return <lucide.PenTool className="w-4 h-4 text-amber-450" />;
+      case 'LineChart': return <lucide.LineChart className="w-4 h-4 text-purple-450" />;
+      case 'Briefcase': return <lucide.Briefcase className="w-4 h-4 text-blue-450" />;
+      default: return <lucide.BookOpen className="w-4 h-4 text-emerald-450" />;
+    }
+  };
+
   return (
     <div className="bg-card border border-theme hover:border-emerald-500/50 transition-colors rounded-3xl p-6 md:p-8 relative overflow-hidden group">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
         <div>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
+            <div className={`w-8 h-8 rounded-xl ${details.bgClass} flex items-center justify-center border ${details.borderClass}`}>
+              {renderPipelineIcon(details.icon)}
+            </div>
             <h3 className="text-xl font-black tracking-tight text-primary">{order['Order ID']}</h3>
-            <span className={`text-[10px] px-3 py-1 rounded-md font-black uppercase tracking-widest ${
-              order['Workflow Status'] === 'Completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
-              awaitingAdminApproval ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
-              'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-            }`}>
-              {awaitingAdminApproval ? 'Awaiting Quote' : order['Workflow Status']}
+            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${details.bgClass} ${details.colorClass} border ${details.borderClass}`}>
+              {details.category}
             </span>
+            <StatusBadge status={awaitingAdminApproval ? 'Awaiting Quote' : order['Workflow Status']} size="md" />
           </div>
           <p className="text-secondary text-sm max-w-2xl leading-relaxed">{order['Research Topic']}</p>
         </div>
@@ -715,9 +1035,9 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
       {/* Progress Bar */}
       <div className="mb-8">
         <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">
-          <span className={paid60 ? 'text-emerald-500' : ''}>1. Deposit</span>
-          <span className={workSubmitted ? 'text-emerald-500' : ''}>2. Research</span>
-          <span className={paid40 ? 'text-emerald-500' : ''}>3. Delivery</span>
+          <span className={paid60 ? 'text-emerald-500 font-bold' : ''}>1. Deposit</span>
+          <span className={workSubmitted ? 'text-emerald-500 font-bold' : ''}>2. Working Phase</span>
+          <span className={paid40 ? 'text-emerald-500 font-bold' : ''}>3. Delivery</span>
         </div>
         <div className="w-full bg-secondary border border-theme rounded-full h-2 overflow-hidden">
           <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-out relative" 
@@ -735,8 +1055,18 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <button onClick={openDetails} className="px-4 py-2.5 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition flex items-center gap-2">
-            <lucide.Activity className="w-4 h-4" /> View Logs
+          <button 
+            onClick={() => {
+              const text = `Hello, I need support for my ${details.label} order #${order['Order ID']}: "${order['Research Topic']}"`;
+              window.open(`https://wa.me/2348121443666?text=${encodeURIComponent(text)}`, '_blank');
+            }} 
+            className="px-4 py-2.5 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] text-xs font-bold rounded-xl transition flex items-center gap-2 border border-[#25D366]/20 cursor-pointer"
+          >
+            <lucide.MessageCircle className="w-4 h-4" /> Support Chat
+          </button>
+
+          <button onClick={openDetails} className="px-4 py-2.5 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition flex items-center gap-2 cursor-pointer">
+            <lucide.Activity className="w-4 h-4" /> View Details
           </button>
 
           {awaitingAdminApproval ? (
@@ -749,7 +1079,7 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
                 <button
                   onClick={() => handlePayment(order['Order ID'], depositAmount, order['Email'], order['Legal Name'], 'DEPOSIT')}
                   disabled={processingPayment}
-                  className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50"
+                  className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer"
                 >
                   {processingPayment ? 'Connecting...' : `Pay Deposit (${formatNaira(depositAmount)})`}
                 </button>
@@ -758,7 +1088,7 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
                 <button
                   onClick={() => handlePayment(order['Order ID'], balanceAmount, order['Email'], order['Legal Name'], 'BALANCE')}
                   disabled={processingPayment}
-                  className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                 >
                   <lucide.Unlock className="w-4 h-4" /> {processingPayment ? 'Connecting...' : `Clear Balance & Unlock Vault`}
                 </button>

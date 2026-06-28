@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { createSecureOrder } from '@/app/actions/createOrder';
-import { Upload, Paperclip, CheckCircle2 } from 'lucide-react';
+import { Upload, Paperclip, CheckCircle2, Calendar } from 'lucide-react';
 import type { CreateOrderServerActionResponse } from '@/lib/types';
+import OrderCategoryNav from '@/app/components/OrderCategoryNav';
 
 type OrderAddon = {
   id: string;
@@ -166,8 +167,9 @@ export default function LoggedInContentOrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-primary text-primary py-20 px-6 font-['Inter']">
-      <div className="max-w-3xl mx-auto space-y-12">
+    <div className="min-h-screen bg-primary text-primary py-12 px-6 font-['Inter']">
+      <OrderCategoryNav />
+      <div className="max-w-3xl mx-auto space-y-12 mt-6">
         <div className="text-center">
           <div className="inline-block px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Creative Pipeline</div>
           <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Content & Creative Writing</h1>
@@ -244,37 +246,60 @@ export default function LoggedInContentOrderPage() {
               </select>
             </div>
 
-            <input
-              type="text"
-              placeholder="Project Title or Core Subject"
-              className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary"
-              value={topic}
-              onChange={e => setTopic(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Who is your target audience? (e.g., Tech startups, Gen Z shoppers)"
-              className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary"
-              value={audience}
-              onChange={e => setAudience(e.target.value)}
-              required
-            />
-            <input
-              type="date"
-              className="w-full bg-primary border border-theme p-4 rounded-xl text-sm text-secondary focus:border-amber-500 outline-none [color-scheme:dark]"
-              value={deadline}
-              onChange={e => setDeadline(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              required
-            />
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Project Title</label>
+              <input
+                type="text"
+                placeholder="E.g., SEO Article on Digital Marketing Trends"
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold hover:border-zinc-700"
+                value={topic}
+                onChange={e => setTopic(e.target.value)}
+                required
+              />
+              <p className="text-[9px] text-zinc-500 ml-1">Enter a clear headline or summary topic for your content piece.</p>
+            </div>
 
-            <textarea
-              placeholder="Provide detailed context, competitor links, or stylistic preferences..."
-              className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none resize-none h-32 text-primary"
-              value={instructions}
-              onChange={e => setInstructions(e.target.value)}
-            />
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Target Audience</label>
+              <input
+                type="text"
+                placeholder="E.g., Tech startups, Gen Z shoppers"
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold hover:border-zinc-700"
+                value={audience}
+                onChange={e => setAudience(e.target.value)}
+                required
+              />
+              <p className="text-[9px] text-zinc-500 ml-1">Explain who will be reading this content (helps us adjust tone and depth).</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Target Delivery Deadline</label>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none group-focus-within:text-amber-500 transition-colors">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <input
+                  type="date"
+                  className="w-full bg-card border border-theme p-4 pl-12 rounded-xl text-sm text-primary focus:border-amber-500 outline-none dark:[color-scheme:dark] transition-all font-bold hover:border-theme cursor-pointer"
+                  value={deadline}
+                  onChange={e => setDeadline(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  required
+                />
+              </div>
+              <p className="text-[9px] text-zinc-500 ml-1">Select your target deadline. Emergency requests (less than 48 hours) are subject to rush premiums.</p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Additional Guidelines</label>
+              <textarea
+                placeholder="Provide detailed context, competitor links, or stylistic preferences..."
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none resize-none h-32 text-primary font-medium hover:border-zinc-700"
+                value={instructions}
+                onChange={e => setInstructions(e.target.value)}
+              />
+              <p className="text-[9px] text-zinc-500 ml-1">Paste any links, keyword lists, formatting rules, or references for our copywriters.</p>
+            </div>
 
             <label className="border-2 border-dashed border-theme hover:border-amber-500/50 bg-primary rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
               <Upload className="w-6 h-6 text-secondary mb-2" />
@@ -282,8 +307,8 @@ export default function LoggedInContentOrderPage() {
               <input type="file" className="hidden" onChange={e => setBriefFile(e.target.files?.[0] || null)} />
             </label>
             {briefFile && (
-              <div className="flex items-center gap-2 text-xs bg-amber-500/10 text-amber-500 p-3 rounded-xl border border-amber-500/20">
-                <Paperclip className="w-4 h-4" /> {briefFile.name}
+              <div className="flex items-center gap-2 text-xs bg-amber-500/10 text-amber-500 p-3 rounded-xl border border-amber-500/20 w-full break-words">
+                <Paperclip className="w-4 h-4 shrink-0" /> <span className="truncate">{briefFile.name}</span>
               </div>
             )}
           </div>

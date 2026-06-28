@@ -152,7 +152,7 @@ export async function createSecureOrder(
 
   // 1. Send confirmation to client
   const clientTemplate = emailTemplates.clientOrderConfirmation(orderEmailData);
-  await fetch(`${baseUrl}/api/send-email`, {
+  fetch(`${baseUrl}/api/send-email`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -165,7 +165,7 @@ export async function createSecureOrder(
 
   // 2. Send notification to admin
   const adminTemplate = emailTemplates.adminNewOrder(orderEmailData);
-  await fetch(`${baseUrl}/api/send-email`, {
+  fetch(`${baseUrl}/api/send-email`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -613,33 +613,114 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row font-['Inter'] selection:bg-purple-500/30">
+      {/* ================= DESKTOP SIDEBAR ================= */}
       <aside className="hidden md:flex flex-col w-64 bg-secondary border-r border-theme h-screen sticky top-0 p-6 z-40">
         <div className="flex items-center gap-3 mb-12">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl"><lucide.Shield className="w-5 h-5" /></div>
-          <div><h1 className="font-black tracking-tight leading-none text-lg">YRW</h1><p className="text-[10px] text-purple-500 uppercase tracking-widest font-bold">SysAdmin</p></div>
+          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl">
+            <lucide.Shield className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="font-black tracking-tight leading-none text-lg">YRW</h1>
+            <p className="text-[10px] text-purple-500 uppercase tracking-widest font-bold">SysAdmin</p>
+          </div>
         </div>
 
         <nav className="flex flex-col gap-2 flex-1">
-          <Link href="/admin" className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${isActive('/admin') && !pathname?.includes('/orders') && !pathname?.includes('/finance') && !pathname?.includes('/promos') && !pathname?.includes('/email') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'}`}>
+          {/* Dashboard */}
+          <Link
+            href="/admin"
+            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
+              isActive('/admin') &&
+              !pathname?.includes('/orders') &&
+              !pathname?.includes('/finance') &&
+              !pathname?.includes('/promos') &&
+              !pathname?.includes('/email') &&
+              !pathname?.includes('/users') &&
+              !pathname?.includes('/vault')
+                ? 'bg-purple-500/10 text-purple-400'
+                : 'text-secondary hover:bg-white/5 hover:text-primary'
+            }`}
+          >
             <lucide.LayoutDashboard className="w-5 h-5 mr-3" /> Dashboard
           </Link>
-          <Link href="/admin/orders" className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${isActive('/admin/orders') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'}`}>
+
+          {/* Orders */}
+          <Link
+            href="/admin/orders"
+            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
+              isActive('/admin/orders') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
+            }`}
+          >
             <lucide.Database className="w-5 h-5 mr-3" /> Orders
           </Link>
-          <Link href="/admin/finance" className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${isActive('/admin/finance') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'}`}>
+
+          {/* Finance */}
+          <Link
+            href="/admin/finance"
+            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
+              isActive('/admin/finance') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
+            }`}
+          >
             <lucide.Wallet className="w-5 h-5 mr-3" /> Finance
           </Link>
-          <Link href="/admin/promos" className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${isActive('/admin/promos') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'}`}>
+
+          {/* Users (NEW) */}
+          <Link
+            href="/admin/users"
+            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
+              isActive('/admin/users') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
+            }`}
+          >
+            <lucide.Users className="w-5 h-5 mr-3" /> Users
+          </Link>
+
+          {/* Promo Codes */}
+          <Link
+            href="/admin/promos"
+            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
+              isActive('/admin/promos') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
+            }`}
+          >
             <lucide.Tag className="w-5 h-5 mr-3" /> Promo Codes
           </Link>
-          <Link href="/admin/email" className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${isActive('/admin/email') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'}`}>
+
+          {/* Mass Email */}
+          <Link
+            href="/admin/email"
+            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
+              isActive('/admin/email') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
+            }`}
+          >
             <lucide.Mail className="w-5 h-5 mr-3" /> Mass Email
           </Link>
-          <Link href="/admin/settings" className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${isActive('/admin/settings') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'}`}>
+
+          {/* Settings */}
+          <Link
+            href="/admin/settings"
+            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
+              isActive('/admin/settings') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
+            }`}
+          >
             <lucide.Settings className="w-5 h-5 mr-3" /> Settings
           </Link>
+
+          {/* Vault Files */}
+          <Link
+            href="/admin/vault"
+            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
+              isActive('/admin/vault') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
+            }`}
+          >
+            <lucide.FolderArchive className="w-5 h-5 mr-3" /> Vault Files
+          </Link>
+
           <div className="my-4 border-t border-theme" />
-          <button onClick={() => window.open('/dashboard/client', '_blank')} className="w-full flex items-center p-3 rounded-xl transition font-bold text-sm text-secondary hover:bg-white/5 hover:text-primary">
+
+          {/* View Client UI */}
+          <button
+            onClick={() => window.open('/dashboard/client', '_blank')}
+            className="w-full flex items-center p-3 rounded-xl transition font-bold text-sm text-secondary hover:bg-white/5 hover:text-primary"
+          >
             <lucide.ExternalLink className="w-5 h-5 mr-3" /> View Client UI
           </button>
         </nav>
@@ -648,16 +729,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="mb-4">
             <ThemeToggle />
           </div>
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 text-red-400 hover:text-red-300 transition text-sm font-bold p-2 rounded-lg hover:bg-red-500/10">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 text-red-400 hover:text-red-300 transition text-sm font-bold p-2 rounded-lg hover:bg-red-500/10"
+          >
             <lucide.LogOut className="w-4 h-4" /> Terminate Session
           </button>
         </div>
       </aside>
 
-      {/* Mobile topbar */}
+      {/* ================= MOBILE TOPBAR & MENU ================= */}
       <div className="md:hidden bg-secondary border-b border-theme p-4 flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center text-white font-black"><lucide.Shield className="w-4 h-4" /></div>
+          <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center text-white font-black">
+            <lucide.Shield className="w-4 h-4" />
+          </div>
           <span className="font-bold text-sm uppercase tracking-widest text-purple-500">Admin</span>
         </div>
         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-primary">
@@ -667,15 +753,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {mobileMenuOpen && (
         <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px]">
-          <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2"><lucide.LayoutDashboard className="w-4 h-4" /> Dashboard</Link>
-          <Link href="/admin/orders" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2"><lucide.Database className="w-4 h-4" /> Orders</Link>
-          <Link href="/admin/finance" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2"><lucide.Wallet className="w-4 h-4" /> Finance</Link>
-          <Link href="/admin/promos" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2"><lucide.Tag className="w-4 h-4" /> Promo Codes</Link>
-          <Link href="/admin/email" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2"><lucide.Mail className="w-4 h-4" /> Mass Email</Link>
-          <Link href="/admin/settings" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2"><lucide.Settings className="w-4 h-4" /> Settings</Link>
-          <button onClick={() => { window.open('/dashboard/client', '_blank'); setMobileMenuOpen(false); }} className="p-3 text-secondary font-bold text-left flex items-center gap-2"><lucide.ExternalLink className="w-4 h-4" /> View Client UI</button>
+          <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
+            <lucide.LayoutDashboard className="w-4 h-4" /> Dashboard
+          </Link>
+          <Link href="/admin/orders" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
+            <lucide.Database className="w-4 h-4" /> Orders
+          </Link>
+          <Link href="/admin/finance" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
+            <lucide.Wallet className="w-4 h-4" /> Finance
+          </Link>
+          <Link href="/admin/users" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
+            <lucide.Users className="w-4 h-4" /> Users
+          </Link>
+          <Link href="/admin/promos" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
+            <lucide.Tag className="w-4 h-4" /> Promo Codes
+          </Link>
+          <Link href="/admin/email" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
+            <lucide.Mail className="w-4 h-4" /> Mass Email
+          </Link>
+          <Link href="/admin/settings" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
+            <lucide.Settings className="w-4 h-4" /> Settings
+          </Link>
+          <Link href="/admin/vault" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
+            <lucide.FolderArchive className="w-4 h-4" /> Vault Files
+          </Link>
+          <button
+            onClick={() => { window.open('/dashboard/client', '_blank'); setMobileMenuOpen(false); }}
+            className="p-3 text-secondary font-bold text-left flex items-center gap-2"
+          >
+            <lucide.ExternalLink className="w-4 h-4" /> View Client UI
+          </button>
           <ThemeToggle />
-          <button onClick={handleLogout} className="mt-4 p-3 text-red-400 font-bold text-left flex items-center gap-2"><lucide.LogOut className="w-4 h-4" /> Terminate Session</button>
+          <button
+            onClick={handleLogout}
+            className="mt-4 p-3 text-red-400 font-bold text-left flex items-center gap-2"
+          >
+            <lucide.LogOut className="w-4 h-4" /> Terminate Session
+          </button>
         </div>
       )}
 
@@ -890,8 +1004,20 @@ export default function FinancePage() {
   const [wallets, setWallets] = useState<Record<string, number>>({});
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Wallet edit modal (set absolute balance)
   const [editingWallet, setEditingWallet] = useState<{ userId: string; balance: number } | null>(null);
   const [newBalance, setNewBalance] = useState(0);
+  
+  // User edit modal
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [userForm, setUserForm] = useState({ full_name: '', is_admin: false });
+  
+  // Wallet adjustment modal
+  const [adjustingWallet, setAdjustingWallet] = useState<{ userId: string; currentBalance: number } | null>(null);
+  const [adjustAmount, setAdjustAmount] = useState(0);
+  const [adjustReason, setAdjustReason] = useState('');
+  
   const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
 
   useEffect(() => {
@@ -905,11 +1031,9 @@ export default function FinancePage() {
 
   const fetchData = async () => {
     setLoading(true);
-    // Fetch users
-    const { data: usersData } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
+    const { data: usersData } = await supabase.from('profiles').select('id, full_name, email, is_admin').order('full_name');
     if (usersData) setUsers(usersData);
 
-    // Fetch wallets separately
     const { data: walletsData } = await supabase.from('wallets').select('user_id, balance');
     if (walletsData) {
       const walletMap: Record<string, number> = {};
@@ -917,27 +1041,55 @@ export default function FinancePage() {
       setWallets(walletMap);
     }
 
-    // Fetch transactions (no nested select)
-    const { data: txData } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(500);
+    const { data: txData } = await supabase
+      .from('transactions')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(500);
     if (txData) setTransactions(txData);
     setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, []);
 
-  const updateWallet = async () => {
-    if (!editingWallet) return;
-    const res = await fetch('/api/admin/wallet', {
+  // Update user details
+  const updateUser = async () => {
+    if (!editingUser) return;
+    const res = await fetch('/api/admin/update-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: editingWallet.userId, balance: newBalance }),
+      body: JSON.stringify({ userId: editingUser.id, full_name: userForm.full_name, is_admin: userForm.is_admin }),
     });
     if (res.ok) {
-      showToast('Wallet updated', 'success');
+      showToast('User updated', 'success');
       fetchData();
-      setEditingWallet(null);
+      setEditingUser(null);
     } else {
       showToast('Update failed', 'error');
+    }
+  };
+
+  // Adjust wallet (add/subtract with reason)
+  const adjustWallet = async () => {
+    if (!adjustingWallet) return;
+    if (adjustAmount === 0) return showToast('Amount must be non-zero', 'error');
+    const res = await fetch('/api/admin/wallet-adjust', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: adjustingWallet.userId,
+        amount: adjustAmount,
+        reason: adjustReason || (adjustAmount > 0 ? 'Manual credit' : 'Manual deduction'),
+      }),
+    });
+    if (res.ok) {
+      showToast('Wallet adjusted', 'success');
+      fetchData();
+      setAdjustingWallet(null);
+      setAdjustAmount(0);
+      setAdjustReason('');
+    } else {
+      showToast('Adjustment failed', 'error');
     }
   };
 
@@ -954,38 +1106,149 @@ export default function FinancePage() {
         ))}
       </div>
 
-      {/* Wallet edit modal â€“ using CSS variables */}
-      {editingWallet && (
+      {/* ========== MODAL: Edit User ========== */}
+      {editingUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-primary border border-purple-500/30 rounded-3xl p-8 max-w-md w-full">
-            <h2 className="text-xl font-black text-primary mb-4">Edit Wallet Balance</h2>
-            <p className="text-secondary text-sm mb-2">User ID: {editingWallet.userId}</p>
-            <label className="text-[10px] uppercase font-black text-secondary">New Balance (â‚¦)</label>
-            <input type="number" value={newBalance} onChange={e => setNewBalance(Number(e.target.value))} className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1 mb-4" />
-            <div className="flex gap-3">
-              <button onClick={() => setEditingWallet(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
-              <button onClick={updateWallet} className="flex-1 py-3 bg-emerald-500 text-black rounded-xl font-black">Update</button>
+            <h2 className="text-xl font-black text-primary mb-4">Edit User</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary">Full Name</label>
+                <input
+                  type="text"
+                  value={userForm.full_name}
+                  onChange={e => setUserForm({ ...userForm, full_name: e.target.value })}
+                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-[10px] uppercase font-black text-secondary">Admin</label>
+                <input
+                  type="checkbox"
+                  checked={userForm.is_admin}
+                  onChange={e => setUserForm({ ...userForm, is_admin: e.target.checked })}
+                  className="accent-purple-500 w-5 h-5"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setEditingUser(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
+              <button onClick={updateUser} className="flex-1 py-3 bg-purple-500 text-white rounded-xl font-black">Save</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Users & Wallets table */}
+      {/* ========== MODAL: Edit Wallet Balance (absolute) ========== */}
+      {editingWallet && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-primary border border-emerald-500/30 rounded-3xl p-8 max-w-md w-full">
+            <h2 className="text-xl font-black text-primary mb-4">Set Wallet Balance</h2>
+            <p className="text-secondary text-sm mb-2">User ID: {editingWallet.userId}</p>
+            <label className="text-[10px] uppercase font-black text-secondary">New Balance (â‚¦)</label>
+            <input type="number" value={newBalance} onChange={e => setNewBalance(Number(e.target.value))} className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1 mb-4" />
+            <div className="flex gap-3">
+              <button onClick={() => setEditingWallet(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
+              <button onClick={async () => {
+                const res = await fetch('/api/admin/wallet', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ userId: editingWallet.userId, balance: newBalance }),
+                });
+                if (res.ok) {
+                  showToast('Balance set', 'success');
+                  fetchData();
+                  setEditingWallet(null);
+                } else {
+                  showToast('Failed', 'error');
+                }
+              }} className="flex-1 py-3 bg-emerald-500 text-black rounded-xl font-black">Set Balance</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== MODAL: Wallet Adjustment (add/subtract) ========== */}
+      {adjustingWallet && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-primary border border-amber-500/30 rounded-3xl p-8 max-w-md w-full">
+            <h2 className="text-xl font-black text-primary mb-4">Adjust Wallet</h2>
+            <p className="text-secondary text-sm mb-2">User ID: {adjustingWallet.userId}</p>
+            <p className="text-secondary text-sm mb-4">Current Balance: {formatNaira(adjustingWallet.currentBalance)}</p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary">Amount (â‚¦) â€“ use negative for deduction</label>
+                <input type="number" value={adjustAmount} onChange={e => setAdjustAmount(Number(e.target.value))} className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1" />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary">Reason</label>
+                <input type="text" value={adjustReason} onChange={e => setAdjustReason(e.target.value)} placeholder="Optional" className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setAdjustingWallet(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
+              <button onClick={adjustWallet} className="flex-1 py-3 bg-amber-500 text-black rounded-xl font-black">Apply Adjustment</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== Users Table ========== */}
       <div>
-        <h2 className="text-2xl font-black text-primary mb-4">User Wallets</h2>
-        <div className="bg-secondary border border-theme rounded-2xl overflow-hidden">
-          <table className="w-full text-left">
+        <h2 className="text-2xl font-black text-primary mb-4">User Management</h2>
+        <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto">
+          <table className="w-full text-left text-sm">
             <thead className="bg-primary border-b border-theme text-[10px] uppercase text-secondary">
-              <tr><th className="px-6 py-4">Name</th><th className="px-6 py-4">Email</th><th className="px-6 py-4">Balance</th><th className="px-6 py-4">Actions</th></tr>
+              <tr>
+                <th className="px-4 py-4">Name</th>
+                <th className="px-4 py-4">Email</th>
+                <th className="px-4 py-4">Admin</th>
+                <th className="px-4 py-4">Balance</th>
+                <th className="px-4 py-4 text-right">Actions</th>
+              </tr>
             </thead>
             <tbody>
               {users.map(user => (
                 <tr key={user.id} className="border-b border-theme">
-                  <td className="px-6 py-4 text-primary">{user.full_name || 'â€”'}</td>
-                  <td className="px-6 py-4 text-primary">{user.email}</td>
-                  <td className="px-6 py-4 font-mono text-primary">{formatNaira(wallets[user.id] || 0)}</td>
-                  <td className="px-6 py-4">
-                    <button onClick={() => { setEditingWallet({ userId: user.id, balance: wallets[user.id] || 0 }); setNewBalance(wallets[user.id] || 0); }} className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-xs">Edit Balance</button>
+                  <td className="px-4 py-4 text-primary">{user.full_name || 'â€”'}</td>
+                  <td className="px-4 py-4 text-primary">{user.email}</td>
+                  <td className="px-4 py-4">
+                    {user.is_admin ? (
+                      <span className="text-purple-400">âœ“</span>
+                    ) : (
+                      <span className="text-secondary">â€”</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-4 font-mono text-primary">{formatNaira(wallets[user.id] || 0)}</td>
+                  <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
+                    <button
+                      onClick={() => {
+                        setEditingUser(user);
+                        setUserForm({ full_name: user.full_name || '', is_admin: user.is_admin || false });
+                      }}
+                      className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs"
+                    >
+                      Edit User
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAdjustingWallet({ userId: user.id, currentBalance: wallets[user.id] || 0 });
+                        setAdjustAmount(0);
+                        setAdjustReason('');
+                      }}
+                      className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-xs"
+                    >
+                      Adjust Wallet
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingWallet({ userId: user.id, balance: wallets[user.id] || 0 });
+                        setNewBalance(wallets[user.id] || 0);
+                      }}
+                      className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-xs"
+                    >
+                      Set Balance
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -994,25 +1257,37 @@ export default function FinancePage() {
         </div>
       </div>
 
-      {/* Transactions table */}
+      {/* ========== Transactions Table ========== */}
       <div>
         <h2 className="text-2xl font-black text-primary mb-4">All Transactions</h2>
-        <div className="bg-secondary border border-theme rounded-2xl overflow-hidden">
-          <table className="w-full text-left">
+        <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto">
+          <table className="w-full text-left text-sm">
             <thead className="bg-primary border-b border-theme text-[10px] uppercase text-secondary">
-              <tr><th className="px-6 py-4">User ID</th><th className="px-6 py-4">Type</th><th className="px-6 py-4">Amount</th><th className="px-6 py-4">Reference</th><th className="px-6 py-4">Status</th><th className="px-6 py-4">Date</th></tr>
+              <tr>
+                <th className="px-4 py-4">User</th>
+                <th className="px-4 py-4">Type</th>
+                <th className="px-4 py-4">Amount</th>
+                <th className="px-4 py-4">Reference</th>
+                <th className="px-4 py-4">Status</th>
+                <th className="px-4 py-4">Notes</th>
+                <th className="px-4 py-4">Date</th>
+              </tr>
             </thead>
             <tbody>
-              {transactions.map(tx => (
-                <tr key={tx.id} className="border-b border-theme">
-                  <td className="px-6 py-4 text-xs text-primary">{tx.user_id}</td>
-                  <td className="px-6 py-4 capitalize text-primary">{tx.type}</td>
-                  <td className="px-6 py-4 font-mono text-primary">{formatNaira(tx.amount)}</td>
-                  <td className="px-6 py-4 text-xs text-primary">{tx.reference}</td>
-                  <td className="px-6 py-4 capitalize text-primary">{tx.status}</td>
-                  <td className="px-6 py-4 text-xs text-primary">{new Date(tx.created_at).toLocaleString()}</td>
-                </tr>
-              ))}
+              {transactions.map(tx => {
+                const user = users.find(u => u.id === tx.user_id);
+                return (
+                  <tr key={tx.id} className="border-b border-theme">
+                    <td className="px-4 py-4 text-xs text-primary">{user?.full_name || tx.user_id}</td>
+                    <td className="px-4 py-4 capitalize text-primary">{tx.type}</td>
+                    <td className="px-4 py-4 font-mono text-primary">{formatNaira(tx.amount)}</td>
+                    <td className="px-4 py-4 text-xs text-primary">{tx.reference}</td>
+                    <td className="px-4 py-4 capitalize text-primary">{tx.status}</td>
+                    <td className="px-4 py-4 text-xs text-secondary">{tx.notes || 'â€”'}</td>
+                    <td className="px-4 py-4 text-xs text-primary">{new Date(tx.created_at).toLocaleString()}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -1284,39 +1559,57 @@ export default function OrdersPage() {
   };
 
   const handleDeliveryUpload = async () => {
-    if (!deliveryFile || !deliveryModalOrder) return showToast("Select a file.", "error");
-    setUploadingDelivery(true);
-    try {
-      const orderId = deliveryModalOrder['Order ID'];
-      const fileExt = deliveryFile.name.split('.').pop();
-      const filePath = `${orderId}/FINAL_DELIVERY_${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('final-deliverables').upload(filePath, deliveryFile);
-      if (uploadError) throw uploadError;
+  if (!deliveryFile || !deliveryModalOrder) return showToast("Select a file.", "error");
+  setUploadingDelivery(true);
+  try {
+    const orderId = deliveryModalOrder['Order ID'];
+    const fileExt = deliveryFile.name.split('.').pop();
+    const filePath = `${orderId}/FINAL_DELIVERY_${Date.now()}.${fileExt}`;
+    
+    // 1. Upload to storage
+    const { error: uploadError } = await supabase.storage.from('final-deliverables').upload(filePath, deliveryFile);
+    if (uploadError) throw uploadError;
 
-      const res = await fetch('/api/admin/update-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, updates: { work_submitted: true, vault_status: 'Final Files Secured' } }),
+    // 2. Insert record into final_deliverables table
+    const { error: insertError } = await supabase
+      .from('final_deliverables')
+      .insert({
+        order_id: orderId,
+        file_path: filePath,
+        file_name: deliveryFile.name,
+        uploaded_at: new Date().toISOString(),
       });
-      if (!res.ok) throw new Error(await res.text());
+    if (insertError) throw insertError;
 
-      await sendStatusEmail({
-        orderId: deliveryModalOrder['Order ID'],
-        email: deliveryModalOrder['Email'],
-        legal_name: deliveryModalOrder['Legal Name'],
-        topic: deliveryModalOrder['Research Topic'],
-        financial_quote: deliveryModalOrder['Financial Quote'] ?? 0,
-      }, 'Work Submitted');
+    // 3. Update order status
+    const res = await fetch('/api/admin/update-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        orderId, 
+        updates: { work_submitted: true, vault_status: 'Final Files Secured' } 
+      }),
+    });
+    if (!res.ok) throw new Error(await res.text());
 
-      showToast("Uploaded securely to the vault.", "success");
-      setDeliveryModalOrder(null);
-      setDeliveryFile(null);
-      fetchOrders();
-    } catch (err: any) {
-      showToast(`Upload failed: ${err.message}`, "error");
-    }
-    setUploadingDelivery(false);
-  };
+    // 4. Send email notification
+    await sendStatusEmail({
+      orderId: deliveryModalOrder['Order ID'],
+      email: deliveryModalOrder['Email'],
+      legal_name: deliveryModalOrder['Legal Name'],
+      topic: deliveryModalOrder['Research Topic'],
+      financial_quote: deliveryModalOrder['Financial Quote'] ?? 0,
+    }, 'Work Submitted');
+
+    showToast("Uploaded securely to the vault.", "success");
+    setDeliveryModalOrder(null);
+    setDeliveryFile(null);
+    fetchOrders(); // refresh the order list
+  } catch (err: any) {
+    showToast(`Upload failed: ${err.message}`, "error");
+  }
+  setUploadingDelivery(false);
+};
 
   const initiateDeleteOrder = (order: AdminOrderView) => {
     setOrderToDelete(order);
@@ -2088,6 +2381,677 @@ function SettingsContent() {
 }
 
 
+===== C:\Users\chati\Desktop\research-writer\app\admin\users\page.tsx =====
+
+
+'use client';
+
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import {
+  Edit2,
+  Wallet,
+  Coins,
+  List,
+  ShoppingBag,
+  Key,
+  Mail,
+  X,
+} from 'lucide-react';
+
+const formatNaira = (amount: number) => 'â‚¦' + amount.toLocaleString('en-NG');
+const formatDate = (iso: string) => new Date(iso).toLocaleString();
+
+let toastId = 0;
+const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
+  window.dispatchEvent(event);
+};
+
+export default function AdminUsersPage() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
+
+  // Modal states
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [userForm, setUserForm] = useState({ full_name: '', is_admin: false, whatsapp: '' });
+
+  const [adjustingWallet, setAdjustingWallet] = useState<{ userId: string; currentBalance: number } | null>(null);
+  const [adjustAmount, setAdjustAmount] = useState(0);
+  const [adjustReason, setAdjustReason] = useState('');
+
+  const [editingWallet, setEditingWallet] = useState<{ userId: string; balance: number } | null>(null);
+  const [newBalance, setNewBalance] = useState(0);
+
+  // Transaction modal
+  const [selectedUserTransactions, setSelectedUserTransactions] = useState<any[]>([]);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [transactionLoading, setTransactionLoading] = useState(false);
+
+  // Order modal
+  const [selectedUserOrders, setSelectedUserOrders] = useState<any[]>([]);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderLoading, setOrderLoading] = useState(false);
+
+  // Email modal
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState<{ id: string; email: string; name: string } | null>(null);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      setToasts(prev => [...prev, e.detail]);
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== e.detail.id)), 4000);
+    };
+    window.addEventListener('app:toast', handler);
+    return () => window.removeEventListener('app:toast', handler);
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/users');
+      const data = await res.json();
+      if (res.ok) {
+        setUsers(data.users || []);
+      } else {
+        showToast(data.error || 'Failed to load users', 'error');
+      }
+    } catch (err) {
+      showToast('Network error', 'error');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const updateUser = async () => {
+    if (!editingUser) return;
+    const res = await fetch('/api/admin/update-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: editingUser.id,
+        full_name: userForm.full_name,
+        is_admin: userForm.is_admin,
+        whatsapp: userForm.whatsapp,
+      }),
+    });
+    if (res.ok) {
+      showToast('User updated', 'success');
+      fetchData();
+      setEditingUser(null);
+    } else {
+      const data = await res.json();
+      showToast(data.error || 'Update failed', 'error');
+    }
+  };
+
+  const adjustWallet = async () => {
+    if (!adjustingWallet) return;
+    if (adjustAmount === 0) return showToast('Amount must be non-zero', 'error');
+    const res = await fetch('/api/admin/wallet-adjust', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: adjustingWallet.userId,
+        amount: adjustAmount,
+        reason: adjustReason || (adjustAmount > 0 ? 'Manual credit' : 'Manual deduction'),
+      }),
+    });
+    if (res.ok) {
+      showToast('Wallet adjusted', 'success');
+      fetchData();
+      setAdjustingWallet(null);
+      setAdjustAmount(0);
+      setAdjustReason('');
+    } else {
+      showToast('Adjustment failed', 'error');
+    }
+  };
+
+  const setWalletBalance = async () => {
+    if (!editingWallet) return;
+    const res = await fetch('/api/admin/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: editingWallet.userId, balance: newBalance }),
+    });
+    if (res.ok) {
+      showToast('Balance set', 'success');
+      fetchData();
+      setEditingWallet(null);
+    } else {
+      showToast('Failed', 'error');
+    }
+  };
+
+  const viewTransactions = async (userId: string) => {
+    setTransactionLoading(true);
+    setShowTransactionModal(true);
+    try {
+      const res = await fetch(`/api/admin/user-transactions?userId=${userId}`);
+      const data = await res.json();
+      if (res.ok) {
+        setSelectedUserTransactions(data.transactions || []);
+      } else {
+        showToast(data.error || 'Failed to load transactions', 'error');
+      }
+    } catch (err) {
+      showToast('Network error', 'error');
+    }
+    setTransactionLoading(false);
+  };
+
+  const viewOrders = async (userId: string) => {
+    setOrderLoading(true);
+    setShowOrderModal(true);
+    try {
+      const res = await fetch(`/api/admin/user-orders?userId=${userId}`);
+      const data = await res.json();
+      if (res.ok) {
+        setSelectedUserOrders(data.orders || []);
+      } else {
+        showToast(data.error || 'Failed to load orders', 'error');
+      }
+    } catch (err) {
+      showToast('Network error', 'error');
+    }
+    setOrderLoading(false);
+  };
+
+  const resetPassword = async (userId: string, email: string) => {
+    if (!confirm(`Send password reset email to ${email}?`)) return;
+    try {
+      const res = await fetch('/api/admin/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, email }),
+      });
+      if (res.ok) {
+        showToast(`Password reset email sent to ${email}`, 'success');
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Failed to send reset', 'error');
+      }
+    } catch (err) {
+      showToast('Network error', 'error');
+    }
+  };
+
+  const sendIndividualEmail = async () => {
+    if (!emailRecipient) return;
+    if (!emailSubject || !emailBody) {
+      showToast('Subject and body are required', 'error');
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const res = await fetch('/api/admin/send-individual-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: emailRecipient.email,
+          subject: emailSubject,
+          html: emailBody.replace(/\n/g, '<br>'),
+        }),
+      });
+      if (res.ok) {
+        showToast(`Email sent to ${emailRecipient.email}`, 'success');
+        setShowEmailModal(false);
+        setEmailSubject('');
+        setEmailBody('');
+        setEmailRecipient(null);
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Failed to send email', 'error');
+      }
+    } catch (err) {
+      showToast('Network error', 'error');
+    }
+    setSendingEmail(false);
+  };
+
+  if (loading) return <div className="p-10 text-center text-primary">Loading users...</div>;
+
+  return (
+    <div className="p-6 md:p-10">
+      {/* Toast */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        {toasts.map(t => (
+          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold ${t.type === 'success' ? 'bg-emerald-500 text-black' : 'bg-red-500 text-white'}`}>
+            {t.message}
+          </div>
+        ))}
+      </div>
+
+      {/* ========== MODALS ========== */}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-primary border border-purple-500/30 rounded-3xl p-8 max-w-md w-full">
+            <h2 className="text-xl font-black text-primary mb-4">Edit User</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary">Full Name</label>
+                <input
+                  type="text"
+                  value={userForm.full_name}
+                  onChange={e => setUserForm({ ...userForm, full_name: e.target.value })}
+                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary">WhatsApp</label>
+                <input
+                  type="text"
+                  value={userForm.whatsapp}
+                  onChange={e => setUserForm({ ...userForm, whatsapp: e.target.value })}
+                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1"
+                  placeholder="+234..."
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-[10px] uppercase font-black text-secondary">Admin</label>
+                <input
+                  type="checkbox"
+                  checked={userForm.is_admin}
+                  onChange={e => setUserForm({ ...userForm, is_admin: e.target.checked })}
+                  className="accent-purple-500 w-5 h-5"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setEditingUser(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
+              <button onClick={updateUser} className="flex-1 py-3 bg-purple-500 text-white rounded-xl font-black">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Wallet Adjustment Modal */}
+      {adjustingWallet && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-primary border border-amber-500/30 rounded-3xl p-8 max-w-md w-full">
+            <h2 className="text-xl font-black text-primary mb-4">Adjust Wallet</h2>
+            <p className="text-secondary text-sm mb-2">User ID: {adjustingWallet.userId}</p>
+            <p className="text-secondary text-sm mb-4">Current Balance: {formatNaira(adjustingWallet.currentBalance)}</p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary">Amount (â‚¦) â€“ use negative for deduction</label>
+                <input type="number" value={adjustAmount} onChange={e => setAdjustAmount(Number(e.target.value))} className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1" />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary">Reason</label>
+                <input type="text" value={adjustReason} onChange={e => setAdjustReason(e.target.value)} placeholder="Optional" className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setAdjustingWallet(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
+              <button onClick={adjustWallet} className="flex-1 py-3 bg-amber-500 text-black rounded-xl font-black">Apply Adjustment</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Set Balance Modal */}
+      {editingWallet && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-primary border border-emerald-500/30 rounded-3xl p-8 max-w-md w-full">
+            <h2 className="text-xl font-black text-primary mb-4">Set Wallet Balance</h2>
+            <p className="text-secondary text-sm mb-2">User ID: {editingWallet.userId}</p>
+            <label className="text-[10px] uppercase font-black text-secondary">New Balance (â‚¦)</label>
+            <input type="number" value={newBalance} onChange={e => setNewBalance(Number(e.target.value))} className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1 mb-4" />
+            <div className="flex gap-3">
+              <button onClick={() => setEditingWallet(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
+              <button onClick={setWalletBalance} className="flex-1 py-3 bg-emerald-500 text-black rounded-xl font-black">Set Balance</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transaction Modal */}
+      {showTransactionModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-primary border border-theme rounded-3xl p-8 max-w-3xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-black text-primary">Transaction History</h2>
+              <button onClick={() => setShowTransactionModal(false)} className="text-secondary hover:text-primary"><X className="w-6 h-6" /></button>
+            </div>
+            {transactionLoading ? (
+              <div className="text-center py-8 text-secondary">Loading...</div>
+            ) : selectedUserTransactions.length === 0 ? (
+              <div className="text-center py-8 text-secondary">No transactions found.</div>
+            ) : (
+              <div className="space-y-2">
+                {selectedUserTransactions.map(tx => (
+                  <div key={tx.id} className="flex justify-between items-center border-b border-theme py-3">
+                    <div>
+                      <div className="font-mono text-xs text-secondary">{tx.reference}</div>
+                      <div className="text-xs text-secondary">{formatDate(tx.created_at)}</div>
+                      {tx.notes && <div className="text-xs text-secondary italic">{tx.notes}</div>}
+                    </div>
+                    <div className={`font-bold ${tx.type === 'deposit' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {tx.type === 'deposit' ? '+' : '-'} {formatNaira(tx.amount)}
+                    </div>
+                    <div className="text-xs capitalize px-2 py-1 rounded bg-white/5 text-secondary">{tx.status}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Order Modal */}
+      {showOrderModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-primary border border-theme rounded-3xl p-8 max-w-3xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-black text-primary">Order History</h2>
+              <button onClick={() => setShowOrderModal(false)} className="text-secondary hover:text-primary"><X className="w-6 h-6" /></button>
+            </div>
+            {orderLoading ? (
+              <div className="text-center py-8 text-secondary">Loading...</div>
+            ) : selectedUserOrders.length === 0 ? (
+              <div className="text-center py-8 text-secondary">No orders found.</div>
+            ) : (
+              <div className="space-y-2">
+                {selectedUserOrders.map(order => (
+                  <div key={order.order_id} className="border-b border-theme py-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-mono text-sm font-bold text-primary">{order.order_id}</div>
+                        <div className="text-xs text-secondary">{order.topic}</div>
+                      </div>
+                      <span className={`text-[10px] px-2 py-1 rounded font-bold ${
+                        order.workflow_status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400' :
+                        order.workflow_status === 'Briefing Received' ? 'bg-purple-500/20 text-purple-400' :
+                        'bg-amber-500/20 text-amber-400'
+                      }`}>
+                        {order.workflow_status}
+                      </span>
+                    </div>
+                    <div className="flex gap-4 mt-2 text-xs text-secondary">
+                      <span>Deadline: {formatDate(order.deadline)}</span>
+                      <span>Quote: {formatNaira(order.financial_quote || 0)}</span>
+                      <span>Paid: {order.sixty_percent_paid ? '60%' : ''} {order.forty_percent_paid ? '40%' : ''}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Email Modal */}
+      {showEmailModal && emailRecipient && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-primary border border-blue-500/30 rounded-3xl p-8 max-w-md w-full">
+            <h2 className="text-xl font-black text-primary mb-4">Send Email to {emailRecipient.name}</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary">Subject</label>
+                <input type="text" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1" />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary">Body (HTML supported)</label>
+                <textarea value={emailBody} onChange={e => setEmailBody(e.target.value)} rows={6} className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1 resize-none" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => { setShowEmailModal(false); setEmailRecipient(null); }} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
+              <button onClick={sendIndividualEmail} disabled={sendingEmail} className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-black">
+                {sendingEmail ? 'Sending...' : 'Send Email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== TABLE ========== */}
+      <h1 className="text-3xl font-black text-primary mb-6">User Management</h1>
+      <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-primary border-b border-theme text-[10px] uppercase text-secondary">
+            <tr>
+              <th className="px-4 py-4">Name</th>
+              <th className="px-4 py-4">Email</th>
+              <th className="px-4 py-4">Admin</th>
+              <th className="px-4 py-4">Balance</th>
+              <th className="px-4 py-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map(user => (
+              <tr key={user.id} className="border-b border-theme hover:bg-white/5 transition">
+                <td className="px-4 py-4 text-primary">{user.full_name || 'â€”'}</td>
+                <td className="px-4 py-4 text-primary">{user.email}</td>
+                <td className="px-4 py-4">
+                  {user.is_admin ? <span className="text-purple-400">âœ“</span> : <span className="text-secondary">â€”</span>}
+                </td>
+                <td className="px-4 py-4 font-mono text-primary">{formatNaira(user.balance)}</td>
+                <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
+                  <button
+                    onClick={() => {
+                      setEditingUser(user);
+                      setUserForm({
+                        full_name: user.full_name || '',
+                        is_admin: user.is_admin || false,
+                        whatsapp: user.whatsapp || '',
+                      });
+                    }}
+                    className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs hover:bg-blue-500/30 transition"
+                  >
+                    <Edit2 className="w-3 h-3 inline mr-1" /> Edit
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAdjustingWallet({ userId: user.id, currentBalance: user.balance });
+                      setAdjustAmount(0);
+                      setAdjustReason('');
+                    }}
+                    className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-xs hover:bg-amber-500/30 transition"
+                  >
+                    <Wallet className="w-3 h-3 inline mr-1" /> Adjust
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setEditingWallet({ userId: user.id, balance: user.balance });
+                      setNewBalance(user.balance);
+                    }}
+                    className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-xs hover:bg-purple-500/30 transition"
+                  >
+                    <Coins className="w-3 h-3 inline mr-1" /> Set
+                  </button>
+
+                  <button
+                    onClick={() => viewTransactions(user.id)}
+                    className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs hover:bg-emerald-500/30 transition"
+                  >
+                    <List className="w-3 h-3 inline mr-1" /> Txns
+                  </button>
+
+                  <button
+                    onClick={() => viewOrders(user.id)}
+                    className="px-3 py-1 bg-indigo-500/20 text-indigo-400 rounded-lg text-xs hover:bg-indigo-500/30 transition"
+                  >
+                    <ShoppingBag className="w-3 h-3 inline mr-1" /> Orders
+                  </button>
+
+                  <button
+                    onClick={() => resetPassword(user.id, user.email)}
+                    className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30 transition"
+                  >
+                    <Key className="w-3 h-3 inline mr-1" /> Reset
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setEmailRecipient({ id: user.id, email: user.email, name: user.full_name || user.email });
+                      setShowEmailModal(true);
+                      setEmailSubject('');
+                      setEmailBody('');
+                    }}
+                    className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs hover:bg-blue-500/30 transition"
+                  >
+                    <Mail className="w-3 h-3 inline mr-1" /> Email
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\admin\vault\page.tsx =====
+
+
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
+import * as lucide from 'lucide-react';
+
+const formatDate = (iso: string) => new Date(iso).toLocaleString();
+let toastId = 0;
+const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
+  window.dispatchEvent(event);
+};
+
+export default function AdminVaultPage() {
+  const router = useRouter();
+  const [files, setFiles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      setToasts(prev => [...prev, e.detail]);
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== e.detail.id)), 4000);
+    };
+    window.addEventListener('app:toast', handler);
+    return () => window.removeEventListener('app:toast', handler);
+  }, []);
+
+  const fetchFiles = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/vault-files');
+      const data = await res.json();
+      if (res.ok) {
+        setFiles(data.files || []);
+      } else {
+        showToast(data.error || 'Failed to load vault files', 'error');
+      }
+    } catch (err) {
+      showToast('Network error', 'error');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    // Check admin status
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return router.push('/login');
+      const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+      if (!profile?.is_admin) return router.push('/dashboard/client');
+      fetchFiles();
+    };
+    checkAdmin();
+  }, []);
+
+  const handleDelete = async (fileId: number) => {
+    if (!confirm('Delete this file permanently? This action cannot be undone.')) return;
+    const res = await fetch('/api/admin/delete-vault-file', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileId }),
+    });
+    if (res.ok) {
+      showToast('File deleted', 'success');
+      fetchFiles();
+    } else {
+      const data = await res.json();
+      showToast(data.error || 'Delete failed', 'error');
+    }
+  };
+
+  if (loading) return <div className="p-10 text-center text-primary">Loading...</div>;
+
+  return (
+    <div className="p-6 md:p-10">
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        {toasts.map(t => (
+          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold ${t.type === 'success' ? 'bg-emerald-500 text-black' : 'bg-red-500 text-white'}`}>
+            {t.message}
+          </div>
+        ))}
+      </div>
+
+      <h1 className="text-3xl font-black text-primary mb-6">Vault Management</h1>
+      <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-primary border-b border-theme text-[10px] uppercase text-secondary">
+            <tr>
+              <th className="px-4 py-4">Order ID</th>
+              <th className="px-4 py-4">Client</th>
+              <th className="px-4 py-4">File Name</th>
+              <th className="px-4 py-4">Uploaded</th>
+              <th className="px-4 py-4">Downloaded</th>
+              <th className="px-4 py-4 text-center">Downloads</th>
+              <th className="px-4 py-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {files.map(file => (
+              <tr key={file.id} className="border-b border-theme">
+                <td className="px-4 py-4 font-mono text-xs text-primary">{file.order_id}</td>
+                <td className="px-4 py-4 text-primary">
+                  <div>{file.orders?.legal_name || 'â€”'}</div>
+                  <div className="text-xs text-secondary">{file.orders?.email}</div>
+                </td>
+                <td className="px-4 py-4 text-primary">{file.file_name}</td>
+                <td className="px-4 py-4 text-xs text-primary">{formatDate(file.uploaded_at)}</td>
+                <td className="px-4 py-4 text-xs text-primary">
+                  {file.downloaded_at ? formatDate(file.downloaded_at) : 'Not viewed'}
+                </td>
+                <td className="px-4 py-4 text-center text-primary">{file.download_count || 0}</td>
+                <td className="px-4 py-4 text-right">
+                  <button
+                    onClick={() => handleDelete(file.id)}
+                    className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30 transition"
+                  >
+                    <lucide.Trash2 className="w-4 h-4 inline" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {files.length === 0 && (
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-secondary">No files in vault.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+
 ===== C:\Users\chati\Desktop\research-writer\app\api\admin\delete-order\route.ts =====
 
 
@@ -2129,6 +3093,121 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error('Delete order error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\admin\delete-vault-file\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function POST(request: Request) {
+  try {
+    const { fileId } = await request.json();
+    if (!fileId) {
+      return NextResponse.json({ error: 'Missing fileId' }, { status: 400 });
+    }
+
+    // Get the file record to find the storage path
+    const { data: file, error: fetchError } = await supabase
+      .from('final_deliverables')
+      .select('file_path')
+      .eq('id', fileId)
+      .single();
+
+    if (fetchError || !file) {
+      return NextResponse.json({ error: 'File not found' }, { status: 404 });
+    }
+
+    // Delete from storage
+    const { error: storageError } = await supabase.storage
+      .from('final-deliverables')
+      .remove([file.file_path]);
+
+    if (storageError) {
+      console.error('Storage delete error:', storageError);
+      // Continue to delete the record anyway
+    }
+
+    // Delete the record
+    const { error: deleteError } = await supabase
+      .from('final_deliverables')
+      .delete()
+      .eq('id', fileId);
+
+    if (deleteError) throw deleteError;
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error('Delete vault file error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\admin\reset-password\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function POST(request: Request) {
+  try {
+    const { userId, email } = await request.json();
+    if (!userId || !email) {
+      return NextResponse.json({ error: 'Missing userId or email' }, { status: 400 });
+    }
+    // Use Supabase's built-in password reset
+    const { error } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+    });
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error('Reset password error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\admin\send-individual-email\route.ts =====
+
+
+import { NextResponse } from 'next/server';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export async function POST(request: Request) {
+  try {
+    const { to, subject, html } = await request.json();
+    if (!to || !subject || !html) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+    const { data, error } = await resend.emails.send({
+      from: 'YourResearchWriter <noreply@yourresearchwriter.com.ng>',
+      to,
+      subject,
+      html,
+    });
+    if (error) throw error;
+    return NextResponse.json({ success: true, data });
+  } catch (err: any) {
+    console.error('Send email error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
@@ -2330,6 +3409,186 @@ export async function POST(request: Request) {
 }
 
 
+===== C:\Users\chati\Desktop\research-writer\app\api\admin\update-user\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function POST(request: Request) {
+  try {
+    const { userId, full_name, is_admin, whatsapp } = await request.json();
+    if (!userId) {
+      return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+    }
+    const updates: any = {};
+    if (full_name !== undefined) updates.full_name = full_name;
+    if (is_admin !== undefined) updates.is_admin = is_admin;
+    if (whatsapp !== undefined) updates.whatsapp = whatsapp;
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId);
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\admin\user-orders\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get('userId');
+  if (!userId) {
+    return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+  }
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('client_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ orders: data });
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\admin\user-transactions\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get('userId');
+  if (!userId) {
+    return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+  }
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ transactions: data });
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\admin\users\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function GET() {
+  try {
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, is_admin, whatsapp')
+      .order('full_name');
+    if (profilesError) throw profilesError;
+
+    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+    if (authError) throw authError;
+    const emailMap: Record<string, string> = {};
+    authUsers.users.forEach((u: any) => { emailMap[u.id] = u.email; });
+
+    const { data: wallets, error: walletsError } = await supabase
+      .from('wallets')
+      .select('user_id, balance');
+    if (walletsError) throw walletsError;
+    const walletMap: Record<string, number> = {};
+    wallets?.forEach(w => { walletMap[w.user_id] = w.balance; });
+
+    const users = profiles.map((profile: any) => ({
+      id: profile.id,
+      full_name: profile.full_name || '',
+      email: emailMap[profile.id] || '',
+      is_admin: profile.is_admin || false,
+      whatsapp: profile.whatsapp || '',
+      balance: walletMap[profile.id] || 0,
+    }));
+
+    return NextResponse.json({ users });
+  } catch (err: any) {
+    console.error('Admin users fetch error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\admin\vault-files\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function GET() {
+  try {
+    // Fetch all vault files with order details
+    const { data, error } = await supabase
+      .from('final_deliverables')
+      .select(`
+        id,
+        order_id,
+        file_name,
+        file_path,
+        uploaded_at,
+        downloaded_at,
+        download_count,
+        orders!inner (
+          legal_name,
+          email
+        )
+      `)
+      .order('uploaded_at', { ascending: false });
+
+    if (error) throw error;
+
+    return NextResponse.json({ files: data });
+  } catch (err: any) {
+    console.error('Admin vault fetch error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+
 ===== C:\Users\chati\Desktop\research-writer\app\api\admin\vault-upload\route.ts =====
 
 
@@ -2386,6 +3645,60 @@ export async function POST(request: Request) {
 }
 
 
+===== C:\Users\chati\Desktop\research-writer\app\api\admin\wallet-adjust\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function POST(request: Request) {
+  try {
+    const { userId, amount, reason } = await request.json();
+    if (!userId || amount === undefined) {
+      return NextResponse.json({ error: 'Missing userId or amount' }, { status: 400 });
+    }
+
+    const numericAmount = Number(amount);
+    if (isNaN(numericAmount)) {
+      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+    }
+
+    // 1. Update wallet balance
+    const { error: rpcError, data: newBalance } = await supabase.rpc('increment_wallet', {
+      user_id: userId,
+      add_amount: numericAmount,
+    });
+    if (rpcError) {
+      return NextResponse.json({ error: rpcError.message }, { status: 500 });
+    }
+
+    // 2. Log transaction with note
+    const { error: txError } = await supabase.from('transactions').insert({
+      user_id: userId,
+      amount: Math.abs(numericAmount),
+      type: numericAmount > 0 ? 'deposit' : 'payment',
+      reference: `ADMIN_${Date.now()}`,
+      status: 'completed',
+      notes: reason || (numericAmount > 0 ? 'Admin credit' : 'Admin deduction'),
+    });
+    if (txError) {
+      console.error('Transaction log error:', txError);
+      // Still return success since wallet updated
+    }
+
+    return NextResponse.json({ success: true, newBalance });
+  } catch (err: any) {
+    console.error('Wallet adjust error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+
 ===== C:\Users\chati\Desktop\research-writer\app\api\auth-check\route.ts =====
 
 
@@ -2401,6 +3714,162 @@ export async function GET() {
     user: session?.user?.email || null,
     error: error?.message || null,
   });
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\client\download-vault-file\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function POST(request: Request) {
+  try {
+    const { fileId } = await request.json();
+    if (!fileId) {
+      return NextResponse.json({ error: 'Missing fileId' }, { status: 400 });
+    }
+
+    // Get the file path
+    const { data: file, error: fetchError } = await supabase
+      .from('final_deliverables')
+      .select('id, file_path, download_count')
+      .eq('id', fileId)
+      .single();
+
+    if (fetchError || !file) {
+      console.error('File not found:', fetchError);
+      return NextResponse.json({ error: 'File not found' }, { status: 404 });
+    }
+
+    // Generate signed URL (valid 60 seconds)
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from('final-deliverables')
+      .createSignedUrl(file.file_path, 60);
+
+    if (signedError) {
+      console.error('Signed URL error:', signedError);
+      return NextResponse.json({ error: signedError.message }, { status: 500 });
+    }
+
+    // Update downloaded_at and increment download_count
+    const { error: updateError } = await supabase
+      .from('final_deliverables')
+      .update({
+        downloaded_at: new Date().toISOString(),
+        download_count: (file.download_count || 0) + 1,
+      })
+      .eq('id', fileId);
+
+    if (updateError) {
+      console.error('Update error:', updateError);
+      // Non-critical â€“ we still return the URL
+    }
+
+    return NextResponse.json({ signedUrl: signedData.signedUrl });
+  } catch (err: any) {
+    console.error('Download error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\client\mark-vault-viewed\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function POST(request: Request) {
+  try {
+    const { fileId } = await request.json();
+    if (!fileId) {
+      return NextResponse.json({ error: 'Missing fileId' }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from('final_deliverables')
+      .update({
+        downloaded_at: new Date().toISOString(),
+        // Optionally increment download count? Usually not, because they didn't download.
+        // We can leave download_count unchanged.
+      })
+      .eq('id', fileId);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error('Mark viewed error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\app\api\cron\prune-vault\route.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+export const runtime = 'edge';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function GET(request: Request) {
+  // Optional: Add a secret check to prevent unauthorized calls
+  const authHeader = request.headers.get('authorization');
+  const expectedSecret = process.env.CRON_SECRET;
+  
+  if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Find files downloaded more than 4 days ago
+    const { data: toDelete, error } = await supabase
+      .from('final_deliverables')
+      .select('id, file_path')
+      .lt('downloaded_at', fourDaysAgo)
+      .not('downloaded_at', 'is', null);
+
+    if (error) {
+      console.error('Prune error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    let deletedCount = 0;
+    for (const item of toDelete) {
+      // Delete from storage
+      await supabase.storage.from('final-deliverables').remove([item.file_path]);
+      // Delete record
+      await supabase.from('final_deliverables').delete().eq('id', item.id);
+      deletedCount++;
+    }
+
+    return NextResponse.json({ 
+      message: `Pruned ${deletedCount} files.`,
+      deleted: deletedCount 
+    });
+  } catch (err: any) {
+    console.error('Cron error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
 
 
@@ -2618,25 +4087,31 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Invalid metadata' }, { status: 400 });
       }
 
-      // 1. Increment wallet
+      const numericAmount = Number(amount);
+      if (isNaN(numericAmount) || numericAmount <= 0) {
+        console.error('âŒ Invalid amount:', amount);
+        return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+      }
+
       const { error: rpcError, data: rpcData } = await supabase.rpc('increment_wallet', {
         user_id: userId,
-        add_amount: amount,
+        add_amount: numericAmount,
       });
+
       if (rpcError) {
         console.error('âŒ RPC error:', rpcError);
-        throw new Error(`Wallet increment failed: ${rpcError.message}`);
+        return NextResponse.json({ error: `RPC failed: ${rpcError.message}` }, { status: 500 });
       }
       console.log('âœ… Wallet updated, RPC returned:', rpcData);
 
-      // 2. Log transaction
       const { error: txError, data: txData } = await supabase.from('transactions').insert({
         user_id: userId,
-        amount,
+        amount: numericAmount,
         type: 'deposit',
         reference,
         status: 'completed',
       }).select();
+
       if (txError) {
         console.error('âŒ Transaction insert error:', txError);
       } else {
@@ -2659,14 +4134,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid reference format' }, { status: 400 });
     }
 
-    // Mark invoice as paid
     await supabase
       .from('invoices')
       .update({ status: 'PAID', paid_at: new Date().toISOString() })
       .eq('flutterwave_transaction_ref', tx_ref)
       .throwOnError();
 
-    // Retrieve order data
     const { data: orderInfo, error: orderError } = await supabase
       .from('orders')
       .select('email, legal_name, financial_quote, topic, order_id')
@@ -2700,7 +4173,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    // Update order via central API
     const updateRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/update-order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -4048,6 +5520,8 @@ function DashboardContent() {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<AdminOrderView | null>(null);
   const [isAdminPreview, setIsAdminPreview] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
+  const [unviewedVaultCount, setUnviewedVaultCount] = useState(0);
+  const [vaultFiles, setVaultFiles] = useState<any[]>([]);
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -4079,6 +5553,54 @@ function DashboardContent() {
     }
   }, []);
 
+  // Fetch vault files for the user (improved error handling)
+  const fetchVaultFiles = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get user's order IDs
+      const { data: userOrders, error: ordersError } = await supabase
+        .from('orders')
+        .select('order_id')
+        .or(`client_id.eq.${user.id},email.eq.${user.email}`);
+
+      if (ordersError) {
+        console.error('Orders fetch error:', ordersError);
+        throw ordersError;
+      }
+
+      const orderIds = userOrders?.map(o => o.order_id) || [];
+
+      if (orderIds.length === 0) {
+        setVaultFiles([]);
+        setUnviewedVaultCount(0);
+        return;
+      }
+
+      // Fetch deliverables for these orders
+      const { data: files, error: filesError } = await supabase
+        .from('final_deliverables')
+        .select('*')
+        .in('order_id', orderIds)
+        .order('uploaded_at', { ascending: false });
+
+      if (filesError) {
+        console.error('Deliverables fetch error:', filesError);
+        throw filesError;
+      }
+
+      setVaultFiles(files || []);
+      const unviewed = files?.filter(f => f.downloaded_at === null).length || 0;
+      setUnviewedVaultCount(unviewed);
+    } catch (err) {
+      console.error('Error fetching vault files:', err);
+      // Set empty state to avoid breaking the UI
+      setVaultFiles([]);
+      setUnviewedVaultCount(0);
+    }
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -4104,6 +5626,9 @@ function DashboardContent() {
       } else {
         await refreshOrders(user.email, false, null);
       }
+
+      // Fetch vault files
+      await fetchVaultFiles();
       
       setLoading(false);
     };
@@ -4116,10 +5641,14 @@ function DashboardContent() {
         refreshOrders(isAdminPreview ? undefined : user?.email, isAdminPreview, searchParams.get('preview'));
         showToast('Order status updated', 'info');
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'final_deliverables' }, () => {
+        fetchVaultFiles();
+        showToast('Vault updated', 'info');
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [router, searchParams, refreshOrders]);
+  }, [router, searchParams, refreshOrders, fetchVaultFiles]);
 
   const handlePayment = async (orderId: string, amount: number, email: string, name: string, type: 'DEPOSIT' | 'BALANCE') => {
     setProcessingPayment(orderId);
@@ -4138,17 +5667,45 @@ function DashboardContent() {
     setProcessingPayment(null);
   };
 
-  const downloadFile = async (orderId: string) => {
+  // *** FIXED: downloadFile uses server API ***
+  const downloadFile = async (fileId: number) => {
     try {
-      const { data: files } = await supabase.storage.from('final-deliverables').list(orderId);
-      if (!files || files.length === 0) {
-        showToast('No files found in the vault yet.', 'error');
-        return;
+      const res = await fetch('/api/client/download-vault-file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+        await fetchVaultFiles(); // refresh badge
+        showToast('Download started', 'success');
+      } else {
+        showToast(data.error || 'Download failed', 'error');
       }
-      const { data: linkData } = await supabase.storage.from('final-deliverables').createSignedUrl(`${orderId}/${files[0].name}`, 60);
-      if (linkData) window.open(linkData.signedUrl, '_blank');
-    } catch (error) {
-      showToast('Error accessing the secure vault.', 'error');
+    } catch (err) {
+      console.error('Download error:', err);
+      showToast('Network error', 'error');
+    }
+  };
+
+  const markViewed = async (fileId: number) => {
+    try {
+      const res = await fetch('/api/client/mark-vault-viewed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId }),
+      });
+      if (res.ok) {
+        showToast('Marked as viewed', 'success');
+        await fetchVaultFiles(); // refresh to update badge
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Failed to mark as viewed', 'error');
+      }
+    } catch (err) {
+      console.error('Mark viewed error:', err);
+      showToast('Error marking as viewed', 'error');
     }
   };
 
@@ -4176,7 +5733,6 @@ function DashboardContent() {
 
   const activeOrders = orders.filter(o => o['Workflow Status'] !== 'Completed' && o['Workflow Status'] !== 'Cancelled');
   const completedOrders = orders.filter(o => o['Workflow Status'] === 'Completed');
-  const vaultItems = orders.filter(o => renderBool(o['Work Submitted']) || o['Workflow Status'] === 'Completed');
 
   return (
     <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row font-['Inter'] selection:bg-emerald-500/30">
@@ -4205,7 +5761,7 @@ function DashboardContent() {
         <nav className="flex flex-col gap-2 flex-1">
           <SidebarBtn active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<lucide.LayoutDashboard />} label="Dashboard" />
           <SidebarBtn active={false} onClick={() => router.push('/dashboard/client/order/new')} icon={<lucide.PlusCircle />} label="New Order" />
-          <SidebarBtn active={activeTab === 'vault'} onClick={() => setActiveTab('vault')} icon={<lucide.Lock />} label="Secure Vault" badge={vaultItems.length} />
+          <SidebarBtn active={activeTab === 'vault'} onClick={() => setActiveTab('vault')} icon={<lucide.Lock />} label="Secure Vault" badge={unviewedVaultCount} />
           <SidebarBtn active={activeTab === 'wallet'} onClick={() => setActiveTab('wallet')} icon={<lucide.Wallet />} label="Wallet" />
           <SidebarBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<lucide.User />} label="My Profile" />
         </nav>
@@ -4243,7 +5799,7 @@ function DashboardContent() {
       {mobileMenuOpen && (
         <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px]">
           <SidebarBtn active={activeTab === 'dashboard'} onClick={() => {setActiveTab('dashboard'); setMobileMenuOpen(false);}} icon={<lucide.LayoutDashboard />} label="Dashboard" />
-          <SidebarBtn active={activeTab === 'vault'} onClick={() => {setActiveTab('vault'); setMobileMenuOpen(false);}} icon={<lucide.Lock />} label="Secure Vault" />
+          <SidebarBtn active={activeTab === 'vault'} onClick={() => {setActiveTab('vault'); setMobileMenuOpen(false);}} icon={<lucide.Lock />} label="Secure Vault" badge={unviewedVaultCount} />
           <SidebarBtn active={activeTab === 'wallet'} onClick={() => {setActiveTab('wallet'); setMobileMenuOpen(false);}} icon={<lucide.Wallet />} label="Wallet" />
           <SidebarBtn active={activeTab === 'profile'} onClick={() => {setActiveTab('profile'); setMobileMenuOpen(false);}} icon={<lucide.User />} label="My Profile" />
           <ThemeToggle />
@@ -4275,7 +5831,7 @@ function DashboardContent() {
                 <StatCard label="Total Orders" value={orders.length} icon={<lucide.Layers />} />
                 <StatCard label="Active" value={activeOrders.length} icon={<lucide.Activity />} color="text-amber-400" />
                 <StatCard label="Completed" value={completedOrders.length} icon={<lucide.CheckCircle2 />} color="text-emerald-400" />
-                <StatCard label="In Vault" value={vaultItems.length} icon={<lucide.Lock />} color="text-purple-400" />
+                <StatCard label="In Vault" value={vaultFiles.length} icon={<lucide.Lock />} color="text-purple-400" />
               </div>
 
               {/* Orders List */}
@@ -4315,30 +5871,53 @@ function DashboardContent() {
                 <p className="text-secondary mt-1">Encrypted storage for all your completed deliverables.</p>
               </header>
               
-              {vaultItems.length === 0 ? (
+              {vaultFiles.length === 0 ? (
                 <div className="border border-theme bg-card rounded-3xl p-12 text-center">
                   <lucide.Shield className="w-12 h-12 text-secondary mx-auto mb-4" />
                   <p className="text-secondary">Your vault is currently empty. Files will appear here once drafting is complete.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {vaultItems.map(order => {
-                    const paid40 = renderBool(order['40% Paid']);
+                  {vaultFiles.map(file => {
+                    // Find the associated order to check payment status
+                    const order = orders.find(o => o['Order ID'] === file.order_id);
+                    const paid40 = order ? renderBool(order['40% Paid']) : false;
+                    const isViewed = file.downloaded_at !== null;
                     return (
-                      <div key={order['Order ID']} className="bg-card border border-theme rounded-2xl p-6 relative overflow-hidden group">
+                      <div key={file.id} className="bg-card border border-theme rounded-2xl p-6 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24 text-secondary" /></div>
-                        <h4 className="font-bold text-lg mb-1 relative z-10 text-primary">{order['Order ID']}</h4>
-                        <p className="text-xs text-secondary mb-6 relative z-10 line-clamp-1">{order['Research Topic']}</p>
+                        <h4 className="font-bold text-lg mb-1 relative z-10 text-primary">{file.order_id}</h4>
+                        <p className="text-xs text-secondary mb-2 relative z-10">{file.file_name}</p>
+                        <p className="text-[10px] text-secondary mb-4 relative z-10">
+                          Uploaded: {new Date(file.uploaded_at).toLocaleDateString()}
+                          {isViewed && ` â€¢ Viewed: ${new Date(file.downloaded_at).toLocaleDateString()}`}
+                        </p>
                         
-                        {paid40 ? (
-                          <button onClick={() => downloadFile(order['Order ID'])} className="w-full py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition relative z-10">
-                            <lucide.Download className="w-4 h-4" /> Download Package
-                          </button>
-                        ) : (
-                          <button onClick={() => handlePayment(order['Order ID'], parsePriceStr(order['Financial Quote']) * 0.4, order['Email'], order['Legal Name'], 'BALANCE')} className="w-full py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition relative z-10">
-                            <lucide.Unlock className="w-4 h-4" /> Pay Balance to Unlock
-                          </button>
-                        )}
+                        <div className="flex flex-col sm:flex-row gap-2 relative z-10">
+                          {paid40 ? (
+                            // *** FIXED: pass only file.id to downloadFile ***
+                            <button onClick={() => downloadFile(file.id)} className="flex-1 py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition">
+                              <lucide.Download className="w-4 h-4" /> Download Package
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => order && handlePayment(order['Order ID'], parsePriceStr(order['Financial Quote']) * 0.4, order['Email'], order['Legal Name'], 'BALANCE')} 
+                              className="flex-1 py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition"
+                            >
+                              <lucide.Unlock className="w-4 h-4" /> Pay Balance to Unlock
+                            </button>
+                          )}
+                          
+                          {!isViewed && paid40 && (
+                            <button
+                              onClick={() => markViewed(file.id)}
+                              className="px-4 py-3 bg-white/5 hover:bg-white/10 text-secondary rounded-xl text-sm flex items-center justify-center gap-2 transition whitespace-nowrap"
+                              title="Mark as viewed (clears notification badge)"
+                            >
+                              <lucide.Eye className="w-4 h-4" /> Mark Viewed
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -5710,32 +7289,55 @@ export default function WalletPage() {
   const [topUpAmount, setTopUpAmount] = useState(5000);
   const [processing, setProcessing] = useState(false);
 
-  useEffect(() => {
-    const fetchWallet = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      // Fetch balance
-      const { data: wallet } = await supabase
-        .from('wallets')
-        .select('balance')
-        .eq('user_id', user.id)
-        .single();
-      setBalance(wallet?.balance || 0);
+  const fetchWallet = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/login');
+      return;
+    }
 
-      // Fetch transaction history
-      const { data: txns } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+    const { data: wallet, error: walletError } = await supabase
+      .from('wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .single();
+
+    if (walletError) {
+      console.error('Wallet fetch error:', walletError);
+      setBalance(0);
+    } else {
+      console.log('Wallet data:', wallet);
+      setBalance(wallet?.balance || 0);
+    }
+
+    const { data: txns, error: txError } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (txError) {
+      console.error('Transactions fetch error:', txError);
+    } else {
       setTransactions(txns || []);
-      setLoading(false);
-    };
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchWallet();
-  }, [router]);
+
+    // Check for success query param after redirect from Paystack
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      // Remove the query param to avoid re-triggering
+      window.history.replaceState({}, '', '/dashboard/client/wallet');
+      // Refetch data
+      fetchWallet();
+      // Optionally show a toast (if you have a toast system)
+      // showToast('Wallet funded successfully!', 'success');
+    }
+  }, []);
 
   const handleTopUp = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -5769,13 +7371,11 @@ export default function WalletPage() {
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-black text-primary mb-6">My Wallet</h1>
 
-      {/* Balance Card */}
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-2xl p-6 text-white mb-8">
         <p className="text-sm opacity-80">Available Balance</p>
         <p className="text-5xl font-black">â‚¦{balance.toLocaleString()}</p>
       </div>
 
-      {/* Top Up Section */}
       <div className="bg-secondary border border-theme rounded-2xl p-6 mb-8">
         <h2 className="text-xl font-bold text-primary mb-4">Add Funds to Wallet</h2>
         <div className="flex flex-wrap gap-3 mb-6">
@@ -5811,7 +7411,6 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* Transaction History */}
       <div className="bg-secondary border border-theme rounded-2xl p-6">
         <h2 className="text-xl font-bold text-primary mb-4">Transaction History</h2>
         {transactions.length === 0 ? (
@@ -7907,6 +9506,54 @@ Deno.serve(async () => {
 })
 
 
+===== C:\Users\chati\Desktop\research-writer\supabase\functions\prune-vault\deno.json =====
+
+
+{
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@^2"
+  }
+}
+
+
+===== C:\Users\chati\Desktop\research-writer\supabase\functions\prune-vault\index.ts =====
+
+
+import { createClient } from '@supabase/supabase-js';
+
+Deno.serve(async () => {
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  );
+
+  const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Get deliverables that were downloaded more than 4 days ago
+  const { data: toDelete, error } = await supabase
+    .from('final_deliverables')
+    .select('id, file_path')
+    .lt('downloaded_at', fourDaysAgo)
+    .not('downloaded_at', 'is', null); // only those with a download timestamp
+
+  if (error) {
+    console.error('Error fetching expired deliverables:', error);
+    return new Response('Error', { status: 500 });
+  }
+
+  let deletedCount = 0;
+  for (const item of toDelete) {
+    // Delete from storage
+    await supabase.storage.from('final-deliverables').remove([item.file_path]);
+    // Delete record
+    await supabase.from('final_deliverables').delete().eq('id', item.id);
+    deletedCount++;
+  }
+
+  return new Response(`Pruned ${deletedCount} files.`, { status: 200 });
+});
+
+
 ===== C:\Users\chati\Desktop\research-writer\supabase\functions\send-order-email\deno.json =====
 
 
@@ -8079,3 +9726,96 @@ CREATE POLICY "Admins can do anything" ON orders FOR ALL USING (EXISTS (SELECT 1
 
 -- Insert a test promo code
 INSERT INTO promo_codes (code, discount_percent, active) VALUES ('ELITE2026', 10, true);
+
+
+===== C:\Users\chati\Desktop\research-writer\supabase\migrations\20260617000000_add_wallet_tables.sql =====
+
+
+-- supabase/migrations/20260617000000_add_wallet_tables.sql
+
+-- Drop existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Users can view own wallet" ON wallets;
+DROP POLICY IF EXISTS "Admins can view all wallets" ON wallets;
+DROP POLICY IF EXISTS "Admins can update any wallet" ON wallets;
+DROP POLICY IF EXISTS "Users can view own transactions" ON transactions;
+DROP POLICY IF EXISTS "Admins can view all transactions" ON transactions;
+DROP POLICY IF EXISTS "Allow insert for authenticated users" ON transactions;
+
+-- Create tables if they don't exist
+CREATE TABLE IF NOT EXISTS wallets (
+  user_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+  balance BIGINT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS transactions (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  amount BIGINT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('deposit', 'payment')),
+  reference TEXT UNIQUE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Add updated_at column if missing
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+-- Drop and recreate function
+DROP FUNCTION IF EXISTS increment_wallet(UUID, BIGINT);
+
+CREATE OR REPLACE FUNCTION increment_wallet(
+  user_id UUID,
+  add_amount BIGINT
+)
+RETURNS BIGINT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  new_balance BIGINT;
+BEGIN
+  UPDATE wallets
+  SET balance = balance + add_amount,
+      updated_at = now()
+  WHERE wallets.user_id = increment_wallet.user_id
+  RETURNING balance INTO new_balance;
+
+  IF NOT FOUND THEN
+    INSERT INTO wallets (user_id, balance, updated_at)
+    VALUES (increment_wallet.user_id, add_amount, now())
+    RETURNING balance INTO new_balance;
+  END IF;
+
+  RETURN new_balance;
+END;
+$$;
+
+-- Enable RLS
+ALTER TABLE wallets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+CREATE POLICY "Users can view own wallet" ON wallets
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can view all wallets" ON wallets
+  FOR SELECT USING (EXISTS (
+    SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true
+  ));
+
+CREATE POLICY "Admins can update any wallet" ON wallets
+  FOR UPDATE USING (EXISTS (
+    SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true
+  ));
+
+CREATE POLICY "Users can view own transactions" ON transactions
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can view all transactions" ON transactions
+  FOR SELECT USING (EXISTS (
+    SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true
+  ));
+
+CREATE POLICY "Allow insert for authenticated users" ON transactions
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');

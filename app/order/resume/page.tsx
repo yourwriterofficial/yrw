@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { createSecureOrder } from '@/app/actions/createOrder';
-import { Upload, Paperclip, ChevronRight, CheckCircle2, Briefcase } from 'lucide-react';
+import { Upload, Paperclip, ChevronRight, CheckCircle2, Briefcase, Calendar } from 'lucide-react';
 import type { CreateOrderServerActionResponse } from '@/lib/types';
+import OrderCategoryNav from '@/app/components/OrderCategoryNav';
 
 type OrderAddon = {
   id: string;
@@ -144,15 +145,16 @@ export default function ResumeOrderForm() {
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center"><div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white py-20 px-6 font-['Inter']">
-      <div className="max-w-3xl mx-auto space-y-12">
+    <div className="min-h-screen bg-primary text-primary py-12 px-6 font-['Inter']">
+      <OrderCategoryNav />
+      <div className="max-w-3xl mx-auto space-y-12 mt-6">
         <div className="text-center">
           <div className="inline-block px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Executive Pipeline</div>
           <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Executive Resumes & CVs</h1>
-          <p className="text-zinc-400 text-sm">ATS-compliant resumes, Cover Letters, and LinkedIn optimizations to secure top-tier interviews.</p>
+          <p className="text-secondary text-sm">ATS-compliant resumes, Cover Letters, and LinkedIn optimizations to secure top-tier interviews.</p>
         </div>
 
-        <div className="space-y-8 bg-[#0a0a0a] p-8 rounded-[32px] border border-zinc-800">
+        <div className="space-y-8 bg-secondary p-8 rounded-[32px] border border-theme">
           
           {availableAddons.length > 0 && (
             <div className="space-y-3">
@@ -181,39 +183,84 @@ export default function ResumeOrderForm() {
 
           <div className="space-y-4 pt-6 border-t border-zinc-800">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="text" placeholder="Full Name" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none" value={name} onChange={e => setName(e.target.value)} />
-              <input type="email" placeholder="Email Address" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none" value={email} onChange={e => setEmail(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="tel" placeholder="WhatsApp Number" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
-              <input type="date" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm text-zinc-400 focus:border-blue-500 outline-none [color-scheme:dark]" value={deadline} onChange={e => setDeadline(e.target.value)} min={new Date().toISOString().split('T')[0]} />
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Full Name</label>
+                <input type="text" placeholder="John Doe" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-white font-bold hover:border-zinc-750" value={name} onChange={e => setName(e.target.value)} />
+                <p className="text-[9px] text-zinc-500 ml-1">Please enter your legal name as it appears on official records.</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Email Address</label>
+                <input type="email" placeholder="john.doe@example.com" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-white font-bold hover:border-zinc-750" value={email} onChange={e => setEmail(e.target.value)} />
+                <p className="text-[9px] text-zinc-500 ml-1">Your credentials and secure deliverables will be sent here.</p>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="text" placeholder="Target Role / Job Title (e.g., Senior Data Analyst)" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none" value={topic} onChange={e => setTopic(e.target.value)} />
-              <select className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-zinc-300" value={experienceLevel} onChange={e => setExperienceLevel(e.target.value)}>
-                <option>Entry-Level (0-2 years)</option>
-                <option>Mid-Level (3-8 years)</option>
-                <option>Senior/Executive (9+ years)</option>
-                <option>Career Change</option>
-              </select>
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">WhatsApp Number</label>
+                <input type="tel" placeholder="+234..." className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-white font-bold hover:border-zinc-750" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
+                <p className="text-[9px] text-zinc-500 ml-1">For emergency support and prompt status updates.</p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Target Delivery Deadline</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none group-focus-within:text-blue-500 transition-colors">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <input 
+                    type="date" 
+                    className="w-full bg-card border border-theme p-4 pl-12 rounded-xl text-sm text-primary focus:border-blue-500 outline-none dark:[color-scheme:dark] transition-all font-bold hover:border-theme cursor-pointer" 
+                    value={deadline} 
+                    onChange={e => setDeadline(e.target.value)} 
+                    min={new Date().toISOString().split('T')[0]} 
+                  />
+                </div>
+                <p className="text-[9px] text-zinc-500 ml-1">Select your target delivery date. standard resume updates take 2–3 days.</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Target Job Title</label>
+                <input type="text" placeholder="E.g., Senior Software Engineer / Product Manager" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-white font-bold hover:border-zinc-750" value={topic} onChange={e => setTopic(e.target.value)} />
+                <p className="text-[9px] text-zinc-500 ml-1">State the role title you are targeting to guide resume tailoring.</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Experience Level</label>
+                <select className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-zinc-300 font-bold hover:border-zinc-700" value={experienceLevel} onChange={e => setExperienceLevel(e.target.value)}>
+                  <option>Entry-Level (0-2 years)</option>
+                  <option>Mid-Level (3-8 years)</option>
+                  <option>Senior/Executive (9+ years)</option>
+                  <option>Career Change</option>
+                </select>
+              </div>
             </div>
 
-            <input type="url" placeholder="Link to Current LinkedIn Profile (Optional)" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none" value={linkedInUrl} onChange={e => setLinkedInUrl(e.target.value)} />
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">LinkedIn Profile URL (Optional)</label>
+              <input type="url" placeholder="https://linkedin.com/in/username" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-white font-bold hover:border-zinc-750" value={linkedInUrl} onChange={e => setLinkedInUrl(e.target.value)} />
+              <p className="text-[9px] text-zinc-500 ml-1">Paste your profile link if you want us to update your online profile too.</p>
+            </div>
             
-            <textarea placeholder="List specific companies you are targeting, core achievements to highlight, or formatting preferences..." className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none resize-none h-24" value={instructions} onChange={e => setInstructions(e.target.value)} />
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Key Achievements & Targets</label>
+              <textarea placeholder="List specific companies you are targeting, core achievements to highlight, or formatting preferences..." className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-blue-500 outline-none resize-none h-24 text-white font-medium hover:border-zinc-700" value={instructions} onChange={e => setInstructions(e.target.value)} />
+            </div>
             
-            <label className="border-2 border-dashed border-zinc-800 hover:border-blue-500/50 bg-[#0f0f0f] rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
-              <Upload className="w-6 h-6 text-zinc-600 mb-2" />
-              <span className="text-xs font-bold text-zinc-400">Attach Your Current CV/Resume</span>
-              <span className="text-[10px] text-zinc-600 mt-1">If you don't have one, attach a list of your work history.</span>
-              <input type="file" className="hidden" onChange={(e) => setBriefFile(e.target.files?.[0] || null)} />
-            </label>
-            {briefFile && (
-              <div className="flex items-center gap-2 text-xs bg-blue-500/10 text-blue-400 p-3 rounded-xl border border-blue-500/20">
-                <Paperclip className="w-4 h-4" /> {briefFile.name}
-              </div>
-            )}
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Current CV / Resume Brief</label>
+              <label className="border-2 border-dashed border-zinc-800 hover:border-blue-500/50 bg-[#0f0f0f] rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
+                <Upload className="w-6 h-6 text-zinc-600 mb-2" />
+                <span className="text-xs font-bold text-zinc-400">Attach Your Current CV/Resume</span>
+                <span className="text-[10px] text-zinc-600 mt-1">If you don't have one, attach a list of your work history.</span>
+                <input type="file" className="hidden" onChange={(e) => setBriefFile(e.target.files?.[0] || null)} />
+              </label>
+              {briefFile && (
+                <div className="flex items-center gap-2 text-xs bg-blue-500/10 text-blue-400 p-3 rounded-xl border border-blue-500/20 w-full break-words">
+                  <Paperclip className="w-4 h-4 shrink-0" /> <span className="truncate">{briefFile.name}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-4 pt-6 border-t border-zinc-800">

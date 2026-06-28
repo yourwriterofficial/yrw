@@ -1,8 +1,25 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Single canonical Content-Security-Policy. The browser is only ever asked to
+// talk to our own origin and Supabase (REST + realtime websockets). Paystack,
+// Resend and email are all called server-side, so they are intentionally absent
+// from connect-src. Keep this in sync with next.config.mjs.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https://*.supabase.co",
+  "font-src 'self'",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  "frame-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+].join('; ')
+
+const ADMIN_EMAIL = 'yourwriterofficial@gmail.com'
+
 export default async function middleware(request: NextRequest) {
-  console.log('✅ MIDDLEWARE RUNNING – path:', request.nextUrl.pathname);
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -14,7 +31,7 @@ export default async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
+          cookiesToSet.forEach(({ name, value }) => {
             request.cookies.set(name, value)
           })
           supabaseResponse = NextResponse.next({ request })
@@ -26,40 +43,33 @@ export default async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  // Allow public routes
+  // Public routes and API routes are not auth-gated here.
   const publicPaths = ['/', '/login', '/register', '/auth/callback', '/complete-registration']
   if (publicPaths.includes(path) || path.startsWith('/api/')) {
-    // Add CSP header even for public routes
     const response = NextResponse.next({ request })
-    response.headers.set(
-      'Content-Security-Policy',
-      "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.flutterwave.com https://api.resend.com; frame-src 'self';"
-    )
+    response.headers.set('Content-Security-Policy', CSP)
     return response
   }
+
+  const { data: { user } } = await supabase.auth.getUser()
 
   // Protect dashboard and admin routes
   if ((path.startsWith('/dashboard') || path.startsWith('/admin')) && !user) {
     const response = NextResponse.redirect(new URL('/login', request.url))
-    response.headers.set('Content-Security-Policy', "default-src 'self' ...; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.flutterwave.com https://api.resend.com;")
+    response.headers.set('Content-Security-Policy', CSP)
     return response
   }
 
-  // Redirect non‑admin users away from /admin
-  if (user && user.email?.toLowerCase() !== 'yourwriterofficial@gmail.com' && path.startsWith('/admin')) {
+  // Redirect non-admin users away from /admin
+  if (user && user.email?.toLowerCase() !== ADMIN_EMAIL && path.startsWith('/admin')) {
     const response = NextResponse.redirect(new URL('/dashboard/client', request.url))
-    response.headers.set('Content-Security-Policy', "default-src 'self' ...; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.flutterwave.com https://api.resend.com;")
+    response.headers.set('Content-Security-Policy', CSP)
     return response
   }
 
-  // For all other authenticated routes, add CSP header
-  supabaseResponse.headers.set(
-    'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.flutterwave.com https://api.resend.com; frame-src 'self';"
-  )
+  supabaseResponse.headers.set('Content-Security-Policy', CSP)
   return supabaseResponse
 }
 

@@ -3,14 +3,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
+import LoadingScreen from '@/app/components/ui/LoadingScreen';
+import { ToastContainer, showToast } from '@/app/components/ui/Toast';
+import PageHeader from '@/app/components/ui/PageHeader';
 
 const formatNaira = (amount: number) => '₦' + amount.toLocaleString('en-NG');
-
-let toastId = 0;
-const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-  const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
-  window.dispatchEvent(event);
-};
 
 export default function FinancePage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -30,17 +27,6 @@ export default function FinancePage() {
   const [adjustingWallet, setAdjustingWallet] = useState<{ userId: string; currentBalance: number } | null>(null);
   const [adjustAmount, setAdjustAmount] = useState(0);
   const [adjustReason, setAdjustReason] = useState('');
-  
-  const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
-
-  useEffect(() => {
-    const handler = (e: any) => {
-      setToasts(prev => [...prev, e.detail]);
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== e.detail.id)), 4000);
-    };
-    window.addEventListener('app:toast', handler);
-    return () => window.removeEventListener('app:toast', handler);
-  }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -106,18 +92,18 @@ export default function FinancePage() {
     }
   };
 
-  if (loading) return <div className="p-10 text-center text-primary">Loading...</div>;
+  if (loading) return <LoadingScreen label="Loading finance..." accent="purple" />;
 
   return (
     <div className="p-6 md:p-10 space-y-10">
-      {/* Toast container */}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2">
-        {toasts.map(t => (
-          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold ${t.type === 'success' ? 'bg-emerald-500 text-black' : 'bg-red-500 text-white'}`}>
-            {t.message}
-          </div>
-        ))}
-      </div>
+      <ToastContainer />
+
+      <PageHeader
+        title="Finance"
+        description="Manage user wallets, balances, and platform transactions."
+        breadcrumb="Admin / Finance"
+        icon={<lucide.Wallet className="w-8 h-8 text-purple-500" />}
+      />
 
       {/* ========== MODAL: Edit User ========== */}
       {editingUser && (
@@ -208,8 +194,8 @@ export default function FinancePage() {
 
       {/* ========== Users Table ========== */}
       <div>
-        <h2 className="text-2xl font-black text-primary mb-4">User Management</h2>
-        <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto">
+        <h2 className="text-lg font-black text-primary mb-4">User Wallets</h2>
+        <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto table-row-hover">
           <table className="w-full text-left text-sm">
             <thead className="bg-primary border-b border-theme text-[10px] uppercase text-secondary">
               <tr>
@@ -272,8 +258,8 @@ export default function FinancePage() {
 
       {/* ========== Transactions Table ========== */}
       <div>
-        <h2 className="text-2xl font-black text-primary mb-4">All Transactions</h2>
-        <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto">
+        <h2 className="text-lg font-black text-primary mb-4">All Transactions</h2>
+        <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto table-row-hover">
           <table className="w-full text-left text-sm">
             <thead className="bg-primary border-b border-theme text-[10px] uppercase text-secondary">
               <tr>
@@ -290,7 +276,7 @@ export default function FinancePage() {
               {transactions.map(tx => {
                 const user = users.find(u => u.id === tx.user_id);
                 return (
-                  <tr key={tx.id} className="border-b border-theme">
+                  <tr key={tx.id} className="border-b border-theme hover:bg-white/5">
                     <td className="px-4 py-4 text-xs text-primary">{user?.full_name || tx.user_id}</td>
                     <td className="px-4 py-4 capitalize text-primary">{tx.type}</td>
                     <td className="px-4 py-4 font-mono text-primary">{formatNaira(tx.amount)}</td>
@@ -301,6 +287,9 @@ export default function FinancePage() {
                   </tr>
                 );
               })}
+              {transactions.length === 0 && (
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-secondary">No transactions recorded.</td></tr>
+              )}
             </tbody>
           </table>
         </div>

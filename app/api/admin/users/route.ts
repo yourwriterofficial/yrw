@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/adminAuth';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,6 +8,8 @@ const supabase = createClient(
 );
 
 export async function GET() {
+  const guard = await requireAdmin();
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
   try {
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')

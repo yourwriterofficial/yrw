@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { createSecureOrder } from '@/app/actions/createOrder';
-import { Upload, Paperclip, CheckCircle2 } from 'lucide-react';
+import { Upload, Paperclip, CheckCircle2, Calendar } from 'lucide-react';
 import type { CreateOrderServerActionResponse } from '@/lib/types';
+import OrderCategoryNav from '@/app/components/OrderCategoryNav';
 
 type OrderAddon = {
   id: string;
@@ -50,7 +51,7 @@ export default function CustomOrderForm() {
       const { data: addons } = await supabase
         .from('order_addons')
         .select('*')
-        .eq('service_category', 'ACADEMIC')
+        .eq('service_category', 'CUSTOM')
         .eq('is_active', true);
       if (addons) setAvailableAddons(addons as OrderAddon[]);
 
@@ -160,15 +161,16 @@ export default function CustomOrderForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white py-20 px-6 font-['Inter']">
-      <div className="max-w-3xl mx-auto space-y-12">
+    <div className="min-h-screen bg-primary text-primary py-12 px-6 font-['Inter']">
+      <OrderCategoryNav />
+      <div className="max-w-3xl mx-auto space-y-12 mt-6">
         <div className="text-center">
           <div className="inline-block px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Complex Pipeline</div>
           <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Custom Data & Fieldwork</h1>
-          <p className="text-zinc-400 text-sm">For projects requiring bespoke logic, statistical analysis, or extreme urgency.</p>
+          <p className="text-secondary text-sm">For projects requiring bespoke logic, statistical analysis, or extreme urgency.</p>
         </div>
 
-        <div className="space-y-8 bg-[#0a0a0a] p-8 rounded-[32px] border border-zinc-800">
+        <div className="space-y-8 bg-secondary p-8 rounded-[32px] border border-theme">
           <div>
             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 block ml-1">Proposed Base Budget (₦)</label>
             <input
@@ -213,31 +215,71 @@ export default function CustomOrderForm() {
 
           <div className="space-y-4 pt-6 border-t border-zinc-800">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="text" placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-purple-500 outline-none" required />
-              <input type="email" placeholder="Email Address" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-purple-500 outline-none" required />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="tel" placeholder="WhatsApp Number" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-purple-500 outline-none" required />
-              <input type="date" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm text-zinc-400 focus:border-purple-500 outline-none [color-scheme:dark]" value={deadline} onChange={e => setDeadline(e.target.value)} min={new Date().toISOString().split('T')[0]} required />
-            </div>
-            <input type="text" placeholder="Project Topic / Main Objective" value={topic} onChange={e => setTopic(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-purple-500 outline-none" required />
-            <textarea
-              placeholder="Specific instructions, methodologies, or data requirements..."
-              className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-purple-500 outline-none resize-none h-32"
-              value={instructions}
-              onChange={e => setInstructions(e.target.value)}
-            />
-
-            <label className="border-2 border-dashed border-zinc-800 hover:border-purple-500/50 bg-[#0f0f0f] rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
-              <Upload className="w-6 h-6 text-zinc-600 mb-2" />
-              <span className="text-xs font-bold text-zinc-400">Attach Brief or Dataset</span>
-              <input type="file" className="hidden" onChange={e => setBriefFile(e.target.files?.[0] || null)} />
-            </label>
-            {briefFile && (
-              <div className="flex items-center gap-2 text-xs bg-purple-500/10 text-purple-400 p-3 rounded-xl border border-purple-500/20">
-                <Paperclip className="w-4 h-4" /> {briefFile.name}
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Full Name</label>
+                <input type="text" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-white font-bold hover:border-zinc-750" required />
+                <p className="text-[9px] text-zinc-500 ml-1">Please enter your legal name as it appears on official records.</p>
               </div>
-            )}
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Email Address</label>
+                <input type="email" placeholder="john.doe@example.com" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-white font-bold hover:border-zinc-750" required />
+                <p className="text-[9px] text-zinc-500 ml-1">Your credentials and secure work deliverables will be sent here.</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">WhatsApp Number</label>
+                <input type="tel" placeholder="+234..." value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-white font-bold hover:border-zinc-750" required />
+                <p className="text-[9px] text-zinc-500 ml-1">For emergency support and prompt status updates.</p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Target Delivery Deadline</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none group-focus-within:text-purple-500 transition-colors">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <input 
+                    type="date" 
+                    className="w-full bg-card border border-theme p-4 pl-12 rounded-xl text-sm text-primary focus:border-purple-500 outline-none dark:[color-scheme:dark] transition-all font-bold hover:border-theme cursor-pointer" 
+                    value={deadline} 
+                    onChange={e => setDeadline(e.target.value)} 
+                    min={new Date().toISOString().split('T')[0]} 
+                    required 
+                  />
+                </div>
+                <p className="text-[9px] text-zinc-500 ml-1">Choose target date. Allow at least 3–4 days for complex fieldwork tasks.</p>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Project Topic / Objective</label>
+              <input type="text" placeholder="E.g., Fieldwork Analysis of Consumer Patterns" value={topic} onChange={e => setTopic(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-white font-bold hover:border-zinc-700" required />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Methodologies & Data Guidelines</label>
+              <textarea
+                placeholder="Specific instructions, methodologies, or data requirements..."
+                className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-purple-500 outline-none resize-none h-32 text-white font-medium hover:border-zinc-700"
+                value={instructions}
+                onChange={e => setInstructions(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Datasets / Brief Files</label>
+              <label className="border-2 border-dashed border-zinc-800 hover:border-purple-500/50 bg-[#0f0f0f] rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
+                <Upload className="w-6 h-6 text-zinc-600 mb-2" />
+                <span className="text-xs font-bold text-zinc-400">Attach Brief or Dataset</span>
+                <input type="file" className="hidden" onChange={e => setBriefFile(e.target.files?.[0] || null)} />
+              </label>
+              {briefFile && (
+                <div className="flex items-center gap-2 text-xs bg-purple-500/10 text-purple-400 p-3 rounded-xl border border-purple-500/20 w-full break-words">
+                  <Paperclip className="w-4 h-4 shrink-0" /> <span className="truncate">{briefFile.name}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Terms of Service – with decodeHtml */}

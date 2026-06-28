@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
 import {
   Edit2,
   Wallet,
@@ -12,20 +11,16 @@ import {
   Mail,
   X,
 } from 'lucide-react';
+import LoadingScreen from '@/app/components/ui/LoadingScreen';
+import { ToastContainer, showToast } from '@/app/components/ui/Toast';
+import PageHeader from '@/app/components/ui/PageHeader';
 
 const formatNaira = (amount: number) => '₦' + amount.toLocaleString('en-NG');
 const formatDate = (iso: string) => new Date(iso).toLocaleString();
 
-let toastId = 0;
-const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-  const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
-  window.dispatchEvent(event);
-};
-
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
 
   // Modal states
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -54,15 +49,6 @@ export default function AdminUsersPage() {
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
-
-  useEffect(() => {
-    const handler = (e: any) => {
-      setToasts(prev => [...prev, e.detail]);
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== e.detail.id)), 4000);
-    };
-    window.addEventListener('app:toast', handler);
-    return () => window.removeEventListener('app:toast', handler);
-  }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -229,18 +215,11 @@ export default function AdminUsersPage() {
     setSendingEmail(false);
   };
 
-  if (loading) return <div className="p-10 text-center text-primary">Loading users...</div>;
+  if (loading) return <LoadingScreen label="Loading users..." accent="purple" />;
 
   return (
     <div className="p-6 md:p-10">
-      {/* Toast */}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2">
-        {toasts.map(t => (
-          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold ${t.type === 'success' ? 'bg-emerald-500 text-black' : 'bg-red-500 text-white'}`}>
-            {t.message}
-          </div>
-        ))}
-      </div>
+      <ToastContainer />
 
       {/* ========== MODALS ========== */}
 
@@ -429,8 +408,12 @@ export default function AdminUsersPage() {
       )}
 
       {/* ========== TABLE ========== */}
-      <h1 className="text-3xl font-black text-primary mb-6">User Management</h1>
-      <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto">
+      <PageHeader
+        title="User Management"
+        description="Manage client accounts, wallets, and communications."
+        breadcrumb="Admin / Users"
+      />
+      <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto table-row-hover">
         <table className="w-full text-left text-sm">
           <thead className="bg-primary border-b border-theme text-[10px] uppercase text-secondary">
             <tr>
@@ -521,6 +504,11 @@ export default function AdminUsersPage() {
                 </td>
               </tr>
             ))}
+            {users.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-4 py-12 text-center text-secondary">No users found.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

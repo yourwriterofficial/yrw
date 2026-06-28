@@ -28,30 +28,30 @@ export async function sendSystemEmail(params: { to: string; subject: string; htm
   }
 
   // 2. Safely log the email in the database
-  if (orderId) {
-    try {
-      // Look up the internal numeric ID first to prevent foreign key constraints failing
-      const { data: orderData, error: lookupError } = await supabase
+  try {
+    let numericOrderId: number | null = null;
+    if (orderId) {
+      const { data: orderData } = await supabase
         .from('orders')
         .select('id')
         .eq('order_id', orderId)
         .single();
-
-      if (orderData && !lookupError) {
-        const { error: logError } = await supabase.from('email_logs').insert({
-          order_id: orderData.id,
-          recipient: to,
-          subject,
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-        });
-        
-        if (logError) console.warn('Failed to log email:', logError.message);
+      if (orderData) {
+        numericOrderId = orderData.id;
       }
-    } catch (dbErr) {
-      console.warn('Database error during email logging:', dbErr);
-      // We don't throw here to prevent failing the overall email success response
     }
+
+    const { error: logError } = await supabase.from('email_logs').insert({
+      order_id: numericOrderId,
+      recipient: to,
+      subject,
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+    });
+    
+    if (logError) console.warn('Failed to log email:', logError.message);
+  } catch (dbErr) {
+    console.warn('Database error during email logging:', dbErr);
   }
 
   return data;

@@ -81,6 +81,30 @@ export async function POST(request: Request) {
         console.log('✅ Transaction logged:', txData);
       }
 
+      // Notify admin of wallet topup
+      try {
+        const { data: userProfile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+        const { data: userData } = await supabase.auth.admin.getUserById(userId);
+        if (userProfile && userData?.user) {
+          const { sendSystemEmail } = await import('@/lib/emailService');
+          const { emailTemplates } = await import('@/lib/emailTemplates');
+          const adminMailData = emailTemplates.adminWalletTopup({
+            email: userData.user.email || '',
+            full_name: userProfile.full_name || 'Client',
+            amount: numericAmount,
+            reference
+          });
+          await sendSystemEmail({
+            to: process.env.ADMIN_EMAIL || 'yourwriterofficial@gmail.com',
+            subject: adminMailData.subject,
+            html: adminMailData.html
+          });
+          console.log('✅ Admin notified of wallet top-up');
+        }
+      } catch (e) {
+        console.warn('Admin wallet topup notification failed:', e);
+      }
+
       console.log(`✅ Wallet top-up processed successfully in ${Date.now() - startTime}ms`);
       return NextResponse.json({ received: true });
     }
@@ -123,14 +147,59 @@ export async function POST(request: Request) {
 
     let updates = {};
     let template = null;
-    if (paymentType === 'DEPOSIT') {
+    let adminTemplate = null;
+    
+    if (paymentType.startsWith('ADDON-')) {
+      const addonId = paymentType.replace('ADDON-', '');
+      const { data: orderDetails, error: fetchOrderError } = await supabase
+        .from('orders')
+        .select('additional_info, client_id')
+        .eq('order_id', orderStringId)
+        .single();
+        
+      if (fetchOrderError || !orderDetails) {
+        throw new Error(`Order ${orderStringId} not found for addon payment.`);
+      }
+      
+      let addonPayload: any = {};
+      try {
+        addonPayload = JSON.parse(orderDetails.additional_info || '{}');
+      } catch {}
+      
+      if (addonPayload.extra_addons && Array.isArray(addonPayload.extra_addons)) {
+        const addonIndex = addonPayload.extra_addons.findIndex((a: any) => a.id === addonId);
+        if (addonIndex !== -1) {
+          addonPayload.extra_addons[addonIndex].status = 'PAID';
+          
+          await supabase
+            .from('orders')
+            .update({ additional_info: JSON.stringify(addonPayload) })
+            .eq('order_id', orderStringId)
+            .throwOnError();
+            
+          // Log to transactions table
+          if (orderDetails.client_id) {
+            await supabase.from('transactions').insert({
+              user_id: orderDetails.client_id,
+              amount: addonPayload.extra_addons[addonIndex].price,
+              type: 'payment',
+              reference: tx_ref,
+              status: 'completed',
+            });
+          }
+        }
+      }
+      return NextResponse.json({ received: true });
+    } else if (paymentType === 'DEPOSIT') {
       updates = { sixty_percent_paid: true, workflow_status: 'Synthesis Active' };
       const { emailTemplates } = await import('@/lib/emailTemplates');
       template = emailTemplates.depositPaid(orderEmailData);
+      adminTemplate = emailTemplates.adminDepositPaid(orderEmailData);
     } else if (paymentType === 'BALANCE') {
       updates = { forty_percent_paid: true, workflow_status: 'Completed' };
       const { emailTemplates } = await import('@/lib/emailTemplates');
       template = emailTemplates.balancePaid(orderEmailData);
+      adminTemplate = emailTemplates.adminBalancePaid(orderEmailData);
     } else {
       console.warn(`Unknown payment type: ${paymentType}`);
       return NextResponse.json({ received: true });
@@ -152,7 +221,17 @@ export async function POST(request: Request) {
         subject: template.subject,
         html: template.html,
         orderId: orderStringId,
-      });
+      }).catch(e => console.warn('Client email failed', e));
+    }
+
+    if (adminTemplate) {
+      const { sendSystemEmail } = await import('@/lib/emailService');
+      await sendSystemEmail({
+        to: process.env.ADMIN_EMAIL || 'yourwriterofficial@gmail.com',
+        subject: adminTemplate.subject,
+        html: adminTemplate.html,
+        orderId: orderStringId,
+      }).catch(e => console.warn('Admin payment email failed', e));
     }
 
     return NextResponse.json({ received: true });

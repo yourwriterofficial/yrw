@@ -7,7 +7,7 @@ const invoiceRequestSchema = z.object({
   amount: z.number().positive(),
   email: z.string().email(),
   name: z.string().min(1),
-  type: z.enum(['DEPOSIT', 'BALANCE']),
+  type: z.string().min(3),
 });
 
 const supabase = createClient(
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       await supabase.from('invoices').insert({
         order_id: orderData.id,
         amount,
-        type,
+        type: (type === 'DEPOSIT' || type === 'BALANCE') ? type : 'DEPOSIT',
         // We reuse the flutterwave column name here so you don't have to rewrite your SQL database schema
         flutterwave_transaction_ref: tx_ref, 
         status: 'PENDING',

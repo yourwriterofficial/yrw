@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { createSecureOrder } from '@/app/actions/createOrder';
-import { HelpCircle, ChevronRight, ChevronLeft, Upload, Paperclip, CheckCircle2 } from 'lucide-react';
+import { HelpCircle, ChevronRight, ChevronLeft, Upload, Paperclip, CheckCircle2, Calendar } from 'lucide-react';
 import type { ServiceTier, CreateOrderServerActionResponse } from '@/lib/types';
+import OrderCategoryNav from './OrderCategoryNav';
 
 type Plan = ServiceTier;
 
@@ -345,20 +346,22 @@ Note: As the student, you are the primary link between the classroom and the wri
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 md:py-12 px-4 md:px-6 bg-transparent text-white font-['Inter']">
+    <div className="max-w-4xl mx-auto py-8 md:py-12 px-4 md:px-6 bg-transparent text-primary font-['Inter']">
+      <OrderCategoryNav />
+
       {/* Stepper - Responsive */}
       <div className="flex justify-between items-center mb-12 relative px-2 max-w-2xl mx-auto flex-wrap gap-2">
-        <div className="absolute h-[1px] bg-zinc-800 left-8 right-8 top-[15px] -z-10 hidden md:block" />
+        <div className="absolute h-[1px] bg-zinc-800 dark:bg-zinc-805 left-8 right-8 top-[15px] -z-10 hidden md:block" />
         {[1, 2, 3, 4, 5].map((s) => (
           <div
             key={s}
-            className={`w-8 h-8 rounded-full flex flex-col items-center justify-center text-xs font-black transition-all duration-300 relative ${
-              s <= step ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20 scale-110' : 'bg-zinc-950 text-zinc-600 border border-zinc-800'
+            className={`w-8 h-8 rounded-full flex flex-col items-center justify-center text-xs font-black transition-all duration-300 relative cursor-pointer ${
+              s <= step ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20 scale-110' : 'bg-secondary text-secondary border border-theme'
             }`}
             onClick={() => goToStep(s)}
           >
             {s}
-            <span className={`absolute top-10 text-[8px] tracking-widest uppercase hidden md:block font-black ${s <= step ? 'text-emerald-400' : 'text-zinc-600'}`}>
+            <span className={`absolute top-10 text-[8px] tracking-widest uppercase hidden md:block font-black ${s <= step ? 'text-emerald-500' : 'text-secondary'}`}>
               {['Details', 'Instructions', 'Materials', 'Links', 'Review'][s - 1]}
             </span>
           </div>
@@ -369,16 +372,16 @@ Note: As the student, you are the primary link between the classroom and the wri
       {step === 1 && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div>
-            <h2 className="text-xl font-black uppercase tracking-wider text-white mb-2">Select Your Price Plan</h2>
-            <p className="text-sm text-zinc-400 leading-relaxed mb-6">We operate strictly within the following structures to ensure transparency and quality. Please select the plan that best aligns with your academic requirements.</p>
+            <h2 className="text-xl font-black uppercase tracking-wider text-primary mb-2">Select Your Price Plan</h2>
+            <p className="text-sm text-secondary leading-relaxed mb-6">We operate strictly within the following structures to ensure transparency and quality. Please select the plan that best aligns with your academic requirements.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* GOLD PLAN */}
-              <div onClick={() => setPlan('GOLD')} className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'GOLD' ? 'border-amber-400 bg-amber-400/5 shadow-[0_0_20px_rgba(251,191,36,0.1)]' : 'border-zinc-800 bg-[#0a0a0a] hover:border-zinc-700'}`}>
+              <div onClick={() => setPlan('GOLD')} className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'GOLD' ? 'border-amber-400 bg-amber-400/5 shadow-[0_0_20px_rgba(251,191,36,0.1)]' : 'border-theme bg-secondary hover:border-zinc-500/50'}`}>
                 {plan === 'GOLD' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-amber-400" /></div>}
                 <h3 className="text-sm font-black uppercase tracking-wider text-amber-400 mb-1">GOLD PLAN</h3>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-4">Premium Academic Excellence</p>
-                <div className="text-2xl font-black mb-4">₦100<span className="text-sm text-zinc-500 font-medium">/word</span></div>
-                <ul className="text-xs text-zinc-300 space-y-2 mb-4 break-words">
+                <p className="text-[10px] text-secondary uppercase tracking-widest font-bold mb-4">Premium Academic Excellence</p>
+                <div className="text-2xl font-black mb-4">₦100<span className="text-sm text-secondary font-medium">/word</span></div>
+                <ul className="text-xs text-primary space-y-2 mb-4 break-words">
                   <li><span className="text-amber-400 mr-2">★</span><strong>95–100%</strong> plagiarism-free guaranteed</li>
                   <li><span className="text-amber-400 mr-2">★</span>Best for: MSc and PhD level research</li>
                   <li><span className="text-amber-400 mr-2">★</span>Includes Plagiarism & AI reports</li>
@@ -391,29 +394,29 @@ Note: As the student, you are the primary link between the classroom and the wri
               </div>
 
               {/* SILVER PLAN */}
-              <div onClick={() => setPlan('SILVER')} className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'SILVER' ? 'border-slate-300 bg-slate-300/5 shadow-[0_0_20px_rgba(203,213,225,0.1)]' : 'border-zinc-800 bg-[#0a0a0a] hover:border-zinc-700'}`}>
-                {plan === 'SILVER' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-slate-300" /></div>}
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-300 mb-1">SILVER PLAN</h3>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-4">Standard Academic Support</p>
-                <div className="text-2xl font-black mb-4">₦80<span className="text-sm text-zinc-500 font-medium">/word</span></div>
-                <ul className="text-xs text-zinc-300 space-y-2 mb-4 break-words">
-                  <li><span className="text-slate-300 mr-2">★</span><strong>90–100%</strong> plagiarism-free level</li>
-                  <li><span className="text-slate-300 mr-2">★</span>Best for: Standard university assignments</li>
-                  <li><span className="text-slate-300 mr-2">★</span>Includes Plagiarism & AI reports</li>
-                  <li><span className="text-slate-300 mr-2">★</span>Standard grammar checks & on-time delivery</li>
-                  <li><span className="text-slate-300 mr-2">★</span>Full preliminary pages included</li>
-                  <li><span className="text-slate-300 mr-2">★</span><strong>3 correction cycles</strong></li>
+              <div onClick={() => setPlan('SILVER')} className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'SILVER' ? 'border-slate-400 bg-slate-400/5 shadow-[0_0_20px_rgba(203,213,225,0.1)]' : 'border-theme bg-secondary hover:border-zinc-500/50'}`}>
+                {plan === 'SILVER' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-slate-400" /></div>}
+                <h3 className="text-sm font-black uppercase tracking-wider text-slate-400 mb-1">SILVER PLAN</h3>
+                <p className="text-[10px] text-secondary uppercase tracking-widest font-bold mb-4">Standard Academic Support</p>
+                <div className="text-2xl font-black mb-4">₦80<span className="text-sm text-secondary font-medium">/word</span></div>
+                <ul className="text-xs text-primary space-y-2 mb-4 break-words">
+                  <li><span className="text-slate-400 mr-2">★</span><strong>90–100%</strong> plagiarism-free level</li>
+                  <li><span className="text-slate-400 mr-2">★</span>Best for: Standard university assignments</li>
+                  <li><span className="text-slate-400 mr-2">★</span>Includes Plagiarism & AI reports</li>
+                  <li><span className="text-slate-400 mr-2">★</span>Standard grammar checks & on-time delivery</li>
+                  <li><span className="text-slate-400 mr-2">★</span>Full preliminary pages included</li>
+                  <li><span className="text-slate-400 mr-2">★</span><strong>3 correction cycles</strong></li>
                 </ul>
-                <div className="text-[10px] text-slate-300 bg-slate-300/10 inline-block px-2 py-1 rounded font-bold break-words">10% discount for projects &gt; 10,000 words</div>
+                <div className="text-[10px] text-slate-400 bg-slate-400/10 inline-block px-2 py-1 rounded font-bold break-words">10% discount for projects &gt; 10,000 words</div>
               </div>
 
               {/* BRONZE PLAN */}
-              <div onClick={() => setPlan('BRONZE')} className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'BRONZE' ? 'border-orange-500 bg-orange-500/5 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'border-zinc-800 bg-[#0a0a0a] hover:border-zinc-700'}`}>
+              <div onClick={() => setPlan('BRONZE')} className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'BRONZE' ? 'border-orange-500 bg-orange-500/5 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'border-theme bg-secondary hover:border-zinc-500/50'}`}>
                 {plan === 'BRONZE' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-orange-500" /></div>}
                 <h3 className="text-sm font-black uppercase tracking-wider text-orange-500 mb-1">BRONZE PLAN</h3>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-4">Essential Writing Support</p>
-                <div className="text-2xl font-black mb-4">₦70<span className="text-sm text-zinc-500 font-medium">/word</span></div>
-                <ul className="text-xs text-zinc-300 space-y-2 mb-4 break-words">
+                <p className="text-[10px] text-secondary uppercase tracking-widest font-bold mb-4">Essential Writing Support</p>
+                <div className="text-2xl font-black mb-4">₦70<span className="text-sm text-secondary font-medium">/word</span></div>
+                <ul className="text-xs text-primary space-y-2 mb-4 break-words">
                   <li><span className="text-orange-500 mr-2">★</span><strong>85–90%</strong> plagiarism-free level</li>
                   <li><span className="text-orange-500 mr-2">★</span>Includes Plagiarism & AI reports</li>
                   <li><span className="text-orange-500 mr-2">★</span>Standard formatting & citations</li>
@@ -424,12 +427,12 @@ Note: As the student, you are the primary link between the classroom and the wri
               </div>
 
               {/* STANDARD PLAN */}
-              <div onClick={() => setPlan('STANDARD')} className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'STANDARD' ? 'border-emerald-500 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'border-zinc-800 bg-[#0a0a0a] hover:border-zinc-700'}`}>
+              <div onClick={() => setPlan('STANDARD')} className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'STANDARD' ? 'border-emerald-500 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'border-theme bg-secondary hover:border-zinc-550'}`}>
                 {plan === 'STANDARD' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-emerald-500" /></div>}
                 <h3 className="text-sm font-black uppercase tracking-wider text-emerald-500 mb-1">STANDARD PLAN</h3>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-4">Basic Drafting</p>
-                <div className="text-2xl font-black mb-4">₦60<span className="text-sm text-zinc-500 font-medium">/word</span></div>
-                <ul className="text-xs text-zinc-300 space-y-2 mb-4 break-words">
+                <p className="text-[10px] text-secondary uppercase tracking-widest font-bold mb-4">Basic Drafting</p>
+                <div className="text-2xl font-black mb-4">₦60<span className="text-sm text-secondary font-medium">/word</span></div>
+                <ul className="text-xs text-primary space-y-2 mb-4 break-words">
                   <li><span className="text-emerald-500 mr-2">★</span><strong>75–80%</strong> plagiarism-free level</li>
                   <li><span className="text-emerald-500 mr-2">★</span>Includes Plagiarism & AI reports</li>
                   <li><span className="text-emerald-500 mr-2">★</span>Basic formatting</li>
@@ -440,36 +443,56 @@ Note: As the student, you are the primary link between the classroom and the wri
               </div>
 
               {/* CUSTOM PLAN */}
-              <div onClick={() => setPlan('CUSTOM')} className={`col-span-1 md:col-span-2 p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'CUSTOM' ? 'border-purple-500 bg-purple-500/5 shadow-[0_0_20px_rgba(168,85,247,0.1)]' : 'border-zinc-800 bg-[#0a0a0a] hover:border-zinc-700'}`}>
+              <div onClick={() => setPlan('CUSTOM')} className={`col-span-1 md:col-span-2 p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'CUSTOM' ? 'border-purple-500 bg-purple-500/5 shadow-[0_0_20px_rgba(168,85,247,0.1)]' : 'border-theme bg-secondary hover:border-zinc-550'}`}>
                 {plan === 'CUSTOM' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-purple-500" /></div>}
                 <h3 className="text-sm font-black uppercase tracking-wider text-purple-500 mb-1">CUSTOM / EMERGENCY ORDERS</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed break-words">Emergency requests, PowerPoint presentations, and technical works involving complex calculations are subject to custom pricing and are treated as independent contracts. Propose your budget here.</p>
+                <p className="text-xs text-secondary leading-relaxed break-words">Emergency requests, PowerPoint presentations, and technical works involving complex calculations are subject to custom pricing and are treated as independent contracts. Propose your budget here.</p>
               </div>
             </div>
           </div>
 
           {!isLoggedIn && (
-            <div className="space-y-3">
-              <div className="text-[10px] uppercase font-black tracking-widest text-zinc-500 ml-1">Your Details & Research Topic</div>
-              <input type="text" placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-[16px] text-sm text-white focus:border-emerald-500 outline-none transition" required />
-              <input type="email" placeholder="Email Address" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-[16px] text-sm text-white focus:border-emerald-500 outline-none transition" required />
-              <input type="tel" placeholder="WhatsApp Number (e.g. +234...)" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-[16px] text-sm text-white focus:border-emerald-500 outline-none transition" required />
+            <div className="space-y-4">
+              <div className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 font-bold">Your Personal Details</div>
+              
+              <div className="space-y-1">
+                <label className="text-[10px] text-secondary block ml-1 font-bold">Full Name</label>
+                <input type="text" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition hover:border-zinc-550 font-bold" required />
+                <p className="text-[9px] text-secondary ml-1">Please enter your legal name as it appears on your university files.</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-secondary block ml-1 font-bold">Email Address</label>
+                <input type="email" placeholder="john.doe@university.edu" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition hover:border-zinc-550 font-bold" required />
+                <p className="text-[9px] text-secondary ml-1">We will send your quotes, confirmations, and vault release links to this email.</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-secondary block ml-1 font-bold">WhatsApp Number</label>
+                <input type="tel" placeholder="+234..." value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition hover:border-zinc-550 font-bold" required />
+                <p className="text-[9px] text-secondary ml-1">Needed for emergency updates, status changes, and prompt feedback on requirements.</p>
+              </div>
             </div>
           )}
-          <input type="text" placeholder="Research Topic Title" value={topic} onChange={e => setTopic(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-[16px] text-sm text-white focus:border-emerald-500 outline-none transition" required />
+          
+          <div className="space-y-1">
+            <div className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 mb-2 font-bold">Research Topic</div>
+            <input type="text" placeholder="Research Topic Title" value={topic} onChange={e => setTopic(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition hover:border-zinc-550 font-bold" required />
+            <p className="text-[9px] text-secondary ml-1">E.g., 'Impact of Monetary Policy on Small Businesses in Sub-Saharan Africa.'</p>
+          </div>
 
           <div className="space-y-4">
-            <div className="text-[10px] uppercase font-black tracking-widest text-zinc-500 ml-1">Formatting Requirements</div>
+            <div className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 font-bold">Formatting Requirements</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-wider mb-1 block ml-1">Citation Style</label>
-                <select value={refStyle} onChange={e => setRefStyle(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-[16px] text-xs text-white outline-none focus:border-emerald-500">
+                <label className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 block ml-1">Citation Style</label>
+                <select value={refStyle} onChange={e => setRefStyle(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-xs text-primary outline-none focus:border-emerald-500 font-bold">
                   {dbRefStyles.map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[9px] text-zinc-500 uppercase font-bold tracking-wider mb-1 block ml-1">Font Preference</label>
-                <select value={fontStyle} onChange={e => setFontStyle(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-[16px] text-xs text-white outline-none focus:border-emerald-500">
+                <label className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 block ml-1">Font Preference</label>
+                <select value={fontStyle} onChange={e => setFontStyle(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-xs text-primary outline-none focus:border-emerald-500 font-bold">
                   {dbFontStyles.map(f => <option key={f}>{f}</option>)}
                 </select>
               </div>
@@ -484,17 +507,17 @@ Note: As the student, you are the primary link between the classroom and the wri
       {/* STEP 2: Instructions */}
       {step === 2 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-zinc-800">
-            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-400 mb-2">Upload Your Instructions</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed mb-6">Upload the project prompt, grading rubric, or core guidelines provided by your university.</p>
-            <label className="border-2 border-dashed border-zinc-800 hover:border-emerald-500/50 bg-[#0f0f0f] rounded-[20px] p-10 flex flex-col items-center justify-center cursor-pointer transition">
-              <Upload className="w-8 h-8 text-zinc-600 mb-3" />
-              <span className="text-xs font-bold text-zinc-400">Select Instruction File</span>
-              <span className="text-[10px] text-zinc-600 mt-1">Accepts PDF, DOCX, TXT (Max 25MB)</span>
+          <div className="bg-secondary p-6 rounded-2xl border border-theme">
+            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-500 mb-2">Upload Your Instructions</h3>
+            <p className="text-xs text-secondary leading-relaxed mb-6">Upload the project prompt, grading rubric, or core guidelines provided by your university.</p>
+            <label className="border-2 border-dashed border-theme hover:border-emerald-500/50 bg-card rounded-[20px] p-10 flex flex-col items-center justify-center cursor-pointer transition">
+              <Upload className="w-8 h-8 text-secondary mb-3" />
+              <span className="text-xs font-bold text-primary">Select Instruction File</span>
+              <span className="text-[10px] text-secondary mt-1">Accepts PDF, DOCX, TXT (Max 25MB)</span>
               <input type="file" accept=".pdf,.doc,.docx,.txt" className="hidden" onChange={(e) => handleFileInterception(e, 'brief')} />
             </label>
             {briefFile && (
-              <div className="mt-4 flex items-center gap-2 text-xs bg-emerald-500/10 text-emerald-400 p-3 rounded-xl border border-emerald-500/20 break-words">
+              <div className="mt-4 flex items-center gap-2 text-xs bg-emerald-500/10 text-emerald-400 p-3 rounded-xl border border-emerald-500/20 break-words w-full">
                 <Paperclip className="w-4 h-4 shrink-0" />
                 <span className="truncate font-medium">{briefFile.name}</span>
                 <span className="ml-auto text-[10px] opacity-60 shrink-0">({(briefFile.size / (1024 * 1024)).toFixed(2)} MB)</span>
@@ -502,8 +525,8 @@ Note: As the student, you are the primary link between the classroom and the wri
             )}
           </div>
           <div className="flex gap-4">
-            <button onClick={() => goToStep(3)} className="bg-[#1DB954] text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-full flex-1 flex items-center justify-center gap-1">Save and Continue <ChevronRight className="w-4 h-4" /></button>
-            <button onClick={() => goToStep(1)} className="bg-zinc-950 text-zinc-400 border border-zinc-800 px-6 rounded-full font-bold text-xs flex items-center gap-1"><ChevronLeft className="w-4 h-4" /> Back</button>
+            <button onClick={() => goToStep(3)} className="bg-emerald-500 text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-full flex-1 flex items-center justify-center gap-1 hover:bg-emerald-450 transition cursor-pointer">Save and Continue <ChevronRight className="w-4 h-4" /></button>
+            <button onClick={() => goToStep(1)} className="bg-primary text-secondary border border-theme px-6 rounded-full font-bold text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary"><ChevronLeft className="w-4 h-4" /> Back</button>
           </div>
         </div>
       )}
@@ -511,30 +534,30 @@ Note: As the student, you are the primary link between the classroom and the wri
       {/* STEP 3: Materials */}
       {step === 3 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-zinc-800">
-            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-400 mb-2">Additional Materials (Optional)</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed mb-6">Attach any extra reading lists, datasets, lecture slides, or references you want our writers to use.</p>
-            <label className="border-2 border-dashed border-zinc-800 hover:border-emerald-500/50 bg-[#0f0f0f] rounded-[20px] p-10 flex flex-col items-center justify-center cursor-pointer transition">
-              <Paperclip className="w-8 h-8 text-zinc-600 mb-3" />
-              <span className="text-xs font-bold text-zinc-400">Select Extra Files</span>
-              <span className="text-[10px] text-zinc-600 mt-1">Combined maximum: 25MB</span>
+          <div className="bg-secondary p-6 rounded-2xl border border-theme">
+            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-500 mb-2">Additional Materials (Optional)</h3>
+            <p className="text-xs text-secondary leading-relaxed mb-6">Attach any extra reading lists, datasets, lecture slides, or references you want our writers to use.</p>
+            <label className="border-2 border-dashed border-theme hover:border-emerald-500/50 bg-card rounded-[20px] p-10 flex flex-col items-center justify-center cursor-pointer transition">
+              <Paperclip className="w-8 h-8 text-secondary mb-3" />
+              <span className="text-xs font-bold text-primary">Select Extra Files</span>
+              <span className="text-[10px] text-secondary mt-1">Combined maximum: 25MB</span>
               <input type="file" multiple className="hidden" onChange={(e) => handleFileInterception(e, 'extra')} />
             </label>
             {extraFiles.length > 0 && (
               <div className="mt-4 space-y-2">
-                <div className="text-[10px] font-black uppercase text-zinc-500 tracking-wider">Uploaded Files:</div>
+                <div className="text-[10px] font-black uppercase text-secondary tracking-wider">Uploaded Files:</div>
                 {extraFiles.map((file, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/50 break-words">
-                    <span className="truncate">{file.name}</span>
-                    <span className="ml-auto text-[9px] text-zinc-600 shrink-0">({(file.size / (1024*1024)).toFixed(2)} MB)</span>
+                  <div key={i} className="flex items-center gap-2 text-xs bg-primary p-2.5 rounded-xl border border-theme break-words">
+                    <span className="truncate text-primary">{file.name}</span>
+                    <span className="ml-auto text-[9px] text-secondary shrink-0">({(file.size / (1024*1024)).toFixed(2)} MB)</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
           <div className="flex gap-4">
-            <button onClick={() => goToStep(4)} className="bg-[#1DB954] text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-full flex-1 transition">Continue to Links</button>
-            <button onClick={() => goToStep(2)} className="bg-zinc-950 text-zinc-400 border border-zinc-800 px-6 rounded-full font-bold text-xs flex items-center gap-1"><ChevronLeft className="w-4 h-4" /> Back</button>
+            <button onClick={() => goToStep(4)} className="bg-emerald-500 text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-full flex-1 hover:bg-emerald-450 transition cursor-pointer">Continue to Links</button>
+            <button onClick={() => goToStep(2)} className="bg-primary text-secondary border border-theme px-6 rounded-full font-bold text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary"><ChevronLeft className="w-4 h-4" /> Back</button>
           </div>
         </div>
       )}
@@ -542,15 +565,15 @@ Note: As the student, you are the primary link between the classroom and the wri
       {/* STEP 4: Links */}
       {step === 4 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-zinc-800">
-            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-400 mb-2">Link to Cloud Storage (Optional)</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed mb-6">If you have massive files or folders exceeding our 25MB upload limit, securely paste your Google Drive, Dropbox, or OneDrive share link here.</p>
-            <input type="url" placeholder="Paste your secure share link here" value={mediaLink} onChange={e => setMediaLink(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-[16px] text-sm text-white focus:border-emerald-500 outline-none transition" />
-            <div className="text-[10px] text-zinc-600 mt-2 ml-1">💡 You can skip this step and click continue if you don't have large external links.</div>
+          <div className="bg-secondary p-6 rounded-2xl border border-theme">
+            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-500 mb-2">Link to Cloud Storage (Optional)</h3>
+            <p className="text-xs text-secondary leading-relaxed mb-6">If you have massive files or folders exceeding our 25MB upload limit, securely paste your Google Drive, Dropbox, or OneDrive share link here.</p>
+            <input type="url" placeholder="Paste your secure share link here" value={mediaLink} onChange={e => setMediaLink(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition" />
+            <div className="text-[10px] text-secondary mt-2 ml-1">💡 You can skip this step and click continue if you don't have large external links.</div>
           </div>
           <div className="flex gap-4">
-            <button onClick={() => goToStep(5)} className="bg-[#1DB954] text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-full flex-1 transition">Review Order Summary</button>
-            <button onClick={() => goToStep(3)} className="bg-zinc-950 text-zinc-400 border border-zinc-800 px-6 rounded-full font-bold text-xs flex items-center gap-1"><ChevronLeft className="w-4 h-4" /> Back</button>
+            <button onClick={() => goToStep(5)} className="bg-emerald-500 text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-full flex-1 transition hover:bg-emerald-450 cursor-pointer">Review Order Summary</button>
+            <button onClick={() => goToStep(3)} className="bg-primary text-secondary border border-theme px-6 rounded-full font-bold text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary"><ChevronLeft className="w-4 h-4" /> Back</button>
           </div>
         </div>
       )}
@@ -558,50 +581,65 @@ Note: As the student, you are the primary link between the classroom and the wri
       {/* STEP 5: Review & Terms (with wallet integration) */}
       {step === 5 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-[#0a0a0a] p-6 rounded-[24px] border border-zinc-800 space-y-6">
-            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-400">Order Summary</h3>
+          <div className="bg-secondary p-6 rounded-[24px] border border-theme space-y-6">
+            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-500">Order Summary</h3>
             {isCustom ? (
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block ml-1">Proposed Budget (₦)</label>
-                <input type="number" value={customPrice || ''} onChange={e => setCustomPrice(parseInt(e.target.value) || 0)} className="w-full bg-black border border-emerald-500/30 p-4 rounded-xl text-emerald-400 font-black text-xl outline-none focus:border-emerald-500" />
+                <label className="text-[10px] font-black uppercase tracking-widest text-secondary block ml-1">Proposed Budget (₦)</label>
+                <input type="number" value={customPrice || ''} onChange={e => setCustomPrice(parseInt(e.target.value) || 0)} className="w-full bg-primary border border-emerald-500/30 p-4 rounded-xl text-emerald-500 font-black text-xl outline-none focus:border-emerald-500 font-bold" />
               </div>
             ) : (
               <div className="space-y-4">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block ml-1">Current Pricing Tier</label>
-                <div className="w-full bg-black border border-zinc-800 p-4 rounded-xl text-sm font-black outline-none text-white">{plan} TIER (₦{PLAN_RATES[plan]}/word)</div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-secondary block ml-1">Current Pricing Tier</label>
+                <div className="w-full bg-primary border border-theme p-4 rounded-xl text-sm font-black outline-none text-primary">{plan} TIER (₦{PLAN_RATES[plan]}/word)</div>
               </div>
             )}
-            <div className="pt-4 border-t border-zinc-900">
+            <div className="pt-4 border-t border-theme">
               <div className="flex justify-between text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2">
                 <span>Select Word Count</span>
                 <span>{words.toLocaleString()} Total Words</span>
               </div>
-              <input type="range" max="30000" min="50" step="50" value={words} onChange={e => setWords(parseInt(e.target.value) || 0)} className="w-full accent-emerald-500 mb-4 cursor-pointer bg-zinc-800" />
+              <input type="range" max="30000" min="50" step="50" value={words} onChange={e => setWords(parseInt(e.target.value) || 0)} className="w-full accent-emerald-500 mb-4 cursor-pointer bg-card" />
               <div className="grid grid-cols-2 gap-4">
-                <input type="number" value={words || ''} onChange={e => setWords(parseInt(e.target.value) || 0)} placeholder="Enter exact word count" className="w-full bg-black border border-zinc-800 p-3 rounded-xl text-sm outline-none font-medium text-white" />
-                <input type="text" readOnly value={`${Math.ceil(words / 275)} Target Pages`} className="w-full bg-zinc-950 border border-zinc-900 p-3 rounded-xl text-sm text-zinc-500 font-bold outline-none cursor-default" />
+                <input type="number" value={words || ''} onChange={e => setWords(parseInt(e.target.value) || 0)} placeholder="Enter exact word count" className="w-full bg-primary border border-theme p-3 rounded-xl text-sm outline-none font-bold text-primary" />
+                <input type="text" readOnly value={`${Math.ceil(words / 275)} Target Pages`} className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-secondary font-black outline-none cursor-default" />
               </div>
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest block ml-1">Project Deadline</label>
-            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-[16px] text-sm text-white outline-none focus:border-emerald-500 [color-scheme:dark]" required />
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-secondary tracking-widest block ml-1 font-bold">Target Delivery Deadline</label>
+            <div className="relative group">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none group-focus-within:text-emerald-500 transition-colors">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <input 
+                type="date" 
+                value={deadline} 
+                onChange={e => setDeadline(e.target.value)} 
+                min={new Date().toISOString().split('T')[0]} 
+                className="w-full bg-card border border-theme p-4 pl-12 rounded-[16px] text-sm text-primary outline-none focus:border-emerald-500 transition-all font-bold hover:border-theme cursor-pointer dark:[color-scheme:dark]" 
+                required 
+              />
+            </div>
+            <p className="text-[9px] text-secondary ml-1 leading-relaxed">
+              Choose your target completion date. We guarantee delivery by this deadline. Allow at least 2–3 days for standard synthesis tasks.
+            </p>
           </div>
 
           <div className="relative">
-            <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest block mb-1 ml-1">Additional Notes for the Writer</label>
-            <textarea rows={4} placeholder="Enter any specific instructions, structure requirements, or source preferences..." value={additionalInfo} onChange={e => setAdditionalInfo(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-[16px] text-sm text-white outline-none focus:border-emerald-500 transition pb-12" />
-            <div className="absolute bottom-4 right-4 text-[8px] font-black text-zinc-600 tracking-widest uppercase">{additionalInfo.length} Chars | {additionalInfo.trim() === '' ? 0 : additionalInfo.trim().split(/\s+/).length} Words</div>
+            <label className="text-[10px] font-black uppercase text-secondary tracking-widest block mb-1 ml-1 font-bold">Additional Notes for the Writer</label>
+            <textarea rows={4} placeholder="Enter any specific instructions, structure requirements, or source preferences..." value={additionalInfo} onChange={e => setAdditionalInfo(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary outline-none focus:border-emerald-500 transition pb-12 font-medium hover:border-theme" />
+            <div className="absolute bottom-4 right-4 text-[8px] font-black text-secondary tracking-widest uppercase">{additionalInfo.length} Chars | {additionalInfo.trim() === '' ? 0 : additionalInfo.trim().split(/\s+/).length} Words</div>
           </div>
 
-          <div className="bg-[#0a0a0a] p-4 rounded-xl border border-zinc-800">
-            <div className="text-[10px] uppercase font-black text-zinc-500 tracking-widest mb-2 ml-1">Promo Code</div>
+          <div className="bg-secondary p-4 rounded-xl border border-theme">
+            <div className="text-[10px] uppercase font-black text-secondary tracking-widest mb-2 ml-1 font-bold">Promo Code</div>
             <div className="flex gap-2">
-              <input type="text" placeholder="ENTER CODE" value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())} className="flex-1 bg-black border border-zinc-800 p-4 rounded-xl text-xs uppercase tracking-widest font-black outline-none focus:border-emerald-500 text-white" />
-              <button onClick={applyPromo} className="bg-zinc-900 text-white border border-zinc-800 px-6 rounded-xl text-[10px] font-black tracking-wider hover:bg-zinc-800 transition">APPLY</button>
+              <input type="text" placeholder="ENTER CODE" value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())} className="flex-1 bg-primary border border-theme p-4 rounded-xl text-xs uppercase tracking-widest font-black outline-none focus:border-emerald-500 text-primary" />
+              <button onClick={applyPromo} className="bg-secondary text-primary border border-theme px-6 rounded-xl text-[10px] font-black tracking-wider hover:bg-primary transition cursor-pointer">APPLY</button>
             </div>
-            {promoMsg && <p className={`text-[10px] font-bold mt-2.5 ml-1 ${promoMsg.includes('❌') ? 'text-red-500' : 'text-emerald-400'}`}>{promoMsg}</p>}
+            {promoMsg && <p className={`text-[10px] font-bold mt-2.5 ml-1 ${promoMsg.includes('❌') ? 'text-red-500' : 'text-emerald-500'}`}>{promoMsg}</p>}
           </div>
 
           {/* Price breakdown (unchanged) */}
@@ -610,14 +648,14 @@ Note: As the student, you are the primary link between the classroom and the wri
               const deposit = customPrice * 0.6;
               const balance = customPrice * 0.4;
               return (
-                <div className="bg-purple-500/10 p-6 rounded-[30px] border border-purple-500/10 text-center space-y-3 overflow-x-auto">
+                <div className="bg-purple-500/5 p-6 rounded-[30px] border border-purple-500/20 text-center space-y-3 overflow-x-auto">
                   <div className="text-4xl font-black text-purple-500 tracking-tight break-words">₦{customPrice.toLocaleString()}</div>
-                  <p className="text-[9px] uppercase font-black text-zinc-500 tracking-widest">Proposed Budget</p>
-                  <div className="flex justify-between text-sm text-zinc-400 border-t border-purple-500/20 pt-3 mt-2 flex-wrap gap-2">
+                  <p className="text-[9px] uppercase font-black text-secondary tracking-widest">Proposed Budget</p>
+                  <div className="flex justify-between text-sm text-secondary border-t border-purple-500/10 pt-3 mt-2 flex-wrap gap-2">
                     <span>60% Deposit (due now)</span>
                     <span>₦{deposit.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-zinc-400 flex-wrap gap-2">
+                  <div className="flex justify-between text-sm text-secondary flex-wrap gap-2">
                     <span>40% Balance (on completion)</span>
                     <span>₦{balance.toLocaleString()}</span>
                   </div>
@@ -634,14 +672,14 @@ Note: As the student, you are the primary link between the classroom and the wri
             const depositAmount = finalQuote * 0.6;
             const balanceAmount = finalQuote * 0.4;
             return (
-              <div className="bg-emerald-500/10 p-6 rounded-[30px] border border-emerald-500/10 overflow-x-auto">
+              <div className="bg-emerald-500/5 p-6 rounded-[30px] border border-emerald-500/20 overflow-x-auto animate-in fade-in duration-300">
                 <div className="space-y-2 text-sm min-w-[280px]">
-                  <div className="flex justify-between flex-wrap gap-2"> <span>Base price ({words.toLocaleString()} words × ₦{PLAN_RATES[plan]})</span> <span>₦{originalPrice.toLocaleString()}</span> </div>
-                  {volumeDiscountPercent > 0 && ( <div className="flex justify-between text-emerald-400 flex-wrap gap-2"> <span>Volume discount ({volumeDiscountPercent}%)</span> <span>- ₦{Math.round(volumeSaved).toLocaleString()}</span> </div> )}
-                  {promoDiscount > 0 && ( <div className="flex justify-between text-emerald-400 flex-wrap gap-2"> <span>Promo code ({promoDiscount}%)</span> <span>- ₦{Math.round(promoAmount).toLocaleString()}</span> </div> )}
-                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-emerald-500/20 flex-wrap gap-2"> <span>Total Quote</span> <span className="text-emerald-500">₦{finalQuote.toLocaleString()}</span> </div>
-                  <div className="flex justify-between text-sm text-zinc-400 mt-2 flex-wrap gap-2"> <span>60% Deposit (due now)</span> <span>₦{depositAmount.toLocaleString()}</span> </div>
-                  <div className="flex justify-between text-sm text-zinc-400 flex-wrap gap-2"> <span>40% Balance (on completion)</span> <span>₦{balanceAmount.toLocaleString()}</span> </div>
+                  <div className="flex justify-between flex-wrap gap-2 text-primary font-medium"> <span>Base price ({words.toLocaleString()} words × ₦{PLAN_RATES[plan]})</span> <span>₦{originalPrice.toLocaleString()}</span> </div>
+                  {volumeDiscountPercent > 0 && ( <div className="flex justify-between text-emerald-500 font-bold flex-wrap gap-2"> <span>Volume discount ({volumeDiscountPercent}%)</span> <span>- ₦{Math.round(volumeSaved).toLocaleString()}</span> </div> )}
+                  {promoDiscount > 0 && ( <div className="flex justify-between text-emerald-500 font-bold flex-wrap gap-2"> <span>Promo code ({promoDiscount}%)</span> <span>- ₦{Math.round(promoAmount).toLocaleString()}</span> </div> )}
+                  <div className="flex justify-between font-black text-lg pt-2 border-t border-emerald-500/10 flex-wrap gap-2 text-primary"> <span>Total Quote</span> <span className="text-emerald-500 font-black">₦{finalQuote.toLocaleString()}</span> </div>
+                  <div className="flex justify-between text-xs text-secondary mt-2 flex-wrap gap-2 border-t border-theme pt-2"> <span>60% Deposit (due now)</span> <span>₦{depositAmount.toLocaleString()}</span> </div>
+                  <div className="flex justify-between text-xs text-secondary flex-wrap gap-2"> <span>40% Balance (on completion)</span> <span>₦{balanceAmount.toLocaleString()}</span> </div>
                 </div>
               </div>
             );
@@ -649,25 +687,25 @@ Note: As the student, you are the primary link between the classroom and the wri
 
           {/* Payment Method Selection (only for logged‑in users) */}
           {isLoggedIn && (
-            <div className="bg-[#0a0a0a] p-4 rounded-xl border border-zinc-800">
-              <div className="text-[10px] uppercase font-black text-zinc-500 tracking-widest mb-2 ml-1">Payment Method</div>
+            <div className="bg-secondary p-4 rounded-xl border border-theme">
+              <div className="text-[10px] uppercase font-black text-secondary tracking-widest mb-2 ml-1 font-bold">Payment Method</div>
               <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer text-primary font-bold">
                   <input type="radio" name="paymentMethod" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="accent-emerald-500" />
                   <span className="text-sm">Pay with Card (Paystack)</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer text-primary font-bold">
                   <input type="radio" name="paymentMethod" value="wallet" checked={paymentMethod === 'wallet'} onChange={() => setPaymentMethod('wallet')} className="accent-emerald-500" />
                   <span className="text-sm">
                     Pay from Wallet (Balance: ₦{walletBalance.toLocaleString()})
                     {paymentMethod === 'wallet' && walletBalance < depositAmount && (
-                      <span className="text-red-400 ml-2">– Insufficient balance</span>
+                      <span className="text-red-400 ml-2 font-black text-xs">– Insufficient balance</span>
                     )}
                   </span>
                 </label>
               </div>
               {paymentMethod === 'wallet' && walletBalance >= depositAmount && (
-                <p className="text-emerald-400 text-xs mt-2">
+                <p className="text-emerald-500 text-xs mt-2 font-bold">
                   Deposit of ₦{depositAmount.toLocaleString()} will be deducted from your wallet.
                 </p>
               )}
@@ -675,16 +713,16 @@ Note: As the student, you are the primary link between the classroom and the wri
           )}
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest block ml-1">Terms of Service</label>
-            <div className="max-h-64 overflow-y-auto bg-black border border-zinc-800 rounded-2xl p-6 pr-4 custom-scrollbar prose prose-invert max-w-none">
+            <label className="text-[10px] font-black uppercase text-secondary tracking-widest block ml-1 font-bold">Terms of Service</label>
+            <div className="max-h-64 overflow-y-auto bg-primary border border-theme rounded-2xl p-6 pr-4 custom-scrollbar prose max-w-none">
               <div dangerouslySetInnerHTML={{ __html: decodeHtml(termsText) }} />
             </div>
           </div>
 
-          <div className="bg-[#0a0a0a] p-5 rounded-xl border border-zinc-800">
+          <div className="bg-secondary p-5 rounded-xl border border-theme">
             <label className="flex items-start gap-3 cursor-pointer">
-              <input type="checkbox" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} className="mt-1 w-5 h-5 accent-emerald-500 shrink-0 bg-black border-zinc-800 rounded" />
-              <span className="text-sm text-zinc-300 font-bold leading-relaxed break-words">I have read, understand, and agree to the Terms of Service. I authorize processing under the 60%/40% deposit structure.</span>
+              <input type="checkbox" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} className="mt-1 w-5 h-5 accent-emerald-500 shrink-0 bg-primary border-theme rounded" />
+              <span className="text-sm text-primary font-bold leading-relaxed break-words">I have read, understand, and agree to the Terms of Service. I authorize processing under the 60%/40% deposit structure.</span>
             </label>
           </div>
 
@@ -692,11 +730,11 @@ Note: As the student, you are the primary link between the classroom and the wri
             <button
               onClick={submitOrder}
               disabled={!acceptTerms || loading || (paymentMethod === 'wallet' && walletBalance < depositAmount)}
-              className="bg-[#1DB954] text-black font-black uppercase text-[11px] tracking-[1.5px] py-5 px-4 rounded-full flex-1 shadow-2xl shadow-emerald-500/20 hover:bg-[#1ed760] transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap md:whitespace-normal"
+              className="bg-emerald-500 text-black font-black uppercase text-[11px] tracking-[1.5px] py-5 px-4 rounded-full flex-1 shadow-2xl shadow-emerald-500/20 hover:bg-emerald-450 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap md:whitespace-normal cursor-pointer"
             >
               Confirm Order & Proceed
             </button>
-            <button onClick={() => goToStep(4)} className="bg-zinc-950 text-zinc-400 border border-zinc-800 px-6 rounded-full font-bold text-xs flex items-center gap-1"><ChevronLeft className="w-4 h-4" /> Back</button>
+            <button onClick={() => goToStep(4)} className="bg-primary text-secondary border border-theme px-6 rounded-full font-bold text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary transition"><ChevronLeft className="w-4 h-4" /> Back</button>
           </div>
         </div>
       )}

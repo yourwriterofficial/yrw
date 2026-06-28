@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { createSecureOrder } from '@/app/actions/createOrder';
-import { Upload, Paperclip, CheckCircle2 } from 'lucide-react';
+import { Upload, Paperclip, CheckCircle2, Calendar } from 'lucide-react';
 import type { CreateOrderServerActionResponse } from '@/lib/types';
+import OrderCategoryNav from '@/app/components/OrderCategoryNav';
 
 type OrderAddon = {
   id: string;
@@ -165,8 +166,9 @@ export default function ContentOrderForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white py-20 px-6 font-['Inter']">
-      <div className="max-w-3xl mx-auto space-y-12">
+    <div className="min-h-screen bg-primary text-primary py-12 px-6 font-['Inter']">
+      <OrderCategoryNav />
+      <div className="max-w-3xl mx-auto space-y-12 mt-6">
         <div className="text-center">
           <div className="inline-block px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Creative Pipeline</div>
           <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Content & Creative Writing</h1>
@@ -218,40 +220,86 @@ export default function ContentOrderForm() {
 
           <div className="space-y-4 pt-6 border-t border-zinc-800">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="text" placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none" required />
-              <input type="email" placeholder="Email Address" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none" required />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="tel" placeholder="WhatsApp Number" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none" required />
-              <input type="date" className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm text-zinc-400 focus:border-amber-500 outline-none [color-scheme:dark]" value={deadline} onChange={e => setDeadline(e.target.value)} min={new Date().toISOString().split('T')[0]} required />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <select className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-zinc-300" value={contentType} onChange={e => setContentType(e.target.value)}>
-                <option>Website Copy / Landing Page</option>
-                <option>SEO Blog Article</option>
-                <option>eBook / Ghostwriting</option>
-                <option>Fictional Narrative</option>
-                <option>Business Plan</option>
-              </select>
-              <select className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-zinc-300" value={tone} onChange={e => setTone(e.target.value)}>
-                <option>Professional & Corporate</option>
-                <option>Conversational & Friendly</option>
-                <option>Persuasive & Sales-Driven</option>
-                <option>Humorous & Witty</option>
-                <option>Academic & Technical</option>
-              </select>
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Full Name</label>
+                <input type="text" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-white font-bold hover:border-zinc-750" required />
+                <p className="text-[9px] text-zinc-500 ml-1">Please enter your legal name as it appears on official records.</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Email Address</label>
+                <input type="email" placeholder="john.doe@example.com" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-white font-bold hover:border-zinc-750" required />
+                <p className="text-[9px] text-zinc-500 ml-1">Your secure quotes and workspace access details will be sent here.</p>
+              </div>
             </div>
 
-            <input type="text" placeholder="Project Title or Core Subject" value={topic} onChange={e => setTopic(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none" required />
-            <input type="text" placeholder="Who is your target audience? (e.g., Tech startups, Gen Z shoppers)" value={audience} onChange={e => setAudience(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none" required />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">WhatsApp Number</label>
+                <input type="tel" placeholder="+234..." value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-white font-bold hover:border-zinc-750" required />
+                <p className="text-[9px] text-zinc-500 ml-1">Used for emergency synchronization and revision requests.</p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Target Delivery Deadline</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none group-focus-within:text-amber-500 transition-colors">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <input 
+                    type="date" 
+                    className="w-full bg-card border border-theme p-4 pl-12 rounded-xl text-sm text-primary focus:border-amber-500 outline-none dark:[color-scheme:dark] transition-all font-bold hover:border-theme cursor-pointer" 
+                    value={deadline} 
+                    onChange={e => setDeadline(e.target.value)} 
+                    min={new Date().toISOString().split('T')[0]} 
+                    required 
+                  />
+                </div>
+                <p className="text-[9px] text-zinc-500 ml-1">Choose target date. Rush fees apply for turnarounds under 48 hours.</p>
+              </div>
+            </div>
             
-            <textarea
-              placeholder="Provide detailed context, competitor links, or stylistic preferences..."
-              className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none resize-none h-32"
-              value={instructions}
-              onChange={e => setInstructions(e.target.value)}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Content Category</label>
+                <select className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-zinc-300 font-bold" value={contentType} onChange={e => setContentType(e.target.value)}>
+                  <option>Website Copy / Landing Page</option>
+                  <option>SEO Blog Article</option>
+                  <option>eBook / Ghostwriting</option>
+                  <option>Fictional Narrative</option>
+                  <option>Business Plan</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Tone of Voice</label>
+                <select className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-zinc-300 font-bold" value={tone} onChange={e => setTone(e.target.value)}>
+                  <option>Professional & Corporate</option>
+                  <option>Conversational & Friendly</option>
+                  <option>Persuasive & Sales-Driven</option>
+                  <option>Humorous & Witty</option>
+                  <option>Academic & Technical</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Project Title / Topic</label>
+              <input type="text" placeholder="E.g., SEO Article on Digital Marketing Trends" value={topic} onChange={e => setTopic(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-white font-bold hover:border-zinc-700" required />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Target Audience</label>
+              <input type="text" placeholder="Who is your target audience? (e.g., Tech startups, Gen Z shoppers)" value={audience} onChange={e => setAudience(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-white font-bold hover:border-zinc-700" required />
+              <p className="text-[9px] text-zinc-500 ml-1">Detailing your target audience helps us draft in the correct tone.</p>
+            </div>
+            
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Stylistic Context & Instructions</label>
+              <textarea
+                placeholder="Provide detailed context, competitor links, or stylistic preferences..."
+                className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none resize-none h-32 text-white font-medium hover:border-zinc-700"
+                value={instructions}
+                onChange={e => setInstructions(e.target.value)}
+              />
+            </div>
             
             <label className="border-2 border-dashed border-zinc-800 hover:border-amber-500/50 bg-[#0f0f0f] rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
               <Upload className="w-6 h-6 text-zinc-600 mb-2" />
@@ -259,8 +307,8 @@ export default function ContentOrderForm() {
               <input type="file" className="hidden" onChange={e => setBriefFile(e.target.files?.[0] || null)} />
             </label>
             {briefFile && (
-              <div className="flex items-center gap-2 text-xs bg-amber-500/10 text-amber-500 p-3 rounded-xl border border-amber-500/20">
-                <Paperclip className="w-4 h-4" /> {briefFile.name}
+              <div className="flex items-center gap-2 text-xs bg-amber-500/10 text-amber-500 p-3 rounded-xl border border-amber-500/20 w-full break-words">
+                <Paperclip className="w-4 h-4 shrink-0" /> <span className="truncate">{briefFile.name}</span>
               </div>
             )}
           </div>

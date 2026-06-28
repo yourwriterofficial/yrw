@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { createSecureOrder } from '@/app/actions/createOrder';
-import { Upload, Paperclip, CheckCircle2 } from 'lucide-react';
+import { Upload, Paperclip, CheckCircle2, Calendar } from 'lucide-react';
 import type { CreateOrderServerActionResponse } from '@/lib/types';
+import OrderCategoryNav from '@/app/components/OrderCategoryNav';
 
 type OrderAddon = {
   id: string;
@@ -166,8 +167,9 @@ export default function LoggedInResumeOrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-primary text-primary py-20 px-6 font-['Inter']">
-      <div className="max-w-3xl mx-auto space-y-12">
+    <div className="min-h-screen bg-primary text-primary py-12 px-6 font-['Inter']">
+      <OrderCategoryNav />
+      <div className="max-w-3xl mx-auto space-y-12 mt-6">
         <div className="text-center">
           <div className="inline-block px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Executive Pipeline</div>
           <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Executive Resumes & CVs</h1>
@@ -208,17 +210,23 @@ export default function LoggedInResumeOrderPage() {
           )}
 
           <div className="space-y-4 pt-6 border-t border-theme">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Target Job Title</label>
               <input
                 type="text"
-                placeholder="Target Role / Job Title (e.g., Senior Data Analyst)"
-                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-primary"
+                placeholder="E.g., Senior Software Engineer / Product Manager"
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-primary font-bold hover:border-zinc-700"
                 value={topic}
                 onChange={e => setTopic(e.target.value)}
                 required
               />
+              <p className="text-[9px] text-zinc-500 ml-1">State the role title you are targeting to guide resume tailoring.</p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Experience Level</label>
               <select
-                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-primary"
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-primary font-bold hover:border-zinc-700"
                 value={experienceLevel}
                 onChange={e => setExperienceLevel(e.target.value)}
               >
@@ -228,39 +236,61 @@ export default function LoggedInResumeOrderPage() {
                 <option>Career Change</option>
               </select>
             </div>
-            <input
-              type="date"
-              className="w-full bg-primary border border-theme p-4 rounded-xl text-sm text-secondary focus:border-blue-500 outline-none [color-scheme:dark]"
-              value={deadline}
-              onChange={e => setDeadline(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              required
-            />
-            <input
-              type="url"
-              placeholder="Link to Current LinkedIn Profile (Optional)"
-              className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-primary"
-              value={linkedInUrl}
-              onChange={e => setLinkedInUrl(e.target.value)}
-            />
-            <textarea
-              placeholder="List specific companies you are targeting, core achievements to highlight, or formatting preferences..."
-              className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-blue-500 outline-none resize-none h-24 text-primary"
-              value={instructions}
-              onChange={e => setInstructions(e.target.value)}
-            />
 
-            <label className="border-2 border-dashed border-theme hover:border-blue-500/50 bg-primary rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
-              <Upload className="w-6 h-6 text-secondary mb-2" />
-              <span className="text-xs font-bold text-secondary">Attach Your Current CV/Resume</span>
-              <span className="text-[10px] text-secondary mt-1">If you don't have one, attach a list of your work history.</span>
-              <input type="file" className="hidden" onChange={e => setBriefFile(e.target.files?.[0] || null)} />
-            </label>
-            {briefFile && (
-              <div className="flex items-center gap-2 text-xs bg-blue-500/10 text-blue-400 p-3 rounded-xl border border-blue-500/20">
-                <Paperclip className="w-4 h-4" /> {briefFile.name}
+            <div className="space-y-2">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Target Delivery Deadline</label>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none group-focus-within:text-blue-500 transition-colors">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <input
+                  type="date"
+                  className="w-full bg-card border border-theme p-4 pl-12 rounded-xl text-sm text-primary focus:border-blue-500 outline-none dark:[color-scheme:dark] transition-all font-bold hover:border-theme cursor-pointer"
+                  value={deadline}
+                  onChange={e => setDeadline(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  required
+                />
               </div>
-            )}
+              <p className="text-[9px] text-zinc-500 ml-1">Select your target delivery date. standard resume updates take 2–3 days.</p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">LinkedIn Profile URL (Optional)</label>
+              <input
+                type="url"
+                placeholder="https://linkedin.com/in/username"
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-blue-500 outline-none text-primary font-bold hover:border-zinc-700"
+                value={linkedInUrl}
+                onChange={e => setLinkedInUrl(e.target.value)}
+              />
+              <p className="text-[9px] text-zinc-500 ml-1">Paste your profile link if you want us to update your online profile too.</p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Key Achievements & Targets</label>
+              <textarea
+                placeholder="List specific companies you are targeting, core achievements to highlight, or formatting preferences..."
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-blue-500 outline-none resize-none h-24 text-primary font-medium hover:border-zinc-700"
+                value={instructions}
+                onChange={e => setInstructions(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Current CV / Resume Brief</label>
+              <label className="border-2 border-dashed border-theme hover:border-blue-500/50 bg-primary rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
+                <Upload className="w-6 h-6 text-secondary mb-2" />
+                <span className="text-xs font-bold text-secondary">Attach Your Current CV/Resume</span>
+                <span className="text-[10px] text-secondary mt-1">If you don't have one, attach a list of your work history.</span>
+                <input type="file" className="hidden" onChange={e => setBriefFile(e.target.files?.[0] || null)} />
+              </label>
+              {briefFile && (
+                <div className="flex items-center gap-2 text-xs bg-blue-500/10 text-blue-500 p-3 rounded-xl border border-blue-500/20 w-full break-words">
+                  <Paperclip className="w-4 h-4 shrink-0" /> <span className="truncate">{briefFile.name}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-4 pt-6 border-t border-theme">

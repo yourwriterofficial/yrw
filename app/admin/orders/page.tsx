@@ -1,11 +1,15 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useRouter } from 'next/navigation';
 import * as lucide from 'lucide-react';
 import type { AdminOrderView, WorkflowStatus, CorrectionsStatus } from '@/lib/types';
+import { useSearchParams } from 'next/navigation';
 import { emailTemplates } from '@/lib/emailTemplates';
+import LoadingScreen from '@/app/components/ui/LoadingScreen';
+import { ToastContainer, showToast } from '@/app/components/ui/Toast';
+import StatusBadge from '@/app/components/ui/StatusBadge';
+import PageHeader from '@/app/components/ui/PageHeader';
 
 // ==========================================
 // 1. HELPER FUNCTIONS
@@ -27,10 +31,49 @@ const formatDate = (iso: string | null): string => {
 const parsePriceStr = (str: any): number => parseFloat(String(str).replace(/[^0-9.-]/g, '')) || 0;
 const formatNaira = (amount: number): string => '₦' + Math.round(amount).toLocaleString('en-NG');
 
-let toastId = 0;
-const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-  const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
-  window.dispatchEvent(event);
+const parseAdditionalInfo = (raw: string | null): { notes?: string; extra_addons?: any[] } => {
+  const str = raw || '';
+  if (str.trim().startsWith('{') && str.trim().endsWith('}')) {
+    try {
+      return JSON.parse(str);
+    } catch (e) {}
+  }
+  return { notes: str, extra_addons: [] };
+};
+
+const getPipelineDetails = (order: any) => {
+  const oid = order?.['Order ID'] || order?.order_id || '';
+  const top = order?.['Research Topic'] || order?.topic || '';
+  
+  if (oid.startsWith('DEV-') || top.startsWith('[DEV]')) {
+    return {
+      category: 'Software Dev',
+      label: 'Full Stack & Custom Software',
+    };
+  }
+  if (oid.startsWith('CT-') || top.startsWith('[CONTENT]')) {
+    return {
+      category: 'Content Writing',
+      label: 'Content & Creative Writing',
+    };
+  }
+  if (oid.startsWith('CUST-') || top.startsWith('[COMPLEX]')) {
+    return {
+      category: 'Bespoke Fieldwork',
+      label: 'Custom Data & Fieldwork',
+    };
+  }
+  if (oid.startsWith('CV-') || top.startsWith('[RESUME]')) {
+    return {
+      category: 'Resume & CV',
+      label: 'Executive CVs & Resumes',
+    };
+  }
+  
+  return {
+    category: 'Academic Research',
+    label: 'Standard Academic Research',
+  };
 };
 
 const sendStatusEmail = async (order: { orderId: string; email: string; legal_name: string; topic: string; financial_quote: number }, status: string) => {
@@ -70,6 +113,15 @@ const sendStatusEmail = async (order: { orderId: string; email: string; legal_na
 // 2. MAIN COMPONENT
 // ==========================================
 export default function OrdersPage() {
+  return (
+    <Suspense fallback={<LoadingScreen label="Loading system orders..." />}>
+      <OrdersPageContent />
+    </Suspense>
+  );
+}
+
+function OrdersPageContent() {
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<AdminOrderView[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<AdminOrderView[]>([]);
@@ -84,21 +136,15 @@ export default function OrdersPage() {
   const [deliveryModalOrder, setDeliveryModalOrder] = useState<AdminOrderView | null>(null);
   const [deliveryFile, setDeliveryFile] = useState<File | null>(null);
   const [uploadingDelivery, setUploadingDelivery] = useState(false);
-  const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
   const [deleteMathAnswer, setDeleteMathAnswer] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<AdminOrderView | null>(null);
-
-  const router = useRouter();
-
-  useEffect(() => {
-    const handler = (e: any) => {
-      setToasts(prev => [...prev, e.detail]);
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== e.detail.id)), 4000);
-    };
-    window.addEventListener('app:toast', handler);
-    return () => window.removeEventListener('app:toast', handler);
-  }, []);
+  const [quotingAddonId, setQuotingAddonId] = useState<string | null>(null);
+  const [addonQuotes, setAddonQuotes] = useState<{[addonId: string]: number}>({});
+  const [savingAddonQuote, setSavingAddonQuote] = useState<string | null>(null);
+  const [newAddonDesc, setNewAddonDesc] = useState('');
+  const [newAddonPrice, setNewAddonPrice] = useState('');
+  const [creatingAddonCharge, setCreatingAddonCharge] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     const { data, error } = await supabase.from('admin_orders_view').select('*').order('Timestamp', { ascending: false });
@@ -151,6 +197,14 @@ export default function OrdersPage() {
   }, [orders, statusFilter, paymentFilter, searchTerm, sortField, sortDirection]);
 
   useEffect(() => { applyFilters(); }, [applyFilters]);
+
+  useEffect(() => {
+    const openId = searchParams.get('open');
+    if (openId && orders.length > 0) {
+      const match = orders.find(o => o['Order ID'] === openId);
+      if (match) setEditingOrder(match);
+    }
+  }, [searchParams, orders]);
 
   const handleSort = (field: keyof AdminOrderView) => {
     if (field === sortField) setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -239,6 +293,139 @@ export default function OrdersPage() {
     } catch (err: any) {
       showToast(`Failed to update order: ${err.message}`, 'error');
     }
+  };
+
+  const handleSaveAddonQuote = async (orderId: string, addonId: string) => {
+    const price = addonQuotes[addonId];
+    if (price === undefined || price < 0) {
+      showToast('Please enter a valid price.', 'error');
+      return;
+    }
+    setSavingAddonQuote(addonId);
+    try {
+      const res = await fetch('/api/admin/quote-addon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, addonId, price }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Add-on charge set and approved successfully!', 'success');
+        setQuotingAddonId(null);
+        // Refresh editing order local state
+        if (editingOrder) {
+          const rawInfo = editingOrder['Additional Info'] || '';
+          let payload = { notes: '', extra_addons: [] as any[] };
+          try {
+            payload = JSON.parse(rawInfo);
+          } catch {}
+          const idx = payload.extra_addons.findIndex((a: any) => a.id === addonId);
+          if (idx !== -1) {
+            payload.extra_addons[idx].price = price;
+            payload.extra_addons[idx].status = price > 0 ? 'AWAITING_PAYMENT' : 'PENDING_QUOTE';
+            setEditingOrder({
+              ...editingOrder,
+              ['Additional Info']: JSON.stringify(payload)
+            });
+          }
+        }
+        await fetchOrders();
+      } else {
+        showToast(`Quoting failed: ${data.error}`, 'error');
+      }
+    } catch (err) {
+      showToast('Network error saving addon quote.', 'error');
+    }
+    setSavingAddonQuote(null);
+  };
+
+  const handleAdminCreateAddon = async (orderId: string) => {
+    if (!newAddonDesc.trim()) {
+      showToast('Please enter an add-on description.', 'error');
+      return;
+    }
+    const price = parseFloat(newAddonPrice);
+    if (isNaN(price) || price < 0) {
+      showToast('Please enter a valid positive charge.', 'error');
+      return;
+    }
+
+    setCreatingAddonCharge(true);
+    try {
+      // 1. Fetch current order info
+      const { data: order, error: fetchError } = await supabase
+        .from('orders')
+        .select('additional_info, email')
+        .eq('order_id', orderId)
+        .single();
+
+      if (fetchError || !order) {
+        throw new Error('Order not found');
+      }
+
+      // 2. Parse payload
+      let payload = parseAdditionalInfo(order.additional_info);
+      if (!payload.extra_addons) payload.extra_addons = [];
+
+      const newAddon = {
+        id: 'addon_' + Math.floor(100000 + Math.random() * 900000).toString(),
+        name: newAddonDesc.trim(),
+        price,
+        status: price > 0 ? 'AWAITING_PAYMENT' : 'PENDING_QUOTE',
+        created_at: new Date().toISOString(),
+      };
+
+      payload.extra_addons.push(newAddon);
+
+      // 3. Update orders table
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ additional_info: JSON.stringify(payload) })
+        .eq('order_id', orderId);
+
+      if (updateError) throw updateError;
+
+      // 4. Update editing local state
+      if (editingOrder) {
+        setEditingOrder({
+          ...editingOrder,
+          ['Additional Info']: JSON.stringify(payload)
+        });
+      }
+
+      showToast('Extra add-on requirement added and quoted successfully!', 'success');
+      setNewAddonDesc('');
+      setNewAddonPrice('');
+
+      // 5. Send notification email to user
+      try {
+        const { sendSystemEmail } = await import('@/lib/emailService');
+        sendSystemEmail({
+          to: order.email,
+          subject: `💰 Extra Requirement Charge Added: Order #${orderId}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
+              <h2 style="color: #10b981;">Extra Requirement Added</h2>
+              <p>An extra charge has been tagged to your order <strong>Order #${orderId}</strong> for additional requests not in the initial brief.</p>
+              <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #10b981; margin: 20px 0;">
+                <strong>Requirement:</strong> ${newAddon.name}<br/><br/>
+                <strong>Price Tagged:</strong> <span style="font-size: 16px; color: #10b981; font-weight: bold;">${formatNaira(price)}</span>
+              </div>
+              <p>You can pay for this addon from your client dashboard wallet or via debit/credit card to authorize implementation.</p>
+              <p style="margin-top: 30px;"><a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" style="background-color: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Pay & Activate Now</a></p>
+            </div>
+          `,
+          orderId: orderId,
+        }).catch(err => console.warn('Notification email failed:', err));
+      } catch (emailErr) {
+        console.warn('Failed to send email to user:', emailErr);
+      }
+
+      await fetchOrders();
+    } catch (err: any) {
+      showToast(`Failed to create add-on charge: ${err.message}`, 'error');
+    }
+    setCreatingAddonCharge(false);
   };
 
   const generateInvoice = async (orderId: string, amount: number, email: string, name: string, type: 'DEPOSIT' | 'BALANCE') => {
@@ -345,20 +532,11 @@ export default function OrdersPage() {
     return sortDirection === 'asc' ? <lucide.ArrowUp className="w-3 h-3 ml-1 inline" /> : <lucide.ArrowDown className="w-3 h-3 ml-1 inline" />;
   };
 
-  if (loading) return <div className="p-10 text-center text-primary">Loading orders...</div>;
+  if (loading) return <LoadingScreen label="Loading orders..." accent="purple" />;
 
   return (
     <div className="p-6 md:p-10 overflow-y-auto relative max-w-[1600px]">
-      {/* Toast container */}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2">
-        {toasts.map(t => (
-          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold animate-in slide-in-from-right duration-300 ${
-            t.type === 'success' ? 'bg-emerald-500 text-black' : t.type === 'error' ? 'bg-red-500 text-white' : 'bg-card text-primary'
-          }`}>
-            {t.message}
-          </div>
-        ))}
-      </div>
+      <ToastContainer />
 
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
@@ -384,15 +562,17 @@ export default function OrdersPage() {
       )}
 
       <div className="animate-in fade-in duration-300">
-        <div className="flex justify-between items-end mb-8">
-          <div>
-            <h2 className="text-3xl font-black text-primary">Order Management</h2>
-            <p className="text-secondary mt-1">Manage, update, and fulfill active research projects.</p>
-          </div>
-          <button onClick={fetchOrders} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold transition flex items-center gap-2 text-primary">
-            <lucide.RefreshCw className="w-3 h-3" /> Sync Data
-          </button>
-        </div>
+        <PageHeader
+          title="Order Management"
+          description="Manage, update, and fulfill active research projects."
+          breadcrumb="Admin / Orders"
+          icon={<lucide.Database className="w-8 h-8 text-purple-500" />}
+          actions={
+            <button type="button" onClick={fetchOrders} className="btn-secondary flex items-center gap-2">
+              <lucide.RefreshCw className="w-3 h-3" /> Sync Data
+            </button>
+          }
+        />
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -421,7 +601,7 @@ export default function OrdersPage() {
         {/* Data Grid */}
         <div className="bg-secondary border border-theme rounded-3xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm whitespace-nowrap">
+            <table className="w-full text-left text-sm whitespace-nowrap table-row-hover">
               <thead className="bg-primary border-b border-theme text-[10px] uppercase tracking-widest text-secondary">
                 <tr>
                   <th className="px-6 py-4 font-black cursor-pointer hover:text-primary" onClick={() => handleSort('Order ID')}>
@@ -461,13 +641,7 @@ export default function OrdersPage() {
                         <div className="text-[9px] text-secondary mt-1 uppercase">Tier: {order['Service Tier']}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
-                          order['Workflow Status'] === 'Completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
-                          needsQuote ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 
-                          'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                        }`}>
-                          {order['Workflow Status']}
-                        </span>
+                        <StatusBadge status={order['Workflow Status']} />
                       </td>
                       <td className="px-6 py-4">
                         <div className={`font-black text-xs ${needsQuote ? 'text-secondary' : 'text-emerald-400'}`}>{needsQuote ? 'Awaiting Quote' : formatNaira(total)}</div>
@@ -485,7 +659,14 @@ export default function OrdersPage() {
                   );
                 })}
                 {paginatedOrders.length === 0 && (
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-secondary">No orders match your filters.顶\n</td></tr>
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="empty-state border-0 bg-transparent py-4">
+                        <lucide.Search className="w-10 h-10 text-secondary mx-auto mb-3" />
+                        <p className="text-secondary text-sm">No orders match your filters.</p>
+                      </div>
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -504,10 +685,17 @@ export default function OrdersPage() {
       {/* Manage Order Modal */}
       {editingOrder && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-primary border border-white/10 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black/50 rounded-t-3xl">
-              <div><h2 className="text-xl font-black flex items-center gap-2">Manage Order <span className="text-purple-500">{editingOrder['Order ID']}</span></h2><p className="text-xs text-zinc-500 mt-1">Client: {editingOrder['Legal Name']} ({editingOrder['Email']})</p></div>
-              <button onClick={() => setEditingOrder(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition"><lucide.X className="w-5 h-5 text-zinc-400" /></button>
+          <div className="bg-primary border border-theme rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-theme flex justify-between items-center bg-secondary rounded-t-3xl">
+              <div>
+                <h2 className="text-xl font-black flex items-center gap-2 text-primary">
+                  Manage Order <span className="text-purple-500">{editingOrder['Order ID']}</span>
+                </h2>
+                <p className="text-xs text-secondary mt-1">Client: {editingOrder['Legal Name']} ({editingOrder['Email']})</p>
+              </div>
+              <button type="button" onClick={() => setEditingOrder(null)} className="p-2 bg-secondary hover:bg-white/10 rounded-full transition" aria-label="Close">
+                <lucide.X className="w-5 h-5 text-secondary" />
+              </button>
             </div>
 
             <div className="p-6 overflow-y-auto space-y-8 flex-1">
@@ -515,57 +703,193 @@ export default function OrdersPage() {
                 <h3 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-4 flex items-center gap-2"><lucide.Zap className="w-4 h-4" /> Workflow Actions</h3>
                 <div className="flex flex-wrap gap-3">
                   {editingOrder['Workflow Status'] === 'Briefing Received' && (
-                    <button onClick={() => showToast('Set quote and status to "Quote Sent" manually', 'info')} className="px-4 py-2 bg-purple-500 text-black font-bold rounded-xl text-xs">Generate Quote</button>
+                    <button type="button" onClick={() => showToast('Set quote and status to "Quote Sent" manually', 'info')} className="px-4 py-2 bg-purple-500 text-white font-bold rounded-xl text-xs">Generate Quote</button>
                   )}
                   {editingOrder['Workflow Status'] === 'Quote Sent' && !renderBool(editingOrder['60% Paid']) && (
-                    <button onClick={() => handleStatusAction('MARK_DEPOSIT_PAID')} className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-xl text-xs">Mark Deposit Paid (60%)</button>
+                    <button type="button" onClick={() => handleStatusAction('MARK_DEPOSIT_PAID')} className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-xl text-xs">Mark Deposit Paid (60%)</button>
                   )}
                   {renderBool(editingOrder['60% Paid']) && !renderBool(editingOrder['Work Submitted']) && (
-                    <button onClick={() => handleStatusAction('UPLOAD_DRAFT')} className="px-4 py-2 bg-blue-500 text-black font-bold rounded-xl text-xs">Upload Draft / Work</button>
+                    <button type="button" onClick={() => handleStatusAction('UPLOAD_DRAFT')} className="px-4 py-2 bg-blue-500 text-white font-bold rounded-xl text-xs">Upload Draft / Work</button>
                   )}
                   {renderBool(editingOrder['Work Submitted']) && !renderBool(editingOrder['40% Paid']) && (
-                    <button onClick={() => handleStatusAction('REQUEST_BALANCE')} className="px-4 py-2 bg-amber-500 text-black font-bold rounded-xl text-xs">Request Balance Payment</button>
+                    <button type="button" onClick={() => handleStatusAction('REQUEST_BALANCE')} className="px-4 py-2 bg-amber-500 text-black font-bold rounded-xl text-xs">Request Balance Payment</button>
                   )}
                   {renderBool(editingOrder['40% Paid']) && editingOrder['Workflow Status'] !== 'Completed' && (
-                    <button onClick={() => handleStatusAction('MARK_COMPLETED')} className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-xl text-xs">Mark as Completed</button>
+                    <button type="button" onClick={() => handleStatusAction('MARK_COMPLETED')} className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-xl text-xs">Mark as Completed</button>
                   )}
                 </div>
               </div>
               <div className="bg-purple-500/5 border border-purple-500/20 rounded-2xl p-6">
                 <h3 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-4 flex items-center gap-2"><lucide.Banknote className="w-4 h-4" /> Financial Assessment (Quote)</h3>
-                <div className="flex gap-4 items-end">
-                  <div className="flex-1">
-                    <label className="text-[10px] text-zinc-400 uppercase font-bold ml-1 block mb-2">Final Financial Quote (₦)</label>
-                    <input type="number" className="w-full bg-black border border-white/10 rounded-xl p-4 font-black text-lg focus:border-purple-500 outline-none text-white" value={editingOrder['Financial Quote'] ?? ''} onChange={e => setEditingOrder({...editingOrder, 'Financial Quote': parseFloat(e.target.value)})} />
+                <div className="flex flex-col sm:flex-row gap-4 items-end">
+                  <div className="flex-1 w-full">
+                    <label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Final Financial Quote (₦)</label>
+                    <input type="number" className="w-full bg-secondary border border-theme rounded-xl p-4 font-black text-lg focus:border-purple-500 outline-none text-primary" value={editingOrder['Financial Quote'] ?? ''} onChange={e => setEditingOrder({...editingOrder, 'Financial Quote': parseFloat(e.target.value)})} />
                   </div>
-                  <div className="flex-1">
-                    <label className="text-[10px] text-zinc-400 uppercase font-bold ml-1 block mb-2">Workflow State</label>
-                    <select className="w-full bg-black border border-white/10 rounded-xl p-4 font-bold focus:border-purple-500 outline-none text-white" value={editingOrder['Workflow Status']} onChange={e => setEditingOrder({...editingOrder, 'Workflow Status': e.target.value as WorkflowStatus})}>
+                  <div className="flex-1 w-full">
+                    <label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Workflow State</label>
+                    <select className="w-full bg-secondary border border-theme rounded-xl p-4 font-bold focus:border-purple-500 outline-none text-primary" value={editingOrder['Workflow Status']} onChange={e => setEditingOrder({...editingOrder, 'Workflow Status': e.target.value as WorkflowStatus})}>
                       <option>Briefing Received</option><option>Quote Sent</option><option>Synthesis Active</option><option>Completed</option><option>Cancelled</option>
                     </select>
                   </div>
                 </div>
               </div>
               <div>
-                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-4 border-b border-white/5 pb-2">Fulfillment Tracking</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><label className="text-[10px] text-zinc-400 uppercase font-bold ml-1 block mb-2">60% Deposit Cleared</label><select className="w-full bg-black border border-white/10 rounded-xl p-3 text-sm focus:border-purple-500 outline-none" value={renderBool(editingOrder['60% Paid']) ? 'Yes' : 'No'} onChange={e => setEditingOrder({...editingOrder, '60% Paid': e.target.value === 'Yes'})}><option>No</option><option>Yes</option></select></div>
-                  <div><label className="text-[10px] text-zinc-400 uppercase font-bold ml-1 block mb-2">40% Balance Cleared</label><select className="w-full bg-black border border-white/10 rounded-xl p-3 text-sm focus:border-purple-500 outline-none" value={renderBool(editingOrder['40% Paid']) ? 'Yes' : 'No'} onChange={e => setEditingOrder({...editingOrder, '40% Paid': e.target.value === 'Yes'})}><option>No</option><option>Yes</option></select></div>
-                  <div><label className="text-[10px] text-zinc-400 uppercase font-bold ml-1 block mb-2">Work Submitted to Vault</label><select className="w-full bg-black border border-white/10 rounded-xl p-3 text-sm focus:border-purple-500 outline-none" value={renderBool(editingOrder['Work Submitted']) ? 'Yes' : 'No'} onChange={e => setEditingOrder({...editingOrder, 'Work Submitted': e.target.value === 'Yes'})}><option>No</option><option>Yes</option></select></div>
-                  <div><label className="text-[10px] text-zinc-400 uppercase font-bold ml-1 block mb-2">Corrections Phase</label><select className="w-full bg-black border border-white/10 rounded-xl p-3 text-sm focus:border-purple-500 outline-none" value={editingOrder['Corrections Status'] || 'None'} onChange={e => setEditingOrder({...editingOrder, 'Corrections Status': e.target.value as CorrectionsStatus})}><option>None</option><option>Requested</option><option>In Progress</option><option>Resubmitted</option></select></div>
+                <h3 className="text-xs font-black uppercase tracking-widest text-secondary mb-4 border-b border-theme pb-2">Fulfillment Tracking</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div><label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">60% Deposit Cleared</label><select className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm focus:border-purple-500 outline-none text-primary" value={renderBool(editingOrder['60% Paid']) ? 'Yes' : 'No'} onChange={e => setEditingOrder({...editingOrder, '60% Paid': e.target.value === 'Yes'})}><option>No</option><option>Yes</option></select></div>
+                  <div><label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">40% Balance Cleared</label><select className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm focus:border-purple-500 outline-none text-primary" value={renderBool(editingOrder['40% Paid']) ? 'Yes' : 'No'} onChange={e => setEditingOrder({...editingOrder, '40% Paid': e.target.value === 'Yes'})}><option>No</option><option>Yes</option></select></div>
+                  <div><label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Work Submitted to Vault</label><select className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm focus:border-purple-500 outline-none text-primary" value={renderBool(editingOrder['Work Submitted']) ? 'Yes' : 'No'} onChange={e => setEditingOrder({...editingOrder, 'Work Submitted': e.target.value === 'Yes'})}><option>No</option><option>Yes</option></select></div>
+                  <div><label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Corrections Phase</label><select className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm focus:border-purple-500 outline-none text-primary" value={editingOrder['Corrections Status'] || 'None'} onChange={e => setEditingOrder({...editingOrder, 'Corrections Status': e.target.value as CorrectionsStatus})}><option>None</option><option>Requested</option><option>In Progress</option><option>Resubmitted</option></select></div>
                 </div>
               </div>
               <div>
-                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-4 border-b border-white/5 pb-2">Manual Actions</h3>
-                <div className="flex gap-3">
-                  <button onClick={() => generateInvoice(editingOrder['Order ID'], (editingOrder['Financial Quote'] ?? 0) * 0.6, editingOrder['Email'], editingOrder['Legal Name'], 'DEPOSIT')} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition border border-white/5 flex items-center justify-center gap-2"><lucide.Send className="w-4 h-4" /> Force 60% Invoice Link</button>
-                  <button onClick={() => generateInvoice(editingOrder['Order ID'], (editingOrder['Financial Quote'] ?? 0) * 0.4, editingOrder['Email'], editingOrder['Legal Name'], 'BALANCE')} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition border border-white/5 flex items-center justify-center gap-2"><lucide.Send className="w-4 h-4" /> Force 40% Invoice Link</button>
+                <h3 className="text-xs font-black uppercase tracking-widest text-secondary mb-4 border-b border-theme pb-2">Client Brief Details</h3>
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <span className="text-secondary block mb-1 font-bold">Research Topic / Briefing Objective</span>
+                    <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{editingOrder['Research Topic']}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-secondary block mb-1 font-bold">Word Count Limit</span>
+                      <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{editingOrder['Word Count'] ? `${editingOrder['Word Count'].toLocaleString()} Words` : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-secondary block mb-1 font-bold">Estimated Pages</span>
+                      <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{editingOrder['Word Count'] ? `${Math.ceil(editingOrder['Word Count'] / 275)} Pages` : 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-secondary block mb-1 font-bold">Reference Style</span>
+                      <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{editingOrder['Reference Style'] || 'Standard'}</p>
+                    </div>
+                    <div>
+                      <span className="text-secondary block mb-1 font-bold">Font Preference</span>
+                      <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{editingOrder['Font Specification'] || 'Standard'}</p>
+                    </div>
+                  </div>
+
+                  {editingOrder['Media Sync'] && (
+                    <div>
+                      <span className="text-secondary block mb-1 font-bold">Media / External Resource Link</span>
+                      <a href={editingOrder['Media Sync']} target="_blank" rel="noopener noreferrer" className="p-3 bg-secondary border border-theme rounded-xl text-blue-450 font-bold block truncate hover:underline">
+                        🔗 {editingOrder['Media Sync']}
+                      </a>
+                    </div>
+                  )}
+
+                  {(() => {
+                    const addonInfo = parseAdditionalInfo(editingOrder['Additional Info']);
+                    return addonInfo.notes ? (
+                      <div>
+                        <span className="text-secondary block mb-1 font-bold">Client Instructions & Notes</span>
+                        <p className="bg-secondary p-4 rounded-xl border border-theme text-primary whitespace-pre-wrap leading-relaxed font-medium">{addonInfo.notes}</p>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-widest text-secondary mb-4 border-b border-theme pb-2">Custom Add-on Requests</h3>
+                {(() => {
+                  const addonInfo = parseAdditionalInfo(editingOrder['Additional Info']);
+                  if (!addonInfo.extra_addons || addonInfo.extra_addons.length === 0) {
+                    return <p className="text-xs text-secondary font-medium">No custom add-ons requested by client.</p>;
+                  }
+                  return (
+                    <div className="space-y-3">
+                      {addonInfo.extra_addons.map((a: any) => (
+                        <div key={a.id} className="p-4 bg-secondary border border-theme rounded-2xl text-xs space-y-3">
+                          <div className="flex justify-between items-start flex-wrap gap-2">
+                            <div>
+                              <p className="font-bold text-primary">{a.name}</p>
+                              <p className="text-[10px] text-secondary mt-1">Requested: {new Date(a.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                              a.status === 'PAID' ? 'bg-emerald-500/10 text-emerald-450 border border-emerald-500/20' :
+                              a.status === 'AWAITING_PAYMENT' ? 'bg-amber-500/10 text-amber-455 border border-amber-500/20' :
+                              'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                            }`}>
+                              {a.status === 'PENDING_QUOTE' ? 'Needs Quote' : a.status === 'AWAITING_PAYMENT' ? 'Awaiting Payment' : 'Paid & Active'}
+                            </span>
+                          </div>
+
+                          {a.status === 'PENDING_QUOTE' ? (
+                            <div className="space-y-2">
+                              <label className="text-[10px] text-secondary uppercase font-bold block">Define Addon Charge (₦)</label>
+                              <div className="flex gap-2">
+                                <input 
+                                  type="number" 
+                                  placeholder="Enter Price in Naira" 
+                                  value={addonQuotes[a.id] ?? ''} 
+                                  onChange={e => setAddonQuotes({...addonQuotes, [a.id]: parseFloat(e.target.value)})}
+                                  className="flex-1 bg-primary border border-theme rounded-xl px-3 py-2 text-xs text-primary focus:border-purple-500 outline-none"
+                                />
+                                <button 
+                                  onClick={() => handleSaveAddonQuote(editingOrder['Order ID'], a.id)}
+                                  disabled={savingAddonQuote === a.id}
+                                  className="px-4 py-2 bg-purple-500 text-white font-bold rounded-xl text-xs hover:bg-purple-400 transition cursor-pointer"
+                                >
+                                  {savingAddonQuote === a.id ? 'Saving...' : 'Set Quote'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between items-center bg-primary p-3 rounded-xl border border-theme">
+                              <span className="text-secondary font-bold">Charge Set:</span>
+                              <span className="font-black text-primary text-xs">{formatNaira(a.price)}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+                {/* Admin Proactive Addon Creation form */}
+                <div className="bg-card border border-theme p-4 rounded-2xl space-y-3 mt-4">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-secondary ml-1 font-bold">Add Custom Requirement & Price Tag</label>
+                  <input 
+                    type="text"
+                    placeholder="E.g. Extra 5 slides presentation deck, or Custom modules" 
+                    value={newAddonDesc} 
+                    onChange={e => setNewAddonDesc(e.target.value)} 
+                    className="w-full bg-secondary border border-theme p-3 rounded-xl text-xs text-primary focus:border-purple-500 outline-none transition font-bold"
+                  />
+                  <div className="flex gap-2">
+                    <input 
+                      type="number"
+                      placeholder="Price in Naira (e.g. 15000)" 
+                      value={newAddonPrice} 
+                      onChange={e => setNewAddonPrice(e.target.value)} 
+                      className="flex-1 bg-secondary border border-theme p-3 rounded-xl text-xs text-primary focus:border-purple-500 outline-none transition font-black"
+                    />
+                    <button 
+                      onClick={() => handleAdminCreateAddon(editingOrder['Order ID'])}
+                      disabled={creatingAddonCharge || !newAddonDesc.trim() || !newAddonPrice}
+                      className="px-6 bg-purple-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-purple-400 transition cursor-pointer disabled:opacity-50"
+                    >
+                      {creatingAddonCharge ? 'Creating...' : 'Add & Tag Price'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-widest text-secondary mb-4 border-b border-theme pb-2">Manual Actions</h3>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button type="button" onClick={() => generateInvoice(editingOrder['Order ID'], (editingOrder['Financial Quote'] ?? 0) * 0.6, editingOrder['Email'], editingOrder['Legal Name'], 'DEPOSIT')} className="flex-1 py-3 bg-secondary hover:bg-white/5 text-primary rounded-xl text-xs font-bold transition border border-theme flex items-center justify-center gap-2"><lucide.Send className="w-4 h-4" /> Force 60% Invoice Link</button>
+                  <button type="button" onClick={() => generateInvoice(editingOrder['Order ID'], (editingOrder['Financial Quote'] ?? 0) * 0.4, editingOrder['Email'], editingOrder['Legal Name'], 'BALANCE')} className="flex-1 py-3 bg-secondary hover:bg-white/5 text-primary rounded-xl text-xs font-bold transition border border-theme flex items-center justify-center gap-2"><lucide.Send className="w-4 h-4" /> Force 40% Invoice Link</button>
                 </div>
               </div>
             </div>
-            <div className="p-6 border-t border-white/10 bg-black/50 rounded-b-3xl flex gap-4">
-              <button onClick={() => setEditingOrder(null)} className="px-6 py-4 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10 transition">Cancel</button>
-              <button onClick={saveOrderUpdates} className="flex-1 py-4 bg-purple-500 text-white font-black uppercase tracking-widest text-xs rounded-xl hover:bg-purple-400 transition shadow-[0_0_20px_rgba(168,85,247,0.3)]">Approve Brief & Save Changes</button>
+            <div className="p-6 border-t border-theme bg-secondary rounded-b-3xl flex flex-col sm:flex-row gap-4">
+              <button type="button" onClick={() => setEditingOrder(null)} className="px-6 py-4 bg-secondary border border-theme text-primary font-bold rounded-xl hover:bg-white/5 transition">Cancel</button>
+              <button type="button" onClick={saveOrderUpdates} className="flex-1 py-4 bg-purple-500 text-white font-black uppercase tracking-widest text-xs rounded-xl hover:bg-purple-400 transition">Save Changes</button>
             </div>
           </div>
         </div>

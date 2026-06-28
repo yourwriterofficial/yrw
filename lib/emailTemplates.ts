@@ -299,4 +299,48 @@ export const emailTemplates = {
       <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" class="button">View Order</a>
     `),
   }),
+
+  // Admin Notifications
+  adminDepositPaid: (order: OrderEmailData) => ({
+    subject: `💳 ADMIN ALERT: Deposit Paid – ${order.order_id}`,
+    html: baseLayout(`
+      <h2>Deposit Confirmed</h2>
+      <p>A deposit of <strong>${formatNaira(order.financial_quote * 0.6)}</strong> (60%) has been cleared for order <strong>${order.order_id}</strong>.</p>
+      <div class="order-card">
+        <div><span class="label">Order ID</span><br><strong>${order.order_id}</strong></div>
+        <div style="margin-top: 12px;"><span class="label">Client</span><br>${order.legal_name} (${order.email})</div>
+        <div style="margin-top: 12px;"><span class="label">Topic</span><br>${order.topic}</div>
+        <div style="margin-top: 12px;"><span class="label">Total Cost</span><br>${formatNaira(order.financial_quote)}</div>
+      </div>
+      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin" class="button">Go to Admin Dashboard</a>
+    `),
+  }),
+
+  adminBalancePaid: (order: OrderEmailData) => ({
+    subject: `🔓 ADMIN ALERT: Balance Paid – ${order.order_id}`,
+    html: baseLayout(`
+      <h2>Final Balance Paid</h2>
+      <p>The final balance of <strong>${formatNaira(order.financial_quote * 0.4)}</strong> (40%) has been cleared for order <strong>${order.order_id}</strong>.</p>
+      <div class="order-card">
+        <div><span class="label">Order ID</span><br><strong>${order.order_id}</strong></div>
+        <div style="margin-top: 12px;"><span class="label">Client</span><br>${order.legal_name} (${order.email})</div>
+        <div style="margin-top: 12px;"><span class="label">Topic</span><br>${order.topic}</div>
+      </div>
+      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin" class="button">Go to Admin Dashboard</a>
+    `),
+  }),
+
+  adminWalletTopup: (data: { email: string; full_name: string; amount: number; reference: string }) => ({
+    subject: `💰 ADMIN ALERT: Wallet Funded – ₦${data.amount.toLocaleString('en-NG')}`,
+    html: baseLayout(`
+      <h2>Wallet Deposit Completed</h2>
+      <p>A client has topped up their wallet balance.</p>
+      <div class="order-card">
+        <div><span class="label">Client</span><br><strong>${data.full_name} (${data.email})</strong></div>
+        <div style="margin-top: 12px;"><span class="label">Amount</span><br>₦${data.amount.toLocaleString('en-NG')}</div>
+        <div style="margin-top: 12px;"><span class="label">Reference</span><br>${data.reference}</div>
+      </div>
+      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin" class="button">Go to Admin Dashboard</a>
+    `),
+  }),
 };

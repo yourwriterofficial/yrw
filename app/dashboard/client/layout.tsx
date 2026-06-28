@@ -1,0 +1,206 @@
+'use client';
+
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import * as lucide from 'lucide-react';
+import ThemeToggle from '@/app/components/ThemeToggle';
+import { ToastContainer } from '@/app/components/ui/Toast';
+import NotificationBell from '@/app/components/ui/NotificationBell';
+
+const Spinner = () => (
+  <div className="min-h-screen bg-primary flex items-center justify-center">
+    <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+  </div>
+);
+
+export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <ClientLayoutInner>{children}</ClientLayoutInner>
+    </Suspense>
+  );
+}
+
+function ClientLayoutInner({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab');
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unviewedVaultCount, setUnviewedVaultCount] = useState(0);
+
+  const fetchUnviewedVault = useCallback(async (email: string, id: string) => {
+    try {
+      const { data: userOrders } = await supabase
+        .from('orders')
+        .select('order_id')
+        .or(`client_id.eq.${id},email.eq.${email}`);
+
+      const orderIds = userOrders?.map(o => o.order_id) || [];
+      if (orderIds.length > 0) {
+        const { data: files } = await supabase
+          .from('final_deliverables')
+          .select('id')
+          .in('order_id', orderIds)
+          .is('downloaded_at', null);
+        setUnviewedVaultCount(files?.length || 0);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      setUser(user);
+      const { data: userProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      setProfile(userProfile);
+      
+      await fetchUnviewedVault(user.email || '', user.id);
+      setLoading(false);
+    };
+    checkUser();
+  }, [router, fetchUnviewedVault]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+  };
+
+  const isActive = (tab: string) => {
+    if (tab === 'dashboard') {
+      return pathname === '/dashboard/client' && !activeTab;
+    }
+    if (tab === 'new') {
+      return pathname.startsWith('/dashboard/client/order/new');
+    }
+    return activeTab === tab || pathname.includes(`/dashboard/client/${tab}`);
+  };
+
+  const navBtnClass = (tab: string) =>
+    `w-full flex items-center justify-between p-3 rounded-xl transition font-bold text-sm ${
+      isActive(tab)
+        ? 'bg-emerald-500/10 text-emerald-500'
+        : 'text-secondary hover:bg-white/5 hover:text-primary'
+    }`;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-primary flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row font-['Inter'] selection:bg-emerald-500/30">
+      <ToastContainer />
+
+      {/* ================= SIDEBAR ================= */}
+      <aside className="hidden md:flex flex-col w-64 bg-secondary border-r border-theme h-screen sticky top-0 p-6 z-40">
+        <div className="flex items-center gap-3 mb-12">
+          <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-black font-black text-xl">Y</div>
+          <div>
+            <h1 className="font-black tracking-tight leading-none text-lg">YRW</h1>
+            <p className="text-[10px] text-emerald-500 uppercase tracking-widest font-bold">Client Portal</p>
+          </div>
+        </div>
+
+        <nav className="flex flex-col gap-2 flex-1">
+          <button onClick={() => router.push('/dashboard/client')} className={navBtnClass('dashboard')}>
+            <div className="flex items-center gap-3"><lucide.LayoutDashboard className="w-5 h-5" /> <span>Dashboard</span></div>
+          </button>
+          <button onClick={() => router.push('/dashboard/client/order/new')} className={navBtnClass('new')}>
+            <div className="flex items-center gap-3"><lucide.PlusCircle className="w-5 h-5" /> <span>New Order</span></div>
+          </button>
+          <button onClick={() => router.push('/dashboard/client?tab=vault')} className={navBtnClass('vault')}>
+            <div className="flex items-center gap-3"><lucide.Lock className="w-5 h-5" /> <span>Secure Vault</span></div>
+            {unviewedVaultCount > 0 && <span className="px-2 py-0.5 bg-emerald-500 text-black rounded-md text-[10px] font-black">{unviewedVaultCount}</span>}
+          </button>
+          <button onClick={() => router.push('/dashboard/client?tab=wallet')} className={navBtnClass('wallet')}>
+            <div className="flex items-center gap-3"><lucide.Wallet className="w-5 h-5" /> <span>Wallet</span></div>
+          </button>
+          <button onClick={() => router.push('/dashboard/client?tab=profile')} className={navBtnClass('profile')}>
+            <div className="flex items-center gap-3"><lucide.User className="w-5 h-5" /> <span>My Profile</span></div>
+          </button>
+        </nav>
+
+        <div className="border-t border-theme pt-6 mt-6">
+          <div className="mb-4">
+            <ThemeToggle />
+          </div>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30">
+              <lucide.User className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-sm font-bold truncate">{profile?.full_name || 'Client'}</p>
+              <p className="text-xs text-secondary truncate">{user?.email}</p>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="w-full flex items-center gap-3 text-red-400 hover:text-red-300 transition text-sm font-bold p-2 rounded-lg hover:bg-red-500/10">
+            <lucide.LogOut className="w-4 h-4" /> Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* ================= MOBILE TOPBAR ================= */}
+      <div className="md:hidden bg-secondary border-b border-theme p-4 flex justify-between items-center sticky top-0 z-50">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-black font-black">Y</div>
+          <span className="font-bold text-primary">Portal</span>
+        </div>
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-primary" aria-label="Toggle menu">
+          {mobileMenuOpen ? <lucide.X /> : <lucide.Menu />}
+        </button>
+      </div>
+
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px] shadow-lg">
+          <button onClick={() => { router.push('/dashboard/client'); setMobileMenuOpen(false); }} className={navBtnClass('dashboard')}>
+            <div className="flex items-center gap-3"><lucide.LayoutDashboard className="w-5 h-5" /> <span>Dashboard</span></div>
+          </button>
+          <button onClick={() => { router.push('/dashboard/client/order/new'); setMobileMenuOpen(false); }} className={navBtnClass('new')}>
+            <div className="flex items-center gap-3"><lucide.PlusCircle className="w-5 h-5" /> <span>New Order</span></div>
+          </button>
+          <button onClick={() => { router.push('/dashboard/client?tab=vault'); setMobileMenuOpen(false); }} className={navBtnClass('vault')}>
+            <div className="flex items-center gap-3"><lucide.Lock className="w-5 h-5" /> <span>Secure Vault</span></div>
+          </button>
+          <button onClick={() => { router.push('/dashboard/client?tab=wallet'); setMobileMenuOpen(false); }} className={navBtnClass('wallet')}>
+            <div className="flex items-center gap-3"><lucide.Wallet className="w-5 h-5" /> <span>Wallet</span></div>
+          </button>
+          <button onClick={() => { router.push('/dashboard/client?tab=profile'); setMobileMenuOpen(false); }} className={navBtnClass('profile')}>
+            <div className="flex items-center gap-3"><lucide.User className="w-5 h-5" /> <span>My Profile</span></div>
+          </button>
+          <ThemeToggle />
+          <button onClick={handleLogout} className="mt-2 p-3 text-red-400 font-bold text-left flex items-center gap-2 rounded-xl hover:bg-red-500/10 transition"><lucide.LogOut className="w-4 h-4"/> Sign Out</button>
+        </div>
+      )}
+
+      {/* ================= MAIN CONTENT AREA ================= */}
+      <main className="flex-1 overflow-y-auto flex flex-col h-screen bg-primary">
+        {/* Top Header */}
+        <header className="bg-secondary/40 backdrop-blur-md border-b border-theme px-6 py-4 flex justify-between items-center sticky top-0 z-30 shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="font-black text-xs uppercase tracking-widest text-secondary">
+              Client Portal
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <NotificationBell isAdmin={false} userEmail={user?.email || ''} />
+          </div>
+        </header>
+        <div className="flex-1 overflow-y-auto">{children}</div>
+      </main>
+    </div>
+  );
+}

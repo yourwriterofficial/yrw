@@ -30,8 +30,12 @@ const nextConfig = {
             value: 'camera=(), microphone=(), geolocation=()',
           },
           {
+            // Keep in sync with the CSP constant in middleware.ts. Both headers
+            // are applied, so a mismatch would make the browser enforce the
+            // (stricter) intersection — e.g. silently dropping Supabase realtime.
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://checkout.flutterwave.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.supabase.co; font-src 'self'; connect-src 'self' https://*.supabase.co https://api.flutterwave.com https://api.resend.com; frame-src https://checkout.flutterwave.com;",
+            value:
+              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.supabase.co; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self'; object-src 'none'; base-uri 'self';",
           },
         ],
       },

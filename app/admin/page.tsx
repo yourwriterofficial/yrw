@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 import * as lucide from 'lucide-react';
+import PageHeader from '@/app/components/ui/PageHeader';
+import StatusBadge from '@/app/components/ui/StatusBadge';
+import { DashboardSkeleton } from '@/app/components/ui/Skeleton';
 
-const formatNaira = (amount: number) => '₦' + amount.toLocaleString('en-NG');
+const formatNaira = (amount: number) => '₦' + Math.round(amount).toLocaleString('en-NG');
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -20,42 +23,102 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       const { data: orders } = await supabase.from('admin_orders_view').select('*');
-      if (!orders) return;
+      if (!orders) {
+        setLoading(false);
+        return;
+      }
       const totalOrders = orders.length;
-      const pendingBriefs = orders.filter(o => o['Workflow Status'] === 'Briefing Received').length;
-      const completedOrders = orders.filter(o => o['Workflow Status'] === 'Completed').length;
+      const pendingBriefs = orders.filter((o) => o['Workflow Status'] === 'Briefing Received').length;
+      const completedOrders = orders.filter((o) => o['Workflow Status'] === 'Completed').length;
       const totalValue = orders.reduce((sum, o) => sum + (parseFloat(o['Financial Quote']) || 0), 0);
       setStats({ totalOrders, pendingBriefs, completedOrders, totalValue });
-      setRecentOrders(orders.slice(0, 5));
+
+      const sorted = [...orders].sort(
+        (a, b) => new Date(b['Timestamp']).getTime() - new Date(a['Timestamp']).getTime()
+      );
+      setRecentOrders(sorted.slice(0, 5));
       setLoading(false);
     };
     fetchStats();
   }, []);
 
-  if (loading) return <div className="p-10 text-center text-primary">Loading dashboard...</div>;
+  if (loading) return <DashboardSkeleton stats={4} rows={5} />;
 
   return (
-    <div className="p-6 md:p-10">
-      <h1 className="text-3xl font-black text-primary mb-6">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-card border border-theme rounded-2xl p-6"><div className="text-2xl font-black text-primary">{stats.totalOrders}</div><div className="text-xs text-secondary">Total Orders</div></div>
-        <div className="bg-card border border-theme rounded-2xl p-6"><div className="text-2xl font-black text-purple-400">{stats.pendingBriefs}</div><div className="text-xs text-secondary">Awaiting Brief</div></div>
-        <div className="bg-card border border-theme rounded-2xl p-6"><div className="text-2xl font-black text-emerald-400">{stats.completedOrders}</div><div className="text-xs text-secondary">Completed</div></div>
-        <div className="bg-card border border-theme rounded-2xl p-6"><div className="text-2xl font-black text-primary">{formatNaira(stats.totalValue)}</div><div className="text-xs text-secondary">Pipeline Value</div></div>
+    <div className="p-6 md:p-10 max-w-6xl">
+      <PageHeader
+        title="Dashboard"
+        description="Overview of orders, pipeline value, and recent activity."
+        breadcrumb="Admin / Dashboard"
+        icon={<lucide.LayoutDashboard className="w-8 h-8 text-purple-500" />}
+        actions={
+          <Link href="/admin/orders" className="btn-secondary flex items-center gap-2">
+            <lucide.Database className="w-4 h-4" /> Manage Orders
+          </Link>
+        }
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <StatCard label="Total Orders" value={stats.totalOrders} icon={<lucide.Layers className="w-5 h-5" />} />
+        <StatCard label="Awaiting Brief" value={stats.pendingBriefs} color="text-purple-400" icon={<lucide.Clock className="w-5 h-5" />} />
+        <StatCard label="Completed" value={stats.completedOrders} color="text-emerald-400" icon={<lucide.CheckCircle2 className="w-5 h-5" />} />
+        <StatCard label="Pipeline Value" value={formatNaira(stats.totalValue)} icon={<lucide.Banknote className="w-5 h-5" />} />
       </div>
 
       <div className="bg-card border border-theme rounded-2xl p-6">
-        <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-black text-primary">Recent Orders</h2><Link href="/admin/orders" className="text-purple-400 text-sm">View All</Link></div>
-        <div className="space-y-2">
-          {recentOrders.map(order => (
-            <div key={order['Order ID']} className="flex justify-between items-center border-b border-theme py-3">
-              <div><span className="font-mono text-sm text-primary">{order['Order ID']}</span><div className="text-xs text-secondary">{order['Legal Name']}</div></div>
-              <div><span className={`text-xs px-2 py-1 rounded ${order['Workflow Status'] === 'Completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>{order['Workflow Status']}</span></div>
-              <div className="font-mono text-sm text-primary">{formatNaira(parseFloat(order['Financial Quote']) || 0)}</div>
-            </div>
-          ))}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-black text-primary">Recent Orders</h2>
+          <Link href="/admin/orders" className="text-purple-400 text-sm font-bold hover:text-purple-300 transition">
+            View All →
+          </Link>
         </div>
+        {recentOrders.length === 0 ? (
+          <div className="empty-state py-8">
+            <lucide.Inbox className="w-10 h-10 text-secondary mx-auto mb-3" />
+            <p className="text-secondary text-sm">No orders yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-1 table-row-hover">
+            {recentOrders.map((order) => (
+              <div
+                key={order['Order ID']}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-theme py-4 last:border-0"
+              >
+                <div>
+                  <span className="font-mono text-sm font-bold text-primary">{order['Order ID']}</span>
+                  <div className="text-xs text-secondary mt-0.5">{order['Legal Name']}</div>
+                </div>
+                <StatusBadge status={order['Workflow Status']} />
+                <div className="font-mono text-sm font-bold text-primary">
+                  {formatNaira(parseFloat(order['Financial Quote']) || 0)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  color = 'text-primary',
+  icon,
+}: {
+  label: string;
+  value: string | number;
+  color?: string;
+  icon: ReactNode;
+}) {
+  return (
+    <div className="bg-card border border-theme rounded-2xl p-5">
+      <div className={`p-2 rounded-lg bg-secondary border border-theme inline-flex mb-3 ${color}`}>
+        {icon}
+      </div>
+      <div className={`text-2xl font-black ${color}`}>{value}</div>
+      <div className="text-[10px] text-secondary uppercase tracking-widest font-bold mt-1">{label}</div>
     </div>
   );
 }

@@ -4,24 +4,55 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import * as lucide from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ThemeToggle from '@/app/components/ThemeToggle';
+import NotificationBell from '@/app/components/ui/NotificationBell';
+
+const NAV_ITEMS: { href: string; label: string; icon: typeof lucide.LayoutDashboard; exact?: boolean }[] = [
+  { href: '/admin', label: 'Dashboard', icon: lucide.LayoutDashboard, exact: true },
+  { href: '/admin/orders', label: 'Orders', icon: lucide.Database },
+  { href: '/admin/finance', label: 'Finance', icon: lucide.Wallet },
+  { href: '/admin/users', label: 'Users', icon: lucide.Users },
+  { href: '/admin/promos', label: 'Promo Codes', icon: lucide.Tag },
+  { href: '/admin/email', label: 'Messaging', icon: lucide.Send },
+  { href: '/admin/settings', label: 'Settings', icon: lucide.Settings },
+  { href: '/admin/vault', label: 'Vault Files', icon: lucide.FolderArchive },
+];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) setUser(data.user);
+    });
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/');
   };
 
-  const isActive = (path: string) => pathname === path || pathname?.startsWith(path + '/');
+  const isActive = (href: string, exact?: boolean) => {
+    if (exact) {
+      return pathname === href;
+    }
+    return pathname === href || pathname?.startsWith(href + '/');
+  };
+
+  const navLinkClass = (href: string, exact?: boolean) =>
+    `flex items-center p-3 rounded-xl transition font-bold text-sm ${
+      isActive(href, exact)
+        ? 'bg-purple-500/10 text-purple-400'
+        : 'text-secondary hover:bg-white/5 hover:text-primary'
+    }`;
 
   return (
     <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row font-['Inter'] selection:bg-purple-500/30">
-      {/* ================= DESKTOP SIDEBAR ================= */}
+      {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-64 bg-secondary border-r border-theme h-screen sticky top-0 p-6 z-40">
         <div className="flex items-center gap-3 mb-12">
           <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl">
@@ -33,99 +64,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        <nav className="flex flex-col gap-2 flex-1">
-          {/* Dashboard */}
-          <Link
-            href="/admin"
-            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
-              isActive('/admin') &&
-              !pathname?.includes('/orders') &&
-              !pathname?.includes('/finance') &&
-              !pathname?.includes('/promos') &&
-              !pathname?.includes('/email') &&
-              !pathname?.includes('/users') &&
-              !pathname?.includes('/vault')
-                ? 'bg-purple-500/10 text-purple-400'
-                : 'text-secondary hover:bg-white/5 hover:text-primary'
-            }`}
-          >
-            <lucide.LayoutDashboard className="w-5 h-5 mr-3" /> Dashboard
-          </Link>
-
-          {/* Orders */}
-          <Link
-            href="/admin/orders"
-            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
-              isActive('/admin/orders') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
-            }`}
-          >
-            <lucide.Database className="w-5 h-5 mr-3" /> Orders
-          </Link>
-
-          {/* Finance */}
-          <Link
-            href="/admin/finance"
-            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
-              isActive('/admin/finance') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
-            }`}
-          >
-            <lucide.Wallet className="w-5 h-5 mr-3" /> Finance
-          </Link>
-
-          {/* Users (NEW) */}
-          <Link
-            href="/admin/users"
-            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
-              isActive('/admin/users') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
-            }`}
-          >
-            <lucide.Users className="w-5 h-5 mr-3" /> Users
-          </Link>
-
-          {/* Promo Codes */}
-          <Link
-            href="/admin/promos"
-            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
-              isActive('/admin/promos') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
-            }`}
-          >
-            <lucide.Tag className="w-5 h-5 mr-3" /> Promo Codes
-          </Link>
-
-          {/* Mass Email */}
-          <Link
-            href="/admin/email"
-            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
-              isActive('/admin/email') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
-            }`}
-          >
-            <lucide.Mail className="w-5 h-5 mr-3" /> Mass Email
-          </Link>
-
-          {/* Settings */}
-          <Link
-            href="/admin/settings"
-            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
-              isActive('/admin/settings') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
-            }`}
-          >
-            <lucide.Settings className="w-5 h-5 mr-3" /> Settings
-          </Link>
-
-          {/* Vault Files */}
-          <Link
-            href="/admin/vault"
-            className={`flex items-center p-3 rounded-xl transition font-bold text-sm ${
-              isActive('/admin/vault') ? 'bg-purple-500/10 text-purple-400' : 'text-secondary hover:bg-white/5 hover:text-primary'
-            }`}
-          >
-            <lucide.FolderArchive className="w-5 h-5 mr-3" /> Vault Files
-          </Link>
+        <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
+          {NAV_ITEMS.map(({ href, label, icon: Icon, exact }) => (
+            <Link key={href} href={href} className={navLinkClass(href, exact)}>
+              <Icon className="w-5 h-5 mr-3 shrink-0" /> {label}
+            </Link>
+          ))}
 
           <div className="my-4 border-t border-theme" />
 
-          {/* View Client UI */}
           <button
+            type="button"
             onClick={() => window.open('/dashboard/client', '_blank')}
             className="w-full flex items-center p-3 rounded-xl transition font-bold text-sm text-secondary hover:bg-white/5 hover:text-primary"
           >
@@ -138,70 +87,78 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <ThemeToggle />
           </div>
           <button
+            type="button"
             onClick={handleLogout}
             className="w-full flex items-center gap-3 text-red-400 hover:text-red-300 transition text-sm font-bold p-2 rounded-lg hover:bg-red-500/10"
           >
-            <lucide.LogOut className="w-4 h-4" /> Terminate Session
+            <lucide.LogOut className="w-4 h-4" /> Sign Out
           </button>
         </div>
       </aside>
 
-      {/* ================= MOBILE TOPBAR & MENU ================= */}
+      {/* Mobile topbar */}
       <div className="md:hidden bg-secondary border-b border-theme p-4 flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center text-white font-black">
+          <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center text-white">
             <lucide.Shield className="w-4 h-4" />
           </div>
           <span className="font-bold text-sm uppercase tracking-widest text-purple-500">Admin</span>
         </div>
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-primary">
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="p-2 text-primary rounded-lg hover:bg-white/5"
+          aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={mobileMenuOpen}
+        >
           {mobileMenuOpen ? <lucide.X /> : <lucide.Menu />}
         </button>
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px]">
-          <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
-            <lucide.LayoutDashboard className="w-4 h-4" /> Dashboard
-          </Link>
-          <Link href="/admin/orders" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
-            <lucide.Database className="w-4 h-4" /> Orders
-          </Link>
-          <Link href="/admin/finance" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
-            <lucide.Wallet className="w-4 h-4" /> Finance
-          </Link>
-          <Link href="/admin/users" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
-            <lucide.Users className="w-4 h-4" /> Users
-          </Link>
-          <Link href="/admin/promos" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
-            <lucide.Tag className="w-4 h-4" /> Promo Codes
-          </Link>
-          <Link href="/admin/email" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
-            <lucide.Mail className="w-4 h-4" /> Mass Email
-          </Link>
-          <Link href="/admin/settings" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
-            <lucide.Settings className="w-4 h-4" /> Settings
-          </Link>
-          <Link href="/admin/vault" onClick={() => setMobileMenuOpen(false)} className="p-3 text-secondary font-bold flex items-center gap-2">
-            <lucide.FolderArchive className="w-4 h-4" /> Vault Files
-          </Link>
+        <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-1 absolute w-full z-40 top-[73px] shadow-lg max-h-[70vh] overflow-y-auto">
+          {NAV_ITEMS.map(({ href, label, icon: Icon, exact }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setMobileMenuOpen(false)}
+              className={navLinkClass(href, exact)}
+            >
+              <Icon className="w-4 h-4 mr-3 shrink-0" /> {label}
+            </Link>
+          ))}
           <button
+            type="button"
             onClick={() => { window.open('/dashboard/client', '_blank'); setMobileMenuOpen(false); }}
-            className="p-3 text-secondary font-bold text-left flex items-center gap-2"
+            className="p-3 text-secondary font-bold text-left flex items-center gap-2 rounded-xl hover:bg-white/5"
           >
             <lucide.ExternalLink className="w-4 h-4" /> View Client UI
           </button>
           <ThemeToggle />
           <button
+            type="button"
             onClick={handleLogout}
-            className="mt-4 p-3 text-red-400 font-bold text-left flex items-center gap-2"
+            className="mt-2 p-3 text-red-400 font-bold text-left flex items-center gap-2 rounded-xl hover:bg-red-500/10"
           >
-            <lucide.LogOut className="w-4 h-4" /> Terminate Session
+            <lucide.LogOut className="w-4 h-4" /> Sign Out
           </button>
         </div>
       )}
 
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto flex flex-col h-screen bg-primary">
+        {/* Top Header */}
+        <header className="bg-secondary/40 backdrop-blur-md border-b border-theme px-6 py-4 flex justify-between items-center sticky top-0 z-30 shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="font-black text-xs uppercase tracking-widest text-secondary">
+              {pathname === '/admin' ? 'Dashboard' : pathname.replace('/admin/', '').replace('-', ' ')}
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <NotificationBell isAdmin={true} userEmail={user?.email || ''} />
+          </div>
+        </header>
+        <div className="flex-1 overflow-y-auto">{children}</div>
+      </main>
     </div>
   );
 }
