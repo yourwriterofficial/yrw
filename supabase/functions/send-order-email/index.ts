@@ -35,11 +35,33 @@ Deno.serve(async (req) => {
     default: return new Response('no email', { status: 200 });
   }
 
-  await resend.emails.send({
-    from: 'noreply@yourdomain.com',
-    to: record.email,
-    subject,
-    html,
-  });
+  try {
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      throw new Error('Resend API key not configured');
+    }
+    await resend.emails.send({
+      from: 'Research Writer <noreply@yourresearchwriter.com>',
+      to: record.email,
+      subject,
+      html,
+    });
+  } catch (resendError: any) {
+    console.warn("Resend failed, trying fallback to Apps Script:", resendError.message);
+    const appsScriptUrl = Deno.env.get('GOOGLE_APPS_SCRIPT_URL');
+    if (appsScriptUrl) {
+      const fallbackResponse = await fetch(appsScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: record.email, subject, html }),
+      });
+      if (!fallbackResponse.ok) {
+        const fallbackText = await fallbackResponse.text();
+        throw new Error(`Both Resend and Apps Script fallback failed. Apps Script error: ${fallbackText}`, { cause: resendError });
+      }
+    } else {
+      throw resendError;
+    }
+  }
   return new Response('email sent', { status: 200 });
 });
