@@ -11,6 +11,7 @@ import NotificationBell from '@/app/components/ui/NotificationBell';
 const NAV_ITEMS: { href: string; label: string; icon: typeof lucide.LayoutDashboard; exact?: boolean }[] = [
   { href: '/admin', label: 'Dashboard', icon: lucide.LayoutDashboard, exact: true },
   { href: '/admin/orders', label: 'Orders', icon: lucide.Database },
+  { href: '/admin/invoices', label: 'Invoices', icon: lucide.FileSpreadsheet },
   { href: '/admin/finance', label: 'Finance', icon: lucide.Wallet },
   { href: '/admin/users', label: 'Users', icon: lucide.Users },
   { href: '/admin/promos', label: 'Promo Codes', icon: lucide.Tag },

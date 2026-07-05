@@ -25,18 +25,38 @@ export async function POST(request: Request) {
 
     const { orderId, amount, email, name, type } = parsed.data;
 
-    // 1. Verify order exists
-    const { data: orderData, error: lookupError } = await supabase
-      .from('orders')
-      .select('id')
-      .eq('order_id', orderId)
-      .single();
+    // 1. Verify order or custom invoice exists
+    const isCustomInvoice = orderId.startsWith('INV-');
+    let orderData = null;
+    let tx_ref = '';
 
-    if (lookupError || !orderData) {
-      return NextResponse.json({ error: 'Order not found in database' }, { status: 404 });
+    if (isCustomInvoice) {
+      const { data: customInvoice, error: custErr } = await supabase
+        .from('custom_invoices')
+        .select('id')
+        .eq('invoice_number', orderId)
+        .single();
+      
+      if (custErr || !customInvoice) {
+        return NextResponse.json({ error: 'Custom invoice not found' }, { status: 404 });
+      }
+      
+      tx_ref = `CUSTINV_${orderId}_${type}_${Date.now()}`;
+    } else {
+      // Verify order exists
+      const { data: dbOrder, error: lookupError } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('order_id', orderId)
+        .single();
+
+      if (lookupError || !dbOrder) {
+        return NextResponse.json({ error: 'Order not found in database' }, { status: 404 });
+      }
+      
+      orderData = dbOrder;
+      tx_ref = `INV_${orderId}_${type}_${Date.now()}`;
     }
-
-    const tx_ref = `INV_${orderId}_${type}_${Date.now()}`;
 
     // 2. Call Paystack API
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -63,15 +83,17 @@ export async function POST(request: Request) {
     const paystackData = await response.json();
 
     if (paystackData.status === true) {
-      // 3. Log the pending invoice
-      await supabase.from('invoices').insert({
-        order_id: orderData.id,
-        amount,
-        type: (type === 'DEPOSIT' || type === 'BALANCE') ? type : 'DEPOSIT',
-        // We reuse the flutterwave column name here so you don't have to rewrite your SQL database schema
-        flutterwave_transaction_ref: tx_ref, 
-        status: 'PENDING',
-      });
+      if (!isCustomInvoice && orderData) {
+        // 3. Log the pending invoice for standard orders
+        await supabase.from('invoices').insert({
+          order_id: orderData.id,
+          amount,
+          type: (type === 'DEPOSIT' || type === 'BALANCE') ? type : 'DEPOSIT',
+          // We reuse the flutterwave column name here so you don't have to rewrite your SQL database schema
+          flutterwave_transaction_ref: tx_ref, 
+          status: 'PENDING',
+        });
+      }
 
       return NextResponse.json({ link: paystackData.data.authorization_url, tx_ref });
     } else {

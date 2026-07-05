@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { createSecureOrder } from '@/app/actions/createOrder';
-import { HelpCircle, ChevronRight, ChevronLeft, Upload, Paperclip, CheckCircle2, Calendar } from 'lucide-react';
+import { HelpCircle, ChevronRight, ChevronLeft, Upload, Paperclip, CheckCircle2, Calendar, Trash2 } from 'lucide-react';
 import type { ServiceTier, CreateOrderServerActionResponse } from '@/lib/types';
 import OrderCategoryNav from './OrderCategoryNav';
 
@@ -68,6 +68,16 @@ export default function OrderForm() {
   const [acceptTerms, setAcceptTerms] = useState<boolean>(false);
 
   const isCustom = plan === 'CUSTOM';
+
+  // Dynamic milestones & billing fields
+  const [clientCompany, setClientCompany] = useState('');
+  const [clientAddress, setClientAddress] = useState('');
+  const [paymentStructure, setPaymentStructure] = useState<'60/40' | 'CUSTOM'>('60/40');
+  const [milestones, setMilestones] = useState<Array<{ name: string; percentage: number; trigger: string }>>([
+    { name: 'Initial Deposit', percentage: 40, trigger: 'Upon signing this agreement' },
+    { name: 'Second Payment', percentage: 30, trigger: 'Completion of Web & Backend' },
+    { name: 'Final Payment', percentage: 30, trigger: 'Final delivery and client sign off' }
+  ]);
 
   // Check login status and fetch wallet balance
   useEffect(() => {
@@ -176,8 +186,9 @@ Note: As the student, you are the primary link between the classroom and the wri
     return Math.round(afterVolume);
   };
 
-  const depositAmount = getUiTotalPrice() * 0.6;
-  const balanceAmount = getUiTotalPrice() * 0.4;
+  const firstMilestoneShare = paymentStructure === 'CUSTOM' ? (milestones[0]?.percentage || 0) : 60;
+  const depositAmount = Math.round(getUiTotalPrice() * (firstMilestoneShare / 100));
+  const balanceAmount = getUiTotalPrice() - depositAmount;
 
   const applyPromo = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -253,14 +264,30 @@ Note: As the student, you are the primary link between the classroom and the wri
       deadline,
       reference_style: refStyle,
       font_specification: fontStyle,
-      sixty_percent_paid: false,
-      forty_percent_paid: false,
-      work_submitted: false,
       corrections_status: 'None',
       additional_info: additionalInfo,
       media_link: mediaLink || undefined,
       vault_status: 'Secured in Vault',
       last_activity: new Date().toISOString(),
+      client_company: clientCompany || null,
+      client_address: clientAddress || null,
+      client_phone: whatsapp || null,
+      payment_structure_type: paymentStructure,
+      payment_milestones: paymentStructure === 'CUSTOM'
+        ? milestones.map(m => ({
+            name: m.name,
+            percentage: m.percentage,
+            amount: Math.round((m.percentage / 100) * (isCustom ? customPrice : getUiTotalPrice())),
+            paid: false,
+            delivered: false,
+            paid_at: null,
+            tx_ref: null,
+            trigger: m.trigger
+          }))
+        : [
+            { name: 'Initial Deposit', percentage: 60, amount: Math.round((isCustom ? customPrice : getUiTotalPrice()) * 0.6), paid: false, delivered: false, paid_at: null, tx_ref: null, trigger: 'Upon signing this agreement' },
+            { name: 'Final Payment', percentage: 40, amount: Math.round((isCustom ? customPrice : getUiTotalPrice()) * 0.4), paid: false, delivered: false, paid_at: null, tx_ref: null, trigger: 'Upon project completion' }
+          ]
     };
 
     if (isLoggedIn) {
@@ -481,6 +508,20 @@ Note: As the student, you are the primary link between the classroom and the wri
             <p className="text-[9px] text-secondary ml-1">E.g., 'Impact of Monetary Policy on Small Businesses in Sub-Saharan Africa.'</p>
           </div>
 
+          <div className="space-y-4 bg-secondary/30 p-6 rounded-2xl border border-theme">
+            <div className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 font-bold">Billing & Company Details (Optional)</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] text-secondary block ml-1 font-bold">Company Name</label>
+                <input type="text" placeholder="e.g. My Company Ltd" value={clientCompany} onChange={e => setClientCompany(e.target.value)} className="w-full bg-card border border-theme p-3 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition font-semibold" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-secondary block ml-1 font-bold">Billing Address</label>
+                <input type="text" placeholder="e.g. 5, Edo Street, Benin City" value={clientAddress} onChange={e => setClientAddress(e.target.value)} className="w-full bg-card border border-theme p-3 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition font-semibold" />
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-4">
             <div className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 font-bold">Formatting Requirements</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -642,8 +683,86 @@ Note: As the student, you are the primary link between the classroom and the wri
             {promoMsg && <p className={`text-[10px] font-bold mt-2.5 ml-1 ${promoMsg.includes('❌') ? 'text-red-500' : 'text-emerald-500'}`}>{promoMsg}</p>}
           </div>
 
-          {/* Price breakdown (unchanged) */}
+          {/* Payment Structure Selection */}
+          <div className="bg-secondary p-5 rounded-2xl border border-theme space-y-4">
+            <label className="text-[10px] font-black uppercase text-secondary tracking-widest block ml-1">Payment Structure</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer text-primary font-bold text-sm">
+                <input type="radio" name="paymentStructure" value="60/40" checked={paymentStructure === '60/40'} onChange={() => setPaymentStructure('60/40')} className="accent-emerald-500" />
+                <span>Standard (60% Deposit / 40% Balance)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-primary font-bold text-sm">
+                <input type="radio" name="paymentStructure" value="CUSTOM" checked={paymentStructure === 'CUSTOM'} onChange={() => setPaymentStructure('CUSTOM')} className="accent-emerald-500" />
+                <span>Custom Milestones</span>
+              </label>
+            </div>
+
+            {paymentStructure === 'CUSTOM' && (
+              <div className="border-t border-theme pt-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-secondary font-bold">Define Milestones (Percentages must sum to 100%)</span>
+                  <button
+                    type="button"
+                    onClick={() => setMilestones([...milestones, { name: 'Milestone X', percentage: 10, trigger: 'Upon phase completion' }])}
+                    className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-black uppercase tracking-wider"
+                  >
+                    + Add Milestone
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {milestones.map((m, idx) => (
+                    <div key={idx} className="bg-primary/50 border border-theme rounded-xl p-3 grid grid-cols-12 gap-2 items-center">
+                      <input type="text" className="col-span-4 bg-secondary border border-theme rounded-lg p-2 text-xs text-primary font-bold" value={m.name} onChange={e => {
+                        const upd = [...milestones];
+                        upd[idx].name = e.target.value;
+                        setMilestones(upd);
+                      }} placeholder="Name" />
+                      <input type="text" className="col-span-4 bg-secondary border border-theme rounded-lg p-2 text-xs text-primary" value={m.trigger} onChange={e => {
+                        const upd = [...milestones];
+                        upd[idx].trigger = e.target.value;
+                        setMilestones(upd);
+                      }} placeholder="Trigger" />
+                      <div className="col-span-3 flex items-center gap-1">
+                        <input type="number" className="w-full bg-secondary border border-theme rounded-lg p-2 text-xs text-primary font-bold" value={m.percentage} onChange={e => {
+                          const upd = [...milestones];
+                          upd[idx].percentage = parseInt(e.target.value) || 0;
+                          setMilestones(upd);
+                        }} />
+                        <span className="text-xs font-bold text-secondary">%</span>
+                      </div>
+                      <button type="button" onClick={() => setMilestones(milestones.filter((_, i) => i !== idx))} className="col-span-1 text-secondary hover:text-red-400 text-center"><Trash2 className="w-4 h-4 mx-auto" /></button>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-right text-xs font-bold text-secondary">
+                  Total Milestone sum: <span className={milestones.reduce((s, m) => s + m.percentage, 0) === 100 ? 'text-emerald-400' : 'text-red-400'}>{milestones.reduce((s, m) => s + m.percentage, 0)}%</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Price breakdown */}
           {(() => {
+            const finalQuote = getUiTotalPrice();
+            if (paymentStructure === 'CUSTOM') {
+              return (
+                <div className="bg-emerald-500/5 p-6 rounded-[30px] border border-emerald-500/20 overflow-x-auto space-y-4">
+                  <div className="flex justify-between font-black text-lg pb-2 border-b border-theme flex-wrap gap-2 text-primary">
+                    <span>Total Project Cost</span>
+                    <span className="text-emerald-500">₦{finalQuote.toLocaleString()}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {milestones.map((m, idx) => (
+                      <div key={idx} className="flex justify-between text-xs text-secondary font-bold">
+                        <span>{idx + 1}. {m.name || `Milestone ${idx+1}`} ({m.percentage}%)</span>
+                        <span className="text-primary">₦{Math.round(finalQuote * (m.percentage / 100)).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+
             if (isCustom) {
               const deposit = customPrice * 0.6;
               const balance = customPrice * 0.4;
@@ -663,16 +782,16 @@ Note: As the student, you are the primary link between the classroom and the wri
                 </div>
               );
             }
+
             const originalPrice = words * PLAN_RATES[plan as Exclude<Plan, 'CUSTOM'>];
             const volumeDiscountPercent = words >= 10000 ? PLAN_DISCOUNTS[plan as Exclude<Plan, 'CUSTOM'>] : 0;
             const volumeSaved = originalPrice * (volumeDiscountPercent / 100);
             const afterVolume = originalPrice - volumeSaved;
             const promoAmount = afterVolume * (promoDiscount / 100);
-            const finalQuote = getUiTotalPrice();
             const depositAmount = finalQuote * 0.6;
             const balanceAmount = finalQuote * 0.4;
             return (
-              <div className="bg-emerald-500/5 p-6 rounded-[30px] border border-emerald-500/20 overflow-x-auto animate-in fade-in duration-300">
+              <div className="bg-emerald-500/5 p-6 rounded-[30px] border border-emerald-500/20 overflow-x-auto">
                 <div className="space-y-2 text-sm min-w-[280px]">
                   <div className="flex justify-between flex-wrap gap-2 text-primary font-medium"> <span>Base price ({words.toLocaleString()} words × ₦{PLAN_RATES[plan]})</span> <span>₦{originalPrice.toLocaleString()}</span> </div>
                   {volumeDiscountPercent > 0 && ( <div className="flex justify-between text-emerald-500 font-bold flex-wrap gap-2"> <span>Volume discount ({volumeDiscountPercent}%)</span> <span>- ₦{Math.round(volumeSaved).toLocaleString()}</span> </div> )}
@@ -722,7 +841,9 @@ Note: As the student, you are the primary link between the classroom and the wri
           <div className="bg-secondary p-5 rounded-xl border border-theme">
             <label className="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} className="mt-1 w-5 h-5 accent-emerald-500 shrink-0 bg-primary border-theme rounded" />
-              <span className="text-sm text-primary font-bold leading-relaxed break-words">I have read, understand, and agree to the Terms of Service. I authorize processing under the 60%/40% deposit structure.</span>
+              <span className="text-sm text-primary font-bold leading-relaxed break-words">
+                I have read, understand, and agree to the Terms of Service. I authorize processing under the {paymentStructure === 'CUSTOM' ? 'selected milestone' : '60%/40% deposit'} payment structure.
+              </span>
             </label>
           </div>
 

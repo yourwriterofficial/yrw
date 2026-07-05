@@ -39,7 +39,11 @@ const orderDataSchema = z.object({
   corrections_status: z.string().optional(),
   vault_status: z.string().optional(),
   whatsapp_sync: z.string().optional(),
-  last_activity: z.string().optional(),
+  client_company: z.string().optional(),
+  client_address: z.string().optional(),
+  client_phone: z.string().optional(),
+  payment_structure_type: z.enum(['60/40', 'CUSTOM']).optional(),
+  payment_milestones: z.array(z.any()).optional(),
 });
 
 export async function createSecureOrder(
@@ -98,6 +102,9 @@ export async function createSecureOrder(
     vault_status: xss(orderData.vault_status || 'Secured in Vault'),
     corrections_status: xss(orderData.corrections_status || 'None'),
     workflow_status: xss(orderData.workflow_status || 'Briefing Received'),
+    client_company: xss(orderData.client_company || ''),
+    client_address: xss(orderData.client_address || ''),
+    client_phone: xss(orderData.client_phone || ''),
   };
 
   const secureOrderData = {
@@ -120,6 +127,11 @@ export async function createSecureOrder(
     vault_status: sanitized.vault_status,
     corrections_status: sanitized.corrections_status,
     workflow_status: sanitized.workflow_status,
+    client_company: sanitized.client_company,
+    client_address: sanitized.client_address,
+    client_phone: sanitized.client_phone,
+    payment_structure_type: orderData.payment_structure_type || '60/40',
+    payment_milestones: orderData.payment_milestones || [],
   };
 
   if (!secureOrderData.order_id) {

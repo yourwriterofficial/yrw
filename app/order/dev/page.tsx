@@ -1,4 +1,5 @@
 'use client';
+import { BillingDetailsFields, PaymentStructureFields, compileMilestones } from '@/app/components/OrderMilestonesPayment';
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
@@ -28,6 +29,14 @@ function decodeHtml(str: string) {
 }
 
 export default function DevOrderForm() {
+  const [clientCompany, setClientCompany] = useState('');
+  const [clientAddress, setClientAddress] = useState('');
+  const [paymentStructure, setPaymentStructure] = useState<'60/40' | 'CUSTOM'>('60/40');
+  const [milestones, setMilestones] = useState<any[]>([
+    { name: 'Initial Deposit', percentage: 40, trigger: 'Upon signing this agreement' },
+    { name: 'Second Payment', percentage: 30, trigger: 'Completion of Web & Backend' },
+    { name: 'Final Payment', percentage: 30, trigger: 'Final delivery and client sign off' }
+  ]);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -119,6 +128,11 @@ export default function DevOrderForm() {
       topic: `[DEV] ${topic}`,
       service_tier: 'CUSTOM',
       financial_quote: calculateTotal(),
+      client_company: clientCompany || null,
+      client_address: clientAddress || null,
+      client_phone: whatsapp || null,
+      payment_structure_type: paymentStructure,
+      payment_milestones: compileMilestones(paymentStructure, milestones, calculateTotal()),
       deadline,
       workflow_status: 'Briefing Received',
       additional_info: compiledInstructions,

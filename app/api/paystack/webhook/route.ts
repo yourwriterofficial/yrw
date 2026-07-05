@@ -109,6 +109,55 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
+    // --- CUSTOM INVOICE PAYMENT ---
+    if (reference && reference.startsWith('CUSTINV_')) {
+      console.log('Processing custom invoice payment...');
+      const parts = reference.split('_');
+      const invoiceNumber = parts[1];
+      const milestoneType = parts[2]; // INDEX-0, INDEX-1, etc.
+      
+      if (!invoiceNumber || !milestoneType || !milestoneType.startsWith('INDEX-')) {
+        console.error('Invalid custom invoice reference format:', reference);
+        return NextResponse.json({ error: 'Invalid reference format' }, { status: 400 });
+      }
+      
+      const milestoneIndex = parseInt(milestoneType.replace('INDEX-', ''), 10);
+      
+      const { data: invoiceData, error: invoiceErr } = await supabase
+        .from('custom_invoices')
+        .select('*')
+        .eq('invoice_number', invoiceNumber)
+        .single();
+        
+      if (invoiceErr || !invoiceData) {
+        throw new Error(`Custom invoice ${invoiceNumber} not found.`);
+      }
+      
+      const milestones = invoiceData.milestones || [];
+      if (milestones[milestoneIndex]) {
+        milestones[milestoneIndex].paid = true;
+        milestones[milestoneIndex].paid_at = new Date().toISOString();
+        milestones[milestoneIndex].tx_ref = reference;
+      }
+      
+      const allPaid = milestones.every((m: any) => m.paid);
+      const anyPaid = milestones.some((m: any) => m.paid);
+      const newStatus = allPaid ? 'PAID' : (anyPaid ? 'PARTIALLY_PAID' : 'PENDING');
+      
+      await supabase
+        .from('custom_invoices')
+        .update({
+          milestones,
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('invoice_number', invoiceNumber)
+        .throwOnError();
+        
+      console.log(`✅ Custom invoice milestone updated successfully. Invoice Status: ${newStatus}`);
+      return NextResponse.json({ received: true });
+    }
+
     // --- ORDER PAYMENT (existing logic) ---
     console.log('Processing order payment...');
     const tx_ref = reference;
@@ -190,6 +239,54 @@ export async function POST(request: Request) {
         }
       }
       return NextResponse.json({ received: true });
+    } else if (paymentType.startsWith('INDEX-')) {
+      const milestoneIndex = parseInt(paymentType.replace('INDEX-', ''), 10);
+      const { data: orderData, error: fetchError } = await supabase
+        .from('orders')
+        .select('payment_milestones, client_id')
+        .eq('order_id', orderStringId)
+        .single();
+        
+      if (fetchError || !orderData) {
+        throw new Error(`Order ${orderStringId} not found for milestone update.`);
+      }
+      
+      const milestones = orderData.payment_milestones || [];
+      if (milestones[milestoneIndex]) {
+        milestones[milestoneIndex].paid = true;
+        milestones[milestoneIndex].paid_at = new Date().toISOString();
+        milestones[milestoneIndex].tx_ref = tx_ref;
+      }
+      
+      const allPaid = milestones.every((m: any) => m.paid);
+      const firstPaid = milestones[0]?.paid;
+      
+      updates = {
+        payment_milestones: milestones,
+        sixty_percent_paid: firstPaid || false,
+        forty_percent_paid: allPaid || false,
+        workflow_status: allPaid ? 'Completed' : (firstPaid ? 'Synthesis Active' : 'Briefing Received')
+      };
+      
+      const { emailTemplates } = await import('@/lib/emailTemplates');
+      if (allPaid) {
+        template = emailTemplates.balancePaid(orderEmailData);
+        adminTemplate = emailTemplates.adminBalancePaid(orderEmailData);
+      } else if (milestoneIndex === 0) {
+        template = emailTemplates.depositPaid(orderEmailData);
+        adminTemplate = emailTemplates.adminDepositPaid(orderEmailData);
+      }
+      
+      // Log to transactions table
+      if (orderData.client_id && milestones[milestoneIndex]) {
+        await supabase.from('transactions').insert({
+          user_id: orderData.client_id,
+          amount: milestones[milestoneIndex].amount,
+          type: 'payment',
+          reference: tx_ref,
+          status: 'completed',
+        });
+      }
     } else if (paymentType === 'DEPOSIT') {
       updates = { sixty_percent_paid: true, workflow_status: 'Synthesis Active' };
       const { emailTemplates } = await import('@/lib/emailTemplates');

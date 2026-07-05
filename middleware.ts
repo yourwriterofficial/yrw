@@ -47,7 +47,7 @@ export default async function middleware(request: NextRequest) {
 
   // Public routes and API routes are not auth-gated here.
   const publicPaths = ['/', '/login', '/register', '/auth/callback', '/complete-registration']
-  if (publicPaths.includes(path) || path.startsWith('/api/')) {
+  if (publicPaths.includes(path) || path.startsWith('/api/') || path.startsWith('/invoice/')) {
     const response = NextResponse.next({ request })
     response.headers.set('Content-Security-Policy', CSP)
     return response

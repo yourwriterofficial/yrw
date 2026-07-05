@@ -597,18 +597,32 @@ function DashboardContent() {
                     </p>
                     
                     <div className="flex flex-col sm:flex-row gap-2 relative z-10">
-                      {paid40 ? (
-                        <button onClick={() => downloadFile(file.id)} className="flex-1 py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition cursor-pointer">
-                          <lucide.Download className="w-4 h-4" /> Download Package
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={() => order && handlePayment(order['Order ID'], parsePriceStr(order['Financial Quote']) * 0.4, order['Email'], order['Legal Name'], 'BALANCE')} 
-                          className="flex-1 py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition cursor-pointer"
-                        >
-                          <lucide.Unlock className="w-4 h-4" /> Pay Balance to Unlock
-                        </button>
-                      )}
+                      {(() => {
+                        const mList = (order as any)?.payment_milestones || [];
+                        const isCust = (order as any)?.payment_structure_type === 'CUSTOM';
+                        const isFullyPaid = isCust
+                          ? (mList.length > 0 && mList.every((m: any) => m.paid))
+                          : (renderBool(order?.['60% Paid']) && renderBool(order?.['40% Paid']));
+                        
+                        if (isFullyPaid) {
+                          return (
+                            <button onClick={() => downloadFile(file.id)} className="flex-1 py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition cursor-pointer">
+                              <lucide.Download className="w-4 h-4" /> Download Package
+                            </button>
+                          );
+                        } else {
+                          const nextIdx = mList.findIndex((m: any) => !m.paid);
+                          const nextUnpaid = mList[nextIdx];
+                          return (
+                            <button 
+                              onClick={() => order && nextUnpaid && handlePayment(order['Order ID'], nextUnpaid.amount, order['Email'], order['Legal Name'], ('INDEX-' + nextIdx) as any)} 
+                              className="flex-1 py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition cursor-pointer"
+                            >
+                              <lucide.Unlock className="w-4 h-4" /> {nextUnpaid ? `Pay ${nextUnpaid.name} to Unlock` : 'Pay Balance to Unlock'}
+                            </button>
+                          );
+                        }
+                      })()}
                       
                       {!isViewed && paid40 && (
                         <button
@@ -716,17 +730,25 @@ function DashboardContent() {
       {selectedOrderDetails && (() => {
         const details = getPipelineDetails(selectedOrderDetails);
         const total = parsePriceStr(selectedOrderDetails['Financial Quote']);
-        const paid60 = renderBool(selectedOrderDetails['60% Paid']);
-        const paid40 = renderBool(selectedOrderDetails['40% Paid']);
+        const orderMilestones = (selectedOrderDetails as any).payment_milestones || [];
+        const isCustomPayment = (selectedOrderDetails as any).payment_structure_type === 'CUSTOM';
+        
+        const paid60 = isCustomPayment
+          ? (orderMilestones[0]?.paid || false)
+          : renderBool(selectedOrderDetails['60% Paid']);
+        const paid40 = isCustomPayment
+          ? (orderMilestones.length > 0 && orderMilestones.every((m: any) => m.paid))
+          : renderBool(selectedOrderDetails['40% Paid']);
+        
         const workSubmitted = renderBool(selectedOrderDetails['Work Submitted']);
         const addonInfo = parseAdditionalInfo(selectedOrderDetails['Additional Info']);
         
         const steps = [
           { title: details.steps[0].title, desc: details.steps[0].desc, done: true },
           { title: details.steps[1].title, desc: details.steps[1].desc, done: total > 0 && selectedOrderDetails['Workflow Status'] !== 'Briefing Received' },
-          { title: details.steps[2].title, desc: details.steps[2].desc, done: paid60 },
+          { title: details.steps[2].title, desc: isCustomPayment ? 'First milestone deposit cleared.' : details.steps[2].desc, done: paid60 },
           { title: details.steps[3].title, desc: details.steps[3].desc, done: String(selectedOrderDetails['Workflow Status']).includes('Synthesis') || selectedOrderDetails['Workflow Status'] === 'Internal Audit' || workSubmitted },
-          { title: details.steps[4].title, desc: details.steps[4].desc, done: workSubmitted || selectedOrderDetails['Workflow Status'] === 'Completed' },
+          { title: details.steps[4].title, desc: isCustomPayment ? 'All milestones paid & files released.' : details.steps[4].desc, done: paid40 },
           { title: 'Project Finalized', desc: 'Full payment verified & project closed.', done: selectedOrderDetails['Workflow Status'] === 'Completed' }
         ];
 
@@ -819,6 +841,53 @@ function DashboardContent() {
                     )}
                   </div>
                 </div>
+
+                {/* PAYMENT MILESTONES */}
+                {orderMilestones.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-4 border-b border-theme pb-2 flex items-center gap-2">
+                      <lucide.CreditCard className="w-4 h-4 text-purple-400" /> Payment Milestones
+                    </h4>
+                    <div className="space-y-3">
+                      {orderMilestones.map((m: any, idx: number) => (
+                        <div key={idx} className="bg-secondary border border-theme rounded-2xl p-4 flex justify-between items-center text-xs">
+                          <div>
+                            <p className="font-bold text-primary">{m.name} ({m.percentage}%)</p>
+                            <p className="text-[10px] text-secondary mt-1">Trigger: {m.trigger || 'Manual'}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-black text-primary font-mono">{formatNaira(m.amount)}</span>
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                              m.paid ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                            }`}>
+                              {m.paid ? 'Paid ✓' : 'Unpaid'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {!paid40 && (
+                        <div className="pt-2">
+                          {(() => {
+                            const nextUnpaidIdx = orderMilestones.findIndex((m: any) => !m.paid);
+                            const nextUnpaid = orderMilestones[nextUnpaidIdx];
+                            if (nextUnpaid) {
+                              return (
+                                <button
+                                  onClick={() => handlePayment(selectedOrderDetails['Order ID'], nextUnpaid.amount, selectedOrderDetails['Email'], selectedOrderDetails['Legal Name'], ('INDEX-' + nextUnpaidIdx) as any)}
+                                  disabled={processingPayment !== null}
+                                  className="w-full py-3 bg-emerald-500 text-black text-xs font-black uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition cursor-pointer disabled:opacity-50"
+                                >
+                                  {processingPayment === selectedOrderDetails['Order ID'] ? 'Connecting...' : `Pay ${nextUnpaid.name} (${formatNaira(nextUnpaid.amount)})`}
+                                </button>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* 2. EXTRA ADD-ONS & EXTRA REQUIREMENTS */}
                 <div>
@@ -984,10 +1053,17 @@ function TimelineItem({ title, desc, date, done }: any) {
 
 function OrderCard({ order, handlePayment, processingPayment, openDetails }: any) {
   const total = parsePriceStr(order['Financial Quote']);
-  const paid60 = renderBool(order['60% Paid']);
-  const paid40 = renderBool(order['40% Paid']);
-  const workSubmitted = renderBool(order['Work Submitted']);
+  const milestones = order.payment_milestones || [];
+  const isCustomPayment = order.payment_structure_type === 'CUSTOM';
   
+  const paid60 = isCustomPayment
+    ? (milestones[0]?.paid || false)
+    : renderBool(order['60% Paid']);
+  const paid40 = isCustomPayment
+    ? (milestones.length > 0 && milestones.every((m: any) => m.paid))
+    : renderBool(order['40% Paid']);
+    
+  const workSubmitted = renderBool(order['Work Submitted']);
   const awaitingAdminApproval = order['Workflow Status'] === 'Briefing Received' || total <= 0;
 
   const depositAmount = total * 0.6;
@@ -997,13 +1073,17 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
 
   const renderPipelineIcon = (iconName: string) => {
     switch (iconName) {
-      case 'Terminal': return <lucide.Terminal className="w-4 h-4 text-cyan-450" />;
-      case 'PenTool': return <lucide.PenTool className="w-4 h-4 text-amber-450" />;
-      case 'LineChart': return <lucide.LineChart className="w-4 h-4 text-purple-450" />;
-      case 'Briefcase': return <lucide.Briefcase className="w-4 h-4 text-blue-450" />;
-      default: return <lucide.BookOpen className="w-4 h-4 text-emerald-450" />;
+      case 'Terminal': return <lucide.Terminal className="w-4 h-4 text-cyan-455" />;
+      case 'PenTool': return <lucide.PenTool className="w-4 h-4 text-amber-455" />;
+      case 'LineChart': return <lucide.LineChart className="w-4 h-4 text-purple-455" />;
+      case 'Briefcase': return <lucide.Briefcase className="w-4 h-4 text-blue-455" />;
+      default: return <lucide.BookOpen className="w-4 h-4 text-emerald-455" />;
     }
   };
+
+  const paidCount = milestones.filter((m: any) => m.paid).length;
+  const totalCount = milestones.length;
+  const progressPercentage = totalCount > 0 ? (paidCount / totalCount) * 100 : 0;
 
   return (
     <div className="bg-card border border-theme hover:border-emerald-500/50 transition-colors rounded-3xl p-6 md:p-8 relative overflow-hidden group">
@@ -1035,13 +1115,23 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
       {/* Progress Bar */}
       <div className="mb-8">
         <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">
-          <span className={paid60 ? 'text-emerald-500 font-bold' : ''}>1. Deposit</span>
-          <span className={workSubmitted ? 'text-emerald-500 font-bold' : ''}>2. Working Phase</span>
-          <span className={paid40 ? 'text-emerald-500 font-bold' : ''}>3. Delivery</span>
+          {isCustomPayment ? (
+            <>
+              <span className={paid60 ? 'text-emerald-500 font-bold' : ''}>1. Deposit ({milestones[0]?.percentage || 0}%)</span>
+              <span className={workSubmitted ? 'text-emerald-500 font-bold' : ''}>2. Working Phase</span>
+              <span className={paid40 ? 'text-emerald-500 font-bold' : ''}>3. Delivery ({milestones[milestones.length-1]?.percentage || 0}%)</span>
+            </>
+          ) : (
+            <>
+              <span className={paid60 ? 'text-emerald-500 font-bold' : ''}>1. Deposit</span>
+              <span className={workSubmitted ? 'text-emerald-500 font-bold' : ''}>2. Working Phase</span>
+              <span className={paid40 ? 'text-emerald-500 font-bold' : ''}>3. Delivery</span>
+            </>
+          )}
         </div>
         <div className="w-full bg-secondary border border-theme rounded-full h-2 overflow-hidden">
           <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-out relative" 
-            style={{ width: paid40 && workSubmitted ? '100%' : paid60 && workSubmitted ? '75%' : paid60 ? '33%' : '0%' }}>
+            style={{ width: isCustomPayment ? `${progressPercentage}%` : (paid40 && workSubmitted ? '100%' : paid60 && workSubmitted ? '75%' : paid60 ? '33%' : '0%') }}>
             <div className="absolute inset-0 bg-white/20 w-full h-full animate-[shimmer_2s_infinite]"></div>
           </div>
         </div>
@@ -1051,7 +1141,7 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-theme">
         <div className="flex items-center gap-6 text-xs w-full md:w-auto">
           <div><span className="text-secondary block mb-1">Deadline</span> <span className="font-bold text-primary">{formatDate(order['Deadline'])}</span></div>
-          <div><span className="text-secondary block mb-1">Deposit</span> <span className={paid60 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>{paid60 ? 'Cleared' : 'Pending'}</span></div>
+          <div><span className="text-secondary block mb-1">Payment</span> <span className={paid60 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>{paid40 ? 'Fully Cleared' : paid60 ? 'Deposit Paid' : 'Pending'}</span></div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -1075,25 +1165,48 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
             </div>
           ) : (
             <>
-              {!paid60 && (
-                <button
-                  onClick={() => handlePayment(order['Order ID'], depositAmount, order['Email'], order['Legal Name'], 'DEPOSIT')}
-                  disabled={processingPayment}
-                  className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer"
-                >
-                  {processingPayment ? 'Connecting...' : `Pay Deposit (${formatNaira(depositAmount)})`}
-                </button>
+              {isCustomPayment ? (
+                <>
+                  {!paid40 && (() => {
+                    const nextIdx = milestones.findIndex((m: any) => !m.paid);
+                    const nextUnpaid = milestones[nextIdx];
+                    if (nextUnpaid) {
+                      return (
+                        <button
+                          onClick={() => handlePayment(order['Order ID'], nextUnpaid.amount, order['Email'], order['Legal Name'], ('INDEX-' + nextIdx) as any)}
+                          disabled={processingPayment}
+                          className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer"
+                        >
+                          {processingPayment ? 'Connecting...' : `Pay ${nextUnpaid.name} (${formatNaira(nextUnpaid.amount)})`}
+                        </button>
+                      );
+                    }
+                    return null;
+                  })()}
+                </>
+              ) : (
+                <>
+                  {!paid60 && (
+                    <button
+                      onClick={() => handlePayment(order['Order ID'], depositAmount, order['Email'], order['Legal Name'], 'DEPOSIT')}
+                      disabled={processingPayment}
+                      className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer"
+                    >
+                      {processingPayment ? 'Connecting...' : `Pay Deposit (${formatNaira(depositAmount)})`}
+                    </button>
+                  )}
+                  {paid60 && !paid40 && workSubmitted && (
+                    <button
+                      onClick={() => handlePayment(order['Order ID'], balanceAmount, order['Email'], order['Legal Name'], 'BALANCE')}
+                      disabled={processingPayment}
+                      className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <lucide.Unlock className="w-4 h-4" /> {processingPayment ? 'Connecting...' : `Clear Balance & Unlock Vault`}
+                    </button>
+                  )}
+                </>
               )}
-              {paid60 && !paid40 && workSubmitted && (
-                <button
-                  onClick={() => handlePayment(order['Order ID'], balanceAmount, order['Email'], order['Legal Name'], 'BALANCE')}
-                  disabled={processingPayment}
-                  className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
-                >
-                  <lucide.Unlock className="w-4 h-4" /> {processingPayment ? 'Connecting...' : `Clear Balance & Unlock Vault`}
-                </button>
-              )}
-              {paid60 && paid40 && workSubmitted && (
+              {paid60 && paid40 && (
                 <div className="px-5 py-2.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold flex items-center gap-2">
                   <lucide.CheckCircle2 className="w-4 h-4" /> Contract Fulfilled
                 </div>

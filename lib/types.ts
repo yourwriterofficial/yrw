@@ -41,6 +41,19 @@ export interface Order {
   last_activity: string | null;
   created_at: string;
   updated_at: string;
+  client_company: string | null;
+  client_address: string | null;
+  client_phone: string | null;
+  payment_structure_type: '60/40' | 'CUSTOM' | null;
+  payment_milestones: Array<{
+    name: string;
+    percentage: number;
+    amount: number;
+    paid: boolean;
+    delivered: boolean;
+    paid_at?: string | null;
+    tx_ref?: string | null;
+  }> | null;
 }
 
 export interface PromoCode {
@@ -219,5 +232,50 @@ export interface OrderFormState {
   promoCode: string;
   promoDiscount: number;
   promoMsg: string;
-  acceptTerms: boolean;
+  accept_terms: boolean;
+}
+
+// ==================== Custom Invoice Types ====================
+
+export interface CustomInvoiceMilestone {
+  name: string;
+  percentage: number;
+  amount: number;
+  paid: boolean;
+  delivered: boolean;
+  paid_at?: string | null;
+  tx_ref?: string | null;
+  trigger?: string;
+}
+
+export interface CustomInvoice {
+  id: number;
+  invoice_number: string;
+  client_name: string;
+  company_name: string | null;
+  address: string | null;
+  email: string;
+  phone: string | null;
+  project_title: string;
+  project_description: string | null;
+  deliverables: Array<{ category: string; items: string[] }> | null;
+  additional_services: string[] | null;
+  exclusions: string[] | null;
+  timeline: Array<{ weeks: string; phase: string; deliverables: string }> | null;
+  milestones: CustomInvoiceMilestone[] | null;
+  payment_details: {
+    bank_name: string;
+    account_name: string;
+    account_number: string;
+  } | null;
+  terms: string[] | null;
+  developer_signature_name: string | null;
+  developer_signature_date: string | null;
+  client_signature_name: string | null;
+  client_signature_date: string | null;
+  status: 'PENDING' | 'PARTIALLY_PAID' | 'PAID';
+  total_amount: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
 }
