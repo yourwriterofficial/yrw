@@ -145,6 +145,46 @@ function OrdersPageContent() {
   const [newAddonDesc, setNewAddonDesc] = useState('');
   const [newAddonPrice, setNewAddonPrice] = useState('');
   const [sendingInvoiceVia, setSendingInvoiceVia] = useState<'EMAIL' | 'WHATSAPP' | null>(null);
+  // Full order row (payment_milestones etc.) for the currently-open modal
+  const [fullOrder, setFullOrder] = useState<any>(null);
+  const [milestoneBusy, setMilestoneBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!editingOrder) { setFullOrder(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('order_id, client_id, payment_structure_type, payment_milestones, financial_quote')
+        .eq('order_id', editingOrder['Order ID'])
+        .single();
+      if (!cancelled) setFullOrder(data || null);
+    })();
+    return () => { cancelled = true; };
+  }, [editingOrder]);
+
+  const toggleMilestone = async (index: number, field: 'paid' | 'delivered', value: boolean) => {
+    if (!fullOrder) return;
+    setMilestoneBusy(`${index}-${field}`);
+    try {
+      const res = await fetch('/api/admin/update-milestone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: fullOrder.order_id, milestoneIndex: index, field, value }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setFullOrder({ ...fullOrder, payment_milestones: data.milestones });
+        showToast(`Milestone ${field === 'paid' ? (value ? 'marked paid' : 'marked unpaid') : (value ? 'marked delivered' : 'unmarked')}${fullOrder.client_id ? ' — client notified' : ''}`, 'success');
+        await fetchOrders();
+      } else {
+        showToast(data.error || 'Update failed', 'error');
+      }
+    } catch {
+      showToast('Network error updating milestone', 'error');
+    }
+    setMilestoneBusy(null);
+  };
 
   const sendOrderAsInvoice = async (orderId: string, via: 'EMAIL' | 'WHATSAPP') => {
     setSendingInvoiceVia(via);
@@ -767,6 +807,37 @@ function OrdersPageContent() {
                   <div><label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Corrections Phase</label><select className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm focus:border-purple-500 outline-none text-primary" value={editingOrder['Corrections Status'] || 'None'} onChange={e => setEditingOrder({...editingOrder, 'Corrections Status': e.target.value as CorrectionsStatus})}><option>None</option><option>Requested</option><option>In Progress</option><option>Resubmitted</option></select></div>
                 </div>
               </div>
+
+              {/* Custom milestone management (paid / delivered per milestone) */}
+              {fullOrder?.payment_structure_type === 'CUSTOM' && Array.isArray(fullOrder?.payment_milestones) && fullOrder.payment_milestones.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-secondary mb-2 border-b border-theme pb-2">Custom Payment Milestones</h3>
+                  <p className="text-[11px] text-secondary mb-4">Mark each milestone paid or delivered. The client is notified (in-app + email + push). Final files unlock only when <strong>all</strong> milestones are paid.</p>
+                  <div className="space-y-3">
+                    {fullOrder.payment_milestones.map((m: any, idx: number) => (
+                      <div key={idx} className="bg-secondary border border-theme rounded-2xl p-4">
+                        <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-white/5 text-secondary">{idx + 1} · {m.percentage}%</span>
+                            <span className="text-sm font-bold text-primary">{m.name}</span>
+                            {m.paid && <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">Paid</span>}
+                            {m.delivered && <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-blue-500/10 text-blue-400">Delivered</span>}
+                          </div>
+                          <span className="text-sm font-black text-primary">{formatNaira(m.amount)}</span>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          <button type="button" disabled={milestoneBusy === `${idx}-paid`} onClick={() => toggleMilestone(idx, 'paid', !m.paid)} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition disabled:opacity-50 ${m.paid ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/5 text-secondary border border-theme hover:bg-white/10'}`}>
+                            {milestoneBusy === `${idx}-paid` ? '…' : m.paid ? 'Paid ✓ (undo)' : 'Mark Paid'}
+                          </button>
+                          <button type="button" disabled={milestoneBusy === `${idx}-delivered`} onClick={() => toggleMilestone(idx, 'delivered', !m.delivered)} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition disabled:opacity-50 ${m.delivered ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-white/5 text-secondary border border-theme hover:bg-white/10'}`}>
+                            {milestoneBusy === `${idx}-delivered` ? '…' : m.delivered ? 'Delivered ✓ (undo)' : 'Mark Delivered'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-secondary mb-4 border-b border-theme pb-2">Client Brief Details</h3>
                 <div className="space-y-4 text-xs">

@@ -11,6 +11,8 @@ import { DashboardSkeleton } from '@/app/components/ui/Skeleton';
 import { ToastContainer, showToast } from '@/app/components/ui/Toast';
 import StatusBadge from '@/app/components/ui/StatusBadge';
 import NotificationPreferencesPanel from '@/app/components/ui/NotificationPreferencesPanel';
+import MilestoneTimeline from '@/app/components/ui/MilestoneTimeline';
+import { isOrderFullyPaid, isCustomPayment } from '@/lib/orderPayment';
 
 // ==========================================
 // 1. HELPER FUNCTIONS
@@ -585,8 +587,18 @@ function DashboardContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {vaultFiles.map(file => {
                 const order = orders.find(o => o['Order ID'] === file.order_id);
-                const paid40 = order ? renderBool(order['40% Paid']) : false;
+                const milestones = (order as any)?.payment_milestones || [];
+                const custom = isCustomPayment({ payment_structure_type: (order as any)?.payment_structure_type });
+                const opShape = {
+                  payment_structure_type: (order as any)?.payment_structure_type,
+                  payment_milestones: milestones,
+                  sixty_percent_paid: renderBool(order?.['60% Paid']),
+                  forty_percent_paid: renderBool(order?.['40% Paid']),
+                };
+                const fullyPaid = order ? isOrderFullyPaid(opShape) : false;
                 const isViewed = file.downloaded_at !== null;
+                const nextIdx = milestones.findIndex((m: any) => !m.paid);
+                const nextUnpaid = milestones[nextIdx];
                 return (
                   <div key={file.id} className="bg-card border border-theme rounded-2xl p-6 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24 text-secondary" /></div>
@@ -596,36 +608,34 @@ function DashboardContent() {
                       Uploaded: {new Date(file.uploaded_at).toLocaleDateString()}
                       {isViewed && ` • Viewed: ${new Date(file.downloaded_at).toLocaleDateString()}`}
                     </p>
-                    
+
+                    {/* Milestone progress (custom orders) */}
+                    {custom && milestones.length > 0 && !fullyPaid && (
+                      <div className="mb-4 relative z-10">
+                        <MilestoneTimeline
+                          milestones={milestones}
+                          compact
+                          payingIndex={processingPayment === order?.['Order ID'] ? nextIdx : null}
+                          onPay={(idx) => order && handlePayment(order['Order ID'], milestones[idx].amount, order['Email'], order['Legal Name'], ('INDEX-' + idx) as any)}
+                        />
+                      </div>
+                    )}
+
                     <div className="flex flex-col sm:flex-row gap-2 relative z-10">
-                      {(() => {
-                        const mList = (order as any)?.payment_milestones || [];
-                        const isCust = (order as any)?.payment_structure_type === 'CUSTOM';
-                        const isFullyPaid = isCust
-                          ? (mList.length > 0 && mList.every((m: any) => m.paid))
-                          : (renderBool(order?.['60% Paid']) && renderBool(order?.['40% Paid']));
-                        
-                        if (isFullyPaid) {
-                          return (
-                            <button onClick={() => downloadFile(file.id)} className="flex-1 py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition cursor-pointer">
-                              <lucide.Download className="w-4 h-4" /> Download Package
-                            </button>
-                          );
-                        } else {
-                          const nextIdx = mList.findIndex((m: any) => !m.paid);
-                          const nextUnpaid = mList[nextIdx];
-                          return (
-                            <button 
-                              onClick={() => order && nextUnpaid && handlePayment(order['Order ID'], nextUnpaid.amount, order['Email'], order['Legal Name'], ('INDEX-' + nextIdx) as any)} 
-                              className="flex-1 py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition cursor-pointer"
-                            >
-                              <lucide.Unlock className="w-4 h-4" /> {nextUnpaid ? `Pay ${nextUnpaid.name} to Unlock` : 'Pay Balance to Unlock'}
-                            </button>
-                          );
-                        }
-                      })()}
-                      
-                      {!isViewed && paid40 && (
+                      {fullyPaid ? (
+                        <button onClick={() => downloadFile(file.id)} className="flex-1 py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition cursor-pointer">
+                          <lucide.Download className="w-4 h-4" /> Download Package
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => order && nextUnpaid && handlePayment(order['Order ID'], nextUnpaid.amount, order['Email'], order['Legal Name'], ('INDEX-' + nextIdx) as any)}
+                          className="flex-1 py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition cursor-pointer"
+                        >
+                          <lucide.Unlock className="w-4 h-4" /> {nextUnpaid ? `Pay ${nextUnpaid.name} to Unlock` : 'Pay Balance to Unlock'}
+                        </button>
+                      )}
+
+                      {!isViewed && fullyPaid && (
                         <button
                           onClick={() => markViewed(file.id)}
                           className="px-4 py-3 bg-white/5 hover:bg-white/10 text-secondary rounded-xl text-sm flex items-center justify-center gap-2 transition whitespace-nowrap cursor-pointer"
