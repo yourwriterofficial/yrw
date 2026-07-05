@@ -54,6 +54,7 @@ export default function PublicInvoicePage() {
 
   const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState<CustomInvoice | null>(null);
+  const [contactEmail, setContactEmail] = useState('yourwriterofficial@gmail.com');
   const [processingIndex, setProcessingIndex] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -61,6 +62,9 @@ export default function PublicInvoicePage() {
     if (!invoiceNumber) return;
     const fetchInvoice = async () => {
       try {
+        supabase.from('invoice_defaults').select('contact_email').eq('id', 1).maybeSingle()
+          .then(({ data: d }) => { if (d?.contact_email) setContactEmail(d.contact_email); });
+
         const { data, error } = await supabase
           .from('custom_invoices')
           .select('*')
@@ -253,15 +257,15 @@ export default function PublicInvoicePage() {
             <div className="space-y-4 md:border-l md:border-theme md:pl-8">
               <h3 className="text-xs font-black uppercase text-secondary tracking-widest">Contractor / Issuer</h3>
               <div className="space-y-2 text-sm">
-                <p className="font-black text-primary text-base">YourWriter Official</p>
+                <p className="font-black text-primary text-base">YourResearchWriter</p>
                 <p className="text-secondary font-medium flex items-center gap-2">
-                  <lucide.Building className="w-4 h-4 text-secondary shrink-0" /> Dev & Research Division
+                  <lucide.Building className="w-4 h-4 text-secondary shrink-0" /> Tech & Writing Services
                 </p>
                 <p className="text-secondary font-medium flex items-center gap-2">
-                  <lucide.Mail className="w-4 h-4 text-secondary shrink-0" /> support@yourwriter.co
+                  <lucide.Mail className="w-4 h-4 text-secondary shrink-0" /> {contactEmail}
                 </p>
                 <p className="text-secondary font-medium flex items-center gap-2">
-                  <lucide.MapPin className="w-4 h-4 text-secondary shrink-0" /> Lagos, Nigeria
+                  <lucide.MapPin className="w-4 h-4 text-secondary shrink-0" /> Nigeria
                 </p>
               </div>
             </div>

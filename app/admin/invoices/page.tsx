@@ -55,6 +55,31 @@ export default function InvoicesListPage() {
     showToast('Invoice link copied to clipboard!', 'success');
   };
 
+  const [sendingId, setSendingId] = useState<number | null>(null);
+  const sendInvoice = async (invoice: CustomInvoice, via: 'EMAIL' | 'WHATSAPP') => {
+    setSendingId(invoice.id);
+    try {
+      const res = await fetch('/api/admin/send-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceNumber: invoice.invoice_number, via }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error || 'Failed to send invoice', 'error'); return; }
+      if (via === 'WHATSAPP' && data.whatsappUrl) {
+        window.open(data.whatsappUrl, '_blank');
+        showToast('Opening WhatsApp — invoice marked as sent', 'success');
+      } else {
+        showToast('Invoice emailed to client', 'success');
+      }
+      fetchInvoices();
+    } catch {
+      showToast('Network error', 'error');
+    } finally {
+      setSendingId(null);
+    }
+  };
+
   const openMilestoneModal = (invoice: CustomInvoice) => {
     setEditingInvoice(invoice);
     setMilestonesForm(JSON.parse(JSON.stringify(invoice.milestones || [])));
@@ -234,8 +259,29 @@ export default function InvoicesListPage() {
                   </td>
                   <td className="px-6 py-4 text-xs text-secondary">
                     {new Date(invoice.created_at).toLocaleDateString()}
+                    {(invoice as any).sent_via && (
+                      <span className="block text-[10px] text-emerald-400 font-bold mt-0.5">
+                        Sent via {(invoice as any).sent_via === 'EMAIL' ? 'Email' : 'WhatsApp'}
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-right whitespace-nowrap space-x-2">
+                    <button
+                      onClick={() => sendInvoice(invoice, 'EMAIL')}
+                      disabled={sendingId === invoice.id}
+                      className="p-2.5 bg-white/5 hover:bg-emerald-500/10 text-secondary hover:text-emerald-400 rounded-xl border border-theme transition disabled:opacity-50"
+                      title="Send by Email"
+                    >
+                      <lucide.Mail className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => sendInvoice(invoice, 'WHATSAPP')}
+                      disabled={sendingId === invoice.id}
+                      className="p-2.5 bg-white/5 hover:bg-[#25D366]/10 text-secondary hover:text-[#25D366] rounded-xl border border-theme transition disabled:opacity-50"
+                      title="Send by WhatsApp"
+                    >
+                      <lucide.MessageCircle className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={() => handleCopyLink(invoice.invoice_number)}
                       className="p-2.5 bg-white/5 hover:bg-purple-500/10 text-secondary hover:text-purple-400 rounded-xl border border-theme transition"

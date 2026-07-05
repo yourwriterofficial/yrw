@@ -94,6 +94,20 @@ export default function NewInvoicePage() {
         .order('created_at', { ascending: false });
       if (data) setOrders(data);
       setInvoiceNumber(Math.floor(100 + Math.random() * 900).toString()); // random 3 digit number
+
+      // Prefill bank / terms / signature from admin-configured invoice defaults
+      const { data: defaults } = await supabase.from('invoice_defaults').select('*').eq('id', 1).maybeSingle();
+      if (defaults) {
+        if (defaults.bank_name) setBankName(defaults.bank_name);
+        if (defaults.account_name) setAccountName(defaults.account_name);
+        if (defaults.account_number) setAccountNumber(defaults.account_number);
+        if (defaults.developer_signature_name) setDevSignatureName(defaults.developer_signature_name);
+        if (Array.isArray(defaults.default_terms) && defaults.default_terms.length) setTerms(defaults.default_terms);
+        if (Array.isArray(defaults.default_deliverables) && defaults.default_deliverables.length) setDeliverables(defaults.default_deliverables);
+        if (Array.isArray(defaults.default_additional_services) && defaults.default_additional_services.length) setAdditionalServices(defaults.default_additional_services);
+        if (Array.isArray(defaults.default_exclusions) && defaults.default_exclusions.length) setExclusions(defaults.default_exclusions);
+        if (Array.isArray(defaults.default_timeline) && defaults.default_timeline.length) setTimeline(defaults.default_timeline);
+      }
       setLoading(false);
     };
     fetchOrders();

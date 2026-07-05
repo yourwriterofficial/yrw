@@ -68,12 +68,13 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true);
   const [groupedAddons, setGroupedAddons] = useState<GroupedAddon[]>([]);
   const [siteContent, setSiteContent] = useState<SiteContent[]>([]);
-  const [activeTab, setActiveTab] = useState<'ADDONS' | 'CONTENT'>('ADDONS');
+  const [activeTab, setActiveTab] = useState<'ADDONS' | 'CONTENT' | 'INVOICE'>('ADDONS');
   const [editingAddon, setEditingAddon] = useState<Partial<GroupedAddon> | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
   const [previewHtml, setPreviewHtml] = useState<Record<string, string>>({});
+  const [invoiceDefaults, setInvoiceDefaults] = useState<any>(null);
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -125,7 +126,28 @@ function SettingsContent() {
       });
       setPreviewHtml(previewMap);
     }
+
+    const { data: invDefaults } = await supabase.from('invoice_defaults').select('*').eq('id', 1).maybeSingle();
+    if (invDefaults) setInvoiceDefaults(invDefaults);
+
     setLoading(false);
+  };
+
+  const saveInvoiceDefaults = async () => {
+    if (!invoiceDefaults) return;
+    setSaving(true);
+    const { error } = await supabase.from('invoice_defaults').update({
+      contact_email: invoiceDefaults.contact_email,
+      bank_name: invoiceDefaults.bank_name,
+      account_name: invoiceDefaults.account_name,
+      account_number: invoiceDefaults.account_number,
+      developer_signature_name: invoiceDefaults.developer_signature_name,
+      default_terms: invoiceDefaults.default_terms,
+      updated_at: new Date().toISOString(),
+    }).eq('id', 1);
+    setSaving(false);
+    if (error) showToast(`Failed to save: ${error.message}`, 'error');
+    else showToast('Invoice defaults saved', 'success');
   };
 
   useEffect(() => {
@@ -226,6 +248,9 @@ function SettingsContent() {
               <button onClick={() => setActiveTab('CONTENT')} className={`px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'CONTENT' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
                 Site Content (HTML)
               </button>
+              <button onClick={() => setActiveTab('INVOICE')} className={`px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'INVOICE' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+                Invoice Defaults
+              </button>
             </div>
           </div>
 
@@ -315,6 +340,53 @@ function SettingsContent() {
                     </button>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* INVOICE DEFAULTS TAB */}
+          {activeTab === 'INVOICE' && invoiceDefaults && (
+            <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl">
+              <h2 className="text-lg font-black uppercase tracking-wider text-purple-400 flex items-center gap-2 mb-2">
+                <lucide.FileText className="w-5 h-5" /> Invoice Prefill Defaults
+              </h2>
+              <p className="text-secondary text-sm">These values prefill the invoice builder and every auto-generated invoice. Update them once here instead of per invoice.</p>
+
+              <div className="bg-card border border-theme rounded-2xl p-6 space-y-5">
+                <div>
+                  <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Contact Email (shown on invoices)</label>
+                  <input type="email" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none" value={invoiceDefaults.contact_email || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, contact_email: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Bank Name</label>
+                    <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none" value={invoiceDefaults.bank_name || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, bank_name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Account Name</label>
+                    <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none" value={invoiceDefaults.account_name || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, account_name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Account Number</label>
+                    <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none" value={invoiceDefaults.account_number || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, account_number: e.target.value })} />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Developer / Signature Name</label>
+                  <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none" value={invoiceDefaults.developer_signature_name || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, developer_signature_name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Default Terms & Conditions (one per line)</label>
+                  <textarea
+                    className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none resize-y font-mono"
+                    rows={6}
+                    value={(invoiceDefaults.default_terms || []).join('\n')}
+                    onChange={e => setInvoiceDefaults({ ...invoiceDefaults, default_terms: e.target.value.split('\n').filter((l: string) => l.trim()) })}
+                  />
+                </div>
+                <button onClick={saveInvoiceDefaults} disabled={saving} className="bg-purple-500 hover:bg-purple-400 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2 disabled:opacity-50">
+                  <lucide.Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Invoice Defaults'}
+                </button>
               </div>
             </div>
           )}

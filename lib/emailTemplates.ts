@@ -343,4 +343,112 @@ export const emailTemplates = {
       <a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin" class="button">Go to Admin Dashboard</a>
     `),
   }),
+
+  // Client: wallet top-up confirmation
+  clientWalletTopup: (data: { full_name: string; amount: number; balance?: number; reference: string }) => ({
+    subject: `💰 Wallet Funded – ₦${data.amount.toLocaleString('en-NG')}`,
+    html: baseLayout(`
+      <h1>Wallet Top-Up Successful</h1>
+      <p>Dear ${data.full_name},</p>
+      <p>Your wallet has been credited successfully. You can now use it to pay deposits and milestone balances instantly.</p>
+      <div class="order-card">
+        <div class="label">Amount Added</div>
+        <div class="price">${formatNaira(data.amount)}</div>
+        ${typeof data.balance === 'number' ? `<div class="divider"></div><div class="label">New Balance</div><div class="amount">${formatNaira(data.balance)}</div>` : ''}
+        <div style="margin-top: 12px; font-size: 11px; color: #777;">Ref: ${data.reference}</div>
+      </div>
+      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?tab=wallet" class="button">View Wallet</a>
+    `),
+  }),
+
+  // Client: a specific milestone was paid (custom milestone orders)
+  milestonePaid: (order: OrderEmailData, milestone: { name: string; amount: number; percentage: number }, allPaid: boolean) => ({
+    subject: `💳 Payment Confirmed: ${milestone.name} – ${order.order_id}`,
+    html: baseLayout(`
+      <h1>Payment Received!</h1>
+      <p>Dear ${order.legal_name},</p>
+      <p>We've confirmed your payment for the <strong>${milestone.name}</strong> milestone on order <strong>${order.order_id}</strong>.</p>
+      <div class="order-card">
+        <div class="label">${milestone.name} (${milestone.percentage}%)</div>
+        <div class="price">${formatNaira(milestone.amount)}</div>
+        <div class="divider"></div>
+        <div class="status-badge">${allPaid ? 'Fully Paid — files unlocked' : 'Milestone cleared'}</div>
+      </div>
+      <p>${allPaid ? 'All milestones are now paid — your final files are available for download.' : 'The next milestone will unlock when its trigger is reached.'}</p>
+      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?preview=${order.order_id}" class="button">View Order</a>
+    `),
+  }),
+
+  // Client: a milestone's work was marked delivered by the team (progress signal only)
+  milestoneDelivered: (order: OrderEmailData, milestone: { name: string; percentage: number }) => ({
+    subject: `📦 Milestone Delivered: ${milestone.name} – ${order.order_id}`,
+    html: baseLayout(`
+      <h1>Milestone Completed</h1>
+      <p>Dear ${order.legal_name},</p>
+      <p>Our team has completed the <strong>${milestone.name}</strong> milestone for your project <strong>${order.topic}</strong>.</p>
+      <div class="order-card">
+        <div class="label">${milestone.name} (${milestone.percentage}%)</div>
+        <div class="status-badge">Work Delivered</div>
+        <p style="margin-top: 16px; font-size: 12px;">Final files are released once <strong>all</strong> milestones are fully paid.</p>
+      </div>
+      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?preview=${order.order_id}" class="button">View Progress</a>
+    `),
+  }),
+
+  // Client: new file added to the secure vault
+  vaultFileAdded: (order: OrderEmailData, fileName?: string) => ({
+    subject: `🔐 New File in Your Vault – ${order.order_id}`,
+    html: baseLayout(`
+      <h1>A New File Awaits You</h1>
+      <p>Dear ${order.legal_name},</p>
+      <p>We've added a new deliverable to your secure vault for order <strong>${order.order_id}</strong>.</p>
+      <div class="order-card">
+        ${fileName ? `<div class="label">File</div><div style="margin: 6px 0 14px; word-break: break-all;">${fileName}</div>` : ''}
+        <div class="status-badge">Secured in Vault</div>
+        <p style="margin-top: 16px; font-size: 12px;">Files unlock for download once your balance is fully cleared.</p>
+      </div>
+      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?tab=vault" class="button">Open Vault</a>
+    `),
+  }),
+
+  // Client: an invoice was issued / sent
+  invoiceIssued: (data: { legal_name: string; invoice_number: string; total_amount: number; invoice_url: string; project_title?: string }) => ({
+    subject: `🧾 Invoice ${data.invoice_number} from YourResearchWriter`,
+    html: baseLayout(`
+      <h1>Your Invoice is Ready</h1>
+      <p>Dear ${data.legal_name},</p>
+      <p>Please find your invoice for ${data.project_title ? `<strong>${data.project_title}</strong>` : 'your project'} below. You can view the full breakdown and pay each milestone securely online.</p>
+      <div class="order-card">
+        <div class="label">Invoice</div>
+        <div class="order-id">#${data.invoice_number}</div>
+        <div class="divider"></div>
+        <div class="label">Total</div>
+        <div class="price">${formatNaira(data.total_amount)}</div>
+      </div>
+      <a href="${data.invoice_url}" class="button">View & Pay Invoice</a>
+    `),
+  }),
+
+  // Generic branded message (admin direct messages, flexible one-offs)
+  genericMessage: (data: { name?: string; title: string; body: string; ctaText?: string; ctaUrl?: string }) => ({
+    subject: data.title,
+    html: baseLayout(`
+      <h1>${data.title}</h1>
+      ${data.name ? `<p>Dear ${data.name},</p>` : ''}
+      <div style="margin: 12px 0;">${data.body}</div>
+      ${data.ctaText && data.ctaUrl ? `<a href="${data.ctaUrl}" class="button">${data.ctaText}</a>` : ''}
+    `),
+  }),
 };
+
+/**
+ * Reusable branded email shell — wraps arbitrary body HTML in the same
+ * header/footer/styling every template uses. Handy for ad-hoc emails that
+ * don't warrant a dedicated template.
+ */
+export function emailShell(bodyHtml: string, ctaText?: string, ctaUrl?: string): string {
+  return baseLayout(`
+    ${bodyHtml}
+    ${ctaText && ctaUrl ? `<a href="${ctaUrl}" class="button">${ctaText}</a>` : ''}
+  `);
+}

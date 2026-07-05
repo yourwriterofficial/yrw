@@ -278,4 +278,8 @@ export interface CustomInvoice {
   currency: string;
   created_at: string;
   updated_at: string;
+  sent_via: 'EMAIL' | 'WHATSAPP' | null;
+  sent_at: string | null;
+  order_id: string | null;
+  auto_generated: boolean;
 }

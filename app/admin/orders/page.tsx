@@ -144,6 +144,30 @@ function OrdersPageContent() {
   const [savingAddonQuote, setSavingAddonQuote] = useState<string | null>(null);
   const [newAddonDesc, setNewAddonDesc] = useState('');
   const [newAddonPrice, setNewAddonPrice] = useState('');
+  const [sendingInvoiceVia, setSendingInvoiceVia] = useState<'EMAIL' | 'WHATSAPP' | null>(null);
+
+  const sendOrderAsInvoice = async (orderId: string, via: 'EMAIL' | 'WHATSAPP') => {
+    setSendingInvoiceVia(via);
+    try {
+      const res = await fetch('/api/admin/send-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, via }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error || 'Failed to send invoice', 'error'); return; }
+      if (via === 'WHATSAPP' && data.whatsappUrl) {
+        window.open(data.whatsappUrl, '_blank');
+        showToast('Opening WhatsApp — invoice marked as sent', 'success');
+      } else {
+        showToast('Invoice emailed to client', 'success');
+      }
+    } catch {
+      showToast('Network error sending invoice', 'error');
+    } finally {
+      setSendingInvoiceVia(null);
+    }
+  };
   const [creatingAddonCharge, setCreatingAddonCharge] = useState(false);
 
   const fetchOrders = useCallback(async () => {
@@ -876,6 +900,15 @@ function OrdersPageContent() {
                       {creatingAddonCharge ? 'Creating...' : 'Add & Tag Price'}
                     </button>
                   </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-widest text-secondary mb-4 border-b border-theme pb-2">Send as Invoice</h3>
+                <p className="text-[11px] text-secondary mb-3">Generates (or refreshes) this order's invoice and delivers it to the client. Every send is recorded.</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button type="button" disabled={sendingInvoiceVia !== null} onClick={() => sendOrderAsInvoice(editingOrder['Order ID'], 'EMAIL')} className="flex-1 py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 disabled:opacity-50"><lucide.Mail className="w-4 h-4" /> {sendingInvoiceVia === 'EMAIL' ? 'Sending…' : 'Send Invoice by Email'}</button>
+                  <button type="button" disabled={sendingInvoiceVia !== null} onClick={() => sendOrderAsInvoice(editingOrder['Order ID'], 'WHATSAPP')} className="flex-1 py-3 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/20 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 disabled:opacity-50"><lucide.MessageCircle className="w-4 h-4" /> {sendingInvoiceVia === 'WHATSAPP' ? 'Opening…' : 'Send Invoice by WhatsApp'}</button>
                 </div>
               </div>
 

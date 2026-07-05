@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin, listAllAuthUsers } from '@/lib/adminAuth'
 import { notifyUsers } from '@/lib/notify'
+import { emailShell } from '@/lib/emailTemplates'
 
 export async function POST(req: Request) {
   const guard = await requireAdmin()
@@ -25,12 +26,13 @@ export async function POST(req: Request) {
     }
 
     // Sends email + in-app + push (per-user preference) through the unified pipeline.
+    // Wrap the admin's body in the branded shell for a consistent look.
     await notifyUsers(recipientIds, {
       title: subject,
       message: 'You have a new message from YourResearchWriter — tap to view.',
       type: 'admin_message',
       isAdminSent: true,
-      emailHtml: html,
+      emailHtml: emailShell(html),
       emailSubject: subject,
     })
 
