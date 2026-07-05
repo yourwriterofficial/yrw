@@ -159,6 +159,7 @@ function DashboardContent() {
   
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
   const [orders, setOrders] = useState<AdminOrderView[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'vault' | 'wallet' | 'profile'>('dashboard');
@@ -179,26 +180,45 @@ function DashboardContent() {
     }
   }, [searchParams]);
 
+  // The admin_orders_view doesn't expose payment_milestones / payment_structure_type.
+  // Fetch them from the RLS-scoped orders table and merge into each view row so the
+  // client can see custom milestone progress.
+  const mergeMilestoneData = useCallback(async (rows: AdminOrderView[]): Promise<AdminOrderView[]> => {
+    if (!rows.length) return rows;
+    const ids = rows.map(r => r['Order ID']);
+    const { data: extra } = await supabase
+      .from('orders')
+      .select('order_id, payment_structure_type, payment_milestones')
+      .in('order_id', ids);
+    const byId: Record<string, any> = {};
+    (extra || []).forEach(o => { byId[o.order_id] = o; });
+    return rows.map(r => ({
+      ...r,
+      payment_structure_type: byId[r['Order ID']]?.payment_structure_type,
+      payment_milestones: byId[r['Order ID']]?.payment_milestones,
+    })) as AdminOrderView[];
+  }, []);
+
   const refreshOrders = useCallback(async (userId?: string, adminMode?: boolean, previewId?: string | null) => {
     try {
       if (adminMode && previewId) {
         const { data, error } = await supabase.from('admin_orders_view').select('*').eq('Order ID', previewId);
         if (error) throw error;
-        if (data) setOrders(data as AdminOrderView[]);
+        if (data) setOrders(await mergeMilestoneData(data as AdminOrderView[]));
       } else if (adminMode) {
         const { data, error } = await supabase.from('admin_orders_view').select('*').limit(10).order('Timestamp', { ascending: false });
         if (error) throw error;
-        if (data) setOrders(data as AdminOrderView[]);
+        if (data) setOrders(await mergeMilestoneData(data as AdminOrderView[]));
       } else if (userId) {
         const { data, error } = await supabase.from('admin_orders_view').select('*').eq('Email', userId).order('Timestamp', { ascending: false });
         if (error) throw error;
-        if (data) setOrders(data as AdminOrderView[]);
+        if (data) setOrders(await mergeMilestoneData(data as AdminOrderView[]));
       }
     } catch (err) {
       console.error(err);
       showToast('Failed to refresh orders', 'error');
     }
-  }, []);
+  }, [mergeMilestoneData]);
 
   // Fetch vault files for the user (improved error handling)
   const fetchVaultFiles = useCallback(async (authUser?: { id: string; email?: string | null }) => {
@@ -264,11 +284,13 @@ function DashboardContent() {
       // Profile is needed to decide admin vs. client orders; the vault fetch is
       // independent, so run both in parallel (and reuse `user` to avoid a second
       // getUser() round-trip inside fetchVaultFiles).
-      const [{ data: userProfile }] = await Promise.all([
+      const [{ data: userProfile }, { data: walletRow }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
+        supabase.from('wallets').select('balance').eq('user_id', user.id).maybeSingle(),
         fetchVaultFiles(user),
       ]);
       setProfile(userProfile);
+      setWalletBalance(Number(walletRow?.balance) || 0);
 
       const previewOrderId = searchParams.get('preview');
       const isAdmin = userProfile?.is_admin === true;
@@ -308,7 +330,49 @@ function DashboardContent() {
     }
   }, [searchParams, orders]);
 
-  const handlePayment = async (orderId: string, amount: number, email: string, name: string, type: 'DEPOSIT' | 'BALANCE') => {
+  const handlePayment = async (orderId: string, amount: number, email: string, name: string, type: 'DEPOSIT' | 'BALANCE' | string) => {
+    // Resolve a milestone index from the payment type (custom milestones use INDEX-n;
+    // standard 60/40 orders map DEPOSIT->0, BALANCE->1 now that every order carries a
+    // payment_milestones array).
+    let milestoneIndex: number | null = null;
+    if (typeof type === 'string' && type.startsWith('INDEX-')) milestoneIndex = parseInt(type.slice(6), 10);
+    else if (type === 'DEPOSIT') milestoneIndex = 0;
+    else if (type === 'BALANCE') milestoneIndex = 1;
+
+    const order = orders.find(o => o['Order ID'] === orderId);
+    const hasMilestones = Array.isArray((order as any)?.payment_milestones) && (order as any).payment_milestones.length > (milestoneIndex ?? 0);
+
+    // Offer wallet if the balance covers it and we can map to a milestone.
+    if (milestoneIndex !== null && hasMilestones && walletBalance >= amount) {
+      const useWallet = window.confirm(
+        `Pay ${formatNaira(amount)} from your wallet balance (${formatNaira(walletBalance)})?\n\nOK = Pay from Wallet   ·   Cancel = Pay with Card`
+      );
+      if (useWallet) {
+        setProcessingPayment(orderId);
+        try {
+          const res = await fetch('/api/client/pay-milestone-wallet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, milestoneIndex }),
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            setWalletBalance(b => b - amount);
+            showToast('Paid from wallet successfully!', 'success');
+            await refreshOrders(isAdminPreview ? undefined : user?.email, isAdminPreview, searchParams.get('preview'));
+            await fetchVaultFiles(user);
+          } else {
+            showToast(data.error || 'Wallet payment failed', 'error');
+          }
+        } catch {
+          showToast('Network error during wallet payment.', 'error');
+        }
+        setProcessingPayment(null);
+        return;
+      }
+    }
+
+    // Card (Paystack) path
     setProcessingPayment(orderId);
     try {
       const res = await fetch('/api/paystack/create-invoice', {

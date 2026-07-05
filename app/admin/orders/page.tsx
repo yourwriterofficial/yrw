@@ -149,6 +149,55 @@ function OrdersPageContent() {
   const [fullOrder, setFullOrder] = useState<any>(null);
   const [milestoneBusy, setMilestoneBusy] = useState<string | null>(null);
 
+  // Create-order-for-client modal
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
+  const [creatingOrder, setCreatingOrder] = useState(false);
+  const [newOrder, setNewOrder] = useState({
+    name: '', email: '', whatsapp: '', company: '', address: '',
+    topic: '', serviceTier: 'CUSTOM', quote: '', deadline: '', wordCount: '',
+    paymentStructure: '60/40', additionalInfo: '',
+  });
+  const [newOrderMilestones, setNewOrderMilestones] = useState<Array<{ name: string; percentage: number; trigger: string }>>([
+    { name: 'Initial Deposit', percentage: 40, trigger: 'Upon signing this agreement' },
+    { name: 'Second Payment', percentage: 30, trigger: 'Completion of core project phase' },
+    { name: 'Final Payment', percentage: 30, trigger: 'Final delivery and client sign off' },
+  ]);
+
+  const submitCreateOrder = async () => {
+    if (!newOrder.name || !newOrder.email || !newOrder.topic || !newOrder.deadline || !newOrder.quote) {
+      return showToast('Fill in name, email, topic, deadline and quote.', 'error');
+    }
+    if (newOrder.paymentStructure === 'CUSTOM') {
+      const sum = newOrderMilestones.reduce((s, m) => s + Number(m.percentage || 0), 0);
+      if (sum !== 100) return showToast(`Milestone percentages must sum to 100% (currently ${sum}%).`, 'error');
+    }
+    setCreatingOrder(true);
+    try {
+      const res = await fetch('/api/admin/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newOrder,
+          quote: Number(newOrder.quote),
+          wordCount: newOrder.wordCount ? Number(newOrder.wordCount) : undefined,
+          milestones: newOrder.paymentStructure === 'CUSTOM' ? newOrderMilestones : [],
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(`Order ${data.orderId} created${data.isNewUser ? ' — client invited by email' : ' & client notified'}.`, 'success');
+        setShowCreateOrder(false);
+        setNewOrder({ name: '', email: '', whatsapp: '', company: '', address: '', topic: '', serviceTier: 'CUSTOM', quote: '', deadline: '', wordCount: '', paymentStructure: '60/40', additionalInfo: '' });
+        await fetchOrders();
+      } else {
+        showToast(data.error || 'Failed to create order', 'error');
+      }
+    } catch {
+      showToast('Network error creating order', 'error');
+    }
+    setCreatingOrder(false);
+  };
+
   useEffect(() => {
     if (!editingOrder) { setFullOrder(null); return; }
     let cancelled = false;
@@ -632,9 +681,14 @@ function OrdersPageContent() {
           breadcrumb="Admin / Orders"
           icon={<lucide.Database className="w-8 h-8 text-purple-500" />}
           actions={
-            <button type="button" onClick={fetchOrders} className="btn-secondary flex items-center gap-2">
-              <lucide.RefreshCw className="w-3 h-3" /> Sync Data
-            </button>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setShowCreateOrder(true)} className="bg-purple-500 hover:bg-purple-400 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2">
+                <lucide.Plus className="w-4 h-4" /> New Order
+              </button>
+              <button type="button" onClick={fetchOrders} className="btn-secondary flex items-center gap-2">
+                <lucide.RefreshCw className="w-3 h-3" /> Sync Data
+              </button>
+            </div>
           }
         />
 
@@ -1026,6 +1080,69 @@ function OrdersPageContent() {
               <button onClick={handleDeliveryUpload} disabled={uploadingDelivery || !deliveryFile} className="w-full py-4 bg-blue-500 text-white font-black uppercase text-xs tracking-widest rounded-xl hover:bg-blue-400 transition disabled:opacity-50 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                 {uploadingDelivery ? 'Encrypting & Storing...' : 'Lock in Vault & Notify Client'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create order for client */}
+      {showCreateOrder && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-primary border border-theme rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl my-8">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl font-black text-primary flex items-center gap-2"><lucide.PlusCircle className="text-purple-500" /> New Order for Client</h2>
+                <p className="text-xs text-secondary mt-1">Create an order on behalf of a client. New clients are auto-invited by email; the order appears in their dashboard.</p>
+              </div>
+              <button onClick={() => setShowCreateOrder(false)}><lucide.X className="w-5 h-5 text-secondary hover:text-primary transition" /></button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Client Name *</label><input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={newOrder.name} onChange={e => setNewOrder({ ...newOrder, name: e.target.value })} placeholder="Jane Doe" /></div>
+                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Client Email *</label><input type="email" className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={newOrder.email} onChange={e => setNewOrder({ ...newOrder, email: e.target.value })} placeholder="client@example.com" /></div>
+                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">WhatsApp</label><input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={newOrder.whatsapp} onChange={e => setNewOrder({ ...newOrder, whatsapp: e.target.value })} placeholder="+234..." /></div>
+                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Company (optional)</label><input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={newOrder.company} onChange={e => setNewOrder({ ...newOrder, company: e.target.value })} /></div>
+              </div>
+              <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Project Title / Topic *</label><input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={newOrder.topic} onChange={e => setNewOrder({ ...newOrder, topic: e.target.value })} placeholder="e.g. Website Redesign & Launch" /></div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Service Tier</label><select className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={newOrder.serviceTier} onChange={e => setNewOrder({ ...newOrder, serviceTier: e.target.value })}><option value="CUSTOM">Custom</option><option value="GOLD">Gold</option><option value="SILVER">Silver</option><option value="BRONZE">Bronze</option><option value="STANDARD">Standard</option></select></div>
+                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Total Quote (₦) *</label><input type="number" className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-mono" value={newOrder.quote} onChange={e => setNewOrder({ ...newOrder, quote: e.target.value })} /></div>
+                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Deadline *</label><input type="date" min={new Date(Date.now() + 14 * 864e5).toISOString().split('T')[0]} className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary dark:[color-scheme:dark]" value={newOrder.deadline} onChange={e => setNewOrder({ ...newOrder, deadline: e.target.value })} /></div>
+              </div>
+
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-2">Payment Structure</label>
+                <div className="flex gap-4 mb-3">
+                  <label className="flex items-center gap-2 text-sm text-primary font-bold cursor-pointer"><input type="radio" checked={newOrder.paymentStructure === '60/40'} onChange={() => setNewOrder({ ...newOrder, paymentStructure: '60/40' })} className="accent-purple-500" /> Standard 60/40</label>
+                  <label className="flex items-center gap-2 text-sm text-primary font-bold cursor-pointer"><input type="radio" checked={newOrder.paymentStructure === 'CUSTOM'} onChange={() => setNewOrder({ ...newOrder, paymentStructure: 'CUSTOM' })} className="accent-purple-500" /> Custom Milestones</label>
+                </div>
+                {newOrder.paymentStructure === 'CUSTOM' && (
+                  <div className="space-y-2 bg-secondary/50 border border-theme rounded-xl p-3">
+                    {newOrderMilestones.map((m, idx) => (
+                      <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                        <input className="col-span-4 bg-primary border border-theme rounded-lg p-2 text-xs text-primary" value={m.name} onChange={e => { const u = [...newOrderMilestones]; u[idx].name = e.target.value; setNewOrderMilestones(u); }} placeholder="Name" />
+                        <input className="col-span-5 bg-primary border border-theme rounded-lg p-2 text-xs text-primary" value={m.trigger} onChange={e => { const u = [...newOrderMilestones]; u[idx].trigger = e.target.value; setNewOrderMilestones(u); }} placeholder="Trigger" />
+                        <div className="col-span-2 flex items-center gap-1"><input type="number" className="w-full bg-primary border border-theme rounded-lg p-2 text-xs text-primary" value={m.percentage} onChange={e => { const u = [...newOrderMilestones]; u[idx].percentage = parseInt(e.target.value) || 0; setNewOrderMilestones(u); }} /><span className="text-xs text-secondary">%</span></div>
+                        <button type="button" onClick={() => setNewOrderMilestones(newOrderMilestones.filter((_, i) => i !== idx))} className="col-span-1 text-secondary hover:text-red-400"><lucide.Trash2 className="w-4 h-4 mx-auto" /></button>
+                      </div>
+                    ))}
+                    <div className="flex justify-between items-center">
+                      <button type="button" onClick={() => setNewOrderMilestones([...newOrderMilestones, { name: 'Milestone', percentage: 10, trigger: 'On phase completion' }])} className="text-[10px] text-purple-400 font-black uppercase flex items-center gap-1"><lucide.Plus className="w-3 h-3" /> Add Milestone</button>
+                      <span className={`text-xs font-black ${newOrderMilestones.reduce((s, m) => s + Number(m.percentage), 0) === 100 ? 'text-emerald-400' : 'text-red-400'}`}>Sum: {newOrderMilestones.reduce((s, m) => s + Number(m.percentage), 0)}%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Notes / Brief (optional)</label><textarea className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary resize-y" rows={3} value={newOrder.additionalInfo} onChange={e => setNewOrder({ ...newOrder, additionalInfo: e.target.value })} /></div>
+
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setShowCreateOrder(false)} className="flex-1 py-3 bg-secondary border border-theme text-primary rounded-xl font-bold text-sm">Cancel</button>
+                <button onClick={submitCreateOrder} disabled={creatingOrder} className="flex-1 py-3 bg-purple-500 hover:bg-purple-400 text-white rounded-xl font-black text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+                  {creatingOrder ? 'Creating…' : <><lucide.Check className="w-4 h-4" /> Create Order</>}
+                </button>
+              </div>
             </div>
           </div>
         </div>
