@@ -4,6 +4,7 @@ import "./globals.css";
 import PWAUpdater from "./components/PWAUpdater";
 import { ThemeProvider } from "./components/ThemeProvider";
 import OrderAssistant from "./components/OrderAssistant";
+import { siteUrl } from "@/lib/siteUrl";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,10 +15,36 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
+const SITE = siteUrl();
+
 export const metadata: Metadata = {
-  title: "YourResearchWriter | Academic Research",
-  description: "Human-only research writing for MSc and PhD scholars",
+  metadataBase: new URL(SITE),
+  title: {
+    default: "YourResearchWriter | Research, Writing, Software & Creative Services",
+    template: "%s | YourResearchWriter",
+  },
+  description:
+    "Expert research & academic writing, content, executive resumes, and full-stack software development. Rigorously vetted, plagiarism-free, delivered on time.",
+  keywords: [
+    "research writing", "academic writing", "dissertation help", "thesis writing",
+    "content writing", "resume writing", "software development", "Nigeria",
+  ],
   manifest: "/manifest.json",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "YourResearchWriter",
+    title: "YourResearchWriter | Research, Writing, Software & Creative Services",
+    description:
+      "Expert research & academic writing, content, executive resumes, and full-stack software development. Rigorously vetted, plagiarism-free, delivered on time.",
+    url: SITE,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "YourResearchWriter",
+    description:
+      "Expert research & academic writing, content, resumes, and software development.",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -36,6 +63,22 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();`,
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "YourResearchWriter",
+              url: SITE,
+              email: "yourwriterofficial@gmail.com",
+              description:
+                "Expert research & academic writing, content, executive resumes, and full-stack software development.",
+              areaServed: "Worldwide",
+              sameAs: ["https://wa.me/2348121443666"],
+            }),
           }}
         />
       </head>

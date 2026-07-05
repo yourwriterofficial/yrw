@@ -3,6 +3,16 @@ const nextConfig = {
   experimental: {},
   allowedDevOrigins: ['192.168.1.137', 'localhost'],
 
+  // Perf: gzip/brotli compression + modern image formats via sharp (already a dep).
+  compress: true,
+  poweredByHeader: false,
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [
+      { protocol: 'https', hostname: '*.supabase.co' },
+    ],
+  },
+
   // Security headers to prevent clickjacking, MIME sniffing, XSS, etc.
   async headers() {
     return [

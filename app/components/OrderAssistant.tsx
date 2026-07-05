@@ -8,7 +8,7 @@ import { compileMilestones } from './OrderMilestonesPayment';
 import type { CreateOrderServerActionResponse } from '@/lib/types';
 import {
   Sparkles, X, ArrowLeft, GraduationCap, PenTool, Terminal, Briefcase, Settings,
-  CheckCircle2, Loader2, Bot, User as UserIcon, MessageCircle, Compass,
+  CheckCircle2, Loader2, Bot, User as UserIcon, MessageCircle, Compass, Wallet,
 } from 'lucide-react';
 
 type CategoryId = 'academic' | 'content' | 'dev' | 'resume' | 'custom';
@@ -141,6 +141,8 @@ export default function OrderAssistant() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
   const [loggedInProfile, setLoggedInProfile] = useState<any>(null);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [walletPaying, setWalletPaying] = useState(false);
   const [hasHistory, setHasHistory] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
 
@@ -153,6 +155,8 @@ export default function OrderAssistant() {
 
   const [finalOrderId, setFinalOrderId] = useState('');
   const [finalEmail, setFinalEmail] = useState('');
+  const [finalDeposit, setFinalDeposit] = useState<number>(0);
+  const [depositPaidFromWallet, setDepositPaidFromWallet] = useState(false);
   const [wasNegotiated, setWasNegotiated] = useState(false);
   const [proposedPrice, setProposedPrice] = useState<number>(0);
 
@@ -171,6 +175,9 @@ export default function OrderAssistant() {
         setLoggedInUser(user);
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         setLoggedInProfile(profile);
+
+        const { data: walletRow } = await supabase.from('wallets').select('balance').eq('user_id', user.id).maybeSingle();
+        setWalletBalance(Number(walletRow?.balance) || 0);
 
         const { count } = await supabase
           .from('orders')
@@ -619,11 +626,15 @@ export default function OrderAssistant() {
         setAddonIndex(nextIndex);
       }, 400);
     } else {
-      if (category === 'resume' && !yes && selectedAddons.length === 0) {
+      const noneSelected = selectedAddons.length === 0 && !yes;
+      // Resume packages ARE the product — nudge once if nothing was chosen, then
+      // proceed regardless (admin can finalize pricing) to avoid an endless loop.
+      if (category === 'resume' && noneSelected && !data.resumeNudged) {
+        setData(d => ({ ...d, resumeNudged: true }));
         setThinking(true);
         setTimeout(() => {
           setThinking(false);
-          say("You'll need at least one CV/Resume package to proceed — want to reconsider any of those?");
+          say("A CV/Resume package is what we price your order on — take another look and pick the one that fits. (You can also propose your own budget at the end.)");
           setAddonIndex(0);
           setStep('addonQuestion');
           say(formatAddon(addons[0], false));
@@ -760,7 +771,31 @@ export default function OrderAssistant() {
     persistMemoryIfEligible();
     setFinalOrderId(orderStringId);
     setFinalEmail(email);
+    setFinalDeposit(Math.round(finalPrice * 0.6));
+    setDepositPaidFromWallet(false);
     setStep('success');
+  };
+
+  const payDepositFromWallet = async () => {
+    setWalletPaying(true);
+    try {
+      const res = await fetch('/api/client/pay-milestone-wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: finalOrderId, milestoneIndex: 0 }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setWalletBalance(b => b - finalDeposit);
+        setDepositPaidFromWallet(true);
+        say('Deposit paid from your wallet — your project is now active! 🎉');
+      } else {
+        say(`Couldn't pay from wallet: ${data.error || 'please try card instead.'}`);
+      }
+    } catch {
+      say('Network error paying from wallet — please try card instead.');
+    }
+    setWalletPaying(false);
   };
 
   const confirmPrice = () => doSubmit(computeTotal(), false);
@@ -990,6 +1025,12 @@ export default function OrderAssistant() {
                 <div className="flex justify-between"><span>60% Deposit (due now)</span><span className="text-primary font-bold">₦{deposit.toLocaleString()}</span></div>
                 <div className="flex justify-between"><span>40% Balance (on completion)</span><span className="text-primary font-bold">₦{balance.toLocaleString()}</span></div>
               </div>
+              {isLoggedIn && walletBalance > 0 && (
+                <div className={`mt-2 pt-2 border-t border-theme text-[11px] ${walletBalance >= deposit ? 'text-emerald-500' : 'text-secondary'} font-bold flex items-center gap-1`}>
+                  <Wallet className="w-3.5 h-3.5" /> Wallet balance: ₦{walletBalance.toLocaleString()}
+                  {walletBalance >= deposit ? ' — covers your deposit!' : ''}
+                </div>
+              )}
             </div>
             <p className="text-xs text-secondary">Are you happy with this price, or would you like to propose what you can afford?</p>
             <div className="flex gap-2">
@@ -1012,10 +1053,17 @@ export default function OrderAssistant() {
             <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm"><CheckCircle2 className="w-5 h-5" /> Order {finalOrderId} created!</div>
             {wasNegotiated ? (
               <p className="text-xs text-secondary">Thanks! Our team will review your offer of ₦{proposedPrice.toLocaleString()} and get back to you via WhatsApp or email within 24 hours.</p>
+            ) : depositPaidFromWallet ? (
+              <p className="text-xs text-emerald-500 font-bold">Deposit paid ✓ — we've started your project. Track it in your dashboard.</p>
             ) : (
               <>
-                <p className="text-xs text-secondary">Next: pay your deposit to get started.</p>
-                <button onClick={() => { setOpen(false); router.push(`/complete-registration?email=${encodeURIComponent(finalEmail)}&orderId=${finalOrderId}`); }} className={`w-full py-2.5 rounded-xl text-xs font-black uppercase ${accent.solidBg} ${accent.solidText}`}>Proceed to Payment</button>
+                <p className="text-xs text-secondary">Next: pay your ₦{finalDeposit.toLocaleString()} deposit to get started.</p>
+                {isLoggedIn && walletBalance >= finalDeposit && (
+                  <button onClick={payDepositFromWallet} disabled={walletPaying} className="w-full py-2.5 rounded-xl text-xs font-black uppercase bg-emerald-500 text-black hover:bg-emerald-400 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                    <Wallet className="w-4 h-4" /> {walletPaying ? 'Paying…' : `Pay Deposit from Wallet (₦${finalDeposit.toLocaleString()})`}
+                  </button>
+                )}
+                <button onClick={() => { setOpen(false); router.push(`/complete-registration?email=${encodeURIComponent(finalEmail)}&orderId=${finalOrderId}`); }} className={`w-full py-2.5 rounded-xl text-xs font-black uppercase ${accent.solidBg} ${accent.solidText}`}>{isLoggedIn && walletBalance >= finalDeposit ? 'Or Pay with Card' : 'Proceed to Payment'}</button>
               </>
             )}
             <button onClick={reset} className="w-full py-2 rounded-xl text-xs font-bold bg-secondary border border-theme text-primary">Start Another Order</button>
