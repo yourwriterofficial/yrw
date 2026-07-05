@@ -10,6 +10,7 @@ import {
   Key,
   Mail,
   X,
+  Bell,
 } from 'lucide-react';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
 import { ToastContainer, showToast } from '@/app/components/ui/Toast';
@@ -49,6 +50,12 @@ export default function AdminUsersPage() {
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+
+  // Alert modal
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertRecipient, setAlertRecipient] = useState<{ id: string; email: string; name: string } | null>(null);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [sendingAlert, setSendingAlert] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -215,6 +222,37 @@ export default function AdminUsersPage() {
     setSendingEmail(false);
   };
 
+  const sendAlert = async () => {
+    if (!alertRecipient) return;
+    if (!alertMessage.trim()) {
+      showToast('Alert message is required', 'error');
+      return;
+    }
+    setSendingAlert(true);
+    try {
+      const res = await fetch('/api/admin/send-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userIds: [alertRecipient.id],
+          message: alertMessage.trim(),
+        }),
+      });
+      if (res.ok) {
+        showToast(`In-App Alert sent to ${alertRecipient.email}`, 'success');
+        setShowAlertModal(false);
+        setAlertMessage('');
+        setAlertRecipient(null);
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Failed to send alert', 'error');
+      }
+    } catch (err) {
+      showToast('Network error', 'error');
+    }
+    setSendingAlert(false);
+  };
+
   if (loading) return <LoadingScreen label="Loading users..." accent="purple" />;
 
   return (
@@ -302,6 +340,49 @@ export default function AdminUsersPage() {
             <div className="flex gap-3">
               <button onClick={() => setEditingWallet(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
               <button onClick={setWalletBalance} className="flex-1 py-3 bg-emerald-500 text-black rounded-xl font-black">Set Balance</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send In-App Alert Modal */}
+      {showAlertModal && alertRecipient && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-primary border border-purple-500/30 rounded-3xl p-8 max-w-md w-full">
+            <h2 className="text-xl font-black text-primary mb-2">Send In-App Alert</h2>
+            <p className="text-secondary text-sm mb-4">Recipient: <span className="text-primary font-bold">{alertRecipient.name} ({alertRecipient.email})</span></p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary">Alert Message</label>
+                <textarea
+                  value={alertMessage}
+                  onChange={e => setAlertMessage(e.target.value)}
+                  rows={4}
+                  maxLength={280}
+                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1 focus:border-purple-500 outline-none resize-none text-sm font-semibold"
+                  placeholder="Enter message (this will pop up on their notification bell)..."
+                />
+                <p className="text-[10px] text-secondary text-right mt-1">{alertMessage.length}/280</p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button 
+                onClick={() => {
+                  setShowAlertModal(false);
+                  setAlertRecipient(null);
+                  setAlertMessage('');
+                }} 
+                className="flex-1 py-3 bg-white/5 text-primary rounded-xl"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={sendAlert} 
+                disabled={sendingAlert || !alertMessage.trim()}
+                className="flex-1 py-3 bg-purple-500 text-white rounded-xl font-black hover:bg-purple-400 disabled:opacity-50 transition"
+              >
+                {sendingAlert ? 'Sending...' : 'Send Alert'}
+              </button>
             </div>
           </div>
         </div>
@@ -500,6 +581,17 @@ export default function AdminUsersPage() {
                     className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs hover:bg-blue-500/30 transition"
                   >
                     <Mail className="w-3 h-3 inline mr-1" /> Email
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAlertRecipient({ id: user.id, email: user.email, name: user.full_name || user.email });
+                      setShowAlertModal(true);
+                      setAlertMessage('');
+                    }}
+                    className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-xs hover:bg-purple-500/30 transition"
+                  >
+                    <Bell className="w-3 h-3 inline mr-1" /> Alert
                   </button>
                 </td>
               </tr>
