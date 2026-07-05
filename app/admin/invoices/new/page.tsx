@@ -32,67 +32,44 @@ export default function NewInvoicePage() {
   // Dynamic deliverables
   const [deliverables, setDeliverables] = useState<Array<{ category: string; items: string[] }>>([
     {
-      category: 'Web Application',
+      category: 'Category 1',
       items: [
-        'Fully responsive React-based web app',
-        'TypeScript & Tailwind CSS',
-        'Integration with backend API services'
+        'Deliverable item one',
+        'Deliverable item two',
+        'Deliverable item three'
       ]
     },
     {
-      category: 'Mobile Applications (iOS & Android)',
+      category: 'Category 2',
       items: [
-        'Native apps built with React Native (Expo)',
-        'Full feature parity with web application',
-        'App Store & Play Store deployment preparation'
-      ]
-    },
-    {
-      category: 'Backend Infrastructure',
-      items: [
-        'PostgreSQL database architecture',
-        'RESTful API & Real-time data sync',
-        'User authentication & Email automation'
-      ]
-    },
-    {
-      category: 'Core Technologies',
-      items: [
-        'Frontend: React, Vite, Tailwind, React Query',
-        'Backend: Supabase, PostgreSQL, Resend',
-        'Hosting: Vercel, Expo EAS'
+        'Deliverable item one',
+        'Deliverable item two'
       ]
     }
   ]);
 
   // Additional Services & Exclusions
   const [additionalServices, setAdditionalServices] = useState<string[]>([
-    'Domain Registration & Management',
-    'SSL Certificate Configuration',
-    'Deployment Support & API Documentation',
-    'Basic System Administration Training'
+    'Additional service one',
+    'Additional service two'
   ]);
-  
+
   const [exclusions, setExclusions] = useState<string[]>([
-    'App Store Registration Fees (Apple: $99/yr, Google: $25)',
-    'Third-party Service Costs (beyond free tiers)',
-    'Ongoing Maintenance (post-warranty period)'
+    'Exclusion item one',
+    'Exclusion item two'
   ]);
 
   // Timeline
   const [timeline, setTimeline] = useState<Array<{ weeks: string; phase: string; deliverables: string }>>([
-    { weeks: '1-2', phase: 'Planning & Design', deliverables: 'Requirement analysis, database schema design, UI/UX wireframes, API architecture, Supabase project setup' },
-    { weeks: '3-5', phase: 'Web & Backend', deliverables: 'Web app development, backend API, Supabase integration, auth, email setup' },
-    { weeks: '6-7', phase: 'Mobile Development', deliverables: 'Android & iOS app development, feature parity, mobile API integration' },
-    { weeks: '8-9', phase: 'Testing & Refinement', deliverables: 'Quality assurance, bug fixing, UI polish, performance optimization' },
-    { weeks: '10', phase: 'Deployment & Handover', deliverables: 'Production deployment, app store submissions, documentation, client training' }
+    { weeks: '1', phase: 'Phase 1', deliverables: 'Describe the deliverables for this phase' },
+    { weeks: '2', phase: 'Phase 2', deliverables: 'Describe the deliverables for this phase' }
   ]);
 
   // Milestones
   const [milestones, setMilestones] = useState<Array<{ name: string; percentage: number; trigger: string }>>([
     { name: 'Initial Deposit', percentage: 40, trigger: 'Upon signing this agreement' },
-    { name: 'Second Payment', percentage: 30, trigger: 'Completion of Web & Backend (End of Week 5)' },
-    { name: 'Final Payment', percentage: 30, trigger: 'Final delivery and client sign off (End of Week 10)' }
+    { name: 'Second Payment', percentage: 30, trigger: 'Completion of core project phase' },
+    { name: 'Final Payment', percentage: 30, trigger: 'Final delivery and client sign off' }
   ]);
 
   // Bank & Signatures
@@ -349,11 +326,11 @@ export default function NewInvoicePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Client Name *</label>
-              <input type="text" placeholder="Obosa Osemwengie" className="w-full bg-primary border border-theme rounded-xl p-3 text-primary text-sm font-bold" value={clientName} onChange={e => setClientName(e.target.value)} />
+              <input type="text" placeholder="Jane Doe" className="w-full bg-primary border border-theme rounded-xl p-3 text-primary text-sm font-bold" value={clientName} onChange={e => setClientName(e.target.value)} />
             </div>
             <div>
               <label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Company Name</label>
-              <input type="text" placeholder="JAMAJAMA SERVICES LTD" className="w-full bg-primary border border-theme rounded-xl p-3 text-primary text-sm font-bold" value={companyName} onChange={e => setCompanyName(e.target.value)} />
+              <input type="text" placeholder="e.g. Acme Ltd" className="w-full bg-primary border border-theme rounded-xl p-3 text-primary text-sm font-bold" value={companyName} onChange={e => setCompanyName(e.target.value)} />
             </div>
             <div>
               <label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Email Address *</label>
@@ -361,11 +338,11 @@ export default function NewInvoicePage() {
             </div>
             <div>
               <label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Phone Number</label>
-              <input type="text" placeholder="08121443666" className="w-full bg-primary border border-theme rounded-xl p-3 text-primary text-sm font-bold" value={phone} onChange={e => setPhone(e.target.value)} />
+              <input type="text" placeholder="+234 800 000 0000" className="w-full bg-primary border border-theme rounded-xl p-3 text-primary text-sm font-bold" value={phone} onChange={e => setPhone(e.target.value)} />
             </div>
             <div className="md:col-span-2">
               <label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Billing Address</label>
-              <input type="text" placeholder="5, Edo Street, Benin City, Nigeria" className="w-full bg-primary border border-theme rounded-xl p-3 text-primary text-sm font-bold" value={address} onChange={e => setAddress(e.target.value)} />
+              <input type="text" placeholder="Street, City, State, Country" className="w-full bg-primary border border-theme rounded-xl p-3 text-primary text-sm font-bold" value={address} onChange={e => setAddress(e.target.value)} />
             </div>
           </div>
         </div>
@@ -378,7 +355,7 @@ export default function NewInvoicePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2">
               <label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Project Title *</label>
-              <input type="text" placeholder="SAAS PLATFORM DEVELOPMENT - WEB, ANDROID & IOS" className="w-full bg-primary border border-theme rounded-xl p-3 text-primary text-sm font-bold" value={projectTitle} onChange={e => setProjectTitle(e.target.value)} />
+              <input type="text" placeholder="e.g. Website Redesign & Launch" className="w-full bg-primary border border-theme rounded-xl p-3 text-primary text-sm font-bold" value={projectTitle} onChange={e => setProjectTitle(e.target.value)} />
             </div>
             <div>
               <label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Total Project Cost *</label>

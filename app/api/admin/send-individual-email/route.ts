@@ -1,13 +1,7 @@
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
-import { createClient } from '@supabase/supabase-js';
-import { requireAdmin } from '@/lib/adminAuth';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { requireAdmin, listAllAuthUsers } from '@/lib/adminAuth';
+import { notifyUser } from '@/lib/notify';
+import { sendSystemEmail } from '@/lib/emailService';
 
 export async function POST(request: Request) {
   const guard = await requireAdmin();
@@ -17,23 +11,27 @@ export async function POST(request: Request) {
     if (!to || !subject || !html) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
-    const { data, error } = await resend.emails.send({
-      from: 'YourResearchWriter <noreply@yourresearchwriter.com.ng>',
-      to,
-      subject,
-      html,
-    });
-    if (error) throw error;
 
-    // Log to email_logs for in-app alerts
-    await supabaseAdmin.from('email_logs').insert({
-      recipient: to,
-      subject,
-      status: 'sent',
-      sent_at: new Date().toISOString(),
-    });
+    // If `to` matches a registered user, route through the unified pipeline
+    // (email + in-app + push, respecting preferences). Otherwise, plain email.
+    const users = await listAllAuthUsers(guard.admin);
+    const match = users.find((u) => u.email.toLowerCase() === String(to).toLowerCase());
 
-    return NextResponse.json({ success: true, data });
+    if (match) {
+      await notifyUser({
+        userId: match.id,
+        title: subject,
+        message: 'You have a new message from YourResearchWriter — tap to view.',
+        type: 'admin_message',
+        isAdminSent: true,
+        emailHtml: html,
+        emailSubject: subject,
+      });
+    } else {
+      await sendSystemEmail({ to, subject, html });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error('Send email error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

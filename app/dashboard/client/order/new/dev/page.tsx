@@ -23,7 +23,7 @@ export default function LoggedInDevOrderPage() {
   const [paymentStructure, setPaymentStructure] = useState<'60/40' | 'CUSTOM'>('60/40');
   const [milestones, setMilestones] = useState<any[]>([
     { name: 'Initial Deposit', percentage: 40, trigger: 'Upon signing this agreement' },
-    { name: 'Second Payment', percentage: 30, trigger: 'Completion of Web & Backend' },
+    { name: 'Second Payment', percentage: 30, trigger: 'Completion of core project phase' },
     { name: 'Final Payment', percentage: 30, trigger: 'Final delivery and client sign off' }
   ]);
   const router = useRouter();
@@ -213,7 +213,7 @@ export default function LoggedInDevOrderPage() {
                     <div
                       key={addon.id}
                       onClick={() => toggleAddon(addon.id)}
-                      className={`p-4 rounded-2xl border cursor-pointer transition flex items-start gap-4 ${isSelected ? 'border-cyan-500 bg-cyan-500/5' : 'border-theme bg-primary hover:border-zinc-700'}`}
+                      className={`p-4 rounded-2xl border cursor-pointer transition flex items-start gap-4 ${isSelected ? 'border-cyan-500 bg-cyan-500/5' : 'border-theme bg-primary hover:border-zinc-500/50'}`}
                     >
                       <div className={`mt-1 w-5 h-5 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-cyan-500 border-cyan-500' : 'border-theme'}`}>
                         {isSelected && <CheckCircle2 className="w-3 h-3 text-black" />}
@@ -236,22 +236,22 @@ export default function LoggedInDevOrderPage() {
 
           <div className="space-y-4 pt-6 border-t border-theme">
             <div className="space-y-1">
-              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Project Title / Objective</label>
+              <label className="text-[10px] text-secondary font-bold ml-1 uppercase tracking-widest">Project Title / Objective</label>
               <input
                 type="text"
                 placeholder="E.g., Real Estate Management Portal"
-                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-cyan-500 outline-none text-primary font-bold hover:border-zinc-700"
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-cyan-500 outline-none text-primary font-bold hover:border-zinc-500/50"
                 value={topic}
                 onChange={e => setTopic(e.target.value)}
                 required
               />
-              <p className="text-[9px] text-zinc-500 ml-1">State the title and ultimate goal of this software system.</p>
+              <p className="text-[9px] text-secondary ml-1">State the title and ultimate goal of this software system.</p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Target Deployment Deadline</label>
+              <label className="text-[10px] text-secondary font-bold ml-1 uppercase tracking-widest">Target Deployment Deadline</label>
               <div className="relative group">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none group-focus-within:text-cyan-500 transition-colors">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none group-focus-within:text-cyan-500 transition-colors">
                   <Calendar className="w-5 h-5" />
                 </div>
                 <input
@@ -259,26 +259,26 @@ export default function LoggedInDevOrderPage() {
                   className="w-full bg-card border border-theme p-4 pl-12 rounded-xl text-sm text-primary focus:border-cyan-500 outline-none dark:[color-scheme:dark] transition-all font-bold hover:border-theme cursor-pointer"
                   value={deadline}
                   onChange={e => setDeadline(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                   required
                 />
               </div>
-              <p className="text-[9px] text-zinc-500 ml-1">Choose target date. Software builds generally require at least 5–7 days minimum.</p>
+              <p className="text-[9px] text-secondary ml-1">We require a minimum 2-week (14 day) lead time for quality delivery. Add the Urgent MVP Delivery add-on if you need it faster.</p>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">System Instructions & Features</label>
+              <label className="text-[10px] text-secondary font-bold ml-1 uppercase tracking-widest">System Instructions & Features</label>
               <textarea
                 placeholder="List core features, tech stack requirements, user roles, API integrations..."
-                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-cyan-500 outline-none resize-none h-32 text-primary font-medium hover:border-zinc-700"
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-cyan-500 outline-none resize-none h-32 text-primary font-medium hover:border-zinc-500/50"
                 value={instructions}
                 onChange={e => setInstructions(e.target.value)}
               />
-              <p className="text-[9px] text-zinc-500 ml-1">Detail what roles (Admin, Client) exist, which APIs are needed, and key features.</p>
+              <p className="text-[9px] text-secondary ml-1">Detail what roles (Admin, Client) exist, which APIs are needed, and key features.</p>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Database Schema or Wireframes</label>
+              <label className="text-[10px] text-secondary font-bold ml-1 uppercase tracking-widest">Database Schema or Wireframes</label>
               <label className="border-2 border-dashed border-theme hover:border-cyan-500/50 bg-primary rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
                 <Upload className="w-6 h-6 text-secondary mb-2" />
                 <span className="text-xs font-bold text-secondary">Attach Brief, Database Diagram, or Wireframe</span>

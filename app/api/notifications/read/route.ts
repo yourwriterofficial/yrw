@@ -18,45 +18,32 @@ export async function POST(request: Request) {
 
     const { id, all } = await request.json();
 
-    // Check if the user is admin
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', session.user.id)
-      .single();
-      
-    const isAdmin = profile?.is_admin === true;
-    const email = session.user.email || '';
-    const adminEmail = process.env.ADMIN_EMAIL || 'yourwriterofficial@gmail.com';
-
     if (all) {
-      const recipientEmail = isAdmin ? adminEmail : email;
       const { error } = await supabaseAdmin
-        .from('email_logs')
-        .update({ status: 'read' })
-        .eq('recipient', recipientEmail);
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', session.user.id);
 
       if (error) throw error;
     } else if (id) {
-      // Verify recipient matches
-      const { data: log, error: checkError } = await supabaseAdmin
-        .from('email_logs')
-        .select('recipient')
+      // Verify ownership before marking read
+      const { data: notif, error: checkError } = await supabaseAdmin
+        .from('notifications')
+        .select('user_id')
         .eq('id', id)
         .single();
 
-      if (checkError || !log) {
+      if (checkError || !notif) {
         return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
       }
 
-      const expectedRecipient = isAdmin ? adminEmail : email;
-      if (log.recipient.toLowerCase() !== expectedRecipient.toLowerCase()) {
+      if (notif.user_id !== session.user.id) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
 
       const { error } = await supabaseAdmin
-        .from('email_logs')
-        .update({ status: 'read' })
+        .from('notifications')
+        .update({ read: true })
         .eq('id', id);
 
       if (error) throw error;

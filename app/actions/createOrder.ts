@@ -5,6 +5,8 @@ import { z } from 'zod';
 import xss from 'xss';
 import type { CreateOrderServerActionResponse } from '@/lib/types';
 import { emailTemplates } from '@/lib/emailTemplates';
+import { notifyUser } from '@/lib/notify';
+import { sendSystemEmail } from '@/lib/emailService';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -52,9 +54,13 @@ export async function createSecureOrder(
 ): Promise<CreateOrderServerActionResponse> {
   let finalQuote = 0;
 
-  // Validate deadline
-  if (orderData.deadline && new Date(orderData.deadline) <= new Date()) {
-    return { success: false, error: 'Deadline must be in the future.' };
+  // Validate deadline — minimum 2-week (14 day) lead time required for all orders
+  if (orderData.deadline) {
+    const minDeadline = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    minDeadline.setHours(0, 0, 0, 0);
+    if (new Date(orderData.deadline) < minDeadline) {
+      return { success: false, error: 'We require a minimum 2-week (14 day) lead time to guarantee quality work. Please choose a later date.' };
+    }
   }
 
   // Calculate quote
@@ -150,8 +156,7 @@ export async function createSecureOrder(
     return { success: false, error: error.message };
   }
 
-  // Send emails (unchanged)
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  // Notify client + admin (email + in-app + push for logged-in users; email-only for guests)
   const orderEmailData = {
     order_id: data.order_id,
     legal_name: data.legal_name,
@@ -161,32 +166,51 @@ export async function createSecureOrder(
     service_tier: data.service_tier,
     deadline: data.deadline,
   };
-
-  // 1. Send confirmation to client
   const clientTemplate = emailTemplates.clientOrderConfirmation(orderEmailData);
-  fetch(`${baseUrl}/api/send-email`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      to: data.email,
-      orderId: data.order_id,
-      subject: clientTemplate.subject,
-      html: clientTemplate.html,
-    }),
-  }).catch(e => console.warn('Client email failed', e));
-
-  // 2. Send notification to admin
   const adminTemplate = emailTemplates.adminNewOrder(orderEmailData);
-  fetch(`${baseUrl}/api/send-email`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      to: 'subskription.noreply@gmail.com',
-      orderId: data.order_id,
-      subject: adminTemplate.subject,
-      html: adminTemplate.html,
-    }),
-  }).catch(e => console.warn('Admin email failed', e));
+  const clientLink = `/dashboard/client?preview=${data.order_id}`;
+
+  // 1. Notify the client
+  if (data.client_id) {
+    notifyUser({
+      userId: data.client_id,
+      title: 'Order Received',
+      message: `We've received your order "${data.topic}" (${data.order_id}). We'll be in touch shortly.`,
+      type: 'order_update',
+      link: clientLink,
+      orderDbId: data.id,
+      emailHtml: clientTemplate.html,
+      emailSubject: clientTemplate.subject,
+    }).catch(e => console.warn('Client notification failed', e));
+  } else {
+    sendSystemEmail({ to: data.email, orderId: data.order_id, subject: clientTemplate.subject, html: clientTemplate.html })
+      .catch(e => console.warn('Client email failed', e));
+  }
+
+  // 2. Notify the admin
+  (async () => {
+    try {
+      const { data: adminProfile } = await supabase.from('profiles').select('id').eq('is_admin', true).limit(1).maybeSingle();
+      if (adminProfile) {
+        await notifyUser({
+          userId: adminProfile.id,
+          title: 'New Order Received',
+          message: `${data.legal_name} placed a new order: "${data.topic}" (${data.order_id}).`,
+          type: 'order_update',
+          link: `/admin/orders?open=${data.order_id}`,
+          orderDbId: data.id,
+          isAdminSent: false,
+          emailHtml: adminTemplate.html,
+          emailSubject: adminTemplate.subject,
+        });
+      } else {
+        const adminEmail = process.env.ADMIN_EMAIL || 'yourwriterofficial@gmail.com';
+        await sendSystemEmail({ to: adminEmail, orderId: data.order_id, subject: adminTemplate.subject, html: adminTemplate.html });
+      }
+    } catch (e) {
+      console.warn('Admin notification failed', e);
+    }
+  })();
 
   return { success: true, orderDbId: data.id, orderStringId: data.order_id, finalQuote };
 }

@@ -36,7 +36,7 @@ export function BillingDetailsFields({ companyName, setCompanyName, address, set
           <label className="text-[10px] text-secondary block ml-1 font-bold">Billing Address</label>
           <input
             type="text"
-            placeholder="e.g. 5, Edo Street, Benin City"
+            placeholder="Street, City, State, Country"
             value={address}
             onChange={e => setAddress(e.target.value)}
             className="w-full bg-card border border-theme p-3 rounded-[16px] text-sm text-primary focus:border-purple-500 outline-none transition font-semibold"

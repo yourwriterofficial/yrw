@@ -1,52 +1,46 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin, listAllAuthUsers } from '@/lib/adminAuth';
+import { notifyUsers } from '@/lib/notify';
 
 /**
- * Pushes an in-app notification (no email) to the notification bell of all
- * users or a selected subset. Notifications are stored as `email_logs` rows —
- * the same store the bell already reads from — one row per recipient so that
- * read-state is tracked per user.
+ * Pushes an in-app + push notification (no email) to all users or a selected
+ * subset, via the shared notifyUser pipeline (lib/notify.ts) so it also
+ * respects per-user push preferences and lands in the unified `notifications`
+ * table the bell reads from.
  */
 export async function POST(req: Request) {
   const guard = await requireAdmin();
   if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
 
   try {
-    const { message, userIds, allUsers, orderId } = await req.json();
+    const { message, userIds, allUsers } = await req.json();
 
     const text = typeof message === 'string' ? message.trim() : '';
     if (!text) {
       return NextResponse.json({ error: 'A notification message is required.' }, { status: 400 });
     }
 
-    let recipients: string[];
+    let recipientIds: string[];
     if (allUsers) {
-      recipients = (await listAllAuthUsers(guard.admin)).map((u) => u.email);
+      recipientIds = (await listAllAuthUsers(guard.admin)).map((u) => u.id);
     } else if (Array.isArray(userIds) && userIds.length) {
-      const all = await listAllAuthUsers(guard.admin);
-      const byId = new Map(all.map((u) => [u.id, u.email]));
-      recipients = userIds.map((id: string) => byId.get(id)).filter((e): e is string => !!e);
+      recipientIds = userIds;
     } else {
       return NextResponse.json({ error: 'Select recipients (all users or a custom list).' }, { status: 400 });
     }
 
-    if (recipients.length === 0) {
+    if (recipientIds.length === 0) {
       return NextResponse.json({ error: 'No valid recipients found.' }, { status: 400 });
     }
 
-    const now = new Date().toISOString();
-    const rows = recipients.map((recipient) => ({
-      recipient,
-      subject: text,
-      status: 'sent',
-      sent_at: now,
-      order_id: orderId || null,
-    }));
+    await notifyUsers(recipientIds, {
+      title: 'Message from YourResearchWriter',
+      message: text,
+      type: 'admin_message',
+      isAdminSent: true,
+    });
 
-    const { error } = await guard.admin.from('email_logs').insert(rows);
-    if (error) throw error;
-
-    return NextResponse.json({ success: true, count: rows.length });
+    return NextResponse.json({ success: true, count: recipientIds.length });
   } catch (err: any) {
     console.error('send-notification error:', err);
     return NextResponse.json({ error: err.message || 'Failed to send notification' }, { status: 500 });

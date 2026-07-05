@@ -18,22 +18,28 @@ interface Milestone {
 
 interface TimelineItem {
   phase: string;
-  duration: string;
+  weeks: string;
   deliverables: string;
+}
+
+interface DeliverableCategory {
+  category: string;
+  items: string[];
 }
 
 interface CustomInvoice {
   id: string;
   invoice_number: string;
   client_name: string;
-  client_email: string;
-  client_company: string | null;
-  client_address: string | null;
-  client_phone: string | null;
-  deliverables: string[];
+  email: string;
+  company_name: string | null;
+  address: string | null;
+  phone: string | null;
+  deliverables: DeliverableCategory[];
+  additional_services: string[];
   timeline: TimelineItem[];
   exclusions: string[];
-  terms: string;
+  terms: string[];
   payment_structure_type: string;
   total_amount: number;
   milestones: Milestone[];
@@ -86,7 +92,7 @@ export default function PublicInvoicePage() {
         body: JSON.stringify({
           orderId: invoice.invoice_number,
           amount: milestone.amount,
-          email: invoice.client_email,
+          email: invoice.email,
           name: invoice.client_name,
           type: `INDEX-${index}`
         })
@@ -107,7 +113,7 @@ export default function PublicInvoicePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center text-primary">
+      <div className="min-h-screen bg-primary flex flex-col items-center justify-center text-primary">
         <div className="w-12 h-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mb-4"></div>
         <p className="text-sm font-bold text-secondary uppercase tracking-widest">Loading invoice details...</p>
       </div>
@@ -116,7 +122,7 @@ export default function PublicInvoicePage() {
 
   if (errorMsg && !invoice) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center text-center p-6">
+      <div className="min-h-screen bg-primary flex flex-col items-center justify-center text-center p-6">
         <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center text-red-500 mb-6">
           <lucide.AlertCircle className="w-8 h-8" />
         </div>
@@ -136,7 +142,7 @@ export default function PublicInvoicePage() {
   const nextUnpaidIdx = milestones.findIndex(m => !m.paid);
 
   return (
-    <div className="min-h-screen bg-[#070708] text-primary py-12 px-4 sm:px-6 lg:px-8 print:bg-white print:text-black print:py-0 print:px-0">
+    <div className="min-h-screen bg-primary text-primary py-12 px-4 sm:px-6 lg:px-8 print:bg-white print:text-black print:py-0 print:px-0">
       
       {/* Utility Bar (Hidden in Print) */}
       <div className="max-w-4xl mx-auto mb-6 flex justify-between items-center print:hidden">
@@ -157,7 +163,7 @@ export default function PublicInvoicePage() {
       </div>
 
       {/* Main Invoice Container */}
-      <div className="max-w-4xl mx-auto bg-card border border-theme rounded-[32px] overflow-hidden shadow-2xl print:border-none print:shadow-none print:rounded-none bg-gradient-to-b from-[#121214] to-[#0d0d0f] print:from-white print:to-white">
+      <div className="max-w-4xl mx-auto bg-card border border-theme rounded-[32px] overflow-hidden shadow-2xl print:border-none print:shadow-none print:rounded-none">
         
         {/* Header Ribbon */}
         <div className={`p-8 sm:p-12 border-b border-theme flex flex-col md:flex-row justify-between gap-6 relative ${
@@ -223,22 +229,22 @@ export default function PublicInvoicePage() {
               <h3 className="text-xs font-black uppercase text-secondary tracking-widest">Client / Bill To</h3>
               <div className="space-y-2 text-sm">
                 <p className="font-black text-primary text-base">{invoice.client_name}</p>
-                {invoice.client_company && (
+                {invoice.company_name && (
                   <p className="text-secondary font-bold flex items-center gap-2">
-                    <lucide.Building className="w-4 h-4 text-secondary shrink-0" /> {invoice.client_company}
+                    <lucide.Building className="w-4 h-4 text-secondary shrink-0" /> {invoice.company_name}
                   </p>
                 )}
                 <p className="text-secondary font-medium flex items-center gap-2">
-                  <lucide.Mail className="w-4 h-4 text-secondary shrink-0" /> {invoice.client_email}
+                  <lucide.Mail className="w-4 h-4 text-secondary shrink-0" /> {invoice.email}
                 </p>
-                {invoice.client_phone && (
+                {invoice.phone && (
                   <p className="text-secondary font-medium flex items-center gap-2">
-                    <lucide.Phone className="w-4 h-4 text-secondary shrink-0" /> {invoice.client_phone}
+                    <lucide.Phone className="w-4 h-4 text-secondary shrink-0" /> {invoice.phone}
                   </p>
                 )}
-                {invoice.client_address && (
+                {invoice.address && (
                   <p className="text-secondary font-medium flex items-center gap-2">
-                    <lucide.MapPin className="w-4 h-4 text-secondary shrink-0" /> {invoice.client_address}
+                    <lucide.MapPin className="w-4 h-4 text-secondary shrink-0" /> {invoice.address}
                   </p>
                 )}
               </div>
@@ -266,20 +272,43 @@ export default function PublicInvoicePage() {
             <h3 className="text-xs font-black uppercase text-secondary tracking-widest flex items-center gap-2">
               <lucide.FileText className="w-4 h-4 text-purple-400" /> Scope of Work & Deliverables
             </h3>
-            <div className="bg-secondary/40 border border-theme rounded-2xl p-6">
-              <ul className="space-y-3">
-                {invoice.deliverables && invoice.deliverables.map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-3 text-sm text-primary font-bold">
-                    <lucide.Check className="w-4 h-4 text-purple-400 mt-0.5 shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-                {(!invoice.deliverables || invoice.deliverables.length === 0) && (
-                  <p className="text-secondary text-sm">Standard system design & academic analysis deliverables.</p>
-                )}
-              </ul>
+            <div className="bg-secondary/40 border border-theme rounded-2xl p-6 space-y-5">
+              {invoice.deliverables && invoice.deliverables.length > 0 ? invoice.deliverables.map((cat, catIdx) => (
+                <div key={catIdx}>
+                  <p className="text-xs font-black uppercase tracking-wider text-purple-400 mb-2">{cat.category}</p>
+                  <ul className="space-y-2 ml-1">
+                    {(cat.items || []).map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-3 text-sm text-primary font-bold">
+                        <lucide.Check className="w-4 h-4 text-purple-400 mt-0.5 shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )) : (
+                <p className="text-secondary text-sm">Standard system design & academic analysis deliverables.</p>
+              )}
             </div>
           </div>
+
+          {/* Additional Services Included */}
+          {invoice.additional_services && invoice.additional_services.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-xs font-black uppercase text-secondary tracking-widest flex items-center gap-2">
+                <lucide.PlusCircle className="w-4 h-4 text-emerald-400" /> Additional Services Included
+              </h3>
+              <div className="bg-secondary/20 border border-theme rounded-2xl p-6">
+                <ul className="space-y-2">
+                  {invoice.additional_services.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-secondary font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
 
           {/* Sprints Timeline (If development type) */}
           {invoice.timeline && invoice.timeline.length > 0 && (
@@ -291,16 +320,16 @@ export default function PublicInvoicePage() {
                 <table className="w-full text-left text-xs sm:text-sm">
                   <thead className="bg-secondary border-b border-theme text-secondary font-bold uppercase tracking-wider text-[10px]">
                     <tr>
+                      <th className="p-4">Week(s)</th>
                       <th className="p-4">Phase / Sprint</th>
-                      <th className="p-4">Target Duration</th>
                       <th className="p-4">Key Scope / Output</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-theme text-primary font-bold">
                     {invoice.timeline.map((item, idx) => (
                       <tr key={idx} className="hover:bg-white/5 transition-colors">
+                        <td className="p-4 text-purple-400">{item.weeks}</td>
                         <td className="p-4 text-primary">{item.phase}</td>
-                        <td className="p-4 text-purple-400">{item.duration}</td>
                         <td className="p-4 text-secondary font-medium">{item.deliverables}</td>
                       </tr>
                     ))}
@@ -351,9 +380,9 @@ export default function PublicInvoicePage() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
-                          m.paid 
-                            ? 'bg-emerald-500/10 text-emerald-400' 
-                            : 'bg-zinc-800 text-zinc-400'
+                          m.paid
+                            ? 'bg-emerald-500/10 text-emerald-400'
+                            : 'bg-secondary text-secondary'
                         }`}>
                           Milestone {idx + 1} ({m.percentage}%)
                         </span>
@@ -393,7 +422,7 @@ export default function PublicInvoicePage() {
                       )}
 
                       {!m.paid && !isNextUnpaid && (
-                        <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 bg-zinc-900 border border-theme px-3 py-1.5 rounded-lg cursor-not-allowed select-none">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-secondary bg-secondary border border-theme px-3 py-1.5 rounded-lg cursor-not-allowed select-none">
                           Locked
                         </span>
                       )}
@@ -405,12 +434,14 @@ export default function PublicInvoicePage() {
           </div>
 
           {/* Terms & Conditions */}
-          {invoice.terms && (
+          {invoice.terms && invoice.terms.length > 0 && (
             <div className="space-y-4 pt-4 border-t border-theme">
               <h3 className="text-xs font-black uppercase text-secondary tracking-widest">Agreement Terms & Conditions</h3>
-              <p className="text-secondary text-xs whitespace-pre-wrap leading-relaxed bg-secondary/10 p-5 rounded-2xl border border-theme font-medium">
-                {invoice.terms}
-              </p>
+              <ol className="text-secondary text-xs leading-relaxed bg-secondary/10 p-5 rounded-2xl border border-theme font-medium space-y-2 list-decimal list-inside">
+                {invoice.terms.map((term, idx) => (
+                  <li key={idx}>{term}</li>
+                ))}
+              </ol>
             </div>
           )}
 
@@ -421,7 +452,7 @@ export default function PublicInvoicePage() {
               {allPaid ? (
                 <div className="space-y-2">
                   <p className="text-emerald-400 font-black text-lg tracking-tight font-serif italic">Digitally Signed & Accepted</p>
-                  <p className="text-[10px] text-secondary font-bold">Client Email: {invoice.client_email}</p>
+                  <p className="text-[10px] text-secondary font-bold">Client Email: {invoice.email}</p>
                   <p className="text-[9px] text-secondary uppercase font-mono">Date: {new Date(invoice.created_at).toLocaleDateString()}</p>
                 </div>
               ) : (

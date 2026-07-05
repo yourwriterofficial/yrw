@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import PWAUpdater from "./components/PWAUpdater";
 import { ThemeProvider } from "./components/ThemeProvider";
+import OrderAssistant from "./components/OrderAssistant";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -42,6 +43,7 @@ export default function RootLayout({
         <ThemeProvider>
           <PWAUpdater />
           {children}
+          <OrderAssistant />
           {/* Floating WhatsApp Support Button */}
           <a
             href="https://wa.me/2348121443666"

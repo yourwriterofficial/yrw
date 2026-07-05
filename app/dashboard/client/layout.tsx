@@ -116,20 +116,20 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex flex-col gap-2 flex-1">
-          <button onClick={() => router.push('/dashboard/client')} className={navBtnClass('dashboard')}>
+          <button id="rw-tour-dashboard" onClick={() => router.push('/dashboard/client')} className={navBtnClass('dashboard')}>
             <div className="flex items-center gap-3"><lucide.LayoutDashboard className="w-5 h-5" /> <span>Dashboard</span></div>
           </button>
-          <button onClick={() => router.push('/dashboard/client/order/new')} className={navBtnClass('new')}>
+          <button id="rw-tour-neworder" onClick={() => router.push('/dashboard/client/order/new')} className={navBtnClass('new')}>
             <div className="flex items-center gap-3"><lucide.PlusCircle className="w-5 h-5" /> <span>New Order</span></div>
           </button>
-          <button onClick={() => router.push('/dashboard/client?tab=vault')} className={navBtnClass('vault')}>
+          <button id="rw-tour-vault" onClick={() => router.push('/dashboard/client?tab=vault')} className={navBtnClass('vault')}>
             <div className="flex items-center gap-3"><lucide.Lock className="w-5 h-5" /> <span>Secure Vault</span></div>
             {unviewedVaultCount > 0 && <span className="px-2 py-0.5 bg-emerald-500 text-black rounded-md text-[10px] font-black">{unviewedVaultCount}</span>}
           </button>
-          <button onClick={() => router.push('/dashboard/client?tab=wallet')} className={navBtnClass('wallet')}>
+          <button id="rw-tour-wallet" onClick={() => router.push('/dashboard/client?tab=wallet')} className={navBtnClass('wallet')}>
             <div className="flex items-center gap-3"><lucide.Wallet className="w-5 h-5" /> <span>Wallet</span></div>
           </button>
-          <button onClick={() => router.push('/dashboard/client?tab=profile')} className={navBtnClass('profile')}>
+          <button id="rw-tour-profile" onClick={() => router.push('/dashboard/client?tab=profile')} className={navBtnClass('profile')}>
             <div className="flex items-center gap-3"><lucide.User className="w-5 h-5" /> <span>My Profile</span></div>
           </button>
         </nav>

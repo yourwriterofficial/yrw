@@ -34,7 +34,7 @@ export default function ContentOrderForm() {
   const [paymentStructure, setPaymentStructure] = useState<'60/40' | 'CUSTOM'>('60/40');
   const [milestones, setMilestones] = useState<any[]>([
     { name: 'Initial Deposit', percentage: 40, trigger: 'Upon signing this agreement' },
-    { name: 'Second Payment', percentage: 30, trigger: 'Completion of Web & Backend' },
+    { name: 'Second Payment', percentage: 30, trigger: 'Completion of core project phase' },
     { name: 'Final Payment', percentage: 30, trigger: 'Final delivery and client sign off' }
   ]);
   const router = useRouter();
@@ -173,7 +173,7 @@ export default function ContentOrderForm() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-primary flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
       </div>
     );
@@ -186,24 +186,24 @@ export default function ContentOrderForm() {
         <div className="text-center">
           <div className="inline-block px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Creative Pipeline</div>
           <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Content & Creative Writing</h1>
-          <p className="text-zinc-400 text-sm">Tailored copy, eBooks, and SEO content designed to engage your exact audience.</p>
+          <p className="text-secondary text-sm">Tailored copy, eBooks, and SEO content designed to engage your exact audience.</p>
         </div>
 
-        <div className="space-y-8 bg-[#0a0a0a] p-8 rounded-[32px] border border-zinc-800">
+        <div className="space-y-8 bg-secondary p-8 rounded-[32px] border border-theme">
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 block ml-1">Proposed Base Budget (₦)</label>
+            <label className="text-[10px] font-black uppercase tracking-widest text-secondary mb-2 block ml-1">Proposed Base Budget (₦)</label>
             <input
               type="number"
-              className="w-full bg-black border border-amber-500/30 p-5 rounded-2xl text-amber-500 font-black text-2xl outline-none focus:border-amber-500 transition"
+              className="w-full bg-primary border-amber-500/30 p-5 rounded-2xl text-amber-500 font-black text-2xl outline-none focus:border-amber-500 transition"
               value={baseBudget || ''}
               onChange={e => setBaseBudget(parseInt(e.target.value) || 0)}
             />
-            <p className="text-[10px] text-zinc-500 mt-2 ml-1">Enter your budget based on word count expectations.</p>
+            <p className="text-[10px] text-secondary mt-2 ml-1">Enter your budget based on word count expectations.</p>
           </div>
 
           {availableAddons.length > 0 && (
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block ml-1">Select Content Add-ons</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-secondary block ml-1">Select Content Add-ons</label>
               <div className="grid grid-cols-1 gap-3">
                 {availableAddons.map(addon => {
                   const isSelected = selectedAddons.has(addon.id);
@@ -211,19 +211,19 @@ export default function ContentOrderForm() {
                     <div
                       key={addon.id}
                       onClick={() => toggleAddon(addon.id)}
-                      className={`p-4 rounded-2xl border cursor-pointer transition flex items-start gap-4 ${isSelected ? 'border-amber-500 bg-amber-500/5' : 'border-zinc-800 bg-black hover:border-zinc-700'}`}
+                      className={`p-4 rounded-2xl border cursor-pointer transition flex items-start gap-4 ${isSelected ? 'border-amber-500 bg-amber-500/5' : 'border-theme bg-primary hover:border-zinc-500/50'}`}
                     >
-                      <div className={`mt-1 w-5 h-5 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-zinc-600'}`}>
+                      <div className={`mt-1 w-5 h-5 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-theme'}`}>
                         {isSelected && <CheckCircle2 className="w-3 h-3 text-black" />}
                       </div>
                       <div className="flex-1">
                         <div className="flex justify-between items-center mb-1">
-                          <h4 className={`text-sm font-bold ${isSelected ? 'text-amber-500' : 'text-zinc-300'}`}>{addon.name}</h4>
-                          <span className="text-xs font-black text-zinc-500">
+                          <h4 className={`text-sm font-bold ${isSelected ? 'text-amber-500' : 'text-primary'}`}>{addon.name}</h4>
+                          <span className="text-xs font-black text-secondary">
                             {addon.price_type === 'FLAT_FEE' ? `+₦${addon.price_value.toLocaleString()}` : `+${addon.price_value}%`}
                           </span>
                         </div>
-                        <p className="text-[10px] text-zinc-500">{addon.description}</p>
+                        <p className="text-[10px] text-secondary">{addon.description}</p>
                       </div>
                     </div>
                   );
@@ -232,30 +232,30 @@ export default function ContentOrderForm() {
             </div>
           )}
 
-          <div className="space-y-4 pt-6 border-t border-zinc-800">
+          <div className="space-y-4 pt-6 border-t border-theme">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Full Name</label>
-                <input type="text" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-white font-bold hover:border-zinc-750" required />
-                <p className="text-[9px] text-zinc-500 ml-1">Please enter your legal name as it appears on official records.</p>
+                <label className="text-[10px] text-secondary font-bold ml-1 uppercase">Full Name</label>
+                <input type="text" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold hover:border-theme" required />
+                <p className="text-[9px] text-secondary ml-1">Please enter your legal name as it appears on official records.</p>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Email Address</label>
-                <input type="email" placeholder="john.doe@example.com" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-white font-bold hover:border-zinc-750" required />
-                <p className="text-[9px] text-zinc-500 ml-1">Your secure quotes and workspace access details will be sent here.</p>
+                <label className="text-[10px] text-secondary font-bold ml-1 uppercase">Email Address</label>
+                <input type="email" placeholder="john.doe@example.com" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold hover:border-theme" required />
+                <p className="text-[9px] text-secondary ml-1">Your secure quotes and workspace access details will be sent here.</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">WhatsApp Number</label>
-                <input type="tel" placeholder="+234..." value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-white font-bold hover:border-zinc-750" required />
-                <p className="text-[9px] text-zinc-500 ml-1">Used for emergency synchronization and revision requests.</p>
+                <label className="text-[10px] text-secondary font-bold ml-1 uppercase">WhatsApp Number</label>
+                <input type="tel" placeholder="+234..." value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold hover:border-theme" required />
+                <p className="text-[9px] text-secondary ml-1">Used for emergency synchronization and revision requests.</p>
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Target Delivery Deadline</label>
+                <label className="text-[10px] text-secondary font-bold ml-1 uppercase">Target Delivery Deadline</label>
                 <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none group-focus-within:text-amber-500 transition-colors">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none group-focus-within:text-amber-500 transition-colors">
                     <Calendar className="w-5 h-5" />
                   </div>
                   <input 
@@ -263,18 +263,18 @@ export default function ContentOrderForm() {
                     className="w-full bg-card border border-theme p-4 pl-12 rounded-xl text-sm text-primary focus:border-amber-500 outline-none dark:[color-scheme:dark] transition-all font-bold hover:border-theme cursor-pointer" 
                     value={deadline} 
                     onChange={e => setDeadline(e.target.value)} 
-                    min={new Date().toISOString().split('T')[0]} 
+                    min={new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} 
                     required 
                   />
                 </div>
-                <p className="text-[9px] text-zinc-500 ml-1">Choose target date. Rush fees apply for turnarounds under 48 hours.</p>
+                <p className="text-[9px] text-secondary ml-1">We require a minimum 2-week (14 day) lead time for quality delivery. Add the Priority Delivery add-on if you need it faster.</p>
               </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Content Category</label>
-                <select className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-zinc-300 font-bold" value={contentType} onChange={e => setContentType(e.target.value)}>
+                <label className="text-[10px] text-secondary font-bold ml-1 uppercase">Content Category</label>
+                <select className="w-full bg-card border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold" value={contentType} onChange={e => setContentType(e.target.value)}>
                   <option>Website Copy / Landing Page</option>
                   <option>SEO Blog Article</option>
                   <option>eBook / Ghostwriting</option>
@@ -283,8 +283,8 @@ export default function ContentOrderForm() {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Tone of Voice</label>
-                <select className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-zinc-300 font-bold" value={tone} onChange={e => setTone(e.target.value)}>
+                <label className="text-[10px] text-secondary font-bold ml-1 uppercase">Tone of Voice</label>
+                <select className="w-full bg-card border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold" value={tone} onChange={e => setTone(e.target.value)}>
                   <option>Professional & Corporate</option>
                   <option>Conversational & Friendly</option>
                   <option>Persuasive & Sales-Driven</option>
@@ -295,29 +295,29 @@ export default function ContentOrderForm() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Project Title / Topic</label>
-              <input type="text" placeholder="E.g., SEO Article on Digital Marketing Trends" value={topic} onChange={e => setTopic(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-white font-bold hover:border-zinc-700" required />
+              <label className="text-[10px] text-secondary font-bold ml-1 uppercase">Project Title / Topic</label>
+              <input type="text" placeholder="E.g., SEO Article on Digital Marketing Trends" value={topic} onChange={e => setTopic(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold hover:border-theme" required />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Target Audience</label>
-              <input type="text" placeholder="Who is your target audience? (e.g., Tech startups, Gen Z shoppers)" value={audience} onChange={e => setAudience(e.target.value)} className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-white font-bold hover:border-zinc-700" required />
-              <p className="text-[9px] text-zinc-500 ml-1">Detailing your target audience helps us draft in the correct tone.</p>
+              <label className="text-[10px] text-secondary font-bold ml-1 uppercase">Target Audience</label>
+              <input type="text" placeholder="Who is your target audience? (e.g., Tech startups, Gen Z shoppers)" value={audience} onChange={e => setAudience(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold hover:border-theme" required />
+              <p className="text-[9px] text-secondary ml-1">Detailing your target audience helps us draft in the correct tone.</p>
             </div>
             
             <div className="space-y-1">
-              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase">Stylistic Context & Instructions</label>
+              <label className="text-[10px] text-secondary font-bold ml-1 uppercase">Stylistic Context & Instructions</label>
               <textarea
                 placeholder="Provide detailed context, competitor links, or stylistic preferences..."
-                className="w-full bg-[#0f0f0f] border border-zinc-800 p-4 rounded-xl text-sm focus:border-amber-500 outline-none resize-none h-32 text-white font-medium hover:border-zinc-700"
+                className="w-full bg-card border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none resize-none h-32 text-primary font-medium hover:border-theme"
                 value={instructions}
                 onChange={e => setInstructions(e.target.value)}
               />
             </div>
             
-            <label className="border-2 border-dashed border-zinc-800 hover:border-amber-500/50 bg-[#0f0f0f] rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
-              <Upload className="w-6 h-6 text-zinc-600 mb-2" />
-              <span className="text-xs font-bold text-zinc-400">Attach Brand Guidelines or References</span>
+            <label className="border-2 border-dashed border-theme hover:border-amber-500/50 bg-card rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">
+              <Upload className="w-6 h-6 text-secondary mb-2" />
+              <span className="text-xs font-bold text-secondary">Attach Brand Guidelines or References</span>
               <input type="file" className="hidden" onChange={e => setBriefFile(e.target.files?.[0] || null)} />
             </label>
             {briefFile && (
@@ -328,9 +328,9 @@ export default function ContentOrderForm() {
           </div>
 
           {/* Terms of Service with decodeHtml */}
-          <div className="space-y-4 pt-6 border-t border-zinc-800">
-            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block ml-1">Terms of Service</label>
-            <div className="h-32 overflow-y-auto bg-black border border-zinc-800 rounded-xl p-4 leading-relaxed custom-scrollbar prose prose-invert max-w-none">
+          <div className="space-y-4 pt-6 border-t border-theme">
+            <label className="text-[10px] font-black uppercase tracking-widest text-secondary block ml-1">Terms of Service</label>
+            <div className="h-32 overflow-y-auto bg-primary border border-theme rounded-xl p-4 leading-relaxed custom-scrollbar prose max-w-none">
               <div dangerouslySetInnerHTML={{ __html: decodeHtml(termsText || "Loading terms...") }} />
             </div>
             <label className="flex items-start gap-3 cursor-pointer">
@@ -338,15 +338,15 @@ export default function ContentOrderForm() {
                 type="checkbox"
                 checked={acceptTerms}
                 onChange={e => setAcceptTerms(e.target.checked)}
-                className="mt-1 w-4 h-4 accent-amber-500 bg-black border-zinc-800 rounded"
+                className="mt-1 w-4 h-4 accent-amber-500 bg-primary border-theme rounded"
               />
-              <span className="text-xs text-zinc-300 font-bold leading-relaxed">I agree to the Content terms above.</span>
+              <span className="text-xs text-primary font-bold leading-relaxed">I agree to the Content terms above.</span>
             </label>
           </div>
 
           <div className="bg-amber-500/10 p-6 rounded-2xl border border-amber-500/20 text-center">
             <div className="text-4xl font-black text-amber-500 tracking-tight">₦{calculateTotal().toLocaleString()}</div>
-            <p className="text-[9px] uppercase font-black text-zinc-500 mt-2 tracking-widest">Calculated Custom Quote</p>
+            <p className="text-[9px] uppercase font-black text-secondary mt-2 tracking-widest">Calculated Custom Quote</p>
           </div>
 
           <button

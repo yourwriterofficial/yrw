@@ -5,7 +5,7 @@ import OrderForm from '@/app/components/OrderForm';
 
 export default function AcademicOrderPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-primary flex items-center justify-center text-primary">Loading...</div>}>
       <OrderForm />
     </Suspense>
   );

@@ -12,11 +12,12 @@ const supabase = createBrowserClient(
 );
 
 interface Notification {
-  id: number;
+  id: string;
   subject: string;
   status: string;
   sent_at: string;
   order_id: string | null;
+  link?: string | null;
 }
 
 export default function NotificationBell({ isAdmin, userEmail }: { isAdmin: boolean; userEmail: string }) {
@@ -42,10 +43,10 @@ export default function NotificationBell({ isAdmin, userEmail }: { isAdmin: bool
 
     // Set up realtime channel
     const channel = supabase
-      .channel('email-log-alerts')
+      .channel('notification-alerts')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'email_logs' },
+        { event: 'INSERT', schema: 'public', table: 'notifications' },
         () => {
           fetchNotifications();
           // Visual feedback
@@ -88,8 +89,10 @@ export default function NotificationBell({ isAdmin, userEmail }: { isAdmin: bool
       }
     }
 
-    // 2. Route to exact item/order
-    if (notif.order_id) {
+    // 2. Route to the linked page, or fall back to the order
+    if (notif.link) {
+      router.push(notif.link);
+    } else if (notif.order_id) {
       if (isAdmin) {
         router.push(`/admin/orders?open=${notif.order_id}`);
       } else {

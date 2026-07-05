@@ -16,30 +16,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if the user is admin
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', session.user.id)
-      .single();
-      
-    const isAdmin = profile?.is_admin === true;
-    const email = session.user.email || '';
-    const adminEmail = process.env.ADMIN_EMAIL || 'yourwriterofficial@gmail.com';
-
-    let query = supabaseAdmin
-      .from('email_logs')
-      .select('id, subject, status, sent_at, orders(order_id)');
-
-    if (isAdmin) {
-      // Admin sees notifications sent to admin email address
-      query = query.eq('recipient', adminEmail);
-    } else {
-      // Clients see notifications sent to their own email address
-      query = query.eq('recipient', email);
-    }
-
-    const { data: notifications, error } = await query
+    const { data: notifications, error } = await supabaseAdmin
+      .from('notifications')
+      .select('id, title, message, type, read, sent_at, link, orders(order_id)')
+      .eq('user_id', session.user.id)
       .order('sent_at', { ascending: false })
       .limit(30);
 
@@ -49,10 +29,12 @@ export async function GET() {
 
     const mapped = notifications.map((n: any) => ({
       id: n.id,
-      subject: n.subject || 'System Notification',
-      status: n.status || 'sent',
+      subject: n.title || n.message || 'System Notification',
+      message: n.message,
+      status: n.read ? 'read' : 'sent',
       sent_at: n.sent_at,
-      order_id: n.orders?.order_id || null
+      link: n.link,
+      order_id: n.orders?.order_id || null,
     }));
 
     return NextResponse.json({ success: true, notifications: mapped });

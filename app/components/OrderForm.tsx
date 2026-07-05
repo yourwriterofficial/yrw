@@ -75,7 +75,7 @@ export default function OrderForm() {
   const [paymentStructure, setPaymentStructure] = useState<'60/40' | 'CUSTOM'>('60/40');
   const [milestones, setMilestones] = useState<Array<{ name: string; percentage: number; trigger: string }>>([
     { name: 'Initial Deposit', percentage: 40, trigger: 'Upon signing this agreement' },
-    { name: 'Second Payment', percentage: 30, trigger: 'Completion of Web & Backend' },
+    { name: 'Second Payment', percentage: 30, trigger: 'Completion of core project phase' },
     { name: 'Final Payment', percentage: 30, trigger: 'Final delivery and client sign off' }
   ]);
 
@@ -363,7 +363,7 @@ Note: As the student, you are the primary link between the classroom and the wri
 
   if (!isLoaded || loading) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-primary text-primary flex flex-col items-center justify-center">
         <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4" />
         <p className="text-xs uppercase tracking-widest font-black text-emerald-400 animate-pulse">
           {loading ? 'Processing Order & Encrypting...' : 'Loading Framework...'}
@@ -517,7 +517,7 @@ Note: As the student, you are the primary link between the classroom and the wri
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] text-secondary block ml-1 font-bold">Billing Address</label>
-                <input type="text" placeholder="e.g. 5, Edo Street, Benin City" value={clientAddress} onChange={e => setClientAddress(e.target.value)} className="w-full bg-card border border-theme p-3 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition font-semibold" />
+                <input type="text" placeholder="Street, City, State, Country" value={clientAddress} onChange={e => setClientAddress(e.target.value)} className="w-full bg-card border border-theme p-3 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition font-semibold" />
               </div>
             </div>
           </div>
@@ -658,13 +658,13 @@ Note: As the student, you are the primary link between the classroom and the wri
                 type="date" 
                 value={deadline} 
                 onChange={e => setDeadline(e.target.value)} 
-                min={new Date().toISOString().split('T')[0]} 
+                min={new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} 
                 className="w-full bg-card border border-theme p-4 pl-12 rounded-[16px] text-sm text-primary outline-none focus:border-emerald-500 transition-all font-bold hover:border-theme cursor-pointer dark:[color-scheme:dark]" 
                 required 
               />
             </div>
             <p className="text-[9px] text-secondary ml-1 leading-relaxed">
-              Choose your target completion date. We guarantee delivery by this deadline. Allow at least 2–3 days for standard synthesis tasks.
+              Choose your target completion date. We require a minimum 2-week (14 day) lead time to guarantee quality work.
             </p>
           </div>
 

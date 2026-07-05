@@ -23,7 +23,7 @@ export default function LoggedInContentOrderPage() {
   const [paymentStructure, setPaymentStructure] = useState<'60/40' | 'CUSTOM'>('60/40');
   const [milestones, setMilestones] = useState<any[]>([
     { name: 'Initial Deposit', percentage: 40, trigger: 'Upon signing this agreement' },
-    { name: 'Second Payment', percentage: 30, trigger: 'Completion of Web & Backend' },
+    { name: 'Second Payment', percentage: 30, trigger: 'Completion of core project phase' },
     { name: 'Final Payment', percentage: 30, trigger: 'Final delivery and client sign off' }
   ]);
   const router = useRouter();
@@ -213,7 +213,7 @@ export default function LoggedInContentOrderPage() {
                     <div
                       key={addon.id}
                       onClick={() => toggleAddon(addon.id)}
-                      className={`p-4 rounded-2xl border cursor-pointer transition flex items-start gap-4 ${isSelected ? 'border-amber-500 bg-amber-500/5' : 'border-theme bg-primary hover:border-zinc-700'}`}
+                      className={`p-4 rounded-2xl border cursor-pointer transition flex items-start gap-4 ${isSelected ? 'border-amber-500 bg-amber-500/5' : 'border-theme bg-primary hover:border-zinc-500/50'}`}
                     >
                       <div className={`mt-1 w-5 h-5 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-theme'}`}>
                         {isSelected && <CheckCircle2 className="w-3 h-3 text-black" />}
@@ -261,35 +261,35 @@ export default function LoggedInContentOrderPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Project Title</label>
+              <label className="text-[10px] text-secondary font-bold ml-1 uppercase tracking-widest">Project Title</label>
               <input
                 type="text"
                 placeholder="E.g., SEO Article on Digital Marketing Trends"
-                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold hover:border-zinc-700"
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold hover:border-zinc-500/50"
                 value={topic}
                 onChange={e => setTopic(e.target.value)}
                 required
               />
-              <p className="text-[9px] text-zinc-500 ml-1">Enter a clear headline or summary topic for your content piece.</p>
+              <p className="text-[9px] text-secondary ml-1">Enter a clear headline or summary topic for your content piece.</p>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Target Audience</label>
+              <label className="text-[10px] text-secondary font-bold ml-1 uppercase tracking-widest">Target Audience</label>
               <input
                 type="text"
                 placeholder="E.g., Tech startups, Gen Z shoppers"
-                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold hover:border-zinc-700"
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none text-primary font-bold hover:border-zinc-500/50"
                 value={audience}
                 onChange={e => setAudience(e.target.value)}
                 required
               />
-              <p className="text-[9px] text-zinc-500 ml-1">Explain who will be reading this content (helps us adjust tone and depth).</p>
+              <p className="text-[9px] text-secondary ml-1">Explain who will be reading this content (helps us adjust tone and depth).</p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Target Delivery Deadline</label>
+              <label className="text-[10px] text-secondary font-bold ml-1 uppercase tracking-widest">Target Delivery Deadline</label>
               <div className="relative group">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none group-focus-within:text-amber-500 transition-colors">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none group-focus-within:text-amber-500 transition-colors">
                   <Calendar className="w-5 h-5" />
                 </div>
                 <input
@@ -297,22 +297,22 @@ export default function LoggedInContentOrderPage() {
                   className="w-full bg-card border border-theme p-4 pl-12 rounded-xl text-sm text-primary focus:border-amber-500 outline-none dark:[color-scheme:dark] transition-all font-bold hover:border-theme cursor-pointer"
                   value={deadline}
                   onChange={e => setDeadline(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                   required
                 />
               </div>
-              <p className="text-[9px] text-zinc-500 ml-1">Select your target deadline. Emergency requests (less than 48 hours) are subject to rush premiums.</p>
+              <p className="text-[9px] text-secondary ml-1">Select your target deadline. Emergency requests (less than 48 hours) are subject to rush premiums.</p>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] text-zinc-400 font-bold ml-1 uppercase tracking-widest">Additional Guidelines</label>
+              <label className="text-[10px] text-secondary font-bold ml-1 uppercase tracking-widest">Additional Guidelines</label>
               <textarea
                 placeholder="Provide detailed context, competitor links, or stylistic preferences..."
-                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none resize-none h-32 text-primary font-medium hover:border-zinc-700"
+                className="w-full bg-primary border border-theme p-4 rounded-xl text-sm focus:border-amber-500 outline-none resize-none h-32 text-primary font-medium hover:border-zinc-500/50"
                 value={instructions}
                 onChange={e => setInstructions(e.target.value)}
               />
-              <p className="text-[9px] text-zinc-500 ml-1">Paste any links, keyword lists, formatting rules, or references for our copywriters.</p>
+              <p className="text-[9px] text-secondary ml-1">Paste any links, keyword lists, formatting rules, or references for our copywriters.</p>
             </div>
 
             <label className="border-2 border-dashed border-theme hover:border-amber-500/50 bg-primary rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition">

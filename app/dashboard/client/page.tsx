@@ -10,6 +10,7 @@ import WalletPage from './wallet/page';
 import { DashboardSkeleton } from '@/app/components/ui/Skeleton';
 import { ToastContainer, showToast } from '@/app/components/ui/Toast';
 import StatusBadge from '@/app/components/ui/StatusBadge';
+import NotificationPreferencesPanel from '@/app/components/ui/NotificationPreferencesPanel';
 
 // ==========================================
 // 1. HELPER FUNCTIONS
@@ -721,6 +722,8 @@ function DashboardContent() {
                   <lucide.MessageCircle className="w-4 h-4" /> Contact Support to Update Details
                 </button>
               </div>
+
+              {user?.id && <NotificationPreferencesPanel userId={user.id} />}
             </div>
           </div>
         </div>
