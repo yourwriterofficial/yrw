@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YourResearchWriter — Nairaland Ad Creatives</title>
+<style>
+  :root { --g:#0a3d1f; --gr:#1DB954; --am:#f0a500; }
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#0f1512; color:#e8f5ee; padding:28px 18px 60px; }
+  .wrap { max-width:860px; margin:0 auto; }
+  h1 { font-size:1.5rem; margin-bottom:4px; }
+  .sub { color:#8fe3b0; font-size:.9rem; margin-bottom:8px; }
+  .link { color:var(--am); font-weight:700; word-break:break-all; }
+  .note { background:#12241a; border:1px solid #1e3a29; border-radius:12px; padding:14px 16px; font-size:.86rem; line-height:1.6; margin:18px 0 26px; }
+  .note b { color:#8fe3b0; }
+  .card { background:#141c18; border:1px solid #22332a; border-radius:14px; padding:18px; margin-bottom:20px; }
+  .card h3 { font-size:1rem; margin-bottom:2px; }
+  .card .dim { color:#8fe3b0; font-size:.8rem; margin-bottom:12px; }
+  .frame { background:#0b0f0d; border:1px dashed #2c4536; border-radius:10px; padding:14px; display:flex; justify-content:center; overflow:auto; }
+  .btns { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+  button, a.dl { background:var(--gr); color:#062e17; border:none; font-weight:800; font-size:.8rem; padding:9px 16px; border-radius:9px; cursor:pointer; text-decoration:none; display:inline-block; }
+  a.dl.svg { background:#22332a; color:#8fe3b0; }
+  .place { font-size:.78rem; color:#a7c9b6; margin-top:8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📣 YourResearchWriter — Nairaland Ad Creatives</h1>
+  <div class="sub">Four ready-to-upload banners in Nairaland's approved sizes. Ad links to: <span class="link">https://yourresearchwriter.com.ng</span></div>
+
+  <div class="note">
+    <b>How to use on Nairaland:</b><br>
+    1. Under each banner, click <b>Download PNG</b> (Nairaland accepts JPG/PNG/GIF at exact pixel sizes).<br>
+    2. Go to <span class="link">nairaland.com/advertise</span> → choose your placement → upload the matching size.<br>
+    3. Set the destination link to <span class="link">https://yourresearchwriter.com.ng</span> (or a specific page, e.g. <span class="link">/projects</span>).<br>
+    <br>
+    <b>Which size goes where:</b> 728×90 = top leaderboard · 300×250 = in-post / sidebar box · 320×100 = mobile · 468×60 = full banner.
+  </div>
+
+  <div class="card">
+    <h3>Medium Rectangle</h3><div class="dim">300 × 250 — Nairaland's main in-post / sidebar unit</div>
+    <div class="frame"><img src="yrw-300x250.svg" width="300" height="250" data-w="300" data-h="250" alt="300x250"></div>
+    <div class="btns"><button onclick="png(this)">Download PNG</button><a class="dl svg" href="yrw-300x250.svg" download>Download SVG</a></div>
+  </div>
+
+  <div class="card">
+    <h3>Leaderboard</h3><div class="dim">728 × 90 — top-of-page banner (desktop)</div>
+    <div class="frame"><img src="yrw-728x90.svg" width="728" height="90" data-w="728" data-h="90" alt="728x90"></div>
+    <div class="btns"><button onclick="png(this)">Download PNG</button><a class="dl svg" href="yrw-728x90.svg" download>Download SVG</a></div>
+  </div>
+
+  <div class="card">
+    <h3>Large Mobile Banner</h3><div class="dim">320 × 100 — mobile placements</div>
+    <div class="frame"><img src="yrw-320x100.svg" width="320" height="100" data-w="320" data-h="100" alt="320x100"></div>
+    <div class="btns"><button onclick="png(this)">Download PNG</button><a class="dl svg" href="yrw-320x100.svg" download>Download SVG</a></div>
+  </div>
+
+  <div class="card">
+    <h3>Full Banner</h3><div class="dim">468 × 60 — classic banner</div>
+    <div class="frame"><img src="yrw-468x60.svg" width="468" height="60" data-w="468" data-h="60" alt="468x60"></div>
+    <div class="btns"><button onclick="png(this)">Download PNG</button><a class="dl svg" href="yrw-468x60.svg" download>Download SVG</a></div>
+  </div>
+</div>
+
+<script>
+// Export the sibling SVG <img> to a pixel-exact PNG (2x for crispness, sized to the ad dimension).
+async function png(btn){
+  const img = btn.closest('.card').querySelector('img');
+  const w = +img.dataset.w, h = +img.dataset.h, scale = 2;
+  const resp = await fetch(img.src); const svgText = await resp.text();
+  const blob = new Blob([svgText], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const image = new Image(); image.crossOrigin='anonymous';
+  image.onload = () => {
+    const c = document.createElement('canvas'); c.width=w*scale; c.height=h*scale;
+    const ctx = c.getContext('2d'); ctx.setTransform(scale,0,0,scale,0,0);
+    ctx.drawImage(image,0,0,w,h);
+    URL.revokeObjectURL(url);
+    const a = document.createElement('a');
+    a.download = `yrw-${w}x${h}.png`; a.href = c.toDataURL('image/png'); a.click();
+  };
+  image.onerror = () => { alert('Could not render PNG here — download the SVG and convert, or open this page over http (not file://).'); URL.revokeObjectURL(url); };
+  image.src = url;
+}
+</script>
+</body>
+</html>

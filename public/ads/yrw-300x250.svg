@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="250" viewBox="0 0 300 250" font-family="'Segoe UI', Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg250" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d4a25"/>
+      <stop offset="0.55" stop-color="#0a3d1f"/>
+      <stop offset="1" stop-color="#062e17"/>
+    </linearGradient>
+    <linearGradient id="cta250" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f5b800"/>
+      <stop offset="1" stop-color="#f0a500"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="250" rx="12" fill="url(#bg250)"/>
+  <circle cx="270" cy="24" r="70" fill="#ffffff" opacity="0.04"/>
+  <circle cx="24" cy="240" r="90" fill="#ffffff" opacity="0.03"/>
+
+  <!-- Brand -->
+  <g transform="translate(18,18)">
+    <rect width="34" height="34" rx="9" fill="#1DB954"/>
+    <text x="17" y="24" text-anchor="middle" font-size="16" font-weight="800" fill="#062e17">YRW</text>
+    <text x="44" y="15" font-size="14" font-weight="800" fill="#ffffff">YourResearchWriter</text>
+    <text x="44" y="29" font-size="9.5" fill="#8fe3b0" letter-spacing="1">TECH • RESEARCH • WRITING</text>
+  </g>
+
+  <!-- Headline -->
+  <text x="18" y="82" font-size="20" font-weight="800" fill="#ffffff">Your Project.</text>
+  <text x="18" y="106" font-size="20" font-weight="800" fill="#f5b800">Done Right.</text>
+
+  <!-- Services chips -->
+  <g font-size="10" font-weight="700" fill="#eafff2">
+    <g transform="translate(18,120)">
+      <rect width="120" height="20" rx="10" fill="#ffffff" opacity="0.10"/>
+      <text x="60" y="14" text-anchor="middle" fill="#eafff2">Thesis &amp; Research</text>
+    </g>
+    <g transform="translate(146,120)">
+      <rect width="136" height="20" rx="10" fill="#ffffff" opacity="0.10"/>
+      <text x="68" y="14" text-anchor="middle" fill="#eafff2">Content &amp; SEO Writing</text>
+    </g>
+    <g transform="translate(18,146)">
+      <rect width="128" height="20" rx="10" fill="#ffffff" opacity="0.10"/>
+      <text x="64" y="14" text-anchor="middle" fill="#eafff2">Software &amp; Web Dev</text>
+    </g>
+    <g transform="translate(154,146)">
+      <rect width="128" height="20" rx="10" fill="#ffffff" opacity="0.10"/>
+      <text x="64" y="14" text-anchor="middle" fill="#eafff2">CVs • Resumes • SPSS</text>
+    </g>
+  </g>
+
+  <!-- Project materials highlight -->
+  <g transform="translate(18,174)">
+    <rect width="264" height="26" rx="8" fill="#1DB954" opacity="0.16"/>
+    <text x="10" y="17" font-size="11" font-weight="800" fill="#8fe3b0">3,000+ Ready Project Materials</text>
+    <text x="254" y="17" text-anchor="end" font-size="12" font-weight="800" fill="#f5b800">from ₦3,999</text>
+  </g>
+
+  <!-- CTA -->
+  <g transform="translate(18,210)">
+    <rect width="160" height="30" rx="15" fill="url(#cta250)"/>
+    <text x="80" y="20" text-anchor="middle" font-size="13" font-weight="800" fill="#0a3d1f">ORDER NOW →</text>
+    <text x="188" y="20" font-size="11.5" font-weight="700" fill="#ffffff">yourresearchwriter.com.ng</text>
+  </g>
+</svg>
