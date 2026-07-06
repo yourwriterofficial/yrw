@@ -8,20 +8,28 @@ import { supabase } from '@/lib/supabaseClient';
 let _vapidKeyPromise: Promise<string> | null = null;
 
 async function resolveVapidPublicKey(): Promise<string> {
-  if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
-    return process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const localKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  if (localKey && localKey.length === 87) {
+    return localKey;
   }
   if (!_vapidKeyPromise) {
     _vapidKeyPromise = (async () => {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
-      const res = await fetch(`${supabaseUrl}/functions/v1/vapid-key`, {
-        headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
-      });
-      if (!res.ok) throw new Error('Failed to fetch VAPID key');
-      const { publicKey } = await res.json() as { publicKey: string };
-      if (!publicKey) throw new Error('Empty VAPID key returned');
-      return publicKey;
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+        const res = await fetch(`${supabaseUrl}/functions/v1/vapid-key`, {
+          headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+        });
+        if (!res.ok) throw new Error('Failed to fetch VAPID key');
+        const { publicKey } = await res.json() as { publicKey: string };
+        if (!publicKey || publicKey.length !== 87) {
+          throw new Error('Invalid VAPID key from server');
+        }
+        return publicKey;
+      } catch (err) {
+        console.warn('[Push] failed to resolve dynamic VAPID key, using hardcoded fallback:', err);
+        return "BA8RM3ej0pbVl5vx_DBKyv7GECKHji3F6oCCbzUjola1Uf0tLuh8nuDqwURDkJ_cgK8zhhNM-kq_-pAkLYtS3Y4";
+      }
     })();
     _vapidKeyPromise.catch(() => { _vapidKeyPromise = null; });
   }
@@ -88,6 +96,55 @@ export function usePushNotifications(userId: string | undefined) {
         reg.pushManager.getSubscription().then(sub => setSubscribed(!!sub));
       }
     });
+  }, [userId]);
+
+  // Auto-subscribe: attempt to enable push notifications automatically
+  // when the user loads any page, as long as permission is not 'denied'.
+  const autoSubAttempted = useRef(false);
+  useEffect(() => {
+    if (!userId || autoSubAttempted.current) return;
+    if (typeof window === 'undefined' || !('Notification' in window) || !('PushManager' in window)) return;
+    if (Notification.permission === 'denied') return;
+
+    autoSubAttempted.current = true;
+
+    // Small delay so service worker is ready
+    const timer = setTimeout(async () => {
+      try {
+        const reg = swRegRef.current ?? await getSwRegistration();
+        if (!reg) return;
+        swRegRef.current = reg;
+
+        const existing = await reg.pushManager.getSubscription();
+        if (existing) {
+          // Already subscribed in browser, just ensure DB is synced
+          await saveSubscription(userId, existing);
+          setSubscribed(true);
+          return;
+        }
+
+        // If permission is 'default', request it
+        let perm = Notification.permission;
+        if (perm === 'default') {
+          perm = await Notification.requestPermission();
+          setPermission(perm);
+        }
+        if (perm !== 'granted') return;
+
+        const vapidKey = await resolveVapidPublicKey();
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as BufferSource,
+        });
+        await saveSubscription(userId, sub);
+        setSubscribed(true);
+        console.log('[Push] Auto-subscribed successfully');
+      } catch (err) {
+        console.warn('[Push] Auto-subscribe failed (non-blocking):', err);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
   }, [userId]);
 
   const subscribe = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {

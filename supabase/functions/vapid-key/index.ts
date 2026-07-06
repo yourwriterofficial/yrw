@@ -10,12 +10,9 @@ const CORS = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
-  const publicKey = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
-  if (!publicKey) {
-    return new Response(JSON.stringify({ error: "VAPID_PUBLIC_KEY secret not set" }), {
-      status: 500,
-      headers: { ...CORS, "Content-Type": "application/json" },
-    });
+  let publicKey = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
+  if (!publicKey || publicKey.length !== 87) {
+    publicKey = "BA8RM3ej0pbVl5vx_DBKyv7GECKHji3F6oCCbzUjola1Uf0tLuh8nuDqwURDkJ_cgK8zhhNM-kq_-pAkLYtS3Y4";
   }
 
   return new Response(JSON.stringify({ publicKey }), {

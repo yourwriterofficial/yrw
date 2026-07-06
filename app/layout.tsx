@@ -4,6 +4,7 @@ import "./globals.css";
 import PWAUpdater from "./components/PWAUpdater";
 import { ThemeProvider } from "./components/ThemeProvider";
 import OrderAssistant from "./components/OrderAssistant";
+import PushAutoSubscriber from "./components/PushAutoSubscriber";
 import { siteUrl } from "@/lib/siteUrl";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -85,6 +86,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider>
           <PWAUpdater />
+          <PushAutoSubscriber />
           {children}
           <OrderAssistant />
           {/* Floating WhatsApp Support Button */}
