@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import ProjectsAssistant from '@/app/components/ProjectsAssistant';
+import Header from '@/app/components/Header';
 
 type Topic = {
   id: number;
@@ -321,11 +322,12 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-primary text-primary font-['Inter']">
+      <Header />
       {/* HERO */}
       <section className="relative overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-600 to-emerald-800 text-white">
         <div className="absolute -top-16 -right-20 w-72 h-72 rounded-full bg-white/5" />
         <div className="absolute -bottom-24 -left-16 w-96 h-96 rounded-full bg-white/[0.03]" />
-        <div className="relative z-10 max-w-4xl mx-auto text-center px-6 py-12">
+        <div className="relative z-10 max-w-4xl mx-auto text-center px-6 pt-28 pb-12">
           <div className="text-5xl mb-2">📚</div>
           <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-3">
             {pageSettings.hero_title}

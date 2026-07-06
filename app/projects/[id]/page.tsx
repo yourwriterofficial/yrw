@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import ProjectsAssistant from '@/app/components/ProjectsAssistant';
+import Header from '@/app/components/Header';
 
 type Topic = {
   id: number;
@@ -221,7 +222,8 @@ export default function ProjectPermalinkPage() {
   }
 
   return (
-    <div className="min-h-screen bg-primary text-primary font-['Inter'] pb-12">
+    <div className="min-h-screen bg-primary text-primary font-['Inter'] pb-12 pt-20">
+      <Header />
       {/* HEADER BREADCRUMB */}
       <div className="border-b border-theme bg-secondary/30 px-4 md:px-8 py-4">
         <div className="max-w-[1200px] mx-auto flex justify-between items-center gap-4 flex-wrap text-xs md:text-sm font-medium">

@@ -218,8 +218,7 @@ export default function OrderAssistant() {
     return () => { clearInterval(id); window.removeEventListener('resize', update); };
   }, [tourActive, tourStep]);
 
-  // Admin pages get no assistant; /projects has its own page-scoped assistant.
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/projects')) return null;
+
 
   const category = data.category as CategoryId | undefined;
   const catDef = category ? CATEGORIES.find(c => c.id === category)! : undefined;
@@ -1078,6 +1077,9 @@ export default function OrderAssistant() {
         return null;
     }
   };
+
+  // Admin pages get no assistant; /projects has its own page-scoped assistant.
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/projects')) return null;
 
   return (
     <>
