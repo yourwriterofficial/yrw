@@ -65,7 +65,7 @@ export async function getInvoiceDefaults(supabase: SupabaseClient): Promise<Invo
 }
 
 /** Build the milestones array for an invoice from an order's payment structure. */
-function milestonesFromOrder(order: OrderLike): any[] {
+export function milestonesFromOrder(order: OrderLike): any[] {
   const total = Number(order.financial_quote || 0);
   const existing = order.payment_milestones;
   if (Array.isArray(existing) && existing.length > 0) {

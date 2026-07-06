@@ -7,8 +7,11 @@ import { supabase } from '@/lib/supabaseClient';
 import ThemeToggle from './ThemeToggle';
 import { Menu, X, ArrowRight } from 'lucide-react';
 
-export default function Header() {
+export default function Header({ projectsContext = false }: { projectsContext?: boolean }) {
   const router = useRouter();
+  const servicesHref = projectsContext ? '/projects#services' : '/#services';
+  const processHref = projectsContext ? '/projects#how-it-works' : '/#process';
+  const startHref = projectsContext ? '/projects#topics-grid' : '/#services';
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -79,13 +82,13 @@ export default function Header() {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8 text-xs font-bold text-secondary uppercase tracking-widest">
-          <Link href="/#services" className="hover:text-emerald-400 transition-colors duration-200">
+          <Link href={servicesHref} className="hover:text-emerald-400 transition-colors duration-200">
             Services
           </Link>
           <Link href="/projects" className="hover:text-emerald-400 transition-colors duration-200">
             Project Materials
           </Link>
-          <Link href="/#process" className="hover:text-emerald-400 transition-colors duration-200">
+          <Link href={processHref} className="hover:text-emerald-400 transition-colors duration-200">
             How it Works
           </Link>
           <div className="w-40 border-l border-theme pl-4">
@@ -115,7 +118,7 @@ export default function Header() {
 
         {/* Desktop CTA */}
         <Link
-          href="/#services"
+          href={startHref}
           className="hidden md:flex bg-emerald-500 text-black px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-wider hover:bg-emerald-400 active:scale-95 transition-all duration-200 items-center gap-1.5 shadow-md shadow-emerald-500/10"
         >
           Start Project <ArrowRight className="w-3.5 h-3.5" />
@@ -135,7 +138,7 @@ export default function Header() {
       {mobileMenuOpen && (
         <div className="md:hidden bg-secondary/95 backdrop-blur-md border-b border-theme py-6 px-6 flex flex-col gap-4 text-sm font-bold shadow-xl animate-in slide-in-from-top duration-200">
           <Link
-            href="/#services"
+            href={servicesHref}
             onClick={() => setMobileMenuOpen(false)}
             className="text-secondary hover:text-emerald-400 py-2 border-b border-theme/20 transition-colors"
           >
@@ -149,7 +152,7 @@ export default function Header() {
             Project Materials
           </Link>
           <Link
-            href="/#process"
+            href={processHref}
             onClick={() => setMobileMenuOpen(false)}
             className="text-secondary hover:text-emerald-400 py-2 border-b border-theme/20 transition-colors"
           >
@@ -187,7 +190,7 @@ export default function Header() {
             </Link>
           )}
           <Link
-            href="/#services"
+            href={startHref}
             onClick={() => setMobileMenuOpen(false)}
             className="bg-emerald-500 text-black text-center py-3 rounded-full font-black uppercase tracking-wider mt-4 hover:bg-emerald-400 active:scale-95 transition-all duration-200"
           >

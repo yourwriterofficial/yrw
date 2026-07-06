@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { listAllAuthUsers } from '@/lib/adminAuth';
 
 const admin = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,20 +11,23 @@ const admin = createServiceClient(
 const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
 const LEVEL_PRICE: Record<string, number> = { BSc: 3999, MSc: 4500, PhD: 10000 };
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Pay-FIRST checkout for a project material. No order is created here — the
  * order is only written by the Paystack webhook after payment is confirmed, so
- * unpaid attempts never persist. The buyer MUST be logged in.
+ * unpaid attempts never persist. Guests may check out without logging in first —
+ * they supply an email, we resolve/create the matching account, and the webhook
+ * emails them a magic link to log in to the dashboard where their order lands.
  *
- * Body: { topicId?, customTitle?, department?, level?, addonIds?: number[] }
+ * Body: { topicId?, customTitle?, department?, level?, addonIds?: number[], email? }
  */
 export async function POST(request: Request) {
   try {
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'You must be logged in to purchase.' }, { status: 401 });
 
+    const body = await request.json();
     const {
       topicId,
       customTitle,
@@ -32,8 +36,42 @@ export async function POST(request: Request) {
       addonIds,
       addonWords,
       addonFeatures,
-      customLocation
-    } = await request.json();
+      customLocation,
+      email: guestEmailInput,
+    } = body;
+
+    let buyerId: string;
+    let buyerEmail: string;
+    let guestCheckout = false;
+
+    if (user) {
+      buyerId = user.id;
+      buyerEmail = user.email!;
+    } else {
+      const email = String(guestEmailInput || '').trim().toLowerCase();
+      if (!email || !EMAIL_RE.test(email)) {
+        return NextResponse.json({ error: 'A valid email is required to check out.' }, { status: 400 });
+      }
+      guestCheckout = true;
+      buyerEmail = email;
+
+      const existing = await listAllAuthUsers(admin);
+      const match = existing.find((u) => u.email.toLowerCase() === email);
+      if (match) {
+        buyerId = match.id;
+      } else {
+        const { data: created, error: createErr } = await admin.auth.admin.createUser({
+          email,
+          email_confirm: true,
+          user_metadata: { full_name: email.split('@')[0] },
+        });
+        if (createErr || !created?.user) {
+          return NextResponse.json({ error: 'Could not set up your account for checkout.' }, { status: 500 });
+        }
+        buyerId = created.user.id;
+        await admin.from('profiles').upsert({ id: buyerId, full_name: email.split('@')[0] });
+      }
+    }
 
     // Fetch pricing settings (global level prices & department price overrides)
     const { data: settingsData } = await admin.from('project_settings').select('*');
@@ -129,8 +167,8 @@ export async function POST(request: Request) {
 
     const total = Math.round(basePrice + addonTotal);
 
-    const { data: profile } = await admin.from('profiles').select('full_name, whatsapp').eq('id', user.id).single();
-    const reference = `PROJ_${Date.now()}_${user.id.slice(0, 8)}`;
+    const { data: profile } = await admin.from('profiles').select('full_name, whatsapp').eq('id', buyerId).single();
+    const reference = `PROJ_${Date.now()}_${buyerId.slice(0, 8)}`;
 
     const res = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
@@ -139,13 +177,13 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: user.email,
+        email: buyerEmail,
         amount: total * 100,
         reference,
         callback_url: `${BASE}/payment/callback?tx_ref=${reference}`,
         metadata: {
           type: 'project_material',
-          userId: user.id,
+          userId: buyerId,
           topicId: topicRef,
           title,
           department: dept,
@@ -154,8 +192,10 @@ export async function POST(request: Request) {
           basePrice,
           addons: addonDescriptions.length ? addonDescriptions.join(', ') : 'None',
           customLocation: customLocation || null,
-          name: profile?.full_name || user.email?.split('@')[0] || 'Client',
+          name: profile?.full_name || buyerEmail.split('@')[0] || 'Client',
           whatsapp: profile?.whatsapp || null,
+          guestCheckout,
+          guestEmail: guestCheckout ? buyerEmail : null,
         },
       }),
     });

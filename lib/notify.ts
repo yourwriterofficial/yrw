@@ -45,6 +45,7 @@ interface NotifyParams {
   /** HTML for the email — if omitted, no email is sent even if the user allows it. */
   emailHtml?: string;
   emailSubject?: string;
+  emailAttachments?: { filename: string; content: Buffer | string }[];
   isAdminSent?: boolean;
   batchId?: string;
 }
@@ -56,7 +57,7 @@ interface NotifyParams {
  * Never throws — a failure in one channel must not block the others or the caller.
  */
 export async function notifyUser(params: NotifyParams): Promise<void> {
-  const { userId, title, message, type, link, orderDbId, emailHtml, emailSubject, isAdminSent, batchId } = params;
+  const { userId, title, message, type, link, orderDbId, emailHtml, emailSubject, emailAttachments, isAdminSent, batchId } = params;
 
   let prefs: Record<string, boolean> | null = null;
   try {
@@ -98,7 +99,7 @@ export async function notifyUser(params: NotifyParams): Promise<void> {
       const { data: userRes } = await supabase.auth.admin.getUserById(userId);
       const to = userRes?.user?.email;
       if (to && profile) {
-        await sendSystemEmail({ to, subject: emailSubject || title, html: emailHtml! });
+        await sendSystemEmail({ to, subject: emailSubject || title, html: emailHtml!, attachments: emailAttachments });
       }
     } catch (e) {
       console.warn('[notify] email send failed (non-fatal):', e);

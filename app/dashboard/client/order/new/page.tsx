@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, LineChart, PenTool, Briefcase, ArrowRight, Terminal } from 'lucide-react';
+import { BookOpen, LineChart, PenTool, Briefcase, ArrowRight, Terminal, Library } from 'lucide-react';
 import OrderCategoryNav from '@/app/components/OrderCategoryNav';
 
 export default function SelectServicePage() {
@@ -103,8 +103,22 @@ export default function SelectServicePage() {
             </ul>
           </Link>
 
+          {/* Ready-made Project Materials Card */}
+          <Link href="/projects" className="group block p-6 md:p-8 rounded-[32px] bg-secondary border border-theme hover:border-emerald-500/50 transition duration-300 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-6 md:p-8 opacity-0 group-hover:opacity-100 transition transform translate-x-4 group-hover:translate-x-0"><ArrowRight className="text-emerald-500 w-5 h-5" /></div>
+            <div className="w-12 h-12 md:w-14 md:h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-6 border border-emerald-500/20">
+              <Library className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
+            </div>
+            <h3 className="text-lg md:text-xl font-black mb-3 break-words text-primary">Ready-made Project Materials</h3>
+            <p className="text-xs md:text-sm text-secondary mb-6 leading-relaxed break-words">Browse 3,000+ ready-made topics across every department — instant pricing, delivered to your vault.</p>
+            <ul className="space-y-2 text-xs font-medium text-secondary">
+              <li className="flex items-center gap-2 break-words">✅ Chapters 1–5, MS Word</li>
+              <li className="flex items-center gap-2 break-words">✅ Fast delivery to Secure Vault</li>
+            </ul>
+          </Link>
+
           {/* Software Dev Card */}
-          <Link href="/dashboard/client/order/new/dev" className="group block p-6 md:p-8 rounded-[32px] bg-secondary border border-theme hover:border-cyan-500/50 transition duration-300 relative overflow-hidden md:col-span-2 lg:col-span-1">
+          <Link href="/dashboard/client/order/new/dev" className="group block p-6 md:p-8 rounded-[32px] bg-secondary border border-theme hover:border-cyan-500/50 transition duration-300 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-6 md:p-8 opacity-0 group-hover:opacity-100 transition transform translate-x-4 group-hover:translate-x-0"><ArrowRight className="text-cyan-500 w-5 h-5" /></div>
             <div className="w-12 h-12 md:w-14 md:h-14 bg-cyan-500/10 rounded-2xl flex items-center justify-center mb-6 border border-cyan-500/20">
               <Terminal className="w-5 h-5 md:w-6 md:h-6 text-cyan-400" />

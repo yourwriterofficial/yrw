@@ -76,13 +76,14 @@ const getPipelineDetails = (order: any) => {
   };
 };
 
-const sendStatusEmail = async (order: { orderId: string; email: string; legal_name: string; topic: string; financial_quote: number }, status: string) => {
+const sendStatusEmail = async (order: { orderId: string; email: string; legal_name: string; topic: string; financial_quote: number; payment_milestones?: any[] }, status: string) => {
   const orderEmailData = {
     order_id: order.orderId,
     legal_name: order.legal_name,
     email: order.email,
     topic: order.topic,
     financial_quote: order.financial_quote,
+    payment_milestones: order.payment_milestones,
   };
   let template;
   switch (status) {
@@ -235,13 +236,14 @@ function OrdersPageContent() {
     setMilestoneBusy(null);
   };
 
+  const [invoiceSendFormat, setInvoiceSendFormat] = useState<'link' | 'image' | 'pdf'>('link');
   const sendOrderAsInvoice = async (orderId: string, via: 'EMAIL' | 'WHATSAPP') => {
     setSendingInvoiceVia(via);
     try {
       const res = await fetch('/api/admin/send-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, via }),
+        body: JSON.stringify({ orderId, via, format: invoiceSendFormat === 'link' ? undefined : invoiceSendFormat }),
       });
       const data = await res.json();
       if (!res.ok) { showToast(data.error || 'Failed to send invoice', 'error'); return; }
@@ -249,7 +251,7 @@ function OrdersPageContent() {
         window.open(data.whatsappUrl, '_blank');
         showToast('Opening WhatsApp — invoice marked as sent', 'success');
       } else {
-        showToast('Invoice emailed to client', 'success');
+        showToast(invoiceSendFormat === 'link' ? 'Invoice emailed to client' : `Invoice emailed with ${invoiceSendFormat.toUpperCase()} attached`, 'success');
       }
     } catch {
       showToast('Network error sending invoice', 'error');
@@ -399,6 +401,7 @@ function OrdersPageContent() {
           legal_name: editingOrder['Legal Name'],
           topic: editingOrder['Research Topic'],
           financial_quote: editingOrder['Financial Quote'] ?? 0,
+          payment_milestones: fullOrder?.payment_milestones,
         }, 'Quote Sent');
       }
       await fetchOrders();
@@ -1031,6 +1034,14 @@ function OrdersPageContent() {
               <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-secondary mb-4 border-b border-theme pb-2">Send as Invoice</h3>
                 <p className="text-[11px] text-secondary mb-3">Generates (or refreshes) this order's invoice and delivers it to the client. Every send is recorded.</p>
+                <div className="flex items-center gap-2 mb-3">
+                  <label className="text-[10px] uppercase font-black text-secondary">Send as:</label>
+                  <select value={invoiceSendFormat} onChange={e => setInvoiceSendFormat(e.target.value as 'link' | 'image' | 'pdf')} className="bg-secondary border border-theme rounded-lg text-xs font-bold text-primary px-2 py-1.5 outline-none">
+                    <option value="link">Link Only</option>
+                    <option value="image">Image (attached to email / linked on WhatsApp)</option>
+                    <option value="pdf">PDF (attached to email / linked on WhatsApp)</option>
+                  </select>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button type="button" disabled={sendingInvoiceVia !== null} onClick={() => sendOrderAsInvoice(editingOrder['Order ID'], 'EMAIL')} className="flex-1 py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 disabled:opacity-50"><lucide.Mail className="w-4 h-4" /> {sendingInvoiceVia === 'EMAIL' ? 'Sending…' : 'Send Invoice by Email'}</button>
                   <button type="button" disabled={sendingInvoiceVia !== null} onClick={() => sendOrderAsInvoice(editingOrder['Order ID'], 'WHATSAPP')} className="flex-1 py-3 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/20 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 disabled:opacity-50"><lucide.MessageCircle className="w-4 h-4" /> {sendingInvoiceVia === 'WHATSAPP' ? 'Opening…' : 'Send Invoice by WhatsApp'}</button>

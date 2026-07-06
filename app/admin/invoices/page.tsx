@@ -56,13 +56,15 @@ export default function InvoicesListPage() {
   };
 
   const [sendingId, setSendingId] = useState<number | null>(null);
+  const [sendFormat, setSendFormat] = useState<Record<number, 'link' | 'image' | 'pdf'>>({});
   const sendInvoice = async (invoice: CustomInvoice, via: 'EMAIL' | 'WHATSAPP') => {
     setSendingId(invoice.id);
+    const fmt = sendFormat[invoice.id] || 'link';
     try {
       const res = await fetch('/api/admin/send-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invoiceNumber: invoice.invoice_number, via }),
+        body: JSON.stringify({ invoiceNumber: invoice.invoice_number, via, format: fmt === 'link' ? undefined : fmt }),
       });
       const data = await res.json();
       if (!res.ok) { showToast(data.error || 'Failed to send invoice', 'error'); return; }
@@ -70,7 +72,7 @@ export default function InvoicesListPage() {
         window.open(data.whatsappUrl, '_blank');
         showToast('Opening WhatsApp — invoice marked as sent', 'success');
       } else {
-        showToast('Invoice emailed to client', 'success');
+        showToast(fmt === 'link' ? 'Invoice emailed to client' : `Invoice emailed with ${fmt.toUpperCase()} attached`, 'success');
       }
       fetchInvoices();
     } catch {
@@ -266,6 +268,16 @@ export default function InvoicesListPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right whitespace-nowrap space-x-2">
+                    <select
+                      value={sendFormat[invoice.id] || 'link'}
+                      onChange={e => setSendFormat(prev => ({ ...prev, [invoice.id]: e.target.value as 'link' | 'image' | 'pdf' }))}
+                      className="bg-white/5 border border-theme rounded-lg text-[10px] font-bold text-secondary px-2 py-2 outline-none align-middle"
+                      title="What to send"
+                    >
+                      <option value="link">Link Only</option>
+                      <option value="image">As Image</option>
+                      <option value="pdf">As PDF</option>
+                    </select>
                     <button
                       onClick={() => sendInvoice(invoice, 'EMAIL')}
                       disabled={sendingId === invoice.id}

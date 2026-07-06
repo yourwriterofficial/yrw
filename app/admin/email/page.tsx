@@ -4,8 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import * as lucide from 'lucide-react';
 import { ToastContainer, showToast } from '@/app/components/ui/Toast';
 import PageHeader from '@/app/components/ui/PageHeader';
+import { supabase } from '@/lib/supabaseClient';
 
 type AdminUser = { id: string; full_name: string; email: string };
+type MassLog = { id: number; subject: string; recipient_count: number; all_users: boolean; sent_at: string };
 type Tab = 'notify' | 'email';
 type Audience = 'all' | 'selected';
 
@@ -29,6 +31,17 @@ export default function EmailNotificationsPage() {
 
   // Prune
   const [pruning, setPruning] = useState(false);
+
+  // Mass-send audit log
+  const [massLogs, setMassLogs] = useState<MassLog[]>([]);
+  const fetchMassLogs = useCallback(async () => {
+    const { data } = await supabase
+      .from('mass_notification_logs')
+      .select('*')
+      .order('sent_at', { ascending: false })
+      .limit(20);
+    setMassLogs(data || []);
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -54,7 +67,8 @@ export default function EmailNotificationsPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+    fetchMassLogs();
+  }, [fetchUsers, fetchMassLogs]);
 
   const recipientCount = audience === 'all' ? users.length : selectedIds.length;
 
@@ -104,6 +118,7 @@ export default function EmailNotificationsPage() {
         setSubject('');
         setHtml('');
         setSelectedIds([]);
+        fetchMassLogs();
       } else {
         showToast(data.error || 'Failed to send email', 'error');
       }
@@ -239,6 +254,31 @@ export default function EmailNotificationsPage() {
                 {sendingEmail ? 'Sending...' : 'Send Mass Email'}
               </button>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Mass-send audit log */}
+      <div className="bg-secondary border border-theme rounded-3xl p-6 md:p-8 space-y-4">
+        <div className="flex items-center gap-2">
+          <lucide.ScrollText className="w-5 h-5 text-purple-400" />
+          <h2 className="font-black text-primary">Recent Mass Sends</h2>
+        </div>
+        {massLogs.length === 0 ? (
+          <p className="text-xs text-secondary">No mass emails sent yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {massLogs.map(log => (
+              <div key={log.id} className="flex items-center justify-between gap-4 bg-primary border border-theme rounded-xl px-4 py-3 text-xs">
+                <div className="min-w-0">
+                  <p className="font-bold text-primary truncate">{log.subject}</p>
+                  <p className="text-secondary mt-0.5">{new Date(log.sent_at).toLocaleString()}</p>
+                </div>
+                <span className="shrink-0 text-[10px] font-black uppercase px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  {log.recipient_count} {log.recipient_count === 1 ? 'recipient' : 'recipients'}{log.all_users ? ' · all' : ''}
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </div>

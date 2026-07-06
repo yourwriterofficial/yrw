@@ -114,7 +114,7 @@ export async function POST(request: Request) {
 
     // --- PROJECT MATERIAL (pay-first; order only created here, after payment) ---
     if (type === 'project_material') {
-      const { userId, topicId, title, department, price, name, whatsapp, level, addons, customLocation } = metadata;
+      const { userId, topicId, title, department, price, name, whatsapp, level, addons, customLocation, guestCheckout, guestEmail } = metadata;
       console.log(`📦 Project material purchase by ${userId}: "${title}"`);
 
       if (!userId || !title) {
@@ -193,25 +193,54 @@ export async function POST(request: Request) {
       try {
         const { notifyUser } = await import('@/lib/notify');
         const { emailTemplates, emailShell } = await import('@/lib/emailTemplates');
-        const buyerHtml = emailShell(
-          `<h1>Payment Confirmed — Project Material</h1>
-           <p>Hi ${name || 'there'},</p>
-           <p>Thank you! Your payment of ₦${amount.toLocaleString()} for <strong>${title}</strong> is confirmed.</p>
-           <p>Your material covers <strong>Chapters 1 to 5</strong>. ${instant ? 'It is available in your Secure Vault now.' : 'Our team will place it in your Secure Vault shortly.'}</p>`,
-          'Open Your Vault', `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?tab=vault`
-        );
-        await notifyUser({
-          userId,
-          title: instant ? 'Your project material is ready' : 'Project material purchased',
-          message: instant
-            ? `"${title}" (Chapters 1 to 5) is in your vault.`
-            : `Payment confirmed for "${title}" (Chapters 1 to 5). We'll deliver it to your vault shortly.`,
-          type: instant ? 'vault_delivery' : 'order_update',
-          link: '/dashboard/client?tab=vault',
-          orderDbId: inserted.id,
-          emailHtml: buyerHtml,
-          emailSubject: instant ? 'Your project material is ready' : 'Project material purchase confirmed',
-        });
+
+        if (guestCheckout && guestEmail) {
+          // Guest never has a session — one email both confirms payment and
+          // logs them straight into their new dashboard via a magic link.
+          const { sendMagicLinkEmail } = await import('@/lib/magicLink');
+          const introHtml = `
+            <p>Thank you! Your payment of ₦${amount.toLocaleString()} for <strong>${title}</strong> is confirmed.</p>
+            <p>Your material covers <strong>Chapters 1 to 5</strong>. ${instant ? 'It is available in your Secure Vault now.' : 'Our team will place it in your Secure Vault shortly.'}</p>
+            <p>Click below to securely log in to your new dashboard — no password needed.</p>`;
+          await sendMagicLinkEmail({
+            email: guestEmail,
+            name: name || guestEmail.split('@')[0],
+            redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback?next=${encodeURIComponent('/dashboard/client?tab=vault')}`,
+            title: 'Payment Confirmed — Project Material',
+            introHtml,
+          });
+          // In-app + push only (no second email) — the magic-link email above already covers it.
+          await notifyUser({
+            userId,
+            title: instant ? 'Your project material is ready' : 'Project material purchased',
+            message: instant
+              ? `"${title}" (Chapters 1 to 5) is in your vault.`
+              : `Payment confirmed for "${title}" (Chapters 1 to 5). We'll deliver it to your vault shortly.`,
+            type: instant ? 'vault_delivery' : 'order_update',
+            link: '/dashboard/client?tab=vault',
+            orderDbId: inserted.id,
+          });
+        } else {
+          const buyerHtml = emailShell(
+            `<h1>Payment Confirmed — Project Material</h1>
+             <p>Hi ${name || 'there'},</p>
+             <p>Thank you! Your payment of ₦${amount.toLocaleString()} for <strong>${title}</strong> is confirmed.</p>
+             <p>Your material covers <strong>Chapters 1 to 5</strong>. ${instant ? 'It is available in your Secure Vault now.' : 'Our team will place it in your Secure Vault shortly.'}</p>`,
+            'Open Your Vault', `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?tab=vault`
+          );
+          await notifyUser({
+            userId,
+            title: instant ? 'Your project material is ready' : 'Project material purchased',
+            message: instant
+              ? `"${title}" (Chapters 1 to 5) is in your vault.`
+              : `Payment confirmed for "${title}" (Chapters 1 to 5). We'll deliver it to your vault shortly.`,
+            type: instant ? 'vault_delivery' : 'order_update',
+            link: '/dashboard/client?tab=vault',
+            orderDbId: inserted.id,
+            emailHtml: buyerHtml,
+            emailSubject: instant ? 'Your project material is ready' : 'Project material purchase confirmed',
+          });
+        }
 
         const adminHtml = emailShell(
           `<h2>New Project Material Sale</h2>
@@ -392,14 +421,23 @@ export async function POST(request: Request) {
         forty_percent_paid: allPaid || false,
         workflow_status: allPaid ? 'Completed' : (firstPaid ? 'Synthesis Active' : 'Briefing Received')
       };
-      
-      const { emailTemplates } = await import('@/lib/emailTemplates');
-      if (allPaid) {
-        template = emailTemplates.balancePaid(orderEmailData);
-        adminTemplate = emailTemplates.adminBalancePaid(orderEmailData);
-      } else if (milestoneIndex === 0) {
-        template = emailTemplates.depositPaid(orderEmailData);
-        adminTemplate = emailTemplates.adminDepositPaid(orderEmailData);
+
+      // Every milestone gets its own confirmation — not just the first/last —
+      // and the copy always names the actual milestone paid (name/%/amount)
+      // instead of assuming a fixed 60/40 split. Mirrors the same template
+      // already used by the wallet-milestone and admin-milestone routes.
+      const paidMilestone = milestones[milestoneIndex];
+      if (paidMilestone) {
+        const { emailTemplates } = await import('@/lib/emailTemplates');
+        template = emailTemplates.milestonePaid(
+          orderEmailData,
+          { name: paidMilestone.name, amount: paidMilestone.amount, percentage: paidMilestone.percentage },
+          allPaid
+        );
+        adminTemplate = {
+          html: template.html,
+          subject: `[PAID] Milestone: ${paidMilestone.name} - Order #${orderStringId}`,
+        };
       }
       
       // Log to transactions table

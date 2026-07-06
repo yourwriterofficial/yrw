@@ -47,6 +47,23 @@ const getPipelineDetails = (order: any) => {
   const oid = order?.['Order ID'] || order?.order_id || '';
   const top = order?.['Research Topic'] || order?.topic || '';
   
+  if (oid.startsWith('PRJ-') || top.startsWith('[PROJECT]')) {
+    return {
+      category: 'Project Material',
+      icon: 'BookOpen',
+      colorClass: 'text-emerald-400',
+      bgClass: 'bg-emerald-500/10',
+      borderClass: 'border-emerald-500/20',
+      label: 'Ready-made Project Material',
+      steps: [
+        { title: 'Payment Confirmed', desc: 'Purchase received and logged.' },
+        { title: 'Material Matched', desc: 'Chapters 1–5 material matched to your topic.' },
+        { title: 'Quality Check', desc: 'Formatting and completeness verified.' },
+        { title: 'Prepared for Delivery', desc: 'Package finalized for your vault.' },
+        { title: 'Delivered to Vault', desc: 'Material available for download.' },
+      ]
+    };
+  }
   if (oid.startsWith('DEV-') || top.startsWith('[DEV]')) {
     return {
       category: 'Software Dev',

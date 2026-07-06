@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     // 1. Fetch current order state
     const { data: oldOrder, error: fetchError } = await supabaseAdmin
       .from('orders')
-      .select('order_id, email, legal_name, topic, financial_quote, workflow_status, sixty_percent_paid, forty_percent_paid, work_submitted')
+      .select('order_id, email, legal_name, topic, financial_quote, workflow_status, sixty_percent_paid, forty_percent_paid, work_submitted, payment_milestones')
       .eq('order_id', orderId)
       .single()
 
@@ -71,6 +71,9 @@ export async function POST(request: Request) {
       email: oldOrder.email,
       topic: oldOrder.topic,
       financial_quote: oldOrder.financial_quote,
+      payment_milestones: oldOrder.payment_milestones,
+      sixty_percent_paid: oldOrder.sixty_percent_paid,
+      forty_percent_paid: oldOrder.forty_percent_paid,
     }
 
     // --- Workflow status change ---

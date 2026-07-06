@@ -1,5 +1,7 @@
 // lib/emailTemplates.ts
 
+import { milestonesFromOrder } from './invoices';
+
 export type OrderEmailData = {
   order_id: string;
   legal_name: string;
@@ -11,10 +13,28 @@ export type OrderEmailData = {
   word_count?: number;
   reference_style?: string;
   font_specification?: string;
+  /** Optional — when present, payment-breakdown copy reflects these actual
+   * milestones instead of assuming a fixed 60/40 split. */
+  payment_milestones?: Array<{ name: string; percentage: number; amount?: number }> | null;
+  sixty_percent_paid?: boolean | null;
+  forty_percent_paid?: boolean | null;
 };
 
 const formatNaira = (amount: number) =>
   `₦${amount.toLocaleString('en-NG')}`;
+
+/** Renders the "pay X now, Y later" breakdown block from an order's actual
+ * milestones (falling back to 60/40 only when the order has none). */
+const milestoneBreakdownHtml = (order: OrderEmailData) => {
+  const milestones = milestonesFromOrder(order);
+  return milestones
+    .map((m: { name: string; percentage: number; amount: number }, i: number) => `
+        <div style="margin-top: ${i === 0 ? 0 : 12}px;">
+          <span class="label">${i === 0 ? `To begin work, pay ${m.name}` : m.name}${i === milestones.length - 1 && milestones.length > 1 ? ' (final)' : ''}</span><br>
+          <span class="amount">${formatNaira(m.amount)} (${m.percentage}%)</span>
+        </div>`)
+    .join('');
+};
 
 // Base HTML template with responsive design
 const baseLayout = (content: string) => `
@@ -188,7 +208,7 @@ export const emailTemplates = {
         <div style="margin: 8px 0 16px;">${order.topic}</div>
         <div class="label">Estimated Quote</div>
         <div class="price">${formatNaira(order.financial_quote)}</div>
-        <div style="font-size: 12px;">60% Deposit: ${formatNaira(order.financial_quote * 0.6)}<br>40% Balance: ${formatNaira(order.financial_quote * 0.4)}</div>
+        <div style="font-size: 12px;">${milestoneBreakdownHtml(order)}</div>
       </div>
       <p>You can track progress and make payments from your dashboard.</p>
       <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" class="button">Go to Dashboard</a>
@@ -222,8 +242,7 @@ export const emailTemplates = {
         <div class="label">Total Project Cost</div>
         <div class="price">${formatNaira(order.financial_quote)}</div>
         <div class="divider"></div>
-        <div><span class="label">To begin work, pay 60% deposit</span><br><span class="amount">${formatNaira(order.financial_quote * 0.6)}</span></div>
-        <div style="margin-top: 12px;"><span class="label">Balance due on completion</span><br><span class="amount">${formatNaira(order.financial_quote * 0.4)}</span></div>
+        ${milestoneBreakdownHtml(order)}
       </div>
       <p>Click the button below to log in and make the deposit. Your project will start immediately after confirmation.</p>
       <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" class="button">Pay Deposit</a>
@@ -426,6 +445,18 @@ export const emailTemplates = {
         <div class="price">${formatNaira(data.total_amount)}</div>
       </div>
       <a href="${data.invoice_url}" class="button">View & Pay Invoice</a>
+    `),
+  }),
+
+  // Guest checkout: payment confirmed + one-click login link to their new dashboard
+  magicLinkLogin: (data: { name: string; actionLink: string; title?: string; introHtml?: string }) => ({
+    subject: data.title || 'Your login link — YourResearchWriter',
+    html: baseLayout(`
+      <h1>${data.title || 'Access Your Dashboard'}</h1>
+      <p>Hi ${data.name},</p>
+      ${data.introHtml || '<p>Click the button below to securely log in — no password needed.</p>'}
+      <a href="${data.actionLink}" class="button">Log In Now</a>
+      <p style="margin-top:20px; font-size:11px; color:#777;">This link is single-use and expires shortly. If you didn't request this, you can ignore this email.</p>
     `),
   }),
 

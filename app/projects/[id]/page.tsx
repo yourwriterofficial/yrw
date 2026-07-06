@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
@@ -40,8 +40,10 @@ const levelBadge = (lvl: string) =>
 
 export default function ProjectPermalinkPage() {
   const params = useParams();
-  const router = useRouter();
-  const id = params?.id;
+  const rawParam = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  // Permalinks are `/projects/{id}-{slug}` (slug is cosmetic, for sharing) but
+  // plain `/projects/{id}` still resolves — only the leading numeric id matters.
+  const id = rawParam ? rawParam.match(/^\d+/)?.[0] : undefined;
 
   const [topic, setTopic] = useState<Topic | null>(null);
   const [related, setRelated] = useState<Topic[]>([]);
@@ -52,7 +54,8 @@ export default function ProjectPermalinkPage() {
   const [levelPrices, setLevelPrices] = useState<Record<string, number>>({ BSc: 3999, MSc: 4500, PhD: 10000 });
   const [deptPrices, setDeptPrices] = useState<Record<string, number>>({});
   const [pageSettings, setPageSettings] = useState<any>({
-    checkout_terms: "I understand this is a ready-made material — similarity/plagiarism and AI-detection levels are not checked or guaranteed. My purchase means the project will be delivered (Chapters 1–5, MS Word) to my vault. Working hours are 8am–7pm; delivery is within 4 hours."
+    checkout_terms: "I understand this is a ready-made material — similarity/plagiarism and AI-detection levels are not checked or guaranteed. My purchase means the project will be delivered (Chapters 1–5, MS Word) to my vault. Working hours are 8am–7pm; delivery is within 4 hours.",
+    delivery_text: "⚡ Delivered within 4 hours"
   });
 
   // Checkout inputs
@@ -65,6 +68,8 @@ export default function ProjectPermalinkPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [copied, setCopied] = useState(false);
+  const [guestEmail, setGuestEmail] = useState('');
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   // Fetch data
   useEffect(() => {
@@ -83,7 +88,7 @@ export default function ProjectPermalinkPage() {
         settingsData.forEach(s => {
           if (s.key === 'level_prices') lp = s.value;
           if (s.key === 'department_prices') dp = s.value;
-          if (s.key === 'page_settings') ps = s.value;
+          if (s.key === 'page_settings') ps = { ...ps, ...s.value };
         });
         setLevelPrices(lp);
         setDeptPrices(dp);
@@ -168,7 +173,10 @@ export default function ProjectPermalinkPage() {
 
   const pay = async () => {
     if (!topic || !acceptedTerms) return;
-    if (isLoggedIn === false) { router.push(`/login?next=/projects/${topic.id}`); return; }
+    if (isLoggedIn === false && !EMAIL_RE.test(guestEmail.trim())) {
+      setMsg('Please enter a valid email — your receipt and vault access link go there.');
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch('/api/projects/checkout', {
@@ -182,18 +190,21 @@ export default function ProjectPermalinkPage() {
           addonWords: addonWords,
           addonFeatures: addonFeatures,
           customLocation: customLocation,
+          email: isLoggedIn === false ? guestEmail.trim() : undefined,
         }),
       });
       const data = await res.json();
-      if (res.status === 401) { router.push(`/login?next=/projects/${topic.id}`); return; }
       if (res.ok && data.authorization_url) window.location.href = data.authorization_url;
       else setMsg(data.error || 'Could not start checkout.');
     } catch { setMsg('Network error. Please try again.'); }
     setBusy(false);
   };
 
+  const slugify = (title: string) =>
+    title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
   const copyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
+    const link = topic ? `${window.location.origin}/projects/${topic.id}-${slugify(topic.title)}` : window.location.href;
+    navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -223,7 +234,7 @@ export default function ProjectPermalinkPage() {
 
   return (
     <div className="min-h-screen bg-primary text-primary font-['Inter'] pb-12 pt-20">
-      <Header />
+      <Header projectsContext />
       {/* HEADER BREADCRUMB */}
       <div className="border-b border-theme bg-secondary/30 px-4 md:px-8 py-4">
         <div className="max-w-[1200px] mx-auto flex justify-between items-center gap-4 flex-wrap text-xs md:text-sm font-medium">
@@ -356,10 +367,10 @@ export default function ProjectPermalinkPage() {
                               <div className="space-y-1">
                                 <span className="text-secondary text-[9px] font-black uppercase tracking-wider block">Features:</span>
                                 <div className="grid grid-cols-1 gap-1">
-                                  {a.features.map(f => {
+                                  {a.features.map((f, fi) => {
                                     const selected = (addonFeatures[a.id] || []).includes(f.name);
                                     return (
-                                      <label key={f.name} className="flex items-center gap-2 cursor-pointer py-0.5">
+                                      <label key={`${a.id}-${fi}`} className="flex items-center gap-2 cursor-pointer py-0.5">
                                         <input
                                           type="checkbox"
                                           checked={selected}
@@ -394,6 +405,20 @@ export default function ProjectPermalinkPage() {
               <span className="text-2xl font-black text-emerald-500">{naira(cartTotal())}</span>
             </div>
 
+            {isLoggedIn === false && (
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Your Email (for receipt & vault access)</label>
+                <input
+                  type="email"
+                  value={guestEmail}
+                  onChange={e => setGuestEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full bg-secondary border border-theme rounded-xl px-3 py-2.5 text-sm text-primary outline-none focus:border-emerald-500"
+                />
+                <p className="text-[10px] text-secondary mt-1">No password needed — after payment we'll email you a one-click login link to your dashboard.</p>
+              </div>
+            )}
+
             <label className="flex items-start gap-2 cursor-pointer bg-secondary/40 border border-theme rounded-xl p-3 text-[10px] text-primary leading-relaxed">
               <input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="mt-0.5 w-3.5 h-3.5 accent-emerald-500 shrink-0" />
               <span>
@@ -403,7 +428,7 @@ export default function ProjectPermalinkPage() {
 
             {msg && <div className="text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl p-3">{msg}</div>}
 
-            <button onClick={pay} disabled={!acceptedTerms || busy} className="w-full py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black text-sm uppercase tracking-wider transition disabled:opacity-40 disabled:cursor-not-allowed">
+            <button onClick={pay} disabled={!acceptedTerms || busy || (isLoggedIn === false && !EMAIL_RE.test(guestEmail.trim()))} className="w-full py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black text-sm uppercase tracking-wider transition disabled:opacity-40 disabled:cursor-not-allowed">
               {busy ? 'Redirecting to payment…' : `Pay ${naira(cartTotal())} & Get Material`}
             </button>
             <p className="text-[9px] text-secondary text-center leading-normal">Working hours are 8am–7pm. Material is delivered directly to your Secure Vault.</p>

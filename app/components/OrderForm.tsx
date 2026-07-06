@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { createSecureOrder } from '@/app/actions/createOrder';
@@ -26,6 +26,62 @@ function decodeHtml(str: string) {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&amp;/g, '&');
+}
+
+/**
+ * The "Payment and Delivery Protocol" clause of the default Terms of Service —
+ * generated from the client's actual selected payment structure instead of
+ * always describing a 60/40 split, so the terms they accept always match the
+ * milestones they configured.
+ */
+function paymentProtocolClause(paymentStructure: '60/40' | 'CUSTOM', milestones: Array<{ name: string; percentage: number; trigger: string }>): string {
+  if (paymentStructure === 'CUSTOM' && milestones.length > 0) {
+    const steps = milestones
+      .map((m, i) => `  ${i + 1}. ${m.name} (${m.percentage}%) — ${m.trigger}`)
+      .join('\n');
+    return `- A non-negotiable ${milestones[0].percentage}% initial payment ("${milestones[0].name}") is required before any work commences.
+- Upon completion, a similarities PDF report preview (AI and Plagiarism report) of the work will be provided for your review.
+- The editable Word document will be released only once every milestone below has been paid, in order:
+${steps}
+- Please refer to our official profile for our current working days and hours of operation.`;
+  }
+  return `- A non-negotiable 60% deposit is required before any work commences.
+- Upon completion, a similarities PDF report preview (AI and Plagiarism report) of the work will be provided for your review.
+- The editable Word document will be released only upon receipt of the remaining 40% balance.
+- Please refer to our official profile for our current working days and hours of operation.`;
+}
+
+function defaultTermsText(paymentStructure: '60/40' | 'CUSTOM', milestones: Array<{ name: string; percentage: number; trigger: string }>): string {
+  return `Welcome to Your Research Writer. By providing an upfront payment, you acknowledge that you have read, understood, and agreed to be bound by the following terms and conditions. This payment constitutes a legally binding contract between the client and the agency.
+
+1. Payment and Delivery Protocol
+${paymentProtocolClause(paymentStructure, milestones)}
+
+2. Contract Scope and Refund Policy
+- Each task is treated as an individual contract. Terms, briefs, or credits cannot be transferred.
+- Termination of a contract while work is in progress is not permitted and does not qualify for a refund.
+- Refunds are only issued in the event of a documented failure on our part (e.g., missed deadline or plagiarism exceeding pre‑agreed limits).
+- We do not guarantee specific grades. No refund will be issued if a poor result is caused by vague requirements or faulty instructions from the client.
+
+3. Client Obligations
+- Include task outlines, lecture keynotes, and supplementary verbal instructions.
+- We do not log into student portals. Clients must transmit materials directly.
+- Word count and deadlines must be specific. We charge per word, not per page.
+- All instructions must be submitted before work begins. Post‑commencement requirements may incur "Interference Fees".
+
+4. Thesis and Dissertation Special Terms
+- Default delivery is simultaneous for holistic feedback.
+- Chapter‑based delivery is treated and billed as separate contracts with individual deposits and balances.
+
+5. Communication Guidelines
+- Communication is strictly limited to WhatsApp text or voice notes. Voice calls are prohibited to ensure a documented paper trail.
+
+6. Feedback and Post‑Submission Review
+- Clients have three (3) days to request revisions. Afterward, the contract is finalized.
+- Payment of the final balance constitutes formal acceptance.
+- All feedback must be compiled into a single batch directly into the Word document using the "Comments" feature. We do not accept staggered feedback or complete document revisions via WhatsApp text.
+
+Note: As the student, you are the primary link between the classroom and the writer. By working within these parameters, we ensure the best possible outcome for your academic success.`;
 }
 
 export default function OrderForm() {
@@ -113,43 +169,10 @@ export default function OrderForm() {
         .select('content_text')
         .eq('content_key', 'academic_tos')
         .single();
-      if (tos && tos.content_text) {
-        setTermsText(tos.content_text);
-      } else {
-        setTermsText(`Welcome to Your Research Writer. By providing an upfront payment, you acknowledge that you have read, understood, and agreed to be bound by the following terms and conditions. This payment constitutes a legally binding contract between the client and the agency.
-
-1. Payment and Delivery Protocol
-- A non-negotiable 60% deposit is required before any work commences.
-- Upon completion, a similarities PDF report preview (AI and Plagiarism report) of the work will be provided for your review.
-- The editable Word document will be released only upon receipt of the remaining 40% balance.
-- Please refer to our official profile for our current working days and hours of operation.
-
-2. Contract Scope and Refund Policy
-- Each task is treated as an individual contract. Terms, briefs, or credits cannot be transferred.
-- Termination of a contract while work is in progress is not permitted and does not qualify for a refund.
-- Refunds are only issued in the event of a documented failure on our part (e.g., missed deadline or plagiarism exceeding pre‑agreed limits).
-- We do not guarantee specific grades. No refund will be issued if a poor result is caused by vague requirements or faulty instructions from the client.
-
-3. Client Obligations
-- Include task outlines, lecture keynotes, and supplementary verbal instructions.
-- We do not log into student portals. Clients must transmit materials directly.
-- Word count and deadlines must be specific. We charge per word, not per page.
-- All instructions must be submitted before work begins. Post‑commencement requirements may incur "Interference Fees".
-
-4. Thesis and Dissertation Special Terms
-- Default delivery is simultaneous for holistic feedback.
-- Chapter‑based delivery is treated and billed as separate contracts with individual deposits and balances.
-
-5. Communication Guidelines
-- Communication is strictly limited to WhatsApp text or voice notes. Voice calls are prohibited to ensure a documented paper trail.
-
-6. Feedback and Post‑Submission Review
-- Clients have three (3) days to request revisions. Afterward, the contract is finalized.
-- Payment of the final balance constitutes formal acceptance.
-- All feedback must be compiled into a single batch directly into the Word document using the "Comments" feature. We do not accept staggered feedback or complete document revisions via WhatsApp text.
-
-Note: As the student, you are the primary link between the classroom and the writer. By working within these parameters, we ensure the best possible outcome for your academic success.`);
-      }
+      // Only store an admin-customized override here — when absent, leave this
+      // empty so the payment-structure-aware default (computed below) is used
+      // instead of a one-time snapshot that can't react to the client's choice.
+      setTermsText(tos?.content_text || '');
 
       if (!isLoggedIn) {
         const savedDraft = localStorage.getItem('rw_order_draft');
@@ -185,6 +208,13 @@ Note: As the student, you are the primary link between the classroom and the wri
     if (promoDiscount > 0) afterVolume = afterVolume * (1 - promoDiscount / 100);
     return Math.round(afterVolume);
   };
+
+  // Admin's custom terms (if set) always win; otherwise generate terms that
+  // describe the client's actually-selected payment structure.
+  const effectiveTermsText = useMemo(
+    () => termsText || defaultTermsText(paymentStructure, milestones),
+    [termsText, paymentStructure, milestones]
+  );
 
   const firstMilestoneShare = paymentStructure === 'CUSTOM' ? (milestones[0]?.percentage || 0) : 60;
   const depositAmount = Math.round(getUiTotalPrice() * (firstMilestoneShare / 100));
@@ -834,7 +864,7 @@ Note: As the student, you are the primary link between the classroom and the wri
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-secondary tracking-widest block ml-1 font-bold">Terms of Service</label>
             <div className="max-h-64 overflow-y-auto bg-primary border border-theme rounded-2xl p-6 pr-4 custom-scrollbar prose max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: decodeHtml(termsText) }} />
+              <div dangerouslySetInnerHTML={{ __html: decodeHtml(effectiveTermsText) }} />
             </div>
           </div>
 

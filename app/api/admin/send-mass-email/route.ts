@@ -36,6 +36,13 @@ export async function POST(req: Request) {
       emailSubject: subject,
     })
 
+    await guard.admin.from('mass_notification_logs').insert({
+      sent_by: guard.userId,
+      subject,
+      recipient_count: recipientIds.length,
+      all_users: !!allUsers,
+    })
+
     return NextResponse.json({ success: true, sentCount: recipientIds.length })
   } catch (err: any) {
     console.error('Mass email error:', err)

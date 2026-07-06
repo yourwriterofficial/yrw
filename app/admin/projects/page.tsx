@@ -59,7 +59,7 @@ export default function AdminProjectsPage() {
   const [levelPrices, setLevelPrices] = useState<Record<string, number>>({ BSc: 3999, MSc: 4500, PhD: 10000 });
   const [deptPrices, setDeptPrices] = useState<Record<string, number>>({});
   const [pageSettings, setPageSettings] = useState<any>({
-    hero_title: '', hero_description: '', disclaimer_text: '', checkout_terms: '', show_random: true, features: []
+    hero_title: '', hero_description: '', disclaimer_text: '', checkout_terms: '', delivery_text: '⚡ Delivered within 4 hours', show_random: true, features: []
   });
   const [newDeptName, setNewDeptName] = useState('');
   const [newDeptPrice, setNewDeptPrice] = useState(0);
@@ -85,11 +85,11 @@ export default function AdminProjectsPage() {
     if (settingsData) {
       let lp = { BSc: 3999, MSc: 4500, PhD: 10000 };
       let dp = {};
-      let ps = { hero_title: '', hero_description: '', disclaimer_text: '', checkout_terms: '', show_random: true, features: [] };
+      let ps: any = { hero_title: '', hero_description: '', disclaimer_text: '', checkout_terms: '', delivery_text: '⚡ Delivered within 4 hours', show_random: true, features: [] };
       settingsData.forEach(s => {
         if (s.key === 'level_prices') lp = s.value;
         if (s.key === 'department_prices') dp = s.value;
-        if (s.key === 'page_settings') ps = s.value;
+        if (s.key === 'page_settings') ps = { ...ps, ...s.value };
       });
       setLevelPrices(lp);
       setDeptPrices(dp);
@@ -135,6 +135,10 @@ export default function AdminProjectsPage() {
   const saveAddon = async () => {
     if (!editingAddon) return;
     if (!editingAddon.name.trim()) return showToast('Add-on name is required.', 'error');
+    const featNames = (editingAddon.features || []).map(f => f.name.trim()).filter(Boolean);
+    if (new Set(featNames).size !== featNames.length) {
+      return showToast('Sub-feature names must be unique — rename the duplicate before saving.', 'error');
+    }
     setSaving(true);
     const payload = {
       name: editingAddon.name,
@@ -149,7 +153,7 @@ export default function AdminProjectsPage() {
       ? await supabase.from('project_addons').update(payload).eq('id', editingAddon.id)
       : await supabase.from('project_addons').insert(payload);
     setSaving(false);
-    if (error) return showToast(error.message, 'error');
+    if (error) return showToast([error.message, error.details, error.hint].filter(Boolean).join(' — '), 'error');
     showToast('Add-on saved', 'success');
     setEditingAddon(null);
     load(search);
@@ -202,7 +206,7 @@ export default function AdminProjectsPage() {
               <lucide.Plus className="w-4 h-4" /> New Topic
             </button>
           ) : tab === 'addons' ? (
-            <button onClick={() => setEditingAddon({ ...BLANK_ADDON })} className="bg-emerald-500 hover:bg-emerald-400 text-black px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2">
+            <button onClick={() => setEditingAddon({ ...BLANK_ADDON, features: [] })} className="bg-emerald-500 hover:bg-emerald-400 text-black px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2">
               <lucide.Plus className="w-4 h-4" /> New Add-on
             </button>
           ) : null
@@ -274,8 +278,8 @@ export default function AdminProjectsPage() {
                       <span className="line-clamp-2">{a.description}</span>
                       {Array.isArray(a.features) && a.features.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {a.features.map(f => (
-                            <span key={f.name} className="text-[9px] bg-white/5 text-secondary px-1.5 py-0.5 rounded border border-theme">
+                          {a.features.map((f, fi) => (
+                            <span key={`${a.id}-${fi}`} className="text-[9px] bg-white/5 text-secondary px-1.5 py-0.5 rounded border border-theme">
                               {f.name} (+₦{Number(f.price).toLocaleString()})
                             </span>
                           ))}
@@ -291,7 +295,7 @@ export default function AdminProjectsPage() {
                     <td className="p-4"><span className={`text-[10px] font-black uppercase px-2 py-1 rounded ${a.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-secondary'}`}>{a.is_active ? 'Active' : 'Hidden'}</span></td>
                     <td className="p-4">
                       <div className="flex gap-2 justify-end">
-                        <button onClick={() => setEditingAddon(a)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-primary"><lucide.Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => setEditingAddon({ ...a, features: (a.features || []).map(f => ({ ...f })) })} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-primary"><lucide.Pencil className="w-4 h-4" /></button>
                         <button onClick={() => removeAddon(a)} className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400"><lucide.Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
@@ -485,6 +489,16 @@ export default function AdminProjectsPage() {
                 value={pageSettings.disclaimer_text || ''}
                 onChange={e => setPageSettings({ ...pageSettings, disclaimer_text: e.target.value })}
                 className="w-full bg-primary border border-theme rounded-xl p-3 text-sm text-primary resize-y"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Delivery Time Badge (shown on every card + checkout)</label>
+              <input
+                type="text"
+                value={pageSettings.delivery_text || ''}
+                onChange={e => setPageSettings({ ...pageSettings, delivery_text: e.target.value })}
+                className="w-full bg-primary border border-theme rounded-xl p-3 text-sm text-primary"
               />
             </div>
 

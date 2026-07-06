@@ -4,6 +4,7 @@ import { notifyUser } from '@/lib/notify';
 import { sendSystemEmail } from '@/lib/emailService';
 import { emailTemplates } from '@/lib/emailTemplates';
 import { upsertInvoiceForOrder } from '@/lib/invoices';
+import { renderInvoicePng, renderInvoicePdf } from '@/lib/invoiceRender';
 
 const WHATSAPP_NUMBER = '2348121443666';
 
@@ -12,17 +13,21 @@ const WHATSAPP_NUMBER = '2348121443666';
  * how/when it was sent. Accepts either an existing `invoiceNumber`, or an
  * `orderId` (in which case the invoice is created/refreshed from the order
  * first — so admins can "Send as Invoice" straight from the orders table).
- * For WhatsApp it returns a wa.me link the frontend opens.
+ * `format` (optional): 'image' | 'pdf' — when set, the invoice is rendered and
+ * either attached to the email (real attachment) or uploaded to a private
+ * storage bucket and linked via a time-limited signed URL for WhatsApp
+ * (wa.me can't carry a native file attachment, only a pre-filled message).
  */
 export async function POST(req: Request) {
   const guard = await requireAdmin();
   if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
 
   try {
-    const { invoiceNumber, orderId, via } = await req.json();
+    const { invoiceNumber, orderId, via, format } = await req.json();
     if ((!invoiceNumber && !orderId) || (via !== 'EMAIL' && via !== 'WHATSAPP')) {
       return NextResponse.json({ error: 'invoiceNumber or orderId, plus via (EMAIL|WHATSAPP), are required.' }, { status: 400 });
     }
+    const wantsFile = format === 'image' || format === 'pdf';
 
     // If invoked from an order, ensure the invoice exists / is fresh first.
     let lookupNumber = invoiceNumber;
@@ -47,6 +52,13 @@ export async function POST(req: Request) {
 
     let whatsappUrl: string | undefined;
 
+    // Render + store the file once, reused by whichever channel needs it.
+    let fileBuffer: Buffer | null = null;
+    let fileExt = format === 'pdf' ? 'pdf' : 'png';
+    if (wantsFile) {
+      fileBuffer = format === 'pdf' ? await renderInvoicePdf(invoice) : await renderInvoicePng(invoice);
+    }
+
     if (via === 'EMAIL') {
       if (!invoice.email) {
         return NextResponse.json({ error: 'This invoice has no client email on file.' }, { status: 400 });
@@ -58,6 +70,9 @@ export async function POST(req: Request) {
         invoice_url: invoiceUrl,
         project_title: invoice.project_title,
       });
+      const attachments = fileBuffer
+        ? [{ filename: `invoice-${invoice.invoice_number}.${fileExt}`, content: fileBuffer }]
+        : undefined;
 
       // Route through the unified pipeline if the client is a registered user.
       const users = await listAllAuthUsers(guard.admin);
@@ -71,12 +86,29 @@ export async function POST(req: Request) {
           link: `/invoice/${invoice.invoice_number}`,
           emailHtml: tpl.html,
           emailSubject: tpl.subject,
+          emailAttachments: attachments,
         });
       } else {
-        await sendSystemEmail({ to: invoice.email, subject: tpl.subject, html: tpl.html });
+        await sendSystemEmail({ to: invoice.email, subject: tpl.subject, html: tpl.html, attachments });
       }
     } else {
-      const msg = `Hi ${invoice.client_name || ''}, here is your invoice #${invoice.invoice_number} from YourResearchWriter (${invoice.currency || '₦'}${Number(invoice.total_amount || 0).toLocaleString()}): ${invoiceUrl}`;
+      let shareLink = invoiceUrl;
+      if (fileBuffer) {
+        const storagePath = `${invoice.invoice_number}/invoice-${Date.now()}.${fileExt}`;
+        const { error: uploadErr } = await guard.admin.storage
+          .from('invoices')
+          .upload(storagePath, fileBuffer, {
+            contentType: fileExt === 'pdf' ? 'application/pdf' : 'image/png',
+            upsert: true,
+          });
+        if (!uploadErr) {
+          const { data: signedData } = await guard.admin.storage
+            .from('invoices')
+            .createSignedUrl(storagePath, 60 * 60 * 24 * 7); // 7 days
+          if (signedData?.signedUrl) shareLink = signedData.signedUrl;
+        }
+      }
+      const msg = `Hi ${invoice.client_name || ''}, here is your invoice #${invoice.invoice_number} from YourResearchWriter (${invoice.currency || '₦'}${Number(invoice.total_amount || 0).toLocaleString()}): ${shareLink}`;
       const phone = (invoice.phone || '').replace(/[^0-9]/g, '');
       const target = phone && phone.length >= 10 ? phone : WHATSAPP_NUMBER;
       whatsappUrl = `https://wa.me/${target}?text=${encodeURIComponent(msg)}`;

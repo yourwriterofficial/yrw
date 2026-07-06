@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
@@ -49,7 +48,6 @@ const levelBadge = (lvl: string) =>
       : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
 
 export default function ProjectsPage() {
-  const router = useRouter();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [depts, setDepts] = useState<{ department: string; count: number }[]>([]);
   const [addons, setAddons] = useState<Addon[]>([]);
@@ -75,9 +73,15 @@ export default function ProjectsPage() {
   const [customDept, setCustomDept] = useState('General');
   const [customCard, setCustomCard] = useState<{ title: string; level: string; department: string } | null>(null);
   const [msg, setMsg] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // New configuration states
-  const [sessionSeed, setSessionSeed] = useState(0.5);
+  // New configuration states.
+  // Lazy initializer so the very first render/fetch already has a real random
+  // seed — setting it inside an effect instead races the mount-time fetch
+  // effect (which would still close over the stale default and always
+  // produce the same "random" order on every reload).
+  const [sessionSeed, setSessionSeed] = useState(() => Math.random());
   const [levelPrices, setLevelPrices] = useState<Record<string, number>>({ BSc: 3999, MSc: 4500, PhD: 10000 });
   const [deptPrices, setDeptPrices] = useState<Record<string, number>>({});
   const [pageSettings, setPageSettings] = useState<any>({
@@ -86,6 +90,7 @@ export default function ProjectsPage() {
     features: ["📖 Chapters 1–5", "🕗 Working hours 8am–7pm", "⚡ 4-hour delivery"],
     disclaimer_text: "Please note: these are ready-made materials — we do not check or guarantee plagiarism/similarity or AI-detection levels on them. Purchasing simply means the project will be delivered as-is. Need a plagiarism-free, AI-free custom write-up? Use our main writing service →",
     checkout_terms: "I understand this is a ready-made material — similarity/plagiarism and AI-detection levels are not checked or guaranteed. My purchase means the project will be delivered (Chapters 1–5, MS Word) to my vault. Working hours are 8am–7pm; delivery is within 4 hours.",
+    delivery_text: "⚡ Delivered within 4 hours",
     show_random: true
   });
 
@@ -96,8 +101,10 @@ export default function ProjectsPage() {
 
   // Share permalinks clipboards state
   const [copiedId, setCopiedId] = useState<number | null>(null);
-  const copyPermalink = (topicId: number) => {
-    const link = window.location.origin + '/projects/' + topicId;
+  const slugify = (title: string) =>
+    title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
+  const copyPermalink = (topicId: number, title: string) => {
+    const link = `${window.location.origin}/projects/${topicId}-${slugify(title)}`;
     navigator.clipboard.writeText(link);
     setCopiedId(topicId);
     setTimeout(() => setCopiedId(null), 2000);
@@ -105,7 +112,6 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     (async () => {
-      setSessionSeed(Math.random());
       const { data: { user } } = await supabase.auth.getUser();
       setIsLoggedIn(!!user);
 
@@ -118,7 +124,7 @@ export default function ProjectsPage() {
         settingsData.forEach(s => {
           if (s.key === 'level_prices') lp = s.value;
           if (s.key === 'department_prices') dp = s.value;
-          if (s.key === 'page_settings') ps = s.value;
+          if (s.key === 'page_settings') ps = { ...ps, ...s.value };
         });
         setLevelPrices(lp);
         setDeptPrices(dp);
@@ -145,7 +151,7 @@ export default function ProjectsPage() {
     return levelPrices[lvl] || levelPrices.BSc || 3999;
   }, [levelPrices, deptPrices]);
 
-  const fetchTopics = useCallback(async (targetPage: number) => {
+  const fetchTopics = useCallback(async (targetPage: number, seedOverride?: number) => {
     const from = (targetPage - 1) * PAGE_SIZE;
 
     // Get count first
@@ -161,7 +167,7 @@ export default function ProjectsPage() {
 
     if (pageSettings.show_random) {
       const { data: rpcData, error: rpcError } = await supabase.rpc('get_project_topics_random', {
-        p_seed: sessionSeed,
+        p_seed: seedOverride ?? sessionSeed,
         p_dept: dept,
         p_level: level,
         p_search: debounced.trim(),
@@ -207,7 +213,6 @@ export default function ProjectsPage() {
 
   // ---- checkout ----
   const openCart = (c: Cart) => {
-    if (isLoggedIn === false) { router.push('/login?next=/projects'); return; }
     setPreview(null);
     setSelectedAddons(new Set());
     setAddonWords({});
@@ -245,6 +250,10 @@ export default function ProjectsPage() {
 
   const pay = async () => {
     if (!cart || !acceptedTerms) return;
+    if (isLoggedIn === false && !EMAIL_RE.test(guestEmail.trim())) {
+      setMsg('Please enter a valid email — your receipt and vault access link go there.');
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch('/api/projects/checkout', {
@@ -259,10 +268,10 @@ export default function ProjectsPage() {
           addonWords: addonWords,
           addonFeatures: addonFeatures,
           customLocation: customLocation,
+          email: isLoggedIn === false ? guestEmail.trim() : undefined,
         }),
       });
       const data = await res.json();
-      if (res.status === 401) { router.push('/login?next=/projects'); return; }
       if (res.ok && data.authorization_url) window.location.href = data.authorization_url;
       else setMsg(data.error || 'Could not start checkout.');
     } catch { setMsg('Network error. Please try again.'); }
@@ -273,6 +282,10 @@ export default function ProjectsPage() {
     if (customTitle.trim().length < 5) { setMsg('Please enter a fuller topic title.'); return; }
     setMsg('');
     setCustomCard({ title: customTitle.trim(), level: customLevel, department: customDept });
+    // Reshuffle the catalogue behind it too, same as a full page reload.
+    const newSeed = Math.random();
+    setSessionSeed(newSeed);
+    fetchTopics(page, newSeed);
   };
 
   // Title difference highlighters for similar searches
@@ -322,7 +335,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-primary text-primary font-['Inter']">
-      <Header />
+      <Header projectsContext />
       {/* HERO */}
       <section className="relative overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-600 to-emerald-800 text-white">
         <div className="absolute -top-16 -right-20 w-72 h-72 rounded-full bg-white/5" />
@@ -342,6 +355,51 @@ export default function ProjectsPage() {
             <span className="bg-white/15 px-4 py-1.5 rounded-full">
               BSc {naira(levelPrices.BSc)} · MSc {naira(levelPrices.MSc)} · PhD {naira(levelPrices.PhD)}
             </span>
+          </div>
+        </div>
+      </section>
+
+      {/* SERVICES (project-topics specific) */}
+      <section id="services" className="px-4 md:px-6 py-10 border-b border-theme">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-lg md:text-xl font-black text-primary text-center mb-6">What's Included With Every Topic</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-card border border-theme rounded-2xl p-5 text-center">
+              <div className="text-2xl mb-2">📚</div>
+              <h3 className="text-sm font-bold text-primary mb-1">Ready-made Chapters 1–5</h3>
+              <p className="text-xs text-secondary">Full academic material in MS Word, matched to your department and level.</p>
+            </div>
+            <div className="bg-card border border-theme rounded-2xl p-5 text-center">
+              <div className="text-2xl mb-2">🧩</div>
+              <h3 className="text-sm font-bold text-primary mb-1">Optional Add-ons</h3>
+              <p className="text-xs text-secondary">Extend any topic with extras like SPSS analysis, PowerPoint slides, or a location/case-study change.</p>
+            </div>
+            <div className="bg-card border border-theme rounded-2xl p-5 text-center">
+              <div className="text-2xl mb-2">🔒</div>
+              <h3 className="text-sm font-bold text-primary mb-1">Secure Vault Delivery</h3>
+              <p className="text-xs text-secondary">Your material lands in your dashboard's Secure Vault, ready to download.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS (project-topics specific) */}
+      <section id="how-it-works" className="px-4 md:px-6 py-10 border-b border-theme bg-secondary/20">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-lg md:text-xl font-black text-primary text-center mb-6">How It Works</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { n: '1', label: 'Pick a Topic', desc: 'Browse or search 3,000+ ready-made topics.' },
+              { n: '2', label: 'Choose Add-ons', desc: 'Extend it with optional extras if you need them.' },
+              { n: '3', label: 'Pay Securely', desc: 'Checkout with card — no account required upfront.' },
+              { n: '4', label: 'Get Delivered', desc: 'Material lands in your Secure Vault within hours.' },
+            ].map(step => (
+              <div key={step.n} className="text-center">
+                <div className="w-9 h-9 mx-auto mb-2 rounded-full bg-emerald-500 text-black font-black flex items-center justify-center text-sm">{step.n}</div>
+                <h4 className="text-xs font-bold text-primary mb-1">{step.label}</h4>
+                <p className="text-[11px] text-secondary leading-relaxed">{step.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -445,7 +503,7 @@ export default function ProjectsPage() {
             </div>
           ) : (
             <>
-              <div id="topics-grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div id="topics-grid" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {topics.map(t => (
                   <div key={t.id} className="bg-card border border-theme rounded-2xl p-5 flex flex-col gap-3 hover:border-emerald-500/40 hover:shadow-lg transition">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -455,15 +513,16 @@ export default function ProjectsPage() {
                     <h3 className="text-sm font-bold leading-relaxed text-primary line-clamp-3">
                       {renderTitleWithDifferences(t.title)}
                     </h3>
-                    <div className="flex gap-3 flex-wrap text-[11px] text-secondary">
+                    <div className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-secondary">
                       <span>📄 {t.pages || '—'} pages</span><span>📖 Ch. {t.chapters}</span><span>📅 {t.year}</span><span>📝 {t.format}</span>
                     </div>
+                    <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1 w-fit">{pageSettings.delivery_text}</span>
                     <div className="flex gap-2 mt-auto pt-1 flex-wrap">
-                      <button onClick={() => setPreview(t)} className="flex-1 py-2 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition min-w-[70px]">👁 Preview</button>
-                      <button onClick={() => copyPermalink(t.id)} className="px-3 py-2 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition">
+                      <button onClick={() => setPreview(t)} className="flex-1 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition min-w-[70px]">👁 Preview</button>
+                      <button onClick={() => copyPermalink(t.id, t.title)} className="px-3 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition whitespace-nowrap">
                         {copiedId === t.id ? '✓ Copied' : '🔗 Share'}
                       </button>
-                      <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) })} className="flex-1 py-2 rounded-lg text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 transition min-w-[90px]">Get · {naira(t.price)}</button>
+                      <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) })} className="flex-1 py-2.5 rounded-lg text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 transition min-w-[90px]">Get · {naira(t.price)}</button>
                     </div>
                   </div>
                 ))}
@@ -555,6 +614,7 @@ export default function ProjectsPage() {
                 <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(cart.level)}`}>{cart.level}</span>
                 <p className="text-sm font-bold text-primary mt-2">{cart.title}</p>
                 <p className="text-[11px] text-secondary">Chapters 1–5 · MS Word · {naira(cart.basePrice)}</p>
+                <p className="text-[11px] font-bold text-amber-500 mt-1">{pageSettings.delivery_text}</p>
               </div>
 
               {addons.length > 0 && (
@@ -620,10 +680,10 @@ export default function ProjectsPage() {
                                 <div className="space-y-1">
                                   <span className="text-secondary text-[10px] font-black uppercase tracking-wider block mb-1">Includes Features:</span>
                                   <div className="grid grid-cols-1 gap-1">
-                                    {a.features.map(f => {
+                                    {a.features.map((f, fi) => {
                                       const selected = (addonFeatures[a.id] || []).includes(f.name);
                                       return (
-                                        <label key={f.name} className="flex items-center gap-2 cursor-pointer py-0.5">
+                                        <label key={`${a.id}-${fi}`} className="flex items-center gap-2 cursor-pointer py-0.5">
                                           <input
                                             type="checkbox"
                                             checked={selected}
@@ -658,6 +718,20 @@ export default function ProjectsPage() {
                 <span className="text-2xl font-black text-emerald-500">{naira(cartTotal())}</span>
               </div>
 
+              {isLoggedIn === false && (
+                <div>
+                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Your Email (for receipt & vault access)</label>
+                  <input
+                    type="email"
+                    value={guestEmail}
+                    onChange={e => setGuestEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full bg-secondary border border-theme rounded-xl px-3 py-2.5 text-sm text-primary outline-none focus:border-emerald-500"
+                  />
+                  <p className="text-[10px] text-secondary mt-1">No password needed — after payment we'll email you a one-click login link to your dashboard.</p>
+                </div>
+              )}
+
               <label className="flex items-start gap-2 cursor-pointer bg-secondary border border-theme rounded-xl p-3">
                 <input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="mt-0.5 w-4 h-4 accent-emerald-500 shrink-0" />
                 <span className="text-[11px] text-primary leading-relaxed">
@@ -667,7 +741,7 @@ export default function ProjectsPage() {
 
               {msg && <div className="text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl p-3">{msg}</div>}
 
-              <button onClick={pay} disabled={!acceptedTerms || busy} className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black transition disabled:opacity-40 disabled:cursor-not-allowed">
+              <button onClick={pay} disabled={!acceptedTerms || busy || (isLoggedIn === false && !EMAIL_RE.test(guestEmail.trim()))} className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black transition disabled:opacity-40 disabled:cursor-not-allowed">
                 {busy ? 'Redirecting to payment…' : `Pay ${naira(cartTotal())} & Get Material`}
               </button>
               <p className="text-[10px] text-secondary text-center">Payment is required before your order is created — unpaid attempts are never saved.</p>

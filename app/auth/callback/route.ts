@@ -5,26 +5,29 @@ import type { NextRequest } from 'next/server';
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const next = requestUrl.searchParams.get('next');
 
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    
+
     if (!error) {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (user) {
         const isAdminEmail = user.email?.toLowerCase() === 'yourwriterofficial@gmail.com';
-        
+
         await supabase.from('profiles').upsert({
           id: user.id,
           full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
           is_admin: isAdminEmail,
         });
-        
-        const redirectUrl = isAdminEmail 
-          ? `${requestUrl.origin}/admin` 
-          : `${requestUrl.origin}/dashboard/client?verified=true`;
+
+        const redirectUrl = isAdminEmail
+          ? `${requestUrl.origin}/admin`
+          : next && next.startsWith('/')
+            ? `${requestUrl.origin}${next}`
+            : `${requestUrl.origin}/dashboard/client?verified=true`;
 
         const response = NextResponse.redirect(redirectUrl);
         // Prevent CDN caching for secure auth routes

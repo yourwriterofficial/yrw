@@ -9,8 +9,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function sendSystemEmail(params: { to: string; subject: string; html: string; orderId?: string }) {
-  const { to, subject, html, orderId } = params;
+export async function sendSystemEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+  orderId?: string;
+  attachments?: { filename: string; content: Buffer | string }[];
+}) {
+  const { to, subject, html, orderId, attachments } = params;
 
   // Always use your verified domain
   const senderEmail = 'YourResearchWriter <noreply@yourresearchwriter.com.ng>';
@@ -20,6 +26,9 @@ export async function sendSystemEmail(params: { to: string; subject: string; htm
     to: [to],
     subject,
     html,
+    ...(attachments?.length
+      ? { attachments: attachments.map(a => ({ filename: a.filename, content: a.content })) }
+      : {}),
   });
 
   if (error) {
