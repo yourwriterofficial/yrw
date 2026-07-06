@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import * as lucide from 'lucide-react';
+import NotificationPreferencesPanel from '@/app/components/ui/NotificationPreferencesPanel';
 
 type Addon = {
   id: string;
@@ -65,10 +66,11 @@ function LoadingScreen() {
 
 function SettingsContent() {
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [groupedAddons, setGroupedAddons] = useState<GroupedAddon[]>([]);
   const [siteContent, setSiteContent] = useState<SiteContent[]>([]);
-  const [activeTab, setActiveTab] = useState<'ADDONS' | 'CONTENT' | 'INVOICE'>('ADDONS');
+  const [activeTab, setActiveTab] = useState<'ADDONS' | 'CONTENT' | 'INVOICE' | 'NOTIFICATIONS'>('ADDONS');
   const [editingAddon, setEditingAddon] = useState<Partial<GroupedAddon> | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -87,9 +89,10 @@ function SettingsContent() {
 
   const fetchSettingsData = async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return router.push('/login');
-    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return router.push('/login');
+    setUser(authUser);
+    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', authUser.id).single();
     if (!profile?.is_admin) return router.push('/dashboard/client');
 
     const { data: addonData } = await supabase.from('order_addons').select('*').order('created_at', { ascending: false });
@@ -241,15 +244,18 @@ function SettingsContent() {
               </h1>
               <p className="text-secondary text-sm mt-2">Manage dynamic pricing variables, pipeline add-ons, and site-wide copy (HTML supported).</p>
             </div>
-            <div className="flex bg-secondary border border-theme rounded-full p-1">
-              <button onClick={() => setActiveTab('ADDONS')} className={`px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'ADDONS' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+            <div className="flex bg-secondary border border-theme rounded-full p-1 flex-wrap gap-1 md:gap-0">
+              <button onClick={() => setActiveTab('ADDONS')} className={`px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'ADDONS' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
                 Pricing & Add-ons
               </button>
-              <button onClick={() => setActiveTab('CONTENT')} className={`px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'CONTENT' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+              <button onClick={() => setActiveTab('CONTENT')} className={`px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'CONTENT' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
                 Site Content (HTML)
               </button>
-              <button onClick={() => setActiveTab('INVOICE')} className={`px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'INVOICE' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+              <button onClick={() => setActiveTab('INVOICE')} className={`px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'INVOICE' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
                 Invoice Defaults
+              </button>
+              <button onClick={() => setActiveTab('NOTIFICATIONS')} className={`px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'NOTIFICATIONS' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+                Push Notifications
               </button>
             </div>
           </div>
@@ -388,6 +394,19 @@ function SettingsContent() {
                   <lucide.Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Invoice Defaults'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* NOTIFICATIONS TAB */}
+          {activeTab === 'NOTIFICATIONS' && user && (
+            <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl bg-card border border-theme rounded-2xl p-6 md:p-8">
+              <div>
+                <h2 className="text-lg font-black uppercase tracking-wider text-purple-400 flex items-center gap-2 mb-2">
+                  <lucide.BellRing className="w-5 h-5 text-purple-500" /> Admin Push Settings
+                </h2>
+                <p className="text-secondary text-sm">Configure push notifications for this device to receive alerts on new orders, payments, and client requests.</p>
+              </div>
+              <NotificationPreferencesPanel userId={user.id} />
             </div>
           )}
         </div>

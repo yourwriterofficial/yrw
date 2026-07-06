@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
-import { notifyUser } from '@/lib/notify';
+import { notifyUser, notifyAdmins } from '@/lib/notify';
 import { emailTemplates } from '@/lib/emailTemplates';
 import { isOrderFullyPaid } from '@/lib/orderPayment';
 
@@ -120,6 +120,17 @@ export async function POST(request: Request) {
         emailHtml: tpl.html,
         emailSubject: tpl.subject,
       });
+
+      // Notify admins
+      await notifyAdmins({
+        title: `Milestone Paid: ${order.order_id}`,
+        message: `${order.legal_name} paid milestone "${m.name}" (₦${m.amount.toLocaleString()}) for order "${order.topic}".`,
+        type: 'payment',
+        link: `/admin/orders?open=${order.order_id}`,
+        orderDbId: order.id,
+        emailHtml: tpl.html,
+        emailSubject: `[PAID] Milestone: ${m.name} - Order #${order.order_id}`,
+      }).catch(e => console.warn('Admin notification failed', e));
     }
 
     return NextResponse.json({ success: true, milestones });

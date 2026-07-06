@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { notifyAdmins } from '@/lib/notify';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -84,22 +85,24 @@ export async function POST(request: Request) {
       // Notify admin of wallet topup
       try {
         const { data: userProfile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
-        const { data: userData } = await supabase.auth.admin.getUserById(userId);
-        if (userProfile && userData?.user) {
-          const { sendSystemEmail } = await import('@/lib/emailService');
+        const { data: userData } = await supabase.auth.getUser(); // Try to get user from auth if needed or auth.admin
+        const { data: adminUserData } = await supabase.auth.admin.getUserById(userId);
+        if (userProfile && adminUserData?.user) {
           const { emailTemplates } = await import('@/lib/emailTemplates');
           const adminMailData = emailTemplates.adminWalletTopup({
-            email: userData.user.email || '',
+            email: adminUserData.user.email || '',
             full_name: userProfile.full_name || 'Client',
             amount: numericAmount,
             reference
           });
-          await sendSystemEmail({
-            to: process.env.ADMIN_EMAIL || 'yourwriterofficial@gmail.com',
-            subject: adminMailData.subject,
-            html: adminMailData.html
+          await notifyAdmins({
+            title: `Wallet Top-up: ${userProfile.full_name}`,
+            message: `${userProfile.full_name} (${adminUserData.user.email}) topped up ₦${numericAmount.toLocaleString()}.`,
+            type: 'payment',
+            emailHtml: adminMailData.html,
+            emailSubject: adminMailData.subject,
           });
-          console.log('✅ Admin notified of wallet top-up');
+          console.log('✅ Admins notified of wallet top-up');
         }
       } catch (e) {
         console.warn('Admin wallet topup notification failed:', e);
@@ -178,7 +181,7 @@ export async function POST(request: Request) {
 
     const { data: orderInfo, error: orderError } = await supabase
       .from('orders')
-      .select('email, legal_name, financial_quote, topic, order_id')
+      .select('id, email, legal_name, financial_quote, topic, order_id')
       .eq('order_id', orderStringId)
       .single();
 
@@ -194,7 +197,7 @@ export async function POST(request: Request) {
       financial_quote: orderInfo.financial_quote,
     };
 
-    let updates = {};
+    let updates: any = {};
     let template = null;
     let adminTemplate = null;
     
@@ -322,13 +325,15 @@ export async function POST(request: Request) {
     }
 
     if (adminTemplate) {
-      const { sendSystemEmail } = await import('@/lib/emailService');
-      await sendSystemEmail({
-        to: process.env.ADMIN_EMAIL || 'yourwriterofficial@gmail.com',
-        subject: adminTemplate.subject,
-        html: adminTemplate.html,
-        orderId: orderStringId,
-      }).catch(e => console.warn('Admin payment email failed', e));
+      await notifyAdmins({
+        title: `Payment Confirmed: ${orderStringId}`,
+        message: `Payment received for order "${orderInfo.topic}" (${orderStringId}). Status: ${updates.workflow_status || 'Paid'}.`,
+        type: 'payment',
+        link: `/admin/orders?open=${orderStringId}`,
+        orderDbId: orderInfo.id,
+        emailHtml: adminTemplate.html,
+        emailSubject: adminTemplate.subject,
+      }).catch(e => console.warn('Admin payment notification failed', e));
     }
 
     return NextResponse.json({ received: true });

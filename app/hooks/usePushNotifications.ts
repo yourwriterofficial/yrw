@@ -8,6 +8,9 @@ import { supabase } from '@/lib/supabaseClient';
 let _vapidKeyPromise: Promise<string> | null = null;
 
 async function resolveVapidPublicKey(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+    return process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  }
   if (!_vapidKeyPromise) {
     _vapidKeyPromise = (async () => {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;

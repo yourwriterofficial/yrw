@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import xss from 'xss';
+import { notifyAdmins } from '@/lib/notify';
 
 const supabaseAdmin = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -89,29 +90,32 @@ export async function POST(request: Request) {
       throw updateError;
     }
 
-    // 5. Send email notification to Admin
+    // 5. Notify Admins
     try {
-      const { sendSystemEmail } = await import('@/lib/emailService');
-      const adminEmail = process.env.ADMIN_EMAIL || 'yourwriterofficial@gmail.com';
-      await sendSystemEmail({
-        to: adminEmail,
-        subject: `🚨 New Custom Add-on Requested: Order #${orderId}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
-            <h2 style="color: #8b5cf6;">New Add-on Requested</h2>
-            <p>A client has requested a custom extra requirement for <strong>Order #${orderId}</strong>.</p>
-            <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #8b5cf6; margin: 20px 0;">
-              <strong>Requirement:</strong><br/>
-              ${sanitizedAddonName}
-            </div>
-            <p>Please log in to the Admin Dashboard to review this request and set the pricing quote.</p>
-            <p style="margin-top: 30px;"><a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin/orders" style="background-color: #8b5cf6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review Request</a></p>
+      const adminTemplateHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
+          <h2 style="color: #8b5cf6;">New Add-on Requested</h2>
+          <p>A client has requested a custom extra requirement for <strong>Order #${orderId}</strong>.</p>
+          <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #8b5cf6; margin: 20px 0;">
+            <strong>Requirement:</strong><br/>
+            ${sanitizedAddonName}
           </div>
-        `,
-        orderId: orderId,
+          <p>Please log in to the Admin Dashboard to review this request and set the pricing quote.</p>
+          <p style="margin-top: 30px;"><a href="${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/admin/orders" style="background-color: #8b5cf6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review Request</a></p>
+        </div>
+      `;
+
+      await notifyAdmins({
+        title: `Addon Requested: #${orderId}`,
+        message: `Client requested new addon "${sanitizedAddonName}" for order #${orderId}.`,
+        type: 'admin_message',
+        link: `/admin/orders?open=${orderId}`,
+        orderDbId: order.id,
+        emailHtml: adminTemplateHtml,
+        emailSubject: `🚨 New Custom Add-on Requested: Order #${orderId}`,
       });
-    } catch (emailErr) {
-      console.warn('Failed to send admin addon request notification:', emailErr);
+    } catch (err) {
+      console.warn('Failed to notify admins of addon request:', err);
     }
 
     return NextResponse.json({ success: true, addon: newAddon });

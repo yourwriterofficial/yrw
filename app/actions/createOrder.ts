@@ -5,7 +5,7 @@ import { z } from 'zod';
 import xss from 'xss';
 import type { CreateOrderServerActionResponse } from '@/lib/types';
 import { emailTemplates } from '@/lib/emailTemplates';
-import { notifyUser } from '@/lib/notify';
+import { notifyUser, notifyAdmins } from '@/lib/notify';
 import { sendSystemEmail } from '@/lib/emailService';
 import { upsertInvoiceForOrder } from '@/lib/invoices';
 
@@ -202,23 +202,16 @@ export async function createSecureOrder(
   // 2. Notify the admin
   (async () => {
     try {
-      const { data: adminProfile } = await supabase.from('profiles').select('id').eq('is_admin', true).limit(1).maybeSingle();
-      if (adminProfile) {
-        await notifyUser({
-          userId: adminProfile.id,
-          title: 'New Order Received',
-          message: `${data.legal_name} placed a new order: "${data.topic}" (${data.order_id}).`,
-          type: 'order_update',
-          link: `/admin/orders?open=${data.order_id}`,
-          orderDbId: data.id,
-          isAdminSent: false,
-          emailHtml: adminTemplate.html,
-          emailSubject: adminTemplate.subject,
-        });
-      } else {
-        const adminEmail = process.env.ADMIN_EMAIL || 'yourwriterofficial@gmail.com';
-        await sendSystemEmail({ to: adminEmail, orderId: data.order_id, subject: adminTemplate.subject, html: adminTemplate.html });
-      }
+      await notifyAdmins({
+        title: 'New Order Received',
+        message: `${data.legal_name} placed a new order: "${data.topic}" (${data.order_id}).`,
+        type: 'order_update',
+        link: `/admin/orders?open=${data.order_id}`,
+        orderDbId: data.id,
+        isAdminSent: false,
+        emailHtml: adminTemplate.html,
+        emailSubject: adminTemplate.subject,
+      });
     } catch (e) {
       console.warn('Admin notification failed', e);
     }

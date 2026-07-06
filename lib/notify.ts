@@ -132,3 +132,33 @@ export async function notifyUsers(userIds: string[], params: Omit<NotifyParams, 
   const batchId = params.batchId || `batch_${Date.now()}`;
   await Promise.all(userIds.map(userId => notifyUser({ ...params, userId, batchId })));
 }
+
+/** Notifies all platform admins (in-app, email, and push notifications). */
+export async function notifyAdmins(params: Omit<NotifyParams, 'userId'>): Promise<void> {
+  try {
+    const { data: admins } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('is_admin', true);
+    
+    const adminIds = (admins || []).map(a => a.id);
+    if (adminIds.length > 0) {
+      const batchId = params.batchId || `batch_admin_${Date.now()}`;
+      await notifyUsers(adminIds, { ...params, batchId });
+    } else {
+      // Fallback to sending a direct email to the main admin address
+      const adminEmail = process.env.ADMIN_EMAIL || 'yourwriterofficial@gmail.com';
+      if (params.emailHtml) {
+        await sendSystemEmail({
+          to: adminEmail,
+          subject: params.emailSubject || params.title,
+          html: params.emailHtml,
+          orderId: params.orderDbId ? String(params.orderDbId) : undefined,
+        });
+      }
+    }
+  } catch (e) {
+    console.error('[notify] failed to notify admins:', e);
+  }
+}
+
