@@ -114,7 +114,7 @@ export async function POST(request: Request) {
 
     // --- PROJECT MATERIAL (pay-first; order only created here, after payment) ---
     if (type === 'project_material') {
-      const { userId, topicId, title, department, price, name, whatsapp } = metadata;
+      const { userId, topicId, title, department, price, name, whatsapp, level, addons } = metadata;
       console.log(`📦 Project material purchase by ${userId}: "${title}"`);
 
       if (!userId || !title) {
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
         sixty_percent_paid: true,
         forty_percent_paid: true,
         work_submitted: instant,
-        additional_info: `[PROJECT MATERIAL]\nDepartment: ${department || 'General'}\nScope: Chapters 4 & 5 only (as advertised).\nSource: ${topicId ? `Catalogue topic #${topicId}` : 'Custom request'}`,
+        additional_info: `[PROJECT MATERIAL]\nLevel: ${level || 'BSc'}\nDepartment: ${department || 'General'}\nScope: Chapters 1 to 5 (MS Word).\nAdd-ons: ${addons || 'None'}\nSource: ${topicId ? `Catalogue topic #${topicId}` : 'Custom request'}\nNote: Ready-made material — similarity/AI levels not checked (as advertised).`,
       };
 
       const { data: inserted, error: insErr } = await supabase.from('orders').insert(orderRow).select().single();
@@ -197,15 +197,15 @@ export async function POST(request: Request) {
           `<h1>Payment Confirmed — Project Material</h1>
            <p>Hi ${name || 'there'},</p>
            <p>Thank you! Your payment of ₦${amount.toLocaleString()} for <strong>${title}</strong> is confirmed.</p>
-           <p>Your material covers <strong>Chapters 4 &amp; 5</strong>. ${instant ? 'It is available in your Secure Vault now.' : 'Our team will place it in your Secure Vault shortly.'}</p>`,
+           <p>Your material covers <strong>Chapters 1 to 5</strong>. ${instant ? 'It is available in your Secure Vault now.' : 'Our team will place it in your Secure Vault shortly.'}</p>`,
           'Open Your Vault', `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?tab=vault`
         );
         await notifyUser({
           userId,
           title: instant ? 'Your project material is ready' : 'Project material purchased',
           message: instant
-            ? `"${title}" (Chapters 4 & 5) is in your vault.`
-            : `Payment confirmed for "${title}" (Chapters 4 & 5). We'll deliver it to your vault shortly.`,
+            ? `"${title}" (Chapters 1 to 5) is in your vault.`
+            : `Payment confirmed for "${title}" (Chapters 1 to 5). We'll deliver it to your vault shortly.`,
           type: instant ? 'vault_delivery' : 'order_update',
           link: '/dashboard/client?tab=vault',
           orderDbId: inserted.id,

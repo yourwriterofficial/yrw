@@ -215,8 +215,8 @@ function DashboardContent() {
         if (data) setOrders(await mergeMilestoneData(data as AdminOrderView[]));
       }
     } catch (err) {
-      console.error(err);
-      showToast('Failed to refresh orders', 'error');
+      // Transient load errors shouldn't alarm the user right after login — log only.
+      console.error('refreshOrders failed:', err);
     }
   }, [mergeMilestoneData]);
 

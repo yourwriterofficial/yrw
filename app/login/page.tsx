@@ -1,12 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import ThemeToggle from '@/app/components/ThemeToggle';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginInner />
+    </Suspense>
+  );
+}
+
+function LoginInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get('next');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,16 +47,21 @@ export default function LoginPage() {
 
     const isAdminEmail = user.email?.toLowerCase() === 'yourwriterofficial@gmail.com';
 
-    await supabase.from('profiles').upsert({
-      id: user.id,
-      full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
-      is_admin: isAdminEmail,
-    });
+    // Best-effort profile sync — never block or error the login on this.
+    try {
+      await supabase.from('profiles').upsert({
+        id: user.id,
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+        is_admin: isAdminEmail,
+      }, { onConflict: 'id' });
+    } catch { /* non-fatal */ }
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 400));
 
     if (isAdminEmail) {
       window.location.href = '/admin';
+    } else if (nextPath && nextPath.startsWith('/')) {
+      window.location.href = nextPath;
     } else {
       window.location.href = '/dashboard/client';
     }
