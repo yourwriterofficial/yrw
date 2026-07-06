@@ -12,6 +12,7 @@ const NAV_ITEMS: { href: string; label: string; icon: typeof lucide.LayoutDashbo
   { href: '/admin', label: 'Dashboard', icon: lucide.LayoutDashboard, exact: true },
   { href: '/admin/orders', label: 'Orders', icon: lucide.Database },
   { href: '/admin/invoices', label: 'Invoices', icon: lucide.FileSpreadsheet },
+  { href: '/admin/projects', label: 'Project Topics', icon: lucide.BookOpen },
   { href: '/admin/finance', label: 'Finance', icon: lucide.Wallet },
   { href: '/admin/users', label: 'Users', icon: lucide.Users },
   { href: '/admin/promos', label: 'Promo Codes', icon: lucide.Tag },

@@ -53,6 +53,7 @@ export default function LandingPage() {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8 text-xs font-bold text-secondary uppercase tracking-widest">
             <a href="#services" className="hover:text-emerald-400 transition">Services</a>
+            <Link href="/projects" className="hover:text-emerald-400 transition">Project Materials</Link>
             <a href="#process" className="hover:text-emerald-400 transition">How it Works</a>
             <div className="w-40">
               <ThemeToggle />
@@ -84,6 +85,7 @@ export default function LandingPage() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-secondary/95 backdrop-blur-md border-b border-theme py-4 px-6 flex flex-col gap-4 text-sm font-bold">
             <a href="#services" onClick={() => setMobileMenuOpen(false)} className="text-secondary hover:text-emerald-400 py-2">Services</a>
+            <Link href="/projects" onClick={() => setMobileMenuOpen(false)} className="text-secondary hover:text-emerald-400 py-2">Project Materials</Link>
             <a href="#process" onClick={() => setMobileMenuOpen(false)} className="text-secondary hover:text-emerald-400 py-2">How it Works</a>
             <ThemeToggle />
             {user ? (
