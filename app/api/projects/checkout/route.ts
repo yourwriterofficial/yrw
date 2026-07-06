@@ -24,13 +24,40 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'You must be logged in to purchase.' }, { status: 401 });
 
-    const { topicId, customTitle, department, level, addonIds } = await request.json();
+    const {
+      topicId,
+      customTitle,
+      department,
+      level,
+      addonIds,
+      addonWords,
+      addonFeatures,
+      customLocation
+    } = await request.json();
+
+    // Fetch pricing settings (global level prices & department price overrides)
+    const { data: settingsData } = await admin.from('project_settings').select('*');
+    let levelPrices: Record<string, number> = { BSc: 3999, MSc: 4500, PhD: 10000 };
+    let deptPrices: Record<string, number> = {};
+
+    if (settingsData) {
+      settingsData.forEach(s => {
+        if (s.key === 'level_prices') levelPrices = s.value;
+        if (s.key === 'department_prices') deptPrices = s.value;
+      });
+    }
+
+    const getTopicPrice = (lvl: string, deptName: string) => {
+      const deptPrice = deptPrices[deptName];
+      if (deptPrice !== undefined && Number(deptPrice) > 0) return Number(deptPrice);
+      return levelPrices[lvl] || levelPrices.BSc || 3999;
+    };
 
     let title = '';
-    let basePrice = LEVEL_PRICE.BSc;
+    let basePrice = levelPrices.BSc;
     let dept = department || 'General';
     let topicRef: string | null = null;
-    let lvl = (level && LEVEL_PRICE[level]) ? level : 'BSc';
+    let lvl = (level && levelPrices[level]) ? level : 'BSc';
 
     if (topicId) {
       const { data: topic, error } = await admin
@@ -42,27 +69,62 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Topic not found or unavailable.' }, { status: 404 });
       }
       title = topic.title;
-      basePrice = Number(topic.price) || LEVEL_PRICE[topic.level] || LEVEL_PRICE.BSc;
+      basePrice = Number(topic.price) || getTopicPrice(topic.level, topic.department);
       dept = topic.department;
       lvl = topic.level || 'BSc';
       topicRef = String(topic.id);
     } else if (customTitle && String(customTitle).trim().length >= 5) {
       title = String(customTitle).trim();
-      basePrice = LEVEL_PRICE[lvl];
+      basePrice = getTopicPrice(lvl, dept);
     } else {
       return NextResponse.json({ error: 'Provide a topic to purchase.' }, { status: 400 });
     }
 
     // Resolve selected add-ons (server-side price authority)
     let addonTotal = 0;
-    let addonNames: string[] = [];
+    let addonDescriptions: string[] = [];
     if (Array.isArray(addonIds) && addonIds.length) {
       const { data: addons } = await admin
         .from('project_addons')
-        .select('id, name, price, is_active')
+        .select('*')
         .in('id', addonIds)
         .eq('is_active', true);
-      (addons || []).forEach(a => { addonTotal += Number(a.price) || 0; addonNames.push(a.name); });
+
+      (addons || []).forEach(a => {
+        let addonPrice = Number(a.price) || 0;
+        let details = '';
+
+        if (a.price_type === 'per_word') {
+          const words = Number(addonWords?.[a.id]) || 1000;
+          addonPrice = (Number(a.price) || 0) * words;
+          details += ` (${words.toLocaleString()} words @ ₦${a.price}/word = ₦${addonPrice.toLocaleString()})`;
+        } else {
+          details += ` (₦${addonPrice.toLocaleString()})`;
+        }
+
+        // Add sub-features pricing
+        if (Array.isArray(a.features) && a.features.length && Array.isArray(addonFeatures?.[a.id])) {
+          const selectedFeats = addonFeatures[a.id];
+          const subFeats: string[] = [];
+          a.features.forEach((f: any) => {
+            if (selectedFeats.includes(f.name)) {
+              addonPrice += Number(f.price) || 0;
+              subFeats.push(`${f.name} (+₦${(Number(f.price) || 0).toLocaleString()})`);
+            }
+          });
+          if (subFeats.length) {
+            details += ` [Features: ${subFeats.join(', ')}]`;
+          }
+        }
+
+        // Add location changer text
+        if (a.is_location_changer && customLocation) {
+          details += ` [Change Location to: "${customLocation}"]`;
+        }
+
+        addonTotal += addonPrice;
+        addonDescriptions.push(`${a.name}${details}`);
+      });
     }
 
     const total = Math.round(basePrice + addonTotal);
@@ -90,7 +152,8 @@ export async function POST(request: Request) {
           level: lvl,
           price: total,
           basePrice,
-          addons: addonNames.join(', '),
+          addons: addonDescriptions.length ? addonDescriptions.join(', ') : 'None',
+          customLocation: customLocation || null,
           name: profile?.full_name || user.email?.split('@')[0] || 'Client',
           whatsapp: profile?.whatsapp || null,
         },
