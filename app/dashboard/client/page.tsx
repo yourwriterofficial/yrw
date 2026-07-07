@@ -332,7 +332,7 @@ function DashboardContent() {
         if (impProfile) {
           activeProfile = impProfile;
           activeWallet = impWallet;
-          activeUser = { ...user, id: impId, email: impEmail };
+          activeUser = { ...user, id: impId, email: impEmail || undefined };
         }
       }
 
