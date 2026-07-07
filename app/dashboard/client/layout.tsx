@@ -7,6 +7,7 @@ import * as lucide from 'lucide-react';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import { ToastContainer } from '@/app/components/ui/Toast';
 import NotificationBell from '@/app/components/ui/NotificationBell';
+import { getEffectiveUser } from '@/lib/impersonate';
 
 const Spinner = () => (
   <div className="min-h-screen bg-primary flex items-center justify-center">
@@ -56,14 +57,17 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { user, profile, isImpersonating } = await getEffectiveUser();
       if (!user) {
         router.push('/login');
         return;
       }
       setUser(user);
-      const { data: userProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      setProfile(userProfile);
+      if (isImpersonating) {
+        setProfile({ ...profile, _original_is_admin: true });
+      } else {
+        setProfile(profile);
+      }
       
       await fetchUnviewedVault(user.email || '', user.id);
       setLoading(false);
@@ -119,7 +123,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto pr-1">
-          {profile?.is_admin && (
+          {(profile?.is_admin || profile?._original_is_admin) && (
             <button
               onClick={() => router.push('/admin')}
               className="flex items-center justify-center gap-2 w-full p-2.5 mb-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 font-black text-xs uppercase tracking-wider border border-purple-500/25 transition cursor-pointer shrink-0"
@@ -210,7 +214,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       {mobileMenuOpen && (
         <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px] shadow-lg max-h-[80vh] overflow-y-auto">
-          {profile?.is_admin && (
+          {(profile?.is_admin || profile?._original_is_admin) && (
             <button
               onClick={() => { router.push('/admin'); setMobileMenuOpen(false); }}
               className="flex items-center justify-center gap-2 w-full p-3 rounded-xl bg-purple-500/10 text-purple-400 font-black text-xs uppercase tracking-wider border border-purple-500/25 transition cursor-pointer"

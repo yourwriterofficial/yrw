@@ -9,6 +9,8 @@ import { Upload, Paperclip, CheckCircle2, Terminal, Calendar } from 'lucide-reac
 import type { CreateOrderServerActionResponse } from '@/lib/types';
 import OrderCategoryNav from '@/app/components/OrderCategoryNav';
 
+import { getEffectiveUser } from '@/lib/impersonate';
+
 type OrderAddon = {
   id: string;
   name: string;
@@ -45,10 +47,9 @@ export default function LoggedInDevOrderPage() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { user, profile } = await getEffectiveUser();
       if (!user) return router.push('/login');
       setUser(user);
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       setProfile(profile);
     };
     fetchUser();

@@ -7,6 +7,8 @@ import { Wallet, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
 import { showToast } from '@/app/components/ui/Toast';
 
+import { getEffectiveUser } from '@/lib/impersonate';
+
 type WalletPageProps = {
   embedded?: boolean;
 };
@@ -20,7 +22,7 @@ export default function WalletPage({ embedded = false }: WalletPageProps) {
   const [processing, setProcessing] = useState(false);
 
   const fetchWallet = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = await getEffectiveUser();
     if (!user) {
       router.push('/login');
       return;
@@ -62,7 +64,7 @@ export default function WalletPage({ embedded = false }: WalletPageProps) {
   }, [embedded]);
 
   const handleTopUp = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = await getEffectiveUser();
     if (!user) {
       router.push('/login');
       return;

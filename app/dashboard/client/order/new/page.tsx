@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { BookOpen, LineChart, PenTool, Briefcase, ArrowRight, Terminal, Library } from 'lucide-react';
 import OrderCategoryNav from '@/app/components/OrderCategoryNav';
 
+import { getEffectiveUser } from '@/lib/impersonate';
+
 export default function SelectServicePage() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -15,10 +17,9 @@ export default function SelectServicePage() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { user, profile } = await getEffectiveUser();
       if (!user) return router.push('/login');
       setUser(user);
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       setProfile(profile);
       setLoading(false);
     };

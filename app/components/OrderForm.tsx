@@ -7,6 +7,7 @@ import { createSecureOrder } from '@/app/actions/createOrder';
 import { HelpCircle, ChevronRight, ChevronLeft, Upload, Paperclip, CheckCircle2, Calendar, Trash2 } from 'lucide-react';
 import type { ServiceTier, CreateOrderServerActionResponse } from '@/lib/types';
 import OrderCategoryNav from './OrderCategoryNav';
+import { getEffectiveUser } from '@/lib/impersonate';
 
 type Plan = ServiceTier;
 
@@ -138,11 +139,10 @@ export default function OrderForm() {
   // Check login status and fetch wallet balance
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { user, profile } = await getEffectiveUser();
       if (user) {
         setIsLoggedIn(true);
         setLoggedInUser(user);
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         setLoggedInProfile(profile);
         setName(profile?.full_name || user.email?.split('@')[0] || '');
         setEmail(user.email || '');
