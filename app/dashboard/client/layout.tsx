@@ -145,6 +145,16 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
+          {/* Project Topics */}
+          <div className="mt-2 mb-1">
+            <p className="text-[9px] uppercase tracking-widest text-secondary font-black pl-3 mb-1.5">Project Materials</p>
+            <div className="space-y-1 pl-2 border-l border-zinc-800">
+              <button onClick={() => router.push('/projects')} className={navBtnClass('projects-external')}>
+                <div className="flex items-center gap-2.5 text-xs"><lucide.BookOpen className="w-4 h-4 text-amber-400 shrink-0" /> <span>Browse Topics</span></div>
+              </button>
+            </div>
+          </div>
+
           <button id="rw-tour-vault" onClick={() => router.push('/dashboard/client?tab=vault')} className={navBtnClass('vault')}>
             <div className="flex items-center gap-3"><lucide.Lock className="w-5 h-5" /> <span>Secure Vault</span></div>
             {unviewedVaultCount > 0 && <span className="px-2 py-0.5 bg-emerald-500 text-black rounded-md text-[10px] font-black">{unviewedVaultCount}</span>}
@@ -214,6 +224,11 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               <div className="flex items-center gap-2.5 text-xs"><lucide.GraduationCap className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Premium Writing</span></div>
             </button>
           </div>
+
+          {/* Mobile: Project Topics */}
+          <button onClick={() => { router.push('/projects'); setMobileMenuOpen(false); }} className={navBtnClass('projects-external')}>
+            <div className="flex items-center gap-2.5 text-xs"><lucide.BookOpen className="w-4 h-4 text-amber-400 shrink-0" /> <span>Project Topics</span></div>
+          </button>
 
           <button onClick={() => { router.push('/dashboard/client?tab=vault'); setMobileMenuOpen(false); }} className={navBtnClass('vault')}>
             <div className="flex items-center gap-3"><lucide.Lock className="w-5 h-5" /> <span>Secure Vault</span></div>

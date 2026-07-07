@@ -104,8 +104,8 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
             </div>
           </div>
 
-          <Link href="/projects" className="hover:text-emerald-400 transition-colors duration-200">
-            Project Materials
+          <Link href="/projects" className="hover:text-emerald-400 transition-colors duration-200 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />Project Topics
           </Link>
           <Link href={processHref} className="hover:text-emerald-400 transition-colors duration-200">
             How it Works
@@ -207,9 +207,9 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
                 <Link 
                   href="/projects" 
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-zinc-900 border border-zinc-850 hover:border-emerald-500/30 text-xs font-black text-primary transition-all active:scale-[0.98]"
+                  className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 text-xs font-black text-amber-400 transition-all active:scale-[0.98]"
                 >
-                  📚 Materials
+                  📚 Project Topics
                 </Link>
               </div>
 

@@ -180,7 +180,8 @@ function DashboardContent() {
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [orders, setOrders] = useState<AdminOrderView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'vault' | 'wallet' | 'profile' | 'chat'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'vault' | 'wallet' | 'profile' | 'chat' | 'projects'>('dashboard');
+
   const [processingPayment, setProcessingPayment] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<AdminOrderView | null>(null);
@@ -196,7 +197,7 @@ function DashboardContent() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'vault' || tab === 'wallet' || tab === 'profile' || tab === 'dashboard' || tab === 'chat') {
+    if (tab === 'vault' || tab === 'wallet' || tab === 'profile' || tab === 'dashboard' || tab === 'chat' || tab === 'projects') {
       setActiveTab(tab as any);
     }
   }, [searchParams]);
