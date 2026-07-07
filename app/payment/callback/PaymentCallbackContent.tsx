@@ -8,16 +8,20 @@ import { supabase } from '@/lib/supabaseClient';
 export default function PaymentCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const status = searchParams.get('status');
-  const tx_ref = searchParams.get('tx_ref');
+  const rawStatus = searchParams.get('status');
+  const tx_ref = searchParams.get('tx_ref') || searchParams.get('trxref') || searchParams.get('reference');
 
   const [displayState, setDisplayState] = useState<'processing' | 'success' | 'error'>('processing');
 
   useEffect(() => {
     // Wait for URL params to be available
-    if (!status || !tx_ref) return;
+    if (!tx_ref) return;
 
-    if (status === 'successful' || status === 'completed') {
+    // For Paystack, status is not present in URL parameters on redirect.
+    // If status is present, verify it indicates success. If not present, assume success.
+    const isSuccessful = !rawStatus || ['successful', 'completed', 'success'].includes(rawStatus.toLowerCase());
+
+    if (isSuccessful) {
       
       // POLLING MECHANISM: Give the webhook time to update the DB
       let attempts = 0;
@@ -25,17 +29,56 @@ export default function PaymentCallbackContent() {
 
       const verifyPaymentStatus = async () => {
         try {
-          const { data, error } = await supabase
-            .from('invoices')
-            .select('status')
-            .eq('flutterwave_transaction_ref', tx_ref)
-            .single();
+          let isPaid = false;
 
-          // If the webhook has marked it PAID, we are good to go!
-          if (data && data.status === 'PAID') {
+          if (tx_ref.startsWith('PROJ_')) {
+            // Project materials: check transactions table
+            const { data } = await supabase
+              .from('transactions')
+              .select('status')
+              .eq('reference', tx_ref)
+              .maybeSingle();
+
+            if (data && data.status === 'completed') {
+              isPaid = true;
+            }
+          } else if (tx_ref.startsWith('CUSTINV_')) {
+            // Custom invoices: check custom_invoices table milestones
+            const parts = tx_ref.split('_');
+            const invoiceNumber = parts[1];
+            const milestoneType = parts[2] || '';
+            const milestoneIndex = parseInt(milestoneType.replace('INDEX-', ''), 10);
+
+            if (invoiceNumber && !isNaN(milestoneIndex)) {
+              const { data } = await supabase
+                .from('custom_invoices')
+                .select('milestones')
+                .eq('invoice_number', invoiceNumber)
+                .maybeSingle();
+
+              if (data && Array.isArray(data.milestones) && data.milestones[milestoneIndex]?.paid) {
+                isPaid = true;
+              }
+            }
+          } else {
+            // Standard invoices: check invoices table
+            const { data } = await supabase
+              .from('invoices')
+              .select('status')
+              .eq('flutterwave_transaction_ref', tx_ref)
+              .maybeSingle();
+
+            if (data && data.status === 'PAID') {
+              isPaid = true;
+            }
+          }
+
+          const targetUrl = tx_ref.startsWith('PROJ_') ? '/dashboard/client?tab=vault' : '/dashboard/client';
+
+          if (isPaid) {
             setDisplayState('success');
             setTimeout(() => {
-              router.push('/dashboard/client');
+              router.push(targetUrl);
             }, 2000);
             return;
           }
@@ -46,16 +89,17 @@ export default function PaymentCallbackContent() {
             // Timeout reached. Show success anyway and let them see the dashboard
             setDisplayState('success');
             setTimeout(() => {
-              router.push('/dashboard/client');
+              router.push(targetUrl);
             }, 2000);
           } else {
             setTimeout(verifyPaymentStatus, 2000);
           }
         } catch (err) {
           // Fallback in case of network error
+          const targetUrl = tx_ref.startsWith('PROJ_') ? '/dashboard/client?tab=vault' : '/dashboard/client';
           setDisplayState('success');
           setTimeout(() => {
-            router.push('/dashboard/client');
+            router.push(targetUrl);
           }, 2000);
         }
       };
@@ -66,10 +110,11 @@ export default function PaymentCallbackContent() {
     } else {
       setDisplayState('error');
       setTimeout(() => {
-        router.push('/dashboard/client');
+        const targetUrl = tx_ref.startsWith('PROJ_') ? '/dashboard/client?tab=vault' : '/dashboard/client';
+        router.push(targetUrl);
       }, 4000);
     }
-  }, [status, tx_ref, router]);
+  }, [rawStatus, tx_ref, router]);
 
   return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 font-['Inter']">

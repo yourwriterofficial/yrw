@@ -40,6 +40,7 @@ export async function POST(request: Request) {
     console.log('Full metadata:', JSON.stringify(metadata, null, 2));
 
     const { type } = metadata || {};
+    const rawAmountPaid = Number(payload.data.amount || 0) / 100;
 
     // --- WALLET TOP-UP ---
     if (type === 'wallet_topup') {
@@ -250,9 +251,9 @@ export async function POST(request: Request) {
           'Open in Admin', `${process.env.NEXT_PUBLIC_BASE_URL}/admin/orders?open=${orderStringId}`
         );
         await notifyAdmins({
-          title: `Project sale: ${title}`,
-          message: `${name} bought "${title}" (₦${amount.toLocaleString()}). ${instant ? 'Auto-delivered.' : 'Upload material to vault.'}`,
-          type: 'order_update',
+          title: `Project Material Sale: ₦${amount.toLocaleString()}`,
+          message: `${name} purchased project material "${title}" for ₦${amount.toLocaleString()}.`,
+          type: 'payment',
           link: `/admin/orders?open=${orderStringId}`,
           emailHtml: adminHtml,
           emailSubject: `Project sale: ${title}`,
@@ -309,6 +310,35 @@ export async function POST(request: Request) {
         .throwOnError();
         
       console.log(`✅ Custom invoice milestone updated successfully. Invoice Status: ${newStatus}`);
+
+      const paidMilestone = milestones[milestoneIndex];
+      const amountPaid = paidMilestone?.amount || 0;
+      const milestoneName = paidMilestone?.name || `Milestone #${milestoneIndex + 1}`;
+      
+      try {
+        const { emailShell } = await import('@/lib/emailTemplates');
+        const adminHtml = emailShell(
+          `<h2>Custom Invoice Payment Confirmed</h2>
+           <p><strong>${invoiceData.client_name || 'Client'}</strong> (${invoiceData.email || 'No email'}) paid a custom invoice milestone.</p>
+           <p>Invoice: <strong>${invoiceNumber}</strong><br/>
+              Milestone: <strong>${milestoneName}</strong><br/>
+              Amount Paid: <strong>₦${amountPaid.toLocaleString()}</strong><br/>
+              Status: ${newStatus}
+           </p>`,
+          'Open Custom Invoices', `${process.env.NEXT_PUBLIC_BASE_URL}/admin/invoices`
+        );
+        await notifyAdmins({
+          title: `Custom Invoice Paid: ₦${amountPaid.toLocaleString()}`,
+          message: `${invoiceData.client_name || 'Client'} paid ₦${amountPaid.toLocaleString()} for milestone "${milestoneName}" of custom invoice ${invoiceNumber}.`,
+          type: 'payment',
+          link: `/admin/invoices`,
+          emailHtml: adminHtml,
+          emailSubject: `[PAID] Custom Invoice ${invoiceNumber} - Milestone: ${milestoneName}`,
+        });
+      } catch (e) {
+        console.warn('Custom invoice payment admin notification failed:', e);
+      }
+
       return NextResponse.json({ received: true });
     }
 
@@ -332,7 +362,7 @@ export async function POST(request: Request) {
 
     const { data: orderInfo, error: orderError } = await supabase
       .from('orders')
-      .select('id, email, legal_name, financial_quote, topic, order_id')
+      .select('id, email, legal_name, financial_quote, topic, order_id, service_tier')
       .eq('order_id', orderStringId)
       .single();
 
@@ -389,6 +419,52 @@ export async function POST(request: Request) {
               reference: tx_ref,
               status: 'completed',
             });
+          }
+
+          const addon = addonPayload.extra_addons[addonIndex];
+          const addonPrice = Number(addon.price) || 0;
+          const addonName = addon.name || 'Add-on';
+          
+          try {
+            const { data: orderInfo } = await supabase
+              .from('orders')
+              .select('legal_name, email, topic, order_id, service_tier, id')
+              .eq('order_id', orderStringId)
+              .single();
+
+            const { emailShell } = await import('@/lib/emailTemplates');
+            const adminHtml = emailShell(
+              `<h2>Add-on Payment Confirmed</h2>
+               <p><strong>${orderInfo?.legal_name || 'Client'}</strong> (${orderInfo?.email || 'No email'}) paid for an add-on.</p>
+               <p>Order: <strong>${orderStringId}</strong><br/>
+                  Topic: <strong>${orderInfo?.topic || 'N/A'}</strong><br/>
+                  Add-on: <strong>${addonName}</strong><br/>
+                  Amount Paid: <strong>₦${addonPrice.toLocaleString()}</strong><br/>
+                  Reference: ${tx_ref}
+               </p>`,
+              'Open Order', `${process.env.NEXT_PUBLIC_BASE_URL}/admin/orders?open=${orderStringId}`
+            );
+            
+            const SERVICE_TIERS: Record<string, string> = {
+              ACADEMIC: 'Academic Writing',
+              CONTENT: 'Content Writing',
+              RESUME: 'Resume/CV Services',
+              DEV: 'Software Development',
+              CUSTOM: 'Custom Research/Writing'
+            };
+            const orderType = SERVICE_TIERS[orderInfo?.service_tier || ''] || 'Custom Order';
+
+            await notifyAdmins({
+              title: `${orderType} Add-on Paid: ₦${addonPrice.toLocaleString()}`,
+              message: `${orderInfo?.legal_name || 'Client'} paid ₦${addonPrice.toLocaleString()} for add-on "${addonName}" on order ${orderStringId}.`,
+              type: 'payment',
+              link: `/admin/orders?open=${orderStringId}`,
+              orderDbId: orderInfo?.id,
+              emailHtml: adminHtml,
+              emailSubject: `[PAID] Add-on: ${addonName} - Order #${orderStringId}`,
+            });
+          } catch (e) {
+            console.warn('Addon payment admin notification failed:', e);
           }
         }
       }
@@ -485,9 +561,19 @@ export async function POST(request: Request) {
     }
 
     if (adminTemplate) {
+      const SERVICE_TIERS: Record<string, string> = {
+        ACADEMIC: 'Academic Writing',
+        CONTENT: 'Content Writing',
+        RESUME: 'Resume/CV Services',
+        DEV: 'Software Development',
+        CUSTOM: 'Custom Research/Writing'
+      };
+      const orderType = SERVICE_TIERS[orderInfo.service_tier || ''] || 'Custom Order';
+      const paymentLabel = paymentType === 'DEPOSIT' ? 'Deposit' : paymentType === 'BALANCE' ? 'Balance' : paymentType.startsWith('INDEX-') ? `Milestone #${paymentType.replace('INDEX-', '')}` : 'Milestone';
+
       await notifyAdmins({
-        title: `Payment Confirmed: ${orderStringId}`,
-        message: `Payment received for order "${orderInfo.topic}" (${orderStringId}). Status: ${updates.workflow_status || 'Paid'}.`,
+        title: `${orderType} Payment: ₦${rawAmountPaid.toLocaleString()}`,
+        message: `Received ₦${rawAmountPaid.toLocaleString()} (${paymentLabel}) from ${orderInfo.legal_name || 'Client'} for "${orderInfo.topic}" (${orderStringId}).`,
         type: 'payment',
         link: `/admin/orders?open=${orderStringId}`,
         orderDbId: orderInfo.id,
