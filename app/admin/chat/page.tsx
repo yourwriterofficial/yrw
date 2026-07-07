@@ -36,6 +36,7 @@ export default function AdminChatPage() {
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [convSearch, setConvSearch] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -179,11 +180,32 @@ export default function AdminChatPage() {
 
       {/* LEFT: CONVERSATIONS LIST */}
       <aside className="w-80 border-r border-theme bg-secondary/30 flex flex-col shrink-0">
-        <div className="p-4 border-b border-theme">
-          <h2 className="font-black text-sm text-primary uppercase tracking-widest flex items-center gap-2">
-            <lucide.MessageSquare className="w-5 h-5 text-purple-500" /> Support Queue
-          </h2>
-          <p className="text-[10px] text-secondary mt-1">Live customer support conversations</p>
+        <div className="p-4 border-b border-theme space-y-3">
+          <div>
+            <h2 className="font-black text-sm text-primary uppercase tracking-widest flex items-center gap-2">
+              <lucide.MessageSquare className="w-5 h-5 text-purple-500" /> Support Queue
+            </h2>
+            <p className="text-[10px] text-secondary mt-1">Live customer support conversations</p>
+          </div>
+          
+          <div className="relative">
+            <lucide.Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+            <input
+              type="text"
+              value={convSearch}
+              onChange={e => setConvSearch(e.target.value)}
+              placeholder="Search by name or email..."
+              className="w-full bg-secondary border border-theme rounded-xl pl-9 pr-3 py-2 text-xs text-primary outline-none focus:border-purple-500 transition font-bold"
+            />
+            {convSearch && (
+              <button 
+                onClick={() => setConvSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-secondary hover:text-primary transition"
+              >
+                <lucide.X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto divide-y divide-theme/40">
@@ -193,8 +215,19 @@ export default function AdminChatPage() {
             </div>
           ) : conversations.length === 0 ? (
             <div className="p-8 text-center text-xs text-secondary">No support conversations found.</div>
-          ) : (
-            conversations.map(conv => {
+          ) : (() => {
+            const filtered = conversations.filter(conv => {
+              const q = convSearch.toLowerCase().trim();
+              if (!q) return true;
+              return (
+                (conv.profiles?.full_name || 'Guest Client').toLowerCase().includes(q) ||
+                (conv.profiles?.email || '').toLowerCase().includes(q)
+              );
+            });
+            if (filtered.length === 0) {
+              return <div className="p-8 text-center text-xs text-secondary">No matching clients found.</div>;
+            }
+            return filtered.map(conv => {
               const active = selectedConv?.id === conv.id;
               return (
                 <button
@@ -220,8 +253,8 @@ export default function AdminChatPage() {
                   </p>
                 </button>
               );
-            })
-          )}
+            });
+          })()}
         </div>
       </aside>
 

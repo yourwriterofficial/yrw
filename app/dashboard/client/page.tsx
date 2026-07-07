@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense, useCallback } from 'react';
+import { useEffect, useState, Suspense, useCallback, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as lucide from 'lucide-react';
@@ -14,6 +14,7 @@ import NotificationPreferencesPanel from '@/app/components/ui/NotificationPrefer
 import MilestoneTimeline from '@/app/components/ui/MilestoneTimeline';
 import { isOrderFullyPaid, isCustomPayment } from '@/lib/orderPayment';
 import SupportChat from './SupportChat';
+import ProjectsTab from './ProjectsTab';
 
 // ==========================================
 // 1. HELPER FUNCTIONS
@@ -195,6 +196,9 @@ function DashboardContent() {
   const [vaultAddonRequest, setVaultAddonRequest] = useState<Record<string, string>>({});
   const [requestingAddon, setRequestingAddon] = useState<Record<string, boolean>>({});
 
+  const userEmailRef = useRef<string | null>(null);
+  const isAdminPreviewRef = useRef<boolean>(false);
+
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab === 'vault' || tab === 'wallet' || tab === 'profile' || tab === 'dashboard' || tab === 'chat' || tab === 'projects') {
@@ -339,10 +343,15 @@ function DashboardContent() {
 
       setProfile(activeProfile);
       setWalletBalance(Number(activeWallet?.balance) || 0);
+      
+      // Update refs to avoid stale closure in real-time subscription
+      userEmailRef.current = activeUser.email || null;
+      const isAdmin = activeProfile?.is_admin === true;
+      isAdminPreviewRef.current = isAdmin;
+      
       await fetchVaultFiles(activeUser);
 
       const previewOrderId = searchParams.get('preview');
-      const isAdmin = activeProfile?.is_admin === true;
       setIsAdminPreview(isAdmin);
 
       if (isAdmin) {
@@ -359,7 +368,11 @@ function DashboardContent() {
     const channel = supabase
       .channel('client-order-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        refreshOrders(isAdminPreview ? undefined : user?.email, isAdminPreview, searchParams.get('preview'));
+        refreshOrders(
+          isAdminPreviewRef.current ? undefined : userEmailRef.current || undefined,
+          isAdminPreviewRef.current,
+          searchParams.get('preview')
+        );
         showToast('Order status updated', 'info');
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'final_deliverables' }, () => {
@@ -906,6 +919,13 @@ function DashboardContent() {
       {activeTab === 'chat' && (
         <div className="animate-in fade-in duration-500 max-w-4xl mx-auto h-[calc(100vh-180px)] flex flex-col bg-card border border-theme rounded-3xl overflow-hidden shadow-xl">
           <SupportChat user={user} />
+        </div>
+      )}
+
+      {/* === TAB: PROJECTS === */}
+      {activeTab === 'projects' && (
+        <div className="animate-in fade-in duration-500 max-w-6xl mx-auto">
+          <ProjectsTab user={user} />
         </div>
       )}
 

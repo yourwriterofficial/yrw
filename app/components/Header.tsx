@@ -99,13 +99,13 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
                 ✍ Content Writing
               </Link>
               <Link href="/order/academic" className="block px-4 py-2 text-[11px] text-primary hover:bg-white/5 hover:text-emerald-400 font-bold transition-all">
-                🎓 Premium Writing
+                🎓 Premium Academic Writing
               </Link>
             </div>
           </div>
 
-          <Link href="/projects" className="hover:text-emerald-400 transition-colors duration-200 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />Project Topics
+          <Link href={user ? (isAdmin ? "/projects" : "/dashboard/client?tab=projects") : "/projects"} className="hover:text-emerald-400 transition-colors duration-200 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />Buy Already-Made Projects
           </Link>
           <Link href={processHref} className="hover:text-emerald-400 transition-colors duration-200">
             How it Works
@@ -205,11 +205,11 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
                   🏠 Home Page
                 </Link>
                 <Link 
-                  href="/projects" 
+                  href={user ? (isAdmin ? "/projects" : "/dashboard/client?tab=projects") : "/projects"} 
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 text-xs font-black text-amber-400 transition-all active:scale-[0.98]"
                 >
-                  📚 Project Topics
+                  📚 Buy Already-Made Projects
                 </Link>
               </div>
 
@@ -246,7 +246,7 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center justify-between p-2 rounded-xl hover:bg-zinc-800 transition text-xs font-bold text-primary"
                   >
-                    <span className="flex items-center gap-2">🎓 Premium Writing</span>
+                    <span className="flex items-center gap-2">🎓 Premium Academic Writing</span>
                     <lucide.ChevronRight className="w-3.5 h-3.5 text-secondary" />
                   </Link>
                 </div>
