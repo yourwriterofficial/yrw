@@ -37,6 +37,7 @@ export async function POST(request: Request) {
       addonWords,
       addonFeatures,
       customLocation,
+      assignedWriter,
       email: guestEmailInput,
     } = body;
 
@@ -193,6 +194,7 @@ export async function POST(request: Request) {
           basePrice,
           addons: addonDescriptions.length ? addonDescriptions.join(', ') : 'None',
           customLocation: customLocation || null,
+          assignedWriter: assignedWriter || null,
           name: profile?.full_name || buyerEmail.split('@')[0] || 'Client',
           whatsapp: profile?.whatsapp || null,
           guestCheckout,

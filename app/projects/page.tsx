@@ -119,25 +119,334 @@ const NIGERIAN_DEPARTMENTS = [
   "Zoology"
 ];
 
-const NIGERIAN_FIRST_NAMES = [
-  "Chidi", "Olumide", "Babajide", "Emeka", "Tunde", "Abdul", "Aminu", "Kelechi", "Segun", "Uchenna", 
-  "Adebayo", "Femi", "Kunle", "Tochukwu", "Ibrahim", "Musa", "Yusuf", "Usman", "Okey", "Ifeanyi", 
-  "Nonso", "Jide", "Kola", "Dayo", "Wale", "Damilola", "Temitope", "Gbolahan", "Ejike", "Nnamdi",
-  "Ngozi", "Chioma", "Yetunde", "Amina", "Funmilayo", "Chinyere", "Zainab", "Halima", "Amara", "Tolani", 
-  "Kemi", "Shade", "Fatimah", "Aisha", "Blessing", "Chinwe", "Ifeoma", "Adesua", "Bisola", "Eniola", 
-  "Folake", "Nkechi", "Ronke", "Tolu", "Yemisi", "Ogechi", "Uju", "Ezinne", "Nneka", "Efe",
-  "Seyi", "Bisi", "Dapo", "Gbenga", "Leke", "Muyiwa", "Tobi", "Yinka", "Biyi", "Tokunbo",
-  "Chinedu", "Chika", "Ezenwa", "Obinna", "Somto", "Uche", "Ikechukwu", "Goziem", "Mide", "Wole"
+// ---- Tribe-grouped writer name pools (700+ names, 15+ Nigerian tribes) ----
+
+// IGBO (~50 first, ~40 last)
+const IGBO_FIRST = [
+  "Chidi", "Emeka", "Kelechi", "Uchenna", "Tochukwu", "Nonso", "Ejike", "Nnamdi", "Ngozi", "Chioma",
+  "Chinyere", "Ifeoma", "Ogechi", "Uju", "Ezinne", "Nneka", "Chinedu", "Chika", "Ezenwa", "Obinna",
+  "Somto", "Uche", "Ikechukwu", "Goziem", "Adaeze", "Onyekachi", "Chiamaka", "Ogochukwu", "Obiageli",
+  "Chinonso", "Chibuike", "Ugochi", "Adannaya", "Amarachi", "Uchechukwu", "Nkiruka", "Chinaza", "Ebube",
+  "Odinaka", "Chidinma", "Onyeka", "Ifunanya", "Chibundo", "Tobenna", "Kenechukwu", "Chimamanda",
+  "Ginika", "Ugochukwu", "Obioma", "Chukwuemeka", "Onyedikachi", "Chigozie", "Akachukwu",
+  "Nwanneka", "Ezechukwu", "Amaka", "Chizoba", "Onyinye", "Ugomma", "Adanna",
+];
+const IGBO_LAST = [
+  "Okeke", "Okafor", "Nwosu", "Okoye", "Nwachukwu", "Opara", "Diala", "Ezeugo", "Onuoha", "Eze",
+  "Obi", "Okoro", "Chukwu", "Igwe", "Kalu", "Onyema", "Uba", "Nwankwo", "Obiora", "Aniagu",
+  "Ugwu", "Nwofor", "Onyekwere", "Ezeaku", "Nwogu", "Ogbuagu", "Nweze", "Umeh", "Agu", "Ogbu",
+  "Nwafor", "Onyemenam", "Ezeilo", "Onwudiwe", "Nzekwe", "Okonkwo", "Ihejirika", "Obasi", "Okpara",
+  "Nnaji", "Ojukwu", "Onyia", "Eze-Onwu", "Mbah", "Nwagbo", "Ezeh", "Asadu", "Anigbo",
 ];
 
-const NIGERIAN_LAST_NAMES = [
-  "Okeke", "Okafor", "Nwosu", "Balogun", "Adebayo", "Ojo", "Alabi", "Babalola", "Awolowo", "Bello", 
-  "Ibrahim", "Abubakar", "Garba", "Usman", "Mohammed", "Okoye", "Nwachukwu", "Opara", "Diala", "Soyinka", 
-  "Achebe", "Dangote", "Adenuga", "Alakija", "Otedola", "Danjuma", "Ezeugo", "Onuoha", "Eze", "Obi", 
-  "Okoro", "Chukwu", "Igwe", "Adeleke", "Shagari", "Abiola", "Falz", "Bankole", "Akinyemi", "Coker",
-  "Oluwole", "Adeyemi", "Alonge", "Olatunji", "Daramola", "Oyinlola", "Akenzua", "Fagbemi", "Ajayi", "Osinbajo",
-  "Ogundipe", "Adeboye", "Olanrewaju", "Kalu", "Onyema", "Uba", "Sanusi", "Lamido", "Buhari", "Gowon"
+// YORUBA (~50 first, ~40 last)
+const YORUBA_FIRST = [
+  "Olumide", "Babajide", "Tunde", "Segun", "Adebayo", "Femi", "Kunle", "Jide", "Kola", "Dayo",
+  "Wale", "Damilola", "Temitope", "Gbolahan", "Yetunde", "Funmilayo", "Tolani", "Kemi", "Shade",
+  "Adesua", "Bisola", "Eniola", "Folake", "Ronke", "Tolu", "Yemisi", "Seyi", "Bisi",
+  "Dapo", "Gbenga", "Leke", "Muyiwa", "Tobi", "Yinka", "Biyi", "Tokunbo", "Mide", "Wole",
+  "Oluwaseun", "Adedayo", "Temitayo", "Oluwafemi", "Adeola", "Taiwo", "Kehinde", "Opeyemi",
+  "Oluwatobi", "Ayobami", "Oluwakemi", "Oluwaseyi", "Adeleke", "Adewale", "Olubunmi", "Ifeoluwa",
+  "Ayooluwa", "Omowunmi", "Adefunke", "Aderopo", "Bukola", "Motunrayo",
 ];
+const YORUBA_LAST = [
+  "Balogun", "Adebayo", "Ojo", "Alabi", "Babalola", "Awolowo", "Soyinka", "Adenuga", "Alakija",
+  "Adeleke", "Abiola", "Falz", "Bankole", "Akinyemi", "Coker", "Oluwole", "Adeyemi", "Alonge",
+  "Olatunji", "Daramola", "Oyinlola", "Akenzua", "Fagbemi", "Ajayi", "Osinbajo", "Ogundipe",
+  "Adeboye", "Olanrewaju", "Oduya", "Babatunde", "Afolabi", "Gbadebo", "Fasanya", "Ayoola",
+  "Olopade", "Animashaun", "Lawal", "Makinde", "Adesanya", "Adegboye", "Obafemi", "Osuntokun",
+  "Ikuforiji", "Okulaja", "Adeyinka", "Olaleye",
+];
+
+// HAUSA-FULANI (~40 first, ~30 last)
+const HAUSA_FIRST = [
+  "Abdul", "Aminu", "Ibrahim", "Musa", "Yusuf", "Usman", "Amina", "Zainab", "Halima", "Fatimah",
+  "Aisha", "Lawal", "Aliyu", "Sani", "Bello", "Maryam", "Hafsat", "Ruqayyah", "Bilkisu", "Hauwa",
+  "Abdullahi", "Ismail", "Nuhu", "Yakubu", "Idris", "Rabiu", "Habib", "Nasiru", "Zubairu",
+  "Ramatu", "Khadijah", "Fadimatu", "Suwaiba", "Asabe", "Jummai", "Hadiza", "Mairo", "Saratu",
+  "Bashir", "Haruna", "Tijjani", "Suleiman",
+];
+const HAUSA_LAST = [
+  "Bello", "Ibrahim", "Abubakar", "Garba", "Usman", "Mohammed", "Dangote", "Danjuma", "Shagari",
+  "Sanusi", "Lamido", "Buhari", "Gowon", "Dikko", "Kwankwaso", "Aliyu", "Sule",
+  "Abdullahi", "Musa", "Inuwa", "Gambo", "Wada", "Bashir", "Tukur", "Tanko", "Hassan", "Adamu",
+  "Maikasuwa", "Tsangaya", "Ringim",
+];
+
+// FULANI (~25 first, ~20 last) — distinct from Hausa naming patterns
+const FULANI_FIRST = [
+  "Modibo", "Hammadu", "Siradio", "Oumarou", "Adama", "Amadou", "Boubacar", "Hawa", "Mariama",
+  "Fatoumata", "Balkissa", "Nenneh", "Ramata", "Binta", "Djamila", "Ardo", "Musa", "Umaru",
+  "Hamidu", "Yelwa", "Jibril", "Ahmadu", "Aliou", "Kadija", "Hadijatou",
+];
+const FULANI_LAST = [
+  "Barry", "Balde", "Diallo", "Jallo", "Sow", "Ba", "Bah", "Tall", "Toure", "Camara",
+  "Bello", "Yero", "Sule", "Mamman", "Sambo", "Mairiga", "Danfodio", "Labbo",
+];
+
+// IJaw / IZON (~30 first, ~25 last)
+const IJAW_FIRST = [
+  "Peremo", "Ebiowei", "Doubara", "Suoton", "Tamaraebi", "Ebiakpo", "Diepreye", "Opuofoni",
+  "Ayibakuro", "Bibowei", "Timi", "Angala", "Erefawei", "Preye", "Taribo", "Adaka", "Boma",
+  "Ebiere", "Doris", "Oyinkuro", "Eruotor", "Tamaraufa", "Kemesowei", "Ibifuro", "Tamuno",
+  "Opibi", "Bioye", "Ebiowei", "Oruene", "Youfa",
+];
+const IJAW_LAST = [
+  "Okoko", "Amapu", "Owei", "Okoya", "Tombia", "Kpakiama", "Tebepah", "Egbe", "Inengite",
+  "Gbonewei", "Dokubo", "Oki", "Ebiri", "Amabebe", "Ayawei", "Akpoebi", "Tonye",
+  "Binitie", "Ebizimor", "Dimieari", "Poloamina", "Preye", "Arubai", "Seibarugu",
+];
+
+// EFIK (~25 first, ~20 last)
+const EFIK_FIRST = [
+  "Eyo", "Asuquo", "Okon", "Bassey", "Etim", "Ndifreke", "Iquo", "Akon", "Uduak", "Atim",
+  "Edidiong", "Uwem", "Ekemini", "Emem", "Ekpe", "Affiong", "Aniema", "Ubong", "Obong", "Ini",
+  "Mfon", "Itoro", "Nkereuwem", "Ima", "Nsikak",
+];
+const EFIK_LAST = [
+  "Ekanem", "Ekpo", "Essien", "Bassey", "Okon", "Inyang", "Etim", "Asuquo", "Akpan", "Udofia",
+  "Edem", "Nsa", "Effiong", "Ekong", "Usoro", "Utuk", "Eno", "Ukpong", "Ntuk",
+];
+
+// IBIBIO (~25 first, ~20 last) — closely related to Efik but distinct
+const IBIBIO_FIRST = [
+  "Ekpenyong", "Akaninyene", "Idongesit", "Enoobong", "Nsidibe", "Enobong", "Ekemini", "Ifiok",
+  "Ndiana", "Ntiense", "Anietie", "Ofonime", "Ekaete", "Obianuju", "Akpabio", "Andem",
+  "Ekom", "Uko", "Ndidi", "Idorenyin", "Uduak", "Esit", "Iniobong", "Nkoyo", "Anyim",
+];
+const IBIBIO_LAST = [
+  "Akpan", "Udoh", "Umoh", "Udo", "Ikpe", "Essen", "Ibok", "Ntukidem", "Obot", "Ebong",
+  "Udosen", "Edet", "Antia", "Mbong", "Ikot", "Ekerete", "Efiok", "Udoekong", "Ikpeme",
+];
+
+// TIV (~25 first, ~20 last)
+const TIV_FIRST = [
+  "Aondo", "Terhile", "Iorlamen", "Ubam", "Tyav", "Andesikaa", "Iember", "Doosuur", "Terngu",
+  "Terdoo", "Mbakor", "Gbaasen", "Bemsen", "Terfa", "Dzua", "Mfon", "Orji", "Mngehen",
+  "Anum", "Gyebi", "Kperan", "Mbaaza", "Uyam", "Mfon", "Bur",
+];
+const TIV_LAST = [
+  "Shagbaor", "Iorlaha", "Gbor", "Waya", "Tyem", "Akume", "Suswam", "Awua", "Tor",
+  "Tarka", "Iorbee", "Kukwu", "Ugba", "Anure", "Kure", "Dzeremo", "Fanen", "Mbajiua",
+];
+
+// EDO / BINI (~30 first, ~25 last)
+const EDO_FIRST = [
+  "Osaro", "Omosede", "Eghosa", "Osagie", "Osayande", "Itohan", "Adesuwa", "Ehinome",
+  "Osazemen", "Omolade", "Eguagie", "Oghenovo", "Omotayo", "Esosa", "Osemwengie", "Ehigie",
+  "Osaretin", "Osasuyi", "Omoyemen", "Aidonojie", "Ikponmwosa", "Edokpolor", "Evbuomwan",
+  "Aigbogun", "Enabore", "Ehindero", "Okonkwo", "Iyoha", "Isiolo", "Odigie",
+];
+const EDO_LAST = [
+  "Osagie", "Osunde", "Ero", "Ize-Iyamu", "Aigbe", "Omorogbe", "Ogiugo", "Osabuohien",
+  "Edokpolor", "Evbayiro", "Igbinosun", "Ekhator", "Odigie", "Ehigie", "Iyawe",
+  "Omorodion", "Omoruyi", "Esedebe", "Oronsaye", "Idemudia", "Osemwekha", "Omorogbe",
+  "Osegbon", "Ediae", "Ikponmwosa",
+];
+
+// URHOBO (~25 first, ~20 last)
+const URHOBO_FIRST = [
+  "Erhuvwu", "Ogheneruona", "Ogheneovo", "Oghenekaro", "Oghenechovwe", "Oghenevwede",
+  "Orode", "Eruotor", "Ovoke", "Ogheneukaro", "Oghenekevwe", "Emoefe", "Ufuoma",
+  "Oghenerukewe", "Enuvoke", "Irikefe", "Orobor", "Eruoma", "Oviri", "Orezi",
+  "Oghenemine", "Oghene", "Aderukewe", "Oghogho", "Evwruakewe",
+];
+const URHOBO_LAST = [
+  "Okoro", "Okoye", "Eferakeya", "Owhonda", "Egwuogu", "Ekpeki", "Egboka", "Arho",
+  "Omonzuanvbo", "Emami", "Egba", "Aghedo", "Adikru", "Ofure", "Okumagba",
+  "Oganaka", "Ekwueme", "Etete", "Abraka", "Ovwasa",
+];
+
+// ISOKO (~20 first, ~15 last)
+const ISOKO_FIRST = [
+  "Oghenerukewe", "Oghenekevwe", "Ovwurie", "Erhovwo", "Oweh", "Ogheneochuko",
+  "Emerho", "Iruaro", "Ohwovoriole", "Ofevwe", "Adjene", "Ekwuerhe",
+  "Avworhe", "Evuarherhe", "Ogheneruwe", "Orhorhoro", "Okiemute", "Oghenerobor",
+  "Oghenevwoke", "Ohwovore",
+];
+const ISOKO_LAST = [
+  "Oghenevwoke", "Emiko", "Arhewoh", "Egbo", "Erho", "Ogheneuke", "Isioro",
+  "Oviri", "Eferakeya", "Erhieyovwe", "Ohwofa", "Isiavwe", "Ojameruaye", "Oghenemine",
+];
+
+// ITSEKIRI (~20 first, ~15 last)
+const ITSEKIRI_FIRST = [
+  "Ginuwa", "Emiko", "Olu", "Atsepoyi", "Oritseweyinmi", "Oritsegbemi", "Oritsejolomi",
+  "Temitayo", "Sola", "Oritseyemisi", "Arese", "Imoru", "Uvieghara",
+  "Oritsematosan", "Oloruntoba", "Obaro", "Ogheneruona", "Oghenemine",
+  "Ogheneoro", "Eyitayo",
+];
+const ITSEKIRI_LAST = [
+  "Ologbotsere", "Emiko", "Nana", "Ginuwa", "Olu", "Dore", "Atsepoyi",
+  "Uwangue", "Oritsemoyemi", "Kakra", "Oriakhi", "Orugbani", "Ajogun", "Omatsola",
+];
+
+// NUPE (~20 first, ~15 last)
+const NUPE_FIRST = [
+  "Bello", "Etsu", "Salihu", "Ndako", "Yisa", "Edibo", "Gana", "Mama", "Doko",
+  "Isah", "Ndacefu", "Tajo", "Musa", "Umoru", "Aliyu", "Jibrin",
+  "Halima", "Fatima", "Jummai", "Rakiya",
+];
+const NUPE_LAST = [
+  "Ndako", "Bello", "Gana", "Mama", "Masaba", "Etsu", "Doko", "Gari",
+  "Cekpa", "Jibrin", "Aliyu", "Sarki", "Umoru", "Shaba",
+];
+
+// KANURI (~20 first, ~15 last)
+const KANURI_FIRST = [
+  "Mustapha", "Kyari", "Bama", "Bukar", "Yerima", "Shettima", "Gana", "Ali",
+  "Zannah", "Alkali", "Kachallah", "Goni", "Abba", "Bulama", "Fatima",
+  "Hauwa", "Aisha", "Modu", "Lawan", "Umar",
+];
+const KANURI_LAST = [
+  "Shettima", "Kyari", "Gana", "Bukar", "Zannah", "Modu", "Lawan",
+  "Kachallah", "Goni", "Mustapha", "Ali", "Imam", "Bulama", "Alhaji",
+];
+
+// IGALA (~20 first, ~15 last)
+const IGALA_FIRST = [
+  "Icheme", "Omale", "Ameh", "Aje", "Ogiri", "Onu", "Akor", "Ejeh", "Ayegba",
+  "Agbo", "Okpe", "Okwoli", "Ameh", "Atu", "Ochai", "Ocho", "Ojabo", "Baba",
+  "Eneji", "Oche",
+];
+const IGALA_LAST = [
+  "Ameh", "Ayegba", "Agbo", "Akor", "Ejeh", "Ochai", "Onu", "Baba",
+  "Okpe", "Ogiri", "Eneji", "Omale", "Oche", "Atanyi",
+];
+
+// EBIRA (~20 first, ~15 last)
+const EBIRA_FIRST = [
+  "Ozigi", "Obaro", "Ohize", "Okene", "Adoh", "Ogbe", "Okutu", "Ozor",
+  "Iyabo", "Abioye", "Akene", "Okorie", "Enehe", "Amina", "Yakubu",
+  "Halima", "Ibrahim", "Musa", "Ozigis", "Obaro",
+];
+const EBIRA_LAST = [
+  "Ozigi", "Obaro", "Adoh", "Abubakar", "Okene", "Ohize", "Egbunu",
+  "Okutu", "Ogbe", "Omadivi", "Ozoh", "Akana", "Otaru", "Ohiole",
+];
+
+// IDOMA (~20 first, ~15 last)
+const IDOMA_FIRST = [
+  "Okpabi", "Attah", "Ogiri", "Adoyi", "Ache", "Ogenyi", "Odoh", "Onah",
+  "Ede", "Ogbe", "Omale", "Agbo", "Otu", "Aker", "Ademu", "Ameh",
+  "Akpamu", "Elachi", "Ogiri", "Ajobe",
+];
+const IDOMA_LAST = [
+  "Attah", "Agbo", "Ache", "Adoyi", "Onah", "Ogbe", "Ede", "Omale",
+  "Aker", "Ademu", "Akpamu", "Elachi", "Ajobe", "Okwoli",
+];
+
+// OGONI (~20 first, ~15 last)
+const OGONI_FIRST = [
+  "Saro-Wiwa", "Nwibia", "Nwibari", "Barigha", "Nwinyiwei", "Nkpuda",
+  "Giadom", "Deeyah", "Kpalap", "Naloo", "Sira", "Nwibani", "Bari",
+  "Kagbara", "Luah", "Deekor", "Gbalaboribo", "Kpaa", "Doolo", "Gbara",
+];
+const OGONI_LAST = [
+  "Saro-Wiwa", "Nwibari", "Giadom", "Barigha", "Kpalap", "Nkpuda",
+  "Luah", "Deekor", "Kagbara", "Naloo", "Gbara", "Badom", "Nwibia",
+];
+
+// IKWERRE (~20 first, ~15 last) — distinct Rivers State group, related to Igbo
+const IKWERRE_FIRST = [
+  "Owunna", "Nwachukwu", "Okereke", "Eke", "Chibuike", "Wosu", "Chibuzo",
+  "Nwokolo", "Uchenna", "Obinna", "Chidinma", "Amadi", "Pepple", "Wike",
+  "Nkpolu", "Amaechi", "Orlu", "Nwuji", "Ubani", "Okere",
+];
+const IKWERRE_LAST = [
+  "Amadi", "Wosu", "Pepple", "Wike", "Okereke", "Amaechi", "Nkpolu",
+  "Ubani", "Nwokolo", "Orlu", "Okere", "Owunna", "Eke", "Nwuji",
+];
+
+// ANNANG (~15 first, ~12 last)
+const ANNANG_FIRST = [
+  "Eno", "Abasifreke", "Nsikak", "Ndifreke", "Affiong", "Iquo", "Edidiong",
+  "Uwem", "Emem", "Ndidi", "Ntiense", "Abasi", "Imaobong", "Uduak", "Nkwa",
+];
+const ANNANG_LAST = [
+  "Antia", "Ibok", "Udoh", "Edet", "Obot", "Esen", "Itiat",
+  "Ekong", "Udoekong", "Akpan", "Nkpa", "Ebong",
+];
+
+// JUKUN (~15 first, ~12 last)
+const JUKUN_FIRST = [
+  "Aku", "Daji", "Baba", "Wapan", "Gbamji", "Angyu", "Kpanta", "Girmawa",
+  "Tukura", "Agbu", "Mela", "Takur", "Ashuku", "Wase", "Dodo",
+];
+const JUKUN_LAST = [
+  "Aku", "Wapan", "Angyu", "Tukura", "Agbu", "Gbamji", "Mela",
+  "Takur", "Daji", "Ashuku", "Wase", "Girmawa",
+];
+
+// English / Christian names — may pair with any tribe surname
+const ENGLISH_FIRST = [
+  "Emmanuel", "Blessing", "Grace", "Victor", "Daniel", "Faith", "Miracle", "Precious", "David", "Samuel",
+  "Joseph", "Esther", "Ruth", "Stephen", "Philip", "John", "Mary", "Elizabeth", "Peter", "Paul",
+  "James", "Mercy", "Charity", "Hope", "Love", "Solomon", "Ezekiel", "Moses", "Caleb", "Joshua",
+  "Deborah", "Rebecca", "Naomi", "Hannah", "Abigail", "Nathaniel", "Timothy", "Michael", "Gabriel",
+  "Raphael", "Benedict", "Theresa", "Christina", "Patricia", "Florence", "Cynthia", "Angela",
+];
+
+// ALL surnames pool (for English-name cross-pairing)
+const ALL_LAST = [
+  ...IGBO_LAST, ...YORUBA_LAST, ...HAUSA_LAST, ...FULANI_LAST,
+  ...IJAW_LAST, ...EFIK_LAST, ...IBIBIO_LAST, ...TIV_LAST,
+  ...EDO_LAST, ...URHOBO_LAST, ...ISOKO_LAST, ...ITSEKIRI_LAST,
+  ...NUPE_LAST, ...KANURI_LAST, ...IGALA_LAST, ...EBIRA_LAST,
+  ...IDOMA_LAST, ...OGONI_LAST, ...IKWERRE_LAST, ...ANNANG_LAST, ...JUKUN_LAST,
+];
+
+// Tribe groups with probability weights (total = 1.0)
+// Igbo 22%, Yoruba 22%, Hausa 15%, Fulani 5%, Ijaw 6%,
+// Efik 4%, Ibibio 4%, Tiv 4%, Edo 4%, Urhobo 3%,
+// Isoko 1%, Itsekiri 1%, Nupe 1%, Kanuri 1%, Igala 1%,
+// Ebira 1%, Idoma 1%, Ogoni 1%, Ikwerre 1%, Annang 0.5%, Jukun 0.5%, English 1%
+const TRIBE_POOL: Array<{ first: string[]; last: string[]; weight: number }> = [
+  { first: IGBO_FIRST,     last: IGBO_LAST,     weight: 0.22 },
+  { first: YORUBA_FIRST,   last: YORUBA_LAST,   weight: 0.22 },
+  { first: HAUSA_FIRST,    last: HAUSA_LAST,    weight: 0.15 },
+  { first: FULANI_FIRST,   last: FULANI_LAST,   weight: 0.05 },
+  { first: IJAW_FIRST,     last: IJAW_LAST,     weight: 0.06 },
+  { first: EFIK_FIRST,     last: EFIK_LAST,     weight: 0.04 },
+  { first: IBIBIO_FIRST,   last: IBIBIO_LAST,   weight: 0.04 },
+  { first: TIV_FIRST,      last: TIV_LAST,      weight: 0.04 },
+  { first: EDO_FIRST,      last: EDO_LAST,      weight: 0.04 },
+  { first: URHOBO_FIRST,   last: URHOBO_LAST,   weight: 0.03 },
+  { first: ISOKO_FIRST,    last: ISOKO_LAST,    weight: 0.01 },
+  { first: ITSEKIRI_FIRST, last: ITSEKIRI_LAST, weight: 0.01 },
+  { first: NUPE_FIRST,     last: NUPE_LAST,     weight: 0.01 },
+  { first: KANURI_FIRST,   last: KANURI_LAST,   weight: 0.01 },
+  { first: IGALA_FIRST,    last: IGALA_LAST,    weight: 0.01 },
+  { first: EBIRA_FIRST,    last: EBIRA_LAST,    weight: 0.01 },
+  { first: IDOMA_FIRST,    last: IDOMA_LAST,    weight: 0.01 },
+  { first: OGONI_FIRST,    last: OGONI_LAST,    weight: 0.01 },
+  { first: IKWERRE_FIRST,  last: IKWERRE_LAST,  weight: 0.01 },
+  { first: ANNANG_FIRST,   last: ANNANG_LAST,   weight: 0.005 },
+  { first: JUKUN_FIRST,    last: JUKUN_LAST,    weight: 0.005 },
+];
+
+const pickWriter = (): string => {
+  // English names get cross-tribe surname (last 1% bucket)
+  if (Math.random() > 0.99) {
+    const f = ENGLISH_FIRST[Math.floor(Math.random() * ENGLISH_FIRST.length)];
+    const l = ALL_LAST[Math.floor(Math.random() * ALL_LAST.length)];
+    return `${f} ${l}`;
+  }
+  // Weighted tribe selection
+  let roll = Math.random();
+  for (const tribe of TRIBE_POOL) {
+    roll -= tribe.weight;
+    if (roll <= 0) {
+      const f = tribe.first[Math.floor(Math.random() * tribe.first.length)];
+      const l = tribe.last[Math.floor(Math.random() * tribe.last.length)];
+      return `${f} ${l}`;
+    }
+  }
+  // Fallback (floating point rounding)
+  const t = TRIBE_POOL[0];
+  return `${t.first[Math.floor(Math.random() * t.first.length)]} ${t.last[Math.floor(Math.random() * t.last.length)]}`;
+};
+
 
 const levelBadge = (lvl: string) =>
   lvl === 'PhD' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
@@ -186,9 +495,7 @@ export default function ProjectsPage() {
           setSimulationState('awarding');
           
           const t3 = setTimeout(() => {
-            const first = NIGERIAN_FIRST_NAMES[Math.floor(Math.random() * NIGERIAN_FIRST_NAMES.length)];
-            const last = NIGERIAN_LAST_NAMES[Math.floor(Math.random() * NIGERIAN_LAST_NAMES.length)];
-            setAssignedWriter(`${first} ${last}`);
+            setAssignedWriter(pickWriter());
             setSimulationState('complete');
           }, 1600); // 1.6s delay representing awarding selection
           
@@ -374,7 +681,6 @@ export default function ProjectsPage() {
   };
 
   useEffect(() => {
-    if (!hasSearched && !debounced.trim()) return;
     setLoading(true);
     fetchTopics(1).finally(() => setLoading(false));
   }, [dept, level, debounced, hasSearched]);
@@ -436,6 +742,7 @@ export default function ProjectsPage() {
           addonWords: addonWords,
           addonFeatures: addonFeatures,
           customLocation: customLocation,
+          assignedWriter: assignedWriter || undefined,
           email: isLoggedIn === false ? guestEmail.trim() : undefined,
         }),
       });
@@ -692,7 +999,7 @@ export default function ProjectsPage() {
                 <div>
                   <h4 className="text-lg font-black text-primary">Custom Write-up Available!</h4>
                   <p className="text-xs text-secondary mt-1.5 leading-relaxed max-w-md mx-auto font-semibold">
-                    This exact topic is not pre-packaged in our database, but our writers can prepare it for you as a custom project with original chapters 1–5, structured layout, and references.
+                    Our writers can prepare your custom topic as an original project with complete Chapters 1–5, structured layout, and full references.
                   </p>
                 </div>
 
@@ -796,7 +1103,106 @@ export default function ProjectsPage() {
         )}
       </div>
 
+      {/* BROWSE ALL PROJECT TOPICS (below search section) */}
+      {!hasSearched && !isSearching && (
+        <div className="max-w-[1320px] mx-auto px-4 pb-16">
+          {/* Filter Row */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+            <div>
+              <h2 className="text-lg font-black text-primary">Browse Available Topics</h2>
+              <p className="text-xs text-secondary mt-0.5">
+                {total > 0 ? `${total.toLocaleString()} topics in our database` : 'Loading topics…'}
+              </p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <select
+                value={dept}
+                onChange={e => { setDept(e.target.value); setPage(1); }}
+                className="bg-secondary border border-theme rounded-xl px-3 py-2 text-xs text-primary font-bold outline-none focus:border-emerald-500 cursor-pointer"
+              >
+                <option value="all">📂 All Departments</option>
+                {mergedDepts.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+              <select
+                value={level}
+                onChange={e => { setLevel(e.target.value); setPage(1); }}
+                className="bg-secondary border border-theme rounded-xl px-3 py-2 text-xs text-primary font-bold outline-none focus:border-emerald-500 cursor-pointer"
+              >
+                <option value="all">🎓 All Levels</option>
+                <option value="BSc">BSc / HND</option>
+                <option value="MSc">MSc / PGD</option>
+                <option value="PhD">PhD</option>
+              </select>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="py-20 text-center text-secondary text-sm flex items-center justify-center gap-2">
+              <lucide.Loader2 className="w-4 h-4 animate-spin" /> Loading topics…
+            </div>
+          ) : topics.length === 0 ? (
+            <div className="py-20 text-center text-secondary text-sm">No topics found for this filter. Try a different department or level.</div>
+          ) : (
+            <>
+              <div id="topics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {topics.map(t => (
+                  <div key={t.id} className="bg-card border border-theme rounded-2xl p-5 flex flex-col gap-3 hover:border-emerald-500/40 hover:shadow-lg transition">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">{t.department}</span>
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(t.level)}`}>{t.level}</span>
+                    </div>
+                    <h3 className="text-sm font-bold leading-relaxed text-primary line-clamp-3">
+                      {renderTitleWithDifferences(t.title)}
+                    </h3>
+                    <div className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-secondary font-mono">
+                      <span>📄 {t.pages || '—'} pages</span><span>📖 Ch. {t.chapters}</span><span>📅 {t.year}</span><span>📝 {t.format}</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1 w-fit">{pageSettings.delivery_text}</span>
+                    <div className="flex gap-2 mt-auto pt-1 flex-wrap">
+                      <button onClick={() => setPreview(t)} className="flex-1 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition min-w-[70px]">👁 Preview</button>
+                      <button onClick={() => copyPermalink(t.id, t.title)} className="px-3 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition whitespace-nowrap">
+                        {copiedId === t.id ? '✓ Copied' : '🔗 Share'}
+                      </button>
+                      <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) })} className="flex-1 py-2.5 rounded-lg text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 transition min-w-[90px]">Get · {naira(t.price)}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {Math.ceil(total / PAGE_SIZE) > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-8 flex-wrap">
+                  <button
+                    disabled={page === 1 || loading}
+                    onClick={() => handlePageChange(page - 1)}
+                    className="px-4 py-2 rounded-xl bg-secondary border border-theme text-primary text-xs font-bold hover:bg-white/5 disabled:opacity-40 transition"
+                  >◀ Prev</button>
+                  {Array.from({ length: Math.min(5, Math.ceil(total / PAGE_SIZE)) }, (_, i) => {
+                    const totalPages = Math.ceil(total / PAGE_SIZE);
+                    let p: number;
+                    if (totalPages <= 5) { p = i + 1; }
+                    else if (page <= 3) { p = i + 1; }
+                    else if (page >= totalPages - 2) { p = totalPages - 4 + i; }
+                    else { p = page - 2 + i; }
+                    return (
+                      <button key={p} onClick={() => handlePageChange(p)}
+                        className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${p === page ? 'bg-emerald-500 text-black border-emerald-500' : 'bg-secondary border-theme text-primary hover:bg-white/5'}`}
+                      >{p}</button>
+                    );
+                  })}
+                  <button
+                    disabled={page === Math.ceil(total / PAGE_SIZE) || loading}
+                    onClick={() => handlePageChange(page + 1)}
+                    className="px-4 py-2 rounded-xl bg-secondary border border-theme text-primary text-xs font-bold hover:bg-white/5 disabled:opacity-40 transition"
+                  >Next ▶</button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       {/* PREVIEW MODAL */}
+
       {preview && (
         <div className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4" onClick={() => setPreview(null)}>
           <div className="bg-card border border-theme rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>

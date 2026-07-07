@@ -1357,6 +1357,20 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
             <StatusBadge status={awaitingAdminApproval ? 'Awaiting Quote' : order['Workflow Status']} size="md" />
           </div>
           <p className="text-secondary text-sm max-w-2xl leading-relaxed">{order['Research Topic']}</p>
+          {/* Show assigned writer for project material orders */}
+          {(() => {
+            const oid = order?.['Order ID'] || '';
+            if (!oid.startsWith('PRJ-')) return null;
+            const info: string = order?.['Additional Info'] || '';
+            const match = info.match(/Assigned Writer:\s*(.+)/);
+            if (!match) return null;
+            return (
+              <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-emerald-400 font-bold">
+                <lucide.Pencil className="w-3.5 h-3.5 shrink-0" />
+                <span>Writer: <span className="underline decoration-emerald-500/50 decoration-dotted">{match[1].trim()}</span></span>
+              </div>
+            );
+          })()}
         </div>
 
         <div className="text-left md:text-right shrink-0">
