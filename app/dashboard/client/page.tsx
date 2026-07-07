@@ -638,6 +638,24 @@ function DashboardContent() {
         </div>
       )}
 
+      {/* Temporary Password Advisory Banner */}
+      {user?.user_metadata?.password_is_email === true && (
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-500 py-3.5 px-6 flex flex-col sm:flex-row items-center justify-between gap-4 font-bold text-xs uppercase tracking-wider mb-6 rounded-2xl shadow-sm animate-in slide-in-from-top duration-500">
+          <div className="flex items-center gap-3">
+            <lucide.ShieldAlert className="w-5 h-5 shrink-0 text-amber-500" />
+            <span className="leading-relaxed normal-case">
+              Security Notice: Your temporary password is currently set to your email address. For your security, please update it.
+            </span>
+          </div>
+          <button 
+            onClick={() => setActiveTab('profile')}
+            className="px-4 py-2 bg-amber-500 text-black hover:bg-amber-450 transition font-black rounded-xl uppercase tracking-wider text-[10px] cursor-pointer shrink-0"
+          >
+            Change Password
+          </button>
+        </div>
+      )}
+
       {/* === TAB: DASHBOARD === */}
       {activeTab === 'dashboard' && (
         <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">

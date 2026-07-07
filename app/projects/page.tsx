@@ -119,6 +119,26 @@ const NIGERIAN_DEPARTMENTS = [
   "Zoology"
 ];
 
+const NIGERIAN_FIRST_NAMES = [
+  "Chidi", "Olumide", "Babajide", "Emeka", "Tunde", "Abdul", "Aminu", "Kelechi", "Segun", "Uchenna", 
+  "Adebayo", "Femi", "Kunle", "Tochukwu", "Ibrahim", "Musa", "Yusuf", "Usman", "Okey", "Ifeanyi", 
+  "Nonso", "Jide", "Kola", "Dayo", "Wale", "Damilola", "Temitope", "Gbolahan", "Ejike", "Nnamdi",
+  "Ngozi", "Chioma", "Yetunde", "Amina", "Funmilayo", "Chinyere", "Zainab", "Halima", "Amara", "Tolani", 
+  "Kemi", "Shade", "Fatimah", "Aisha", "Blessing", "Chinwe", "Ifeoma", "Adesua", "Bisola", "Eniola", 
+  "Folake", "Nkechi", "Ronke", "Tolu", "Yemisi", "Ogechi", "Uju", "Ezinne", "Nneka", "Efe",
+  "Seyi", "Bisi", "Dapo", "Gbenga", "Leke", "Muyiwa", "Tobi", "Yinka", "Biyi", "Tokunbo",
+  "Chinedu", "Chika", "Ezenwa", "Obinna", "Somto", "Uche", "Ikechukwu", "Goziem", "Mide", "Wole"
+];
+
+const NIGERIAN_LAST_NAMES = [
+  "Okeke", "Okafor", "Nwosu", "Balogun", "Adebayo", "Ojo", "Alabi", "Babalola", "Awolowo", "Bello", 
+  "Ibrahim", "Abubakar", "Garba", "Usman", "Mohammed", "Okoye", "Nwachukwu", "Opara", "Diala", "Soyinka", 
+  "Achebe", "Dangote", "Adenuga", "Alakija", "Otedola", "Danjuma", "Ezeugo", "Onuoha", "Eze", "Obi", 
+  "Okoro", "Chukwu", "Igwe", "Adeleke", "Shagari", "Abiola", "Falz", "Bankole", "Akinyemi", "Coker",
+  "Oluwole", "Adeyemi", "Alonge", "Olatunji", "Daramola", "Oyinlola", "Akenzua", "Fagbemi", "Ajayi", "Osinbajo",
+  "Ogundipe", "Adeboye", "Olanrewaju", "Kalu", "Onyema", "Uba", "Sanusi", "Lamido", "Buhari", "Gowon"
+];
+
 const levelBadge = (lvl: string) =>
   lvl === 'PhD' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
     : lvl === 'MSc' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
@@ -143,6 +163,48 @@ export default function ProjectsPage() {
   const [selectedAddons, setSelectedAddons] = useState<Set<number>>(new Set());
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Writer match simulation states
+  const [simulationState, setSimulationState] = useState<'searching' | 'bidding' | 'awarding' | 'complete' | 'idle'>('idle');
+  const [availableWriters, setAvailableWriters] = useState(0);
+  const [biddingWriters, setBiddingWriters] = useState(0);
+  const [assignedWriter, setAssignedWriter] = useState('');
+
+  useEffect(() => {
+    if (cart) {
+      setSimulationState('searching');
+      setAssignedWriter('');
+      
+      const t1 = setTimeout(() => {
+        const avail = Math.floor(Math.random() * 10) + 12; // 12 to 21 available
+        const bid = Math.floor(Math.random() * 5) + 6; // 6 to 10 bidding
+        setAvailableWriters(avail);
+        setBiddingWriters(Math.min(bid, avail - 2));
+        setSimulationState('bidding');
+        
+        const t2 = setTimeout(() => {
+          setSimulationState('awarding');
+          
+          const t3 = setTimeout(() => {
+            const first = NIGERIAN_FIRST_NAMES[Math.floor(Math.random() * NIGERIAN_FIRST_NAMES.length)];
+            const last = NIGERIAN_LAST_NAMES[Math.floor(Math.random() * NIGERIAN_LAST_NAMES.length)];
+            setAssignedWriter(`${first} ${last}`);
+            setSimulationState('complete');
+          }, 1600); // 1.6s delay representing awarding selection
+          
+          return () => clearTimeout(t3);
+        }, 1500); // 1.5s delay showing bid count
+        
+        return () => clearTimeout(t2);
+      }, 1600); // 1.6s searching spinner
+      
+      return () => {
+        clearTimeout(t1);
+      };
+    } else {
+      setSimulationState('idle');
+    }
+  }, [cart]);
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [customTitle, setCustomTitle] = useState('');
@@ -874,6 +936,47 @@ export default function ProjectsPage() {
                 </div>
               )}
 
+              {/* Writer Assignment Simulation Panel */}
+              <div className="bg-secondary/40 border border-theme rounded-2xl p-4 space-y-3 relative overflow-hidden">
+                {simulationState === 'searching' && (
+                  <div className="flex items-center gap-3 py-1">
+                    <div className="w-4 h-4 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin shrink-0" />
+                    <span className="text-secondary text-xs font-bold">Searching for available writers for your work...</span>
+                  </div>
+                )}
+                {simulationState === 'bidding' && (
+                  <div className="space-y-1 animate-in fade-in duration-300">
+                    <div className="flex items-center gap-2 text-emerald-400 text-xs font-black">
+                      <lucide.Users className="w-4 h-4" />
+                      <span>Writer Search Complete</span>
+                    </div>
+                    <p className="text-secondary text-xs leading-relaxed font-semibold">
+                      <strong className="text-primary font-black">{availableWriters}</strong> writers are available, and <strong className="text-primary font-black">{biddingWriters}</strong> are actively bidding to write your work.
+                    </p>
+                  </div>
+                )}
+                {simulationState === 'awarding' && (
+                  <div className="flex items-center gap-3 py-1">
+                    <div className="w-4 h-4 border-2 border-purple-500/20 border-t-purple-500 rounded-full animate-spin shrink-0" />
+                    <span className="text-secondary text-xs font-bold">We are choosing the best writer for the job...</span>
+                  </div>
+                )}
+                {simulationState === 'complete' && (
+                  <div className="space-y-1.5 border-l-4 border-emerald-500 pl-3 animate-in slide-in-from-left duration-300">
+                    <div className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase tracking-wider">
+                      <lucide.CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>Writer Standby Secured</span>
+                    </div>
+                    <p className="text-primary text-xs font-bold">
+                      Assigned Writer: <span className="underline decoration-emerald-500 decoration-2">{assignedWriter}</span>
+                    </p>
+                    <p className="text-[11px] text-secondary leading-relaxed font-semibold">
+                      This writer is on standby to write your work for the next 6 hours. Proceed to pay to lock in this writer.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-between items-center border-t border-theme pt-3">
                 <span className="text-sm font-bold text-secondary">Total</span>
                 <span className="text-2xl font-black text-emerald-500">{naira(cartTotal())}</span>
@@ -889,7 +992,7 @@ export default function ProjectsPage() {
                     placeholder="you@example.com"
                     className="w-full bg-secondary border border-theme rounded-xl px-3 py-2.5 text-sm text-primary outline-none focus:border-emerald-500"
                   />
-                  <p className="text-[10px] text-secondary mt-1">No password needed — after payment we'll email you a one-click login link to your dashboard.</p>
+                  <p className="text-[10px] text-secondary mt-1 font-semibold">An account will be created automatically using your email as your temporary password. You can change this later from your Profile.</p>
                 </div>
               )}
 
@@ -902,8 +1005,16 @@ export default function ProjectsPage() {
 
               {msg && <div className="text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl p-3">{msg}</div>}
 
-              <button onClick={pay} disabled={!acceptedTerms || busy || (isLoggedIn === false && !EMAIL_RE.test(guestEmail.trim()))} className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black transition disabled:opacity-40 disabled:cursor-not-allowed">
-                {busy ? 'Redirecting to payment…' : `Pay ${naira(cartTotal())} & Get Material`}
+              <button 
+                onClick={pay} 
+                disabled={simulationState !== 'complete' || !acceptedTerms || busy || (isLoggedIn === false && !EMAIL_RE.test(guestEmail.trim()))} 
+                className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black transition disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider text-xs"
+              >
+                {simulationState !== 'complete' 
+                  ? 'Writer Allocation in Progress...' 
+                  : busy 
+                    ? 'Redirecting to payment…' 
+                    : `Pay ${naira(cartTotal())} & Get Material`}
               </button>
               <p className="text-[10px] text-secondary text-center">Payment is required before your order is created — unpaid attempts are never saved.</p>
             </div>

@@ -62,8 +62,9 @@ export async function POST(request: Request) {
       } else {
         const { data: created, error: createErr } = await admin.auth.admin.createUser({
           email,
+          password: email,
           email_confirm: true,
-          user_metadata: { full_name: email.split('@')[0] },
+          user_metadata: { full_name: email.split('@')[0], password_is_email: true },
         });
         if (createErr || !created?.user) {
           return NextResponse.json({ error: 'Could not set up your account for checkout.' }, { status: 500 });

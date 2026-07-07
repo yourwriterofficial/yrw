@@ -202,7 +202,8 @@ export async function POST(request: Request) {
           const introHtml = `
             <p>Thank you! Your payment of ₦${amount.toLocaleString()} for <strong>${title}</strong> is confirmed.</p>
             <p>Your material covers <strong>Chapters 1 to 5</strong>. ${instant ? 'It is available in your Secure Vault now.' : 'Our team will place it in your Secure Vault shortly.'}</p>
-            <p>Click below to securely log in to your new dashboard — no password needed.</p>`;
+            <p><strong>Security Info:</strong> We have set up a client account for you. Your temporary password is set to your email address: <strong>${guestEmail}</strong>.</p>
+            <p>Please click below to log in instantly (no password needed for this first session), and make sure to change your password under <strong>Profile Settings</strong>.</p>`;
           await sendMagicLinkEmail({
             email: guestEmail,
             name: name || guestEmail.split('@')[0],

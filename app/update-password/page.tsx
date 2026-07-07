@@ -10,7 +10,10 @@ export default function UpdatePassword() {
 
   const handleUpdate = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await supabase.auth.updateUser({ 
+      password,
+      data: { password_is_email: false }
+    });
     if (error) alert(error.message);
     else {
       alert('Password updated. Please log in again.');

@@ -81,7 +81,10 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       return pathname === '/dashboard/client' && !activeTab;
     }
     if (tab === 'new') {
-      return pathname.startsWith('/dashboard/client/order/new');
+      return pathname === '/dashboard/client/order/new';
+    }
+    if (tab.startsWith('new/')) {
+      return pathname === `/dashboard/client/order/${tab.substring(4)}`;
     }
     return activeTab === tab || pathname.includes(`/dashboard/client/${tab}`);
   };
@@ -115,13 +118,33 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex flex-col gap-2 flex-1">
+        <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto pr-1">
           <button id="rw-tour-dashboard" onClick={() => router.push('/dashboard/client')} className={navBtnClass('dashboard')}>
             <div className="flex items-center gap-3"><lucide.LayoutDashboard className="w-5 h-5" /> <span>Dashboard</span></div>
           </button>
           <button id="rw-tour-neworder" onClick={() => router.push('/dashboard/client/order/new')} className={navBtnClass('new')}>
             <div className="flex items-center gap-3"><lucide.PlusCircle className="w-5 h-5" /> <span>New Order</span></div>
           </button>
+          
+          {/* Services Group */}
+          <div className="mt-2 mb-1">
+            <p className="text-[9px] uppercase tracking-widest text-secondary font-black pl-3 mb-1.5">Writing Services</p>
+            <div className="space-y-1 pl-2 border-l border-zinc-800">
+              <button onClick={() => router.push('/dashboard/client/order/new/dev')} className={navBtnClass('new/dev')}>
+                <div className="flex items-center gap-2.5 text-xs"><lucide.Code className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Web Development</span></div>
+              </button>
+              <button onClick={() => router.push('/dashboard/client/order/new/resume')} className={navBtnClass('new/resume')}>
+                <div className="flex items-center gap-2.5 text-xs"><lucide.FileText className="w-4 h-4 text-emerald-400 shrink-0" /> <span>CV / Resume</span></div>
+              </button>
+              <button onClick={() => router.push('/dashboard/client/order/new/content')} className={navBtnClass('new/content')}>
+                <div className="flex items-center gap-2.5 text-xs"><lucide.PenTool className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Content Writing</span></div>
+              </button>
+              <button onClick={() => router.push('/dashboard/client/order/new/academic')} className={navBtnClass('new/academic')}>
+                <div className="flex items-center gap-2.5 text-xs"><lucide.GraduationCap className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Premium Writing</span></div>
+              </button>
+            </div>
+          </div>
+
           <button id="rw-tour-vault" onClick={() => router.push('/dashboard/client?tab=vault')} className={navBtnClass('vault')}>
             <div className="flex items-center gap-3"><lucide.Lock className="w-5 h-5" /> <span>Secure Vault</span></div>
             {unviewedVaultCount > 0 && <span className="px-2 py-0.5 bg-emerald-500 text-black rounded-md text-[10px] font-black">{unviewedVaultCount}</span>}
@@ -168,13 +191,30 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px] shadow-lg">
+        <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px] shadow-lg max-h-[80vh] overflow-y-auto">
           <button onClick={() => { router.push('/dashboard/client'); setMobileMenuOpen(false); }} className={navBtnClass('dashboard')}>
             <div className="flex items-center gap-3"><lucide.LayoutDashboard className="w-5 h-5" /> <span>Dashboard</span></div>
           </button>
           <button onClick={() => { router.push('/dashboard/client/order/new'); setMobileMenuOpen(false); }} className={navBtnClass('new')}>
             <div className="flex items-center gap-3"><lucide.PlusCircle className="w-5 h-5" /> <span>New Order</span></div>
           </button>
+
+          {/* Mobile subpath items */}
+          <div className="pl-4 border-l border-zinc-800 space-y-1 my-1">
+            <button onClick={() => { router.push('/dashboard/client/order/new/dev'); setMobileMenuOpen(false); }} className={navBtnClass('new/dev')}>
+              <div className="flex items-center gap-2.5 text-xs"><lucide.Code className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Web Development</span></div>
+            </button>
+            <button onClick={() => { router.push('/dashboard/client/order/new/resume'); setMobileMenuOpen(false); }} className={navBtnClass('new/resume')}>
+              <div className="flex items-center gap-2.5 text-xs"><lucide.FileText className="w-4 h-4 text-emerald-400 shrink-0" /> <span>CV / Resume</span></div>
+            </button>
+            <button onClick={() => { router.push('/dashboard/client/order/new/content'); setMobileMenuOpen(false); }} className={navBtnClass('new/content')}>
+              <div className="flex items-center gap-2.5 text-xs"><lucide.PenTool className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Content Writing</span></div>
+            </button>
+            <button onClick={() => { router.push('/dashboard/client/order/new/academic'); setMobileMenuOpen(false); }} className={navBtnClass('new/academic')}>
+              <div className="flex items-center gap-2.5 text-xs"><lucide.GraduationCap className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Premium Writing</span></div>
+            </button>
+          </div>
+
           <button onClick={() => { router.push('/dashboard/client?tab=vault'); setMobileMenuOpen(false); }} className={navBtnClass('vault')}>
             <div className="flex items-center gap-3"><lucide.Lock className="w-5 h-5" /> <span>Secure Vault</span></div>
           </button>
@@ -187,7 +227,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           <button onClick={() => { router.push('/dashboard/client?tab=chat'); setMobileMenuOpen(false); }} className={navBtnClass('chat')}>
             <div className="flex items-center gap-3"><lucide.MessageSquare className="w-5 h-5" /> <span>Support Chat</span></div>
           </button>
-          <ThemeToggle />
+          <div className="p-2 border-t border-theme mt-1">
+            <ThemeToggle />
+          </div>
           <button onClick={handleLogout} className="mt-2 p-3 text-red-400 font-bold text-left flex items-center gap-2 rounded-xl hover:bg-red-500/10 transition"><lucide.LogOut className="w-4 h-4"/> Sign Out</button>
         </div>
       )}
