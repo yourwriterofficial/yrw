@@ -11,6 +11,7 @@ export interface OrderPaymentLike {
   payment_milestones?: PaymentMilestoneLike[] | null;
   sixty_percent_paid?: boolean | null;
   forty_percent_paid?: boolean | null;
+  topic?: string | null;
 }
 
 /** Coerce the various truthy shapes the DB/views return (bool, "yes", 1, "t"). */
@@ -26,10 +27,14 @@ export function isCustomPayment(order: OrderPaymentLike): boolean {
 
 /**
  * Fully paid iff:
+ *  - Project catalog topic: instantly unlocked ([PROJECT] prefix)
  *  - CUSTOM milestones: at least one milestone exists AND every milestone is paid
  *  - Standard 60/40:   both the 60% deposit and 40% balance are paid
  */
 export function isOrderFullyPaid(order: OrderPaymentLike): boolean {
+  if (order?.topic && order.topic.startsWith('[PROJECT]')) {
+    return true;
+  }
   if (isCustomPayment(order)) {
     const ms = order.payment_milestones;
     return Array.isArray(ms) && ms.length > 0 && ms.every(m => !!m.paid);

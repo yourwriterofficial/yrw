@@ -15,8 +15,9 @@ export async function sendSystemEmail(params: {
   html: string;
   orderId?: string;
   attachments?: { filename: string; content: Buffer | string }[];
+  batchId?: string;
 }) {
-  const { to, subject, html, orderId, attachments } = params;
+  const { to, subject, html, orderId, attachments, batchId } = params;
 
   // Always use your verified domain
   const senderEmail = 'YourResearchWriter <noreply@yourresearchwriter.com.ng>';
@@ -56,6 +57,8 @@ export async function sendSystemEmail(params: {
       subject,
       status: 'sent',
       sent_at: new Date().toISOString(),
+      body: html,
+      batch_id: batchId || null,
     });
     
     if (logError) console.warn('Failed to log email:', logError.message);

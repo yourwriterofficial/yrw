@@ -76,7 +76,16 @@ const getPipelineDetails = (order: any) => {
   };
 };
 
-const sendStatusEmail = async (order: { orderId: string; email: string; legal_name: string; topic: string; financial_quote: number; payment_milestones?: any[] }, status: string) => {
+const sendStatusEmail = async (order: { 
+  orderId: string; 
+  email: string; 
+  legal_name: string; 
+  topic: string; 
+  financial_quote: number; 
+  payment_milestones?: any[];
+  sixty_percent_paid?: boolean;
+  forty_percent_paid?: boolean;
+}, status: string) => {
   const orderEmailData = {
     order_id: order.orderId,
     legal_name: order.legal_name,
@@ -84,6 +93,8 @@ const sendStatusEmail = async (order: { orderId: string; email: string; legal_na
     topic: order.topic,
     financial_quote: order.financial_quote,
     payment_milestones: order.payment_milestones,
+    sixty_percent_paid: order.sixty_percent_paid,
+    forty_percent_paid: order.forty_percent_paid,
   };
   let template;
   switch (status) {
@@ -91,7 +102,12 @@ const sendStatusEmail = async (order: { orderId: string; email: string; legal_na
       template = emailTemplates.quoteSent(orderEmailData);
       break;
     case 'Work Submitted':
-      template = emailTemplates.workSubmitted(orderEmailData);
+      // If the client has already paid the 40% balance or the topic is a pre-packaged project topic
+      if (order.forty_percent_paid || order.topic.startsWith('[PROJECT]')) {
+        template = emailTemplates.orderCompleted(orderEmailData);
+      } else {
+        template = emailTemplates.workSubmitted(orderEmailData);
+      }
       break;
     case 'Completed':
       template = emailTemplates.orderCompleted(orderEmailData);
@@ -379,6 +395,8 @@ function OrdersPageContent() {
           legal_name: editingOrder['Legal Name'],
           topic: editingOrder['Research Topic'],
           financial_quote: editingOrder['Financial Quote'] ?? 0,
+          sixty_percent_paid: updates.sixty_percent_paid !== undefined ? updates.sixty_percent_paid : editingOrder['60% Paid'],
+          forty_percent_paid: updates.forty_percent_paid !== undefined ? updates.forty_percent_paid : editingOrder['40% Paid'],
         }, newStatus);
       }
       await fetchOrders();

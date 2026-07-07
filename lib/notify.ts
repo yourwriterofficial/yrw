@@ -99,7 +99,14 @@ export async function notifyUser(params: NotifyParams): Promise<void> {
       const { data: userRes } = await supabase.auth.admin.getUserById(userId);
       const to = userRes?.user?.email;
       if (to && profile) {
-        await sendSystemEmail({ to, subject: emailSubject || title, html: emailHtml!, attachments: emailAttachments });
+        await sendSystemEmail({ 
+          to, 
+          subject: emailSubject || title, 
+          html: emailHtml!, 
+          attachments: emailAttachments,
+          orderId: orderDbId ? String(orderDbId) : undefined,
+          batchId: batchId || undefined
+        });
       }
     } catch (e) {
       console.warn('[notify] email send failed (non-fatal):', e);
