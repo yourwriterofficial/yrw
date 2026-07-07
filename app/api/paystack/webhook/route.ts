@@ -58,6 +58,13 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
       }
 
+      // Idempotency: prevent double-crediting on webhook retry
+      const { data: dupTx } = await supabase.from('transactions').select('id').eq('reference', reference).maybeSingle();
+      if (dupTx) {
+        console.log('wallet_topup already processed for reference', reference);
+        return NextResponse.json({ received: true });
+      }
+
       const { error: rpcError, data: rpcData } = await supabase.rpc('increment_wallet', {
         user_id: userId,
         add_amount: numericAmount,
@@ -86,7 +93,6 @@ export async function POST(request: Request) {
       // Notify admin of wallet topup
       try {
         const { data: userProfile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
-        const { data: userData } = await supabase.auth.getUser(); // Try to get user from auth if needed or auth.admin
         const { data: adminUserData } = await supabase.auth.admin.getUserById(userId);
         if (userProfile && adminUserData?.user) {
           const { emailTemplates } = await import('@/lib/emailTemplates');
@@ -318,6 +324,24 @@ export async function POST(request: Request) {
       
       try {
         const { emailShell } = await import('@/lib/emailTemplates');
+
+        // Client email
+        if (invoiceData.email) {
+          const clientHtml = emailShell(
+            `<h2>Payment Confirmed</h2>
+             <p>Hi ${invoiceData.client_name || 'there'},</p>
+             <p>Your payment of <strong>₦${amountPaid.toLocaleString()}</strong> for milestone <strong>${milestoneName}</strong> on invoice <strong>${invoiceNumber}</strong> has been confirmed.</p>
+             <p>Invoice status: <strong>${newStatus}</strong>${allPaid ? ' — all milestones have been cleared. Thank you!' : ' — remaining milestones are still outstanding.'}</p>`,
+            'View Invoice', `${process.env.NEXT_PUBLIC_BASE_URL}/invoice/${invoiceNumber}`
+          );
+          const { sendSystemEmail } = await import('@/lib/emailService');
+          await sendSystemEmail({
+            to: invoiceData.email,
+            subject: `Payment Confirmed: ${milestoneName} — Invoice #${invoiceNumber}`,
+            html: clientHtml,
+          }).catch(e => console.warn('Custom invoice client email failed:', e));
+        }
+
         const adminHtml = emailShell(
           `<h2>Custom Invoice Payment Confirmed</h2>
            <p><strong>${invoiceData.client_name || 'Client'}</strong> (${invoiceData.email || 'No email'}) paid a custom invoice milestone.</p>
@@ -337,10 +361,11 @@ export async function POST(request: Request) {
           emailSubject: `[PAID] Custom Invoice ${invoiceNumber} - Milestone: ${milestoneName}`,
         });
       } catch (e) {
-        console.warn('Custom invoice payment admin notification failed:', e);
+        console.warn('Custom invoice payment notification failed:', e);
       }
 
       return NextResponse.json({ received: true });
+
     }
 
     // --- ORDER PAYMENT (existing logic) ---
@@ -429,11 +454,35 @@ export async function POST(request: Request) {
           try {
             const { data: orderInfo } = await supabase
               .from('orders')
-              .select('legal_name, email, topic, order_id, service_tier, id')
+              .select('legal_name, email, topic, order_id, service_tier, id, client_id')
               .eq('order_id', orderStringId)
               .single();
 
             const { emailShell } = await import('@/lib/emailTemplates');
+
+            // Client notification
+            const clientHtml = emailShell(
+              `<h2>Add-on Activated</h2>
+               <p>Hi ${orderInfo?.legal_name || 'there'},</p>
+               <p>Your add-on <strong>${addonName}</strong> (₦${addonPrice.toLocaleString()}) has been paid and is now active on your order.</p>
+               <p>Order: <strong>${orderStringId}</strong><br/>Topic: ${orderInfo?.topic || 'N/A'}</p>
+               <p>Our team will incorporate this into your deliverable. You'll be notified when it's ready in your vault.</p>`,
+              'View My Order', `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client`
+            );
+            if (orderInfo?.client_id) {
+              const { notifyUser } = await import('@/lib/notify');
+              await notifyUser({
+                userId: orderInfo.client_id,
+                title: `Add-on confirmed: ${addonName}`,
+                message: `Your ₦${addonPrice.toLocaleString()} add-on \"${addonName}\" is now active on order ${orderStringId}.`,
+                type: 'payment',
+                link: `/dashboard/client`,
+                orderDbId: orderInfo.id,
+                emailHtml: clientHtml,
+                emailSubject: `Add-on Confirmed: ${addonName} — Order #${orderStringId}`,
+              }).catch(e => console.warn('Client addon notification failed', e));
+            }
+
             const adminHtml = emailShell(
               `<h2>Add-on Payment Confirmed</h2>
                <p><strong>${orderInfo?.legal_name || 'Client'}</strong> (${orderInfo?.email || 'No email'}) paid for an add-on.</p>
@@ -465,11 +514,12 @@ export async function POST(request: Request) {
               emailSubject: `[PAID] Add-on: ${addonName} - Order #${orderStringId}`,
             });
           } catch (e) {
-            console.warn('Addon payment admin notification failed:', e);
+            console.warn('Addon payment notification failed:', e);
           }
         }
       }
       return NextResponse.json({ received: true });
+
     } else if (paymentType.startsWith('INDEX-')) {
       const milestoneIndex = parseInt(paymentType.replace('INDEX-', ''), 10);
       const { data: orderData, error: fetchError } = await supabase
@@ -542,13 +592,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    const updateRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/admin/update-order`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId: orderStringId, updates }),
-    });
-    if (!updateRes.ok) {
-      console.error('Central update API failed:', await updateRes.text());
+    // Update order directly in DB (bypassing the self-HTTP call that could silently fail)
+    if (Object.keys(updates).length > 0) {
+      const { error: updateErr } = await supabase
+        .from('orders')
+        .update(updates)
+        .eq('order_id', orderStringId);
+      if (updateErr) {
+        // Throw so Paystack retries — order must be kept consistent
+        throw new Error(`Order update failed for ${orderStringId}: ${updateErr.message}`);
+      }
     }
 
     if (template) {
