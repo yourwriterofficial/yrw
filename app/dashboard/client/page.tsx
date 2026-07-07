@@ -720,6 +720,7 @@ function DashboardContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {vaultFiles.map(file => {
                 const order = orders.find(o => o['Order ID'] === file.order_id);
+                const fileAddonInfo = order ? parseAdditionalInfo(order['Additional Info'] || null) : { extra_addons: [] };
                 const milestones = (order as any)?.payment_milestones || [];
                 const custom = isCustomPayment({ payment_structure_type: (order as any)?.payment_structure_type });
                 const opShape = {
@@ -827,10 +828,10 @@ function DashboardContent() {
                       </div>
 
                       {/* Display active extra addons status */}
-                      {addonInfo.extra_addons && addonInfo.extra_addons.length > 0 && (
+                      {fileAddonInfo.extra_addons && fileAddonInfo.extra_addons.length > 0 && (
                         <div className="space-y-1.5 pt-1">
                           <p className="text-[10px] uppercase font-black text-secondary tracking-wider">Active Add-on Requests:</p>
-                          {addonInfo.extra_addons.map((a: any) => (
+                          {fileAddonInfo.extra_addons.map((a: any) => (
                             <div key={a.id} className="flex justify-between items-center bg-secondary/30 p-2 rounded-lg border border-theme text-[10px]">
                               <span className="font-bold text-primary truncate max-w-[140px]">{a.name}</span>
                               <div className="flex items-center gap-2">
