@@ -28,6 +28,44 @@ export default function FinancePage() {
   const [adjustAmount, setAdjustAmount] = useState(0);
   const [adjustReason, setAdjustReason] = useState('');
 
+  // Payment link generator form
+  const [payLinkForm, setPayLinkForm] = useState({
+    email: '',
+    topic: '',
+    department: 'Computer Science',
+    level: 'BSc',
+    price: 3000,
+  });
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState('');
+
+  const generatePaymentLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!payLinkForm.email || !payLinkForm.topic) {
+      return showToast('Please fill email and topic', 'error');
+    }
+    setGeneratingLink(true);
+    setGeneratedLink('');
+    try {
+      const res = await fetch('/api/admin/generate-payment-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payLinkForm),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setGeneratedLink(data.authorization_url);
+        showToast('Payment link generated and email sent successfully!', 'success');
+      } else {
+        showToast(data.error || 'Failed to generate link', 'error');
+      }
+    } catch (err) {
+      showToast('Network error', 'error');
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     const { data: usersData } = await supabase.from('profiles').select('id, full_name, email, is_admin').order('full_name');
@@ -104,6 +142,127 @@ export default function FinancePage() {
         breadcrumb="Admin / Finance"
         icon={<lucide.Wallet className="w-8 h-8 text-purple-500" />}
       />
+
+      {/* ========== SECTION: Payment Link Generator ========== */}
+      <div className="bg-card border border-theme rounded-3xl p-6 md:p-8 space-y-6 max-w-4xl">
+        <div>
+          <h2 className="text-lg font-black text-primary flex items-center gap-2">
+            <lucide.Link2 className="w-5 h-5 text-purple-500" /> Generate Client Payment Link
+          </h2>
+          <p className="text-xs text-secondary mt-1">Generate a secure Paystack payment link for any custom topic, email the receipt/onboarding credentials, and track client delivery seamlessly.</p>
+        </div>
+
+        <form onSubmit={generatePaymentLink} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-[10px] uppercase font-black text-secondary">Client Email</label>
+            <input
+              type="email"
+              required
+              placeholder="client@example.com"
+              value={payLinkForm.email}
+              onChange={e => setPayLinkForm({ ...payLinkForm, email: e.target.value })}
+              className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-purple-500 outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] uppercase font-black text-secondary">Project Topic</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Design of an E-commerce system..."
+              value={payLinkForm.topic}
+              onChange={e => setPayLinkForm({ ...payLinkForm, topic: e.target.value })}
+              className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-purple-500 outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] uppercase font-black text-secondary">Department</label>
+            <select
+              value={payLinkForm.department}
+              onChange={e => setPayLinkForm({ ...payLinkForm, department: e.target.value })}
+              className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-purple-500 outline-none font-bold"
+            >
+              <option value="Computer Science">Computer Science</option>
+              <option value="Accounting">Accountancy / Accounting</option>
+              <option value="Business Administration">Business Administration</option>
+              <option value="Economics">Economics</option>
+              <option value="Mechanical Engineering">Mechanical Engineering</option>
+              <option value="Electrical Engineering">Electrical / Electronic Engineering</option>
+              <option value="Nursing Science">Nursing Science</option>
+              <option value="Mass Communication">Mass Communication</option>
+              <option value="Political Science">Political Science</option>
+              <option value="Biochemistry">Biochemistry</option>
+              <option value="Microbiology">Microbiology</option>
+              <option value="Banking and Finance">Banking and Finance</option>
+              <option value="Public Health">Public Health</option>
+              <option value="Civil Engineering">Civil Engineering</option>
+              <option value="Other">Other / General</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] uppercase font-black text-secondary">Academic Level</label>
+              <select
+                value={payLinkForm.level}
+                onChange={e => setPayLinkForm({ ...payLinkForm, level: e.target.value })}
+                className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-purple-500 outline-none font-bold"
+              >
+                <option value="BSc">BSc / Undergraduate</option>
+                <option value="MSc">MSc / Postgrad</option>
+                <option value="PhD">PhD / Doctorate</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase font-black text-secondary">Quote Amount (₦)</label>
+              <input
+                type="number"
+                min="500"
+                value={payLinkForm.price}
+                onChange={e => setPayLinkForm({ ...payLinkForm, price: Number(e.target.value) })}
+                className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-purple-500 outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="md:col-span-2 pt-2">
+            <button
+              type="submit"
+              disabled={generatingLink}
+              className="w-full py-3 bg-purple-500 hover:bg-purple-400 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-wider transition cursor-pointer"
+            >
+              {generatingLink ? 'Generating Paystack Invoice...' : 'Generate & Email Payment Link'}
+            </button>
+          </div>
+        </form>
+
+        {generatedLink && (
+          <div className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-2xl space-y-2 mt-4 animate-in fade-in duration-300">
+            <div className="flex items-center gap-1.5 text-xs text-purple-400 font-bold">
+              <lucide.CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>Payment link successfully generated and emailed to user!</span>
+            </div>
+            <div className="flex gap-2">
+              <input
+                readOnly
+                value={generatedLink}
+                className="flex-1 bg-secondary border border-theme rounded-xl px-3 py-2 text-xs text-primary font-mono outline-none"
+              />
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(generatedLink);
+                  showToast('Link copied to clipboard!', 'success');
+                }}
+                className="px-4 py-2 bg-purple-500 text-white rounded-xl text-xs font-bold hover:bg-purple-400 transition"
+              >
+                Copy Link
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* ========== MODAL: Edit User ========== */}
       {editingUser && (

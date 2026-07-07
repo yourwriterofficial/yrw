@@ -137,6 +137,7 @@ function OrdersPageContent() {
   const [deliveryModalOrder, setDeliveryModalOrder] = useState<AdminOrderView | null>(null);
   const [deliveryFile, setDeliveryFile] = useState<File | null>(null);
   const [uploadingDelivery, setUploadingDelivery] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState('');
   const [deleteMathAnswer, setDeleteMathAnswer] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<AdminOrderView | null>(null);
@@ -579,6 +580,7 @@ function OrdersPageContent() {
         file_path: filePath,
         file_name: deliveryFile.name,
         uploaded_at: new Date().toISOString(),
+        scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       });
     if (insertError) throw insertError;
 
@@ -1086,6 +1088,16 @@ function OrdersPageContent() {
                   <span className="text-xs font-bold text-blue-400 truncate">{deliveryFile.name}</span>
                 </div>
               )}
+              <div className="mt-4">
+                <label className="text-[10px] uppercase font-black text-secondary block mb-1">Schedule Vault Delivery (Optional)</label>
+                <input
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={e => setScheduledAt(e.target.value)}
+                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-blue-500 transition font-bold"
+                />
+                <p className="text-[10px] text-secondary mt-1">If set, the file will remain locked and invisible in the client's vault until the scheduled date.</p>
+              </div>
             </div>
             <div className="mt-8">
               <button onClick={handleDeliveryUpload} disabled={uploadingDelivery || !deliveryFile} className="w-full py-4 bg-blue-500 text-white font-black uppercase text-xs tracking-widest rounded-xl hover:bg-blue-400 transition disabled:opacity-50 shadow-[0_0_20px_rgba(59,130,246,0.3)]">

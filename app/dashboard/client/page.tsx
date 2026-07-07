@@ -13,6 +13,7 @@ import StatusBadge from '@/app/components/ui/StatusBadge';
 import NotificationPreferencesPanel from '@/app/components/ui/NotificationPreferencesPanel';
 import MilestoneTimeline from '@/app/components/ui/MilestoneTimeline';
 import { isOrderFullyPaid, isCustomPayment } from '@/lib/orderPayment';
+import SupportChat from './SupportChat';
 
 // ==========================================
 // 1. HELPER FUNCTIONS
@@ -189,11 +190,14 @@ function DashboardContent() {
   const [newAddonName, setNewAddonName] = useState('');
   const [submittingAddon, setSubmittingAddon] = useState(false);
   const [processingAddonPayment, setProcessingAddonPayment] = useState<string | null>(null);
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const [vaultAddonRequest, setVaultAddonRequest] = useState<Record<string, string>>({});
+  const [requestingAddon, setRequestingAddon] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'vault' || tab === 'wallet' || tab === 'profile' || tab === 'dashboard') {
-      setActiveTab(tab);
+    if (tab === 'vault' || tab === 'wallet' || tab === 'profile' || tab === 'dashboard' || tab === 'chat') {
+      setActiveTab(tab as any);
     }
   }, [searchParams]);
 
@@ -278,8 +282,15 @@ function DashboardContent() {
         throw filesError;
       }
 
-      setVaultFiles(files || []);
-      const unviewed = files?.filter(f => f.downloaded_at === null).length || 0;
+      // Filter out files scheduled for the future
+      const now = new Date();
+      const visibleFiles = (files || []).filter(f => {
+        if (!f.scheduled_at) return true;
+        return new Date(f.scheduled_at) <= now;
+      });
+
+      setVaultFiles(visibleFiles);
+      const unviewed = visibleFiles.filter(f => f.downloaded_at === null).length || 0;
       setUnviewedVaultCount(unviewed);
     } catch (err) {
       console.error('Error fetching vault files:', err);
@@ -304,19 +315,39 @@ function DashboardContent() {
       const [{ data: userProfile }, { data: walletRow }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('wallets').select('balance').eq('user_id', user.id).maybeSingle(),
-        fetchVaultFiles(user),
       ]);
-      setProfile(userProfile);
-      setWalletBalance(Number(walletRow?.balance) || 0);
+
+      let activeProfile = userProfile;
+      let activeWallet = walletRow;
+      let activeUser = user;
+      const impId = typeof window !== 'undefined' ? localStorage.getItem('impersonate_user_id') : null;
+      const impEmail = typeof window !== 'undefined' ? localStorage.getItem('impersonate_user_email') : null;
+      
+      if (userProfile?.is_admin && impId) {
+        setIsImpersonating(true);
+        const [{ data: impProfile }, { data: impWallet }] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', impId).single(),
+          supabase.from('wallets').select('balance').eq('user_id', impId).maybeSingle(),
+        ]);
+        if (impProfile) {
+          activeProfile = impProfile;
+          activeWallet = impWallet;
+          activeUser = { ...user, id: impId, email: impEmail };
+        }
+      }
+
+      setProfile(activeProfile);
+      setWalletBalance(Number(activeWallet?.balance) || 0);
+      await fetchVaultFiles(activeUser);
 
       const previewOrderId = searchParams.get('preview');
-      const isAdmin = userProfile?.is_admin === true;
+      const isAdmin = activeProfile?.is_admin === true;
       setIsAdminPreview(isAdmin);
 
       if (isAdmin) {
         await refreshOrders(undefined, true, previewOrderId || null);
       } else {
-        await refreshOrders(user.email, false, null);
+        await refreshOrders(activeUser.email, false, null);
       }
 
       setLoading(false);
@@ -579,6 +610,27 @@ function DashboardContent() {
 
   return (
     <div className="p-6 md:p-10">
+      {/* Impersonation Banner */}
+      {isImpersonating && (
+        <div className="bg-amber-500 text-black py-3 px-6 flex items-center justify-between gap-4 font-black text-xs uppercase tracking-widest mb-6 rounded-xl shadow-md">
+          <div className="flex items-center gap-2">
+            <lucide.ShieldAlert className="w-5 h-5 shrink-0" />
+            <span>Viewing dashboard as: {typeof window !== 'undefined' ? localStorage.getItem('impersonate_user_name') : ''} ({typeof window !== 'undefined' ? localStorage.getItem('impersonate_user_email') : ''})</span>
+          </div>
+          <button 
+            onClick={() => {
+              localStorage.removeItem('impersonate_user_id');
+              localStorage.removeItem('impersonate_user_email');
+              localStorage.removeItem('impersonate_user_name');
+              window.location.reload();
+            }}
+            className="px-4 py-2 bg-black text-white hover:bg-zinc-800 transition font-bold rounded-lg uppercase tracking-wider text-[10px] cursor-pointer"
+          >
+            Stop Impersonation
+          </button>
+        </div>
+      )}
+
       {/* Admin Preview Banner */}
       {isAdminPreview && (
         <div className="bg-amber-500 text-black py-2 px-6 flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest mb-6 rounded-xl shadow-md">
@@ -726,6 +778,89 @@ function DashboardContent() {
                         </button>
                       )}
                     </div>
+
+                    {/* Add-on Request Panel */}
+                    <div className="mt-5 pt-4 border-t border-theme/40 space-y-3 relative z-10">
+                      <div className="text-[11px] font-bold text-primary flex items-center gap-1.5">
+                        <lucide.PlusCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>Need presentation slides, PPT, or extra features?</span>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="E.g. Presentation slides, custom modules..."
+                          value={vaultAddonRequest[file.order_id] || ''}
+                          onChange={e => setVaultAddonRequest({ ...vaultAddonRequest, [file.order_id]: e.target.value })}
+                          className="flex-1 bg-secondary border border-theme rounded-xl px-3 py-2 text-xs text-primary outline-none focus:border-emerald-500 font-medium"
+                        />
+                        <button
+                          disabled={requestingAddon[file.order_id] || !(vaultAddonRequest[file.order_id] || '').trim()}
+                          onClick={async () => {
+                            const name = vaultAddonRequest[file.order_id];
+                            if (!name) return;
+                            setRequestingAddon({ ...requestingAddon, [file.order_id]: true });
+                            try {
+                              const res = await fetch('/api/client/request-addon', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ orderId: file.order_id, addonName: name }),
+                              });
+                              if (res.ok) {
+                                showToast("Addon requested! Admin will review and quote a price.", "success");
+                                setVaultAddonRequest({ ...vaultAddonRequest, [file.order_id]: '' });
+                                window.location.reload();
+                              } else {
+                                const err = await res.json();
+                                showToast(err.error || "Request failed", "error");
+                              }
+                            } catch (e) {
+                              showToast("Network error", "error");
+                            } finally {
+                              setRequestingAddon({ ...requestingAddon, [file.order_id]: false });
+                            }
+                          }}
+                          className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 text-black font-black text-[10px] uppercase tracking-wider rounded-xl transition cursor-pointer"
+                        >
+                          {requestingAddon[file.order_id] ? 'Sending...' : 'Request'}
+                        </button>
+                      </div>
+
+                      {/* Display active extra addons status */}
+                      {addonInfo.extra_addons && addonInfo.extra_addons.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          <p className="text-[10px] uppercase font-black text-secondary tracking-wider">Active Add-on Requests:</p>
+                          {addonInfo.extra_addons.map((a: any) => (
+                            <div key={a.id} className="flex justify-between items-center bg-secondary/30 p-2 rounded-lg border border-theme text-[10px]">
+                              <span className="font-bold text-primary truncate max-w-[140px]">{a.name}</span>
+                              <div className="flex items-center gap-2">
+                                {a.price && <span className="font-mono font-bold text-primary">{formatNaira(a.price)}</span>}
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                  a.status === 'PAID' ? 'bg-emerald-500/10 text-emerald-400' :
+                                  a.status === 'AWAITING_PAYMENT' ? 'bg-amber-500/10 text-amber-400' :
+                                  'bg-purple-500/10 text-purple-400'
+                                }`}>
+                                  {a.status === 'PENDING_QUOTE' ? 'Reviewing' : a.status === 'AWAITING_PAYMENT' ? 'Approved' : 'Paid'}
+                                </span>
+                                {a.status === 'AWAITING_PAYMENT' && (
+                                  <button
+                                    onClick={() => {
+                                      const match = orders.find(o => o['Order ID'] === file.order_id);
+                                      if (match) {
+                                        setSelectedOrderDetails(match);
+                                      }
+                                    }}
+                                    className="px-2 py-0.5 bg-amber-400 hover:bg-amber-350 text-emerald-950 font-black text-[8px] rounded uppercase cursor-pointer transition"
+                                  >
+                                    Pay
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -744,6 +879,13 @@ function DashboardContent() {
             <p className="text-secondary mt-1 text-sm">Manage your balance and view transaction history.</p>
           </header>
           <WalletPage embedded />
+        </div>
+      )}
+
+      {/* === TAB: CHAT === */}
+      {activeTab === 'chat' && (
+        <div className="animate-in fade-in duration-500 max-w-4xl mx-auto h-[calc(100vh-180px)] flex flex-col bg-card border border-theme rounded-3xl overflow-hidden shadow-xl">
+          <SupportChat user={user} />
         </div>
       )}
 

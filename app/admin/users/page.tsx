@@ -25,7 +25,7 @@ export default function AdminUsersPage() {
 
   // Modal states
   const [editingUser, setEditingUser] = useState<any>(null);
-  const [userForm, setUserForm] = useState({ full_name: '', is_admin: false, whatsapp: '' });
+  const [userForm, setUserForm] = useState({ full_name: '', is_admin: false, whatsapp: '', email: '' });
 
   const [adjustingWallet, setAdjustingWallet] = useState<{ userId: string; currentBalance: number } | null>(null);
   const [adjustAmount, setAdjustAmount] = useState(0);
@@ -85,6 +85,7 @@ export default function AdminUsersPage() {
         full_name: userForm.full_name,
         is_admin: userForm.is_admin,
         whatsapp: userForm.whatsapp,
+        email: userForm.email,
       }),
     });
     if (res.ok) {
@@ -273,6 +274,15 @@ export default function AdminUsersPage() {
                   type="text"
                   value={userForm.full_name}
                   onChange={e => setUserForm({ ...userForm, full_name: e.target.value })}
+                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary">Email Address</label>
+                <input
+                  type="email"
+                  value={userForm.email}
+                  onChange={e => setUserForm({ ...userForm, email: e.target.value })}
                   className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1"
                 />
               </div>
@@ -522,6 +532,7 @@ export default function AdminUsersPage() {
                         full_name: user.full_name || '',
                         is_admin: user.is_admin || false,
                         whatsapp: user.whatsapp || '',
+                        email: user.email || '',
                       });
                     }}
                     className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs hover:bg-blue-500/30 transition"
@@ -581,6 +592,20 @@ export default function AdminUsersPage() {
                     className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs hover:bg-blue-500/30 transition"
                   >
                     <Mail className="w-3 h-3 inline mr-1" /> Email
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (confirm(`Impersonate ${user.full_name || user.email}?`)) {
+                        localStorage.setItem('impersonate_user_id', user.id);
+                        localStorage.setItem('impersonate_user_email', user.email);
+                        localStorage.setItem('impersonate_user_name', user.full_name || user.email);
+                        window.open('/dashboard/client', '_blank');
+                      }
+                    }}
+                    className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-xs hover:bg-amber-500/30 transition"
+                  >
+                    🎭 Impersonate
                   </button>
 
                   <button

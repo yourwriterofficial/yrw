@@ -132,6 +132,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           <button id="rw-tour-profile" onClick={() => router.push('/dashboard/client?tab=profile')} className={navBtnClass('profile')}>
             <div className="flex items-center gap-3"><lucide.User className="w-5 h-5" /> <span>My Profile</span></div>
           </button>
+          <button id="rw-tour-chat" onClick={() => router.push('/dashboard/client?tab=chat')} className={navBtnClass('chat')}>
+            <div className="flex items-center gap-3"><lucide.MessageSquare className="w-5 h-5" /> <span>Support Chat</span></div>
+          </button>
         </nav>
 
         <div className="border-t border-theme pt-6 mt-6">
@@ -180,6 +183,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           </button>
           <button onClick={() => { router.push('/dashboard/client?tab=profile'); setMobileMenuOpen(false); }} className={navBtnClass('profile')}>
             <div className="flex items-center gap-3"><lucide.User className="w-5 h-5" /> <span>My Profile</span></div>
+          </button>
+          <button onClick={() => { router.push('/dashboard/client?tab=chat'); setMobileMenuOpen(false); }} className={navBtnClass('chat')}>
+            <div className="flex items-center gap-3"><lucide.MessageSquare className="w-5 h-5" /> <span>Support Chat</span></div>
           </button>
           <ThemeToggle />
           <button onClick={handleLogout} className="mt-2 p-3 text-red-400 font-bold text-left flex items-center gap-2 rounded-xl hover:bg-red-500/10 transition"><lucide.LogOut className="w-4 h-4"/> Sign Out</button>

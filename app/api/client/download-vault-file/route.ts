@@ -25,12 +25,19 @@ export async function POST(request: Request) {
     // 2. Look up the file and its order
     const { data: file, error: fetchError } = await admin
       .from('final_deliverables')
-      .select('id, file_path, download_count, order_id')
+      .select('id, file_path, download_count, order_id, scheduled_at')
       .eq('id', fileId)
       .single();
 
     if (fetchError || !file) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
+    }
+
+    if (file.scheduled_at && new Date(file.scheduled_at) > new Date()) {
+      return NextResponse.json(
+        { error: 'This file is scheduled for a future delivery date and is not yet available.' },
+        { status: 403 }
+      );
     }
 
     const { data: order, error: orderError } = await admin
