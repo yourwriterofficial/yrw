@@ -138,6 +138,17 @@ function OrdersPageContent() {
   const [deliveryFile, setDeliveryFile] = useState<File | null>(null);
   const [uploadingDelivery, setUploadingDelivery] = useState(false);
   const [scheduledAt, setScheduledAt] = useState('');
+  const [notifyEmail, setNotifyEmail] = useState(true);
+  const [notifyInApp, setNotifyInApp] = useState(true);
+
+  const openDeliveryModal = (order: AdminOrderView) => {
+    setDeliveryModalOrder(order);
+    setDeliveryFile(null);
+    setScheduledAt('');
+    setNotifyEmail(true);
+    setNotifyInApp(true);
+  };
+
   const [deleteMathAnswer, setDeleteMathAnswer] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<AdminOrderView | null>(null);
@@ -339,7 +350,7 @@ function OrdersPageContent() {
         newStatus = 'Synthesis Active';
         break;
       case 'UPLOAD_DRAFT':
-        setDeliveryModalOrder(editingOrder);
+        openDeliveryModal(editingOrder);
         setEditingOrder(null);
         return;
       case 'REQUEST_BALANCE':
@@ -560,59 +571,108 @@ function OrdersPageContent() {
     }
   };
 
+  const toLocalISO = (date: Date) => {
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 16);
+    return localISOTime;
+  };
+
+  const getScheduleSummary = () => {
+    if (!scheduledAt) return '⚡ Deliver Instantly (Immediate release)';
+    const diff = new Date(scheduledAt).getTime() - Date.now();
+    if (diff <= 0) return '⚡ Deliver Instantly (Scheduled time is in the past)';
+    const hours = Math.round(diff / (60 * 60 * 1000) * 10) / 10;
+    if (hours < 24) {
+      return `⏰ Locked in Vault for ${hours} hour(s) (Releases today/tomorrow at ${new Date(scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+    }
+    const days = Math.round(hours / 24 * 10) / 10;
+    return `📅 Locked in Vault for ${days} day(s) (Releases on ${new Date(scheduledAt).toLocaleDateString()} at ${new Date(scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+  };
+
   const handleDeliveryUpload = async () => {
-  if (!deliveryFile || !deliveryModalOrder) return showToast("Select a file.", "error");
-  setUploadingDelivery(true);
-  try {
-    const orderId = deliveryModalOrder['Order ID'];
-    const fileExt = deliveryFile.name.split('.').pop();
-    const filePath = `${orderId}/FINAL_DELIVERY_${Date.now()}.${fileExt}`;
-    
-    // 1. Upload to storage
-    const { error: uploadError } = await supabase.storage.from('final-deliverables').upload(filePath, deliveryFile);
-    if (uploadError) throw uploadError;
+    if (!deliveryFile || !deliveryModalOrder) return showToast("Select a file.", "error");
+    setUploadingDelivery(true);
+    try {
+      const orderId = deliveryModalOrder['Order ID'];
+      const fileExt = deliveryFile.name.split('.').pop();
+      const filePath = `${orderId}/FINAL_DELIVERY_${Date.now()}.${fileExt}`;
+      
+      // 1. Upload to storage
+      const { error: uploadError } = await supabase.storage.from('final-deliverables').upload(filePath, deliveryFile);
+      if (uploadError) throw uploadError;
 
-    // 2. Insert record into final_deliverables table
-    const { error: insertError } = await supabase
-      .from('final_deliverables')
-      .insert({
-        order_id: orderId,
-        file_path: filePath,
-        file_name: deliveryFile.name,
-        uploaded_at: new Date().toISOString(),
-        scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+      // 2. Insert record into final_deliverables table
+      const { error: insertError } = await supabase
+        .from('final_deliverables')
+        .insert({
+          order_id: orderId,
+          file_path: filePath,
+          file_name: deliveryFile.name,
+          uploaded_at: new Date().toISOString(),
+          scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+        });
+      if (insertError) throw insertError;
+
+      // 3. Update order status
+      const res = await fetch('/api/admin/update-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          orderId, 
+          updates: { work_submitted: true, vault_status: 'Final Files Secured' } 
+        }),
       });
-    if (insertError) throw insertError;
+      if (!res.ok) throw new Error(await res.text());
 
-    // 3. Update order status
-    const res = await fetch('/api/admin/update-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        orderId, 
-        updates: { work_submitted: true, vault_status: 'Final Files Secured' } 
-      }),
-    });
-    if (!res.ok) throw new Error(await res.text());
+      // 4. Send email notification if enabled
+      if (notifyEmail) {
+        await sendStatusEmail({
+          orderId: deliveryModalOrder['Order ID'],
+          email: deliveryModalOrder['Email'],
+          legal_name: deliveryModalOrder['Legal Name'],
+          topic: deliveryModalOrder['Research Topic'],
+          financial_quote: deliveryModalOrder['Financial Quote'] ?? 0,
+        }, 'Work Submitted');
+      }
 
-    // 4. Send email notification
-    await sendStatusEmail({
-      orderId: deliveryModalOrder['Order ID'],
-      email: deliveryModalOrder['Email'],
-      legal_name: deliveryModalOrder['Legal Name'],
-      topic: deliveryModalOrder['Research Topic'],
-      financial_quote: deliveryModalOrder['Financial Quote'] ?? 0,
-    }, 'Work Submitted');
+      // 5. Send in-app notification if enabled
+      if (notifyInApp) {
+        try {
+          const { data: dbOrder } = await supabase
+            .from('orders')
+            .select('user_id, id, topic')
+            .eq('order_id', orderId)
+            .single();
+            
+          if (dbOrder?.user_id) {
+            const { error: notifErr } = await supabase
+              .from('notifications')
+              .insert({
+                user_id: dbOrder.user_id,
+                title: 'Material uploaded to Vault',
+                message: `Chapters 1-5 for "${dbOrder.topic || 'your project'}" has been successfully uploaded to your Secure Vault.`,
+                type: 'vault_delivery',
+                link: '/dashboard/client?tab=vault',
+                send_email: false,
+                send_in_app: true,
+                order_id: dbOrder.id,
+              });
+            if (notifErr) console.warn('Failed to insert in-app notification:', notifErr);
+          }
+        } catch (e) {
+          console.warn('In-app notification failed:', e);
+        }
+      }
 
-    showToast("Uploaded securely to the vault.", "success");
-    setDeliveryModalOrder(null);
-    setDeliveryFile(null);
-    fetchOrders(); // refresh the order list
-  } catch (err: any) {
-    showToast(`Upload failed: ${err.message}`, "error");
-  }
-  setUploadingDelivery(false);
-};
+      showToast("Uploaded securely to the vault.", "success");
+      setDeliveryModalOrder(null);
+      setDeliveryFile(null);
+      fetchOrders(); // refresh the order list
+    } catch (err: any) {
+      showToast(`Upload failed: ${err.message}`, "error");
+    }
+    setUploadingDelivery(false);
+  };
 
   const initiateDeleteOrder = (order: AdminOrderView) => {
     setOrderToDelete(order);
@@ -774,7 +834,7 @@ function OrdersPageContent() {
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
                         <button onClick={() => window.open(`/dashboard/client?preview=${order['Order ID']}`, '_blank')} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-secondary transition" title="Preview as Client"><lucide.Eye className="w-4 h-4" /></button>
-                        <button onClick={() => setDeliveryModalOrder(order)} className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition" title="Upload to Vault"><lucide.UploadCloud className="w-4 h-4" /></button>
+                        <button onClick={() => openDeliveryModal(order)} className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition" title="Upload to Vault"><lucide.UploadCloud className="w-4 h-4" /></button>
                         <button onClick={() => setEditingOrder(order)} className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-xs font-bold rounded-lg transition">Manage Order</button>
                         <button onClick={() => initiateDeleteOrder(order)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition" title="Delete Order"><lucide.Trash2 className="w-4 h-4" /></button>
                       </td>
@@ -1069,38 +1129,123 @@ function OrdersPageContent() {
       {/* Vault Upload Modal */}
       {deliveryModalOrder && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-primary border border-blue-500/30 rounded-3xl p-8 max-w-md w-full shadow-[0_0_40px_rgba(59,130,246,0.15)]">
+          <div className="bg-primary border border-blue-500/30 rounded-3xl p-8 max-w-md w-full shadow-[0_0_40px_rgba(59,130,246,0.15)] max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6">
-              <div><h2 className="text-xl font-black text-primary flex items-center gap-2"><lucide.ShieldCheck className="text-blue-500" /> Vault Upload</h2><p className="text-xs text-blue-500 uppercase tracking-widest mt-1 font-bold">Order: {deliveryModalOrder['Order ID']}</p></div>
+              <div>
+                <h2 className="text-xl font-black text-primary flex items-center gap-2"><lucide.ShieldCheck className="text-blue-500" /> Vault Upload</h2>
+                <p className="text-xs text-blue-500 uppercase tracking-widest mt-1 font-bold">Order: {deliveryModalOrder['Order ID']}</p>
+              </div>
               <button onClick={() => setDeliveryModalOrder(null)}><lucide.X className="w-5 h-5 text-slate-500 hover:text-primary transition" /></button>
             </div>
             <div className="space-y-4">
-              <p className="text-xs text-secondary leading-relaxed">Uploading the final deliverable will automatically mark the project as "Work Submitted" and trigger an email prompting the client to pay their 40% balance to unlock the file.</p>
-              <label className="border-2 border-dashed border-theme hover:border-blue-500 bg-primary rounded-xl p-10 flex flex-col items-center justify-center cursor-pointer transition group">
-                <lucide.UploadCloud className="w-10 h-10 text-secondary group-hover:text-blue-500 mb-3 transition" />
-                <span className="text-sm font-bold text-primary mb-1">Select Encrypted File</span>
+              <p className="text-xs text-secondary leading-relaxed">Uploading the final deliverable marks the project as "Work Submitted". The file will appear in the client's vault according to the schedule set below.</p>
+              
+              <label className="border-2 border-dashed border-theme hover:border-blue-500 bg-primary rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition group">
+                <lucide.UploadCloud className="w-8 h-8 text-secondary group-hover:text-blue-500 mb-2 transition" />
+                <span className="text-sm font-bold text-primary mb-0.5">Select Encrypted File</span>
                 <span className="text-[10px] text-secondary uppercase">.PDF, .DOCX, .ZIP</span>
                 <input type="file" className="hidden" onChange={(e) => setDeliveryFile(e.target.files?.[0] || null)} />
               </label>
+              
               {deliveryFile && (
-                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center gap-3">
+                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center gap-3">
                   <lucide.FileCheck className="w-5 h-5 text-blue-500" />
                   <span className="text-xs font-bold text-blue-400 truncate">{deliveryFile.name}</span>
                 </div>
               )}
+
+              {/* REBUILT EASY-TO-USE SCHEDULER */}
               <div className="mt-4">
-                <label className="text-[10px] uppercase font-black text-secondary block mb-1">Schedule Vault Delivery (Optional)</label>
+                <label className="text-[10px] uppercase font-black text-secondary block mb-1.5">Schedule Vault Release Time</label>
+                
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setScheduledAt('')}
+                    className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition border text-center cursor-pointer ${!scheduledAt ? 'bg-blue-500 text-white border-blue-500 shadow-md shadow-blue-500/10' : 'bg-secondary hover:bg-white/5 text-primary border-theme'}`}
+                  >
+                    ⚡ Instantly
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScheduledAt(toLocalISO(new Date(Date.now() + 60 * 60 * 1000)))}
+                    className="py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition border text-center bg-secondary hover:bg-white/5 text-primary border-theme cursor-pointer"
+                  >
+                    ⏰ In 1 Hr
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScheduledAt(toLocalISO(new Date(Date.now() + 4 * 60 * 60 * 1000)))}
+                    className="py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition border text-center bg-secondary hover:bg-white/5 text-primary border-theme cursor-pointer"
+                  >
+                    🕒 In 4 Hrs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScheduledAt(toLocalISO(new Date(Date.now() + 12 * 60 * 60 * 1000)))}
+                    className="py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition border text-center bg-secondary hover:bg-white/5 text-primary border-theme cursor-pointer"
+                  >
+                    🕕 In 12 Hrs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScheduledAt(toLocalISO(new Date(Date.now() + 24 * 60 * 60 * 1000)))}
+                    className="py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition border text-center bg-secondary hover:bg-white/5 text-primary border-theme cursor-pointer"
+                  >
+                    📅 In 24 Hrs
+                  </button>
+                  {deliveryModalOrder?.['Deadline'] && (
+                    <button
+                      type="button"
+                      onClick={() => setScheduledAt(toLocalISO(new Date(deliveryModalOrder['Deadline']!)))}
+                      className="py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition border text-center bg-secondary hover:bg-white/5 text-primary border-theme cursor-pointer truncate"
+                      title="Match Order Deadline"
+                    >
+                      🏁 Deadline
+                    </button>
+                  )}
+                </div>
+
                 <input
                   type="datetime-local"
                   value={scheduledAt}
                   onChange={e => setScheduledAt(e.target.value)}
                   className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-blue-500 transition font-bold"
                 />
-                <p className="text-[10px] text-secondary mt-1">If set, the file will remain locked and invisible in the client's vault until the scheduled date.</p>
+
+                <p className="text-[10px] text-blue-400 font-bold mt-2 bg-blue-500/10 border border-blue-500/20 p-2 rounded-lg leading-normal">
+                  {getScheduleSummary()}
+                </p>
               </div>
+
+              {/* SMART NOTIFICATION SETTINGS */}
+              <div className="mt-4">
+                <label className="text-[10px] uppercase font-black text-secondary block mb-1">Notification Options</label>
+                <div className="flex flex-col gap-2.5 bg-secondary/50 p-4 rounded-xl border border-theme">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={notifyEmail}
+                      onChange={e => setNotifyEmail(e.target.checked)}
+                      className="accent-blue-500 rounded"
+                    />
+                    <span className="text-xs font-bold text-primary">Send Email Notification</span>
+                  </label>
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={notifyInApp}
+                      onChange={e => setNotifyInApp(e.target.checked)}
+                      className="accent-blue-500 rounded"
+                    />
+                    <span className="text-xs font-bold text-primary">Send In-App Notification</span>
+                  </label>
+                </div>
+              </div>
+
             </div>
-            <div className="mt-8">
-              <button onClick={handleDeliveryUpload} disabled={uploadingDelivery || !deliveryFile} className="w-full py-4 bg-blue-500 text-white font-black uppercase text-xs tracking-widest rounded-xl hover:bg-blue-400 transition disabled:opacity-50 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+            <div className="mt-6">
+              <button onClick={handleDeliveryUpload} disabled={uploadingDelivery || !deliveryFile} className="w-full py-3.5 bg-blue-500 text-white font-black uppercase text-xs tracking-widest rounded-xl hover:bg-blue-400 transition disabled:opacity-50 shadow-[0_0_20px_rgba(59,130,246,0.3)] cursor-pointer">
                 {uploadingDelivery ? 'Encrypting & Storing...' : 'Lock in Vault & Notify Client'}
               </button>
             </div>

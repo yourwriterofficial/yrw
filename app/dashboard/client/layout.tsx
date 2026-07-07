@@ -119,6 +119,14 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto pr-1">
+          {profile?.is_admin && (
+            <button
+              onClick={() => router.push('/admin')}
+              className="flex items-center justify-center gap-2 w-full p-2.5 mb-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 font-black text-xs uppercase tracking-wider border border-purple-500/25 transition cursor-pointer shrink-0"
+            >
+              <lucide.Shield className="w-4 h-4" /> Admin Control Panel
+            </button>
+          )}
           <button id="rw-tour-dashboard" onClick={() => router.push('/dashboard/client')} className={navBtnClass('dashboard')}>
             <div className="flex items-center gap-3"><lucide.LayoutDashboard className="w-5 h-5" /> <span>Dashboard</span></div>
           </button>
@@ -202,6 +210,14 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       {mobileMenuOpen && (
         <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 top-[73px] shadow-lg max-h-[80vh] overflow-y-auto">
+          {profile?.is_admin && (
+            <button
+              onClick={() => { router.push('/admin'); setMobileMenuOpen(false); }}
+              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl bg-purple-500/10 text-purple-400 font-black text-xs uppercase tracking-wider border border-purple-500/25 transition cursor-pointer"
+            >
+              <lucide.Shield className="w-4 h-4" /> Admin Control Panel
+            </button>
+          )}
           <button onClick={() => { router.push('/dashboard/client'); setMobileMenuOpen(false); }} className={navBtnClass('dashboard')}>
             <div className="flex items-center gap-3"><lucide.LayoutDashboard className="w-5 h-5" /> <span>Dashboard</span></div>
           </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import { showToast } from '@/app/components/ui/Toast';
@@ -141,7 +141,15 @@ const pickWriter = (): string => {
 export default function ProjectsTab({ user }: { user: any }) {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Availability Search states
   const [search, setSearch] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [selectedSearchDept, setSelectedSearchDept] = useState('all');
+  const [selectedSearchLevel, setSelectedSearchLevel] = useState('all');
+
+  // General Filter Catalog states
   const [dept, setDept] = useState('all');
   const [level, setLevel] = useState('all');
   const [page, setPage] = useState(1);
@@ -167,20 +175,36 @@ export default function ProjectsTab({ user }: { user: any }) {
   // Preview Modal
   const [previewTopic, setPreviewTopic] = useState<Topic | null>(null);
 
+  // Settings loaded from DB
+  const [levelPrices, setLevelPrices] = useState<Record<string, number>>({ BSc: 3, MSc: 4, PhD: 10 });
+  const [deptPrices, setDeptPrices] = useState<Record<string, number>>({});
+
   useEffect(() => {
     fetchAddons();
+    fetchSettings();
   }, []);
 
-  useEffect(() => {
-    fetchTopics();
-  }, [page, dept, level]);
-
-  const fetchAddons = async () => {
-    const { data } = await supabase.from('project_addons').select('*').order('price');
-    if (data) setAvailableAddons(data);
+  const fetchSettings = async () => {
+    const { data } = await supabase.from('project_settings').select('*');
+    if (data) {
+      let lp = { BSc: 3999, MSc: 4500, PhD: 10000 };
+      let dp = {};
+      data.forEach(s => {
+        if (s.key === 'level_prices') lp = s.value;
+        if (s.key === 'department_prices') dp = s.value;
+      });
+      setLevelPrices(lp);
+      setDeptPrices(dp);
+    }
   };
 
-  const fetchTopics = async () => {
+  const getTopicPrice = (lvl: string, deptName: string) => {
+    const deptPrice = deptPrices[deptName];
+    if (deptPrice !== undefined && Number(deptPrice) > 0) return Number(deptPrice);
+    return levelPrices[lvl] || levelPrices.BSc || 3999;
+  };
+
+  const fetchTopics = useCallback(async (searchQuery?: string, selectedDept?: string, selectedLvl?: string) => {
     setLoading(true);
     try {
       let q = supabase
@@ -188,14 +212,18 @@ export default function ProjectsTab({ user }: { user: any }) {
         .select('*', { count: 'exact' })
         .eq('is_active', true);
 
-      if (search.trim()) {
-        q = q.ilike('title', `%${search.trim()}%`);
+      const activeSearch = searchQuery !== undefined ? searchQuery : search;
+      const activeDept = selectedDept !== undefined ? selectedDept : dept;
+      const activeLvl = selectedLvl !== undefined ? selectedLvl : level;
+
+      if (activeSearch.trim()) {
+        q = q.ilike('title', `%${activeSearch.trim()}%`);
       }
-      if (dept !== 'all') {
-        q = q.eq('department', dept);
+      if (activeDept !== 'all') {
+        q = q.eq('department', activeDept);
       }
-      if (level !== 'all') {
-        q = q.eq('level', level);
+      if (activeLvl !== 'all') {
+        q = q.eq('level', activeLvl);
       }
 
       const from = (page - 1) * PAGE_SIZE;
@@ -214,12 +242,50 @@ export default function ProjectsTab({ user }: { user: any }) {
     } finally {
       setLoading(false);
     }
+  }, [page, dept, level, search]);
+
+  useEffect(() => {
+    if (!isSearching) {
+      fetchTopics();
+    }
+  }, [page, dept, level]);
+
+  const executeAvailabilitySearch = async () => {
+    if (!search.trim()) return;
+    setIsSearching(true);
+    setMsg('');
+
+    // Simulated scanning delay for premium UI feel
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    try {
+      setPage(1);
+      setDept(selectedSearchDept);
+      setLevel(selectedSearchLevel);
+      setHasSearched(true);
+      await fetchTopics(search, selectedSearchDept, selectedSearchLevel);
+    } catch (err: any) {
+      console.error(err);
+      setMsg('Search failed. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
-  const triggerSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const resetSearch = () => {
+    setHasSearched(false);
+    setSearch('');
+    setSelectedSearchDept('all');
+    setSelectedSearchLevel('all');
+    setDept('all');
+    setLevel('all');
     setPage(1);
-    fetchTopics();
+    fetchTopics('', 'all', 'all');
+  };
+
+  const fetchAddons = async () => {
+    const { data } = await supabase.from('project_addons').select('*').order('price');
+    if (data) setAvailableAddons(data);
   };
 
   const openCart = (item: Cart) => {
@@ -243,8 +309,8 @@ export default function ProjectsTab({ user }: { user: any }) {
     
     // Step 1: Searching for 1.6s
     setTimeout(() => {
-      const avail = Math.floor(12 + Math.random() * 10); // always random
-      const bid = Math.floor(5 + Math.random() * (avail - 6)); // always lower than order available
+      const avail = Math.floor(12 + Math.random() * 10);
+      const bid = Math.floor(5 + Math.random() * (avail - 6));
       setBidDetails({ available: avail, bidding: bid });
       setWriterStage('bidding');
 
@@ -333,54 +399,103 @@ export default function ProjectsTab({ user }: { user: any }) {
         <p className="text-secondary mt-1 text-sm">Browse, search, and instantly buy completed research projects covering Chapters 1–5.</p>
       </header>
 
-      {/* FILTER BAR */}
-      <div className="bg-card border border-theme rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
-        <form onSubmit={triggerSearch} className="relative flex-1 w-full">
-          <lucide.Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-secondary" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search our database of 3,000+ completed projects..."
-            className="w-full bg-secondary border border-theme rounded-xl pl-11 pr-24 py-3 text-sm text-primary outline-none focus:border-emerald-500 transition font-bold"
-          />
-          <button
-            type="submit"
-            className="absolute right-2 top-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase px-4 py-2 rounded-lg transition"
-          >
-            Search
-          </button>
-        </form>
+      {/* --- AVAILABILITY SEARCH INTERFACE --- */}
+      {!hasSearched && !isSearching ? (
+        <div className="max-w-2xl mx-auto py-4">
+          <div className="bg-card border border-theme rounded-3xl p-8 shadow-md space-y-6 text-center">
+            <div className="w-14 h-14 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto">
+              <lucide.Search className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-primary">Database Search & Availability</h3>
+              <p className="text-xs text-secondary mt-1.5 leading-relaxed font-semibold">
+                Place your full project topic below to search our database of 3,000+ completed projects and check instant availability.
+              </p>
+            </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
-          <select
-            value={dept}
-            onChange={e => { setDept(e.target.value); setPage(1); }}
-            className="bg-secondary border border-theme rounded-xl px-4 py-3 text-xs text-primary font-bold outline-none focus:border-emerald-500 cursor-pointer flex-1 md:flex-none"
-          >
-            <option value="all">📂 All Departments</option>
-            {NIGERIAN_DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-          </select>
+            <div className="space-y-4 text-left">
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Your Full Project Topic *</label>
+                <textarea
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="e.g. Challenges and prospects of financial autonomy to local government administration..."
+                  rows={3}
+                  className="w-full bg-secondary border border-theme rounded-xl p-4 text-xs text-primary focus:border-emerald-500 outline-none transition font-bold"
+                />
+              </div>
 
-          <select
-            value={level}
-            onChange={e => { setLevel(e.target.value); setPage(1); }}
-            className="bg-secondary border border-theme rounded-xl px-4 py-3 text-xs text-primary font-bold outline-none focus:border-emerald-500 cursor-pointer flex-1 md:flex-none"
-          >
-            <option value="all">🎓 All Levels</option>
-            <option value="BSc">BSc / HND</option>
-            <option value="MSc">MSc / PGD</option>
-            <option value="PhD">PhD</option>
-          </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Department</label>
+                  <select
+                    value={selectedSearchDept}
+                    onChange={e => setSelectedSearchDept(e.target.value)}
+                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
+                  >
+                    <option value="all">📂 All Departments</option>
+                    {NIGERIAN_DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Academic Level</label>
+                  <select
+                    value={selectedSearchLevel}
+                    onChange={e => setSelectedSearchLevel(e.target.value)}
+                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
+                  >
+                    <option value="all">🎓 All Levels</option>
+                    <option value="BSc">BSc / HND</option>
+                    <option value="MSc">MSc / PGD</option>
+                    <option value="PhD">PhD</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                onClick={executeAvailabilitySearch}
+                disabled={!search.trim()}
+                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase text-xs tracking-widest rounded-xl transition shadow-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+              >
+                Check Availability & Retrieve Material
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : isSearching ? (
+        <div className="max-w-md mx-auto py-12 text-center space-y-6">
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+            <div className="absolute inset-2 rounded-full border-4 border-amber-500/20 border-b-amber-500 animate-spin [animation-direction:reverse]" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-primary">Scanning Project Database...</h3>
+            <p className="text-xs text-secondary mt-1">Checking chapters, tables, and references availability for your topic.</p>
+          </div>
+        </div>
+      ) : (
+        /* SEARCH RESULTS BANNER */
+        <div className="flex justify-between items-center gap-4 border-b border-theme pb-4">
+          <div>
+            <h3 className="text-lg font-bold text-primary">Search Results</h3>
+            <p className="text-xs text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
+          </div>
+          <button 
+            onClick={resetSearch}
+            className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-2"
+          >
+            <lucide.Search className="w-3.5 h-3.5" /> Search Another Topic
+          </button>
+        </div>
+      )}
 
-      {/* CATALOG GRID */}
+      {/* SEARCH RESULTS OR BROWSE LIST */}
       {loading ? (
-        <div className="py-20 text-center text-sm text-secondary flex items-center justify-center gap-2">
+        <div className="py-12 text-center text-sm text-secondary flex items-center justify-center gap-2">
           <lucide.Loader2 className="w-5 h-5 animate-spin text-emerald-500" /> Scanning database...
         </div>
-      ) : topics.length === 0 ? (
-        /* NO RESULTS - CUSTOM CARD */
+      ) : hasSearched && topics.length === 0 ? (
+        /* NO RESULTS - CUSTOM WRITEUP CARD */
         <div className="max-w-2xl mx-auto bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8 space-y-6 text-center shadow-xl">
           <div className="w-14 h-14 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
             <lucide.CheckCircle className="w-7 h-7 text-emerald-500" />
@@ -388,29 +503,29 @@ export default function ProjectsTab({ user }: { user: any }) {
           <div>
             <h4 className="text-lg font-black text-primary">Custom write-up available!</h4>
             <p className="text-xs text-secondary mt-1.5 leading-relaxed max-w-md mx-auto font-semibold">
-              Our writers can prepare this topic for you as an original custom write-up with complete Chapters 1–5, structured layout, and references.
+              Our writers can prepare this topic for you as an original custom project with complete Chapters 1–5, structured layout, and references.
             </p>
           </div>
 
           <div className="bg-card border border-theme p-6 rounded-2xl text-left space-y-4 max-w-lg mx-auto">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500 text-black">✓ Available</span>
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-theme text-primary">{level === 'all' ? 'BSc' : level}</span>
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-white/5 text-purple-400">{dept === 'all' ? 'General' : dept}</span>
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-theme text-primary">{selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel}</span>
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-white/5 text-purple-400">{selectedSearchDept === 'all' ? 'General' : selectedSearchDept}</span>
             </div>
-            <p className="text-xs font-bold text-primary leading-normal">{search || "Custom Research Topic"}</p>
+            <p className="text-xs font-bold text-primary leading-normal">{search}</p>
             <div className="border-t border-theme/40 pt-4 flex justify-between items-center">
               <div>
                 <span className="text-[10px] text-secondary uppercase font-black block">Standard Cost</span>
-                <span className="text-sm font-mono font-bold text-emerald-500">₦3,000</span>
+                <span className="text-sm font-mono font-bold text-emerald-500">{naira(getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept))}</span>
               </div>
               <button
                 onClick={() => openCart({
-                  customTitle: search.trim() || "Custom Research Topic",
-                  level: level === 'all' ? 'BSc' : level,
-                  department: dept === 'all' ? 'General' : dept,
-                  title: search.trim() || "Custom Research Topic",
-                  basePrice: 3000
+                  customTitle: search.trim(),
+                  level: selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel,
+                  department: selectedSearchDept === 'all' ? 'General' : selectedSearchDept,
+                  title: search.trim(),
+                  basePrice: getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept)
                 })}
                 className="bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition cursor-pointer"
               >
@@ -420,7 +535,53 @@ export default function ProjectsTab({ user }: { user: any }) {
           </div>
         </div>
       ) : (
-        <>
+        /* GENERAL BROWSE AND RESULTS CONTAINER */
+        <div className="space-y-6">
+          {!hasSearched && (
+            <div className="border-b border-theme pb-2">
+              <h3 className="text-lg font-black text-primary">Browse All Project Topics</h3>
+              <p className="text-xs text-secondary mt-0.5">Select a topic from the directory or use the filters below.</p>
+            </div>
+          )}
+
+          {/* FILTER BAR FOR DIRECTORY */}
+          {!hasSearched && (
+            <div className="bg-card border border-theme rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+              <div className="relative flex-1 w-full">
+                <lucide.Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-secondary" />
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Filter browse catalog..."
+                  className="w-full bg-secondary border border-theme rounded-xl pl-11 pr-4 py-2.5 text-xs text-primary outline-none focus:border-emerald-500 transition font-bold"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
+                <select
+                  value={dept}
+                  onChange={e => { setDept(e.target.value); setPage(1); }}
+                  className="bg-secondary border border-theme rounded-xl px-4 py-2.5 text-xs text-primary font-bold outline-none focus:border-emerald-500 cursor-pointer flex-1 md:flex-none"
+                >
+                  <option value="all">📂 All Departments</option>
+                  {NIGERIAN_DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+
+                <select
+                  value={level}
+                  onChange={e => { setLevel(e.target.value); setPage(1); }}
+                  className="bg-secondary border border-theme rounded-xl px-4 py-2.5 text-xs text-primary font-bold outline-none focus:border-emerald-500 cursor-pointer flex-1 md:flex-none"
+                >
+                  <option value="all">🎓 All Levels</option>
+                  <option value="BSc">BSc / HND</option>
+                  <option value="MSc">MSc / PGD</option>
+                  <option value="PhD">PhD</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* CATALOG GRID */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
             {topics.map(t => (
               <div key={t.id} className="bg-card border border-theme rounded-2xl p-5 flex flex-col gap-3 hover:border-emerald-500/40 hover:shadow-lg transition">
@@ -437,7 +598,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                 <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1 w-fit">⚡ Instant Vault Delivery</span>
                 <div className="flex gap-2 mt-auto pt-1 flex-wrap">
                   <button onClick={() => setPreviewTopic(t)} className="flex-1 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition min-w-[70px]">👁 Preview</button>
-                  <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) })} className="flex-2 py-2.5 rounded-lg text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 transition">Get · {naira(t.price)}</button>
+                  <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: getTopicPrice(t.level, t.department) })} className="flex-2 py-2.5 rounded-lg text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 transition">Get · {naira(getTopicPrice(t.level, t.department))}</button>
                 </div>
               </div>
             ))}
@@ -462,13 +623,13 @@ export default function ProjectsTab({ user }: { user: any }) {
               </button>
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* CHECKOUT DRAWER / MODAL */}
       {cart && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-[#0e0e0e] h-screen border-l border-zinc-800 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-[#0e0e0e] h-screen border-l border-zinc-800 flex flex-col shadow-2xl animate-in slide-in-from-right duration-350">
             <header className="p-6 border-b border-theme flex justify-between items-center shrink-0">
               <div>
                 <span className="text-[10px] font-black uppercase text-amber-400 tracking-widest">Order Processing Pipeline</span>
@@ -517,14 +678,14 @@ export default function ProjectsTab({ user }: { user: any }) {
                       <span className="text-amber-400">{bidDetails.bidding} bidding</span>
                     </div>
                     <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-amber-400 rounded-full w-2/3" />
+                      <div className="h-full bg-amber-400 rounded-full w-2/3 animate-[pulse_1.5s_infinite]" />
                     </div>
                   </div>
                 )}
 
                 {writerStage === 'done' && assignedWriter && (
                   <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/30">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-450 border border-emerald-500/30">
                       ✏️
                     </div>
                     <div>
@@ -633,7 +794,7 @@ export default function ProjectsTab({ user }: { user: any }) {
 
       {/* PREVIEW TOPIC MODAL */}
       {previewTopic && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-lg bg-[#0e0e0e] border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
             <header className="p-5 border-b border-theme flex justify-between items-center">
               <h4 className="font-black text-sm text-primary">Topic Preview Details</h4>
@@ -672,7 +833,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                 onClick={() => {
                   const t = previewTopic;
                   setPreviewTopic(null);
-                  openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) });
+                  openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: getTopicPrice(t.level, t.department) });
                 }}
                 className="px-4 py-2 text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 rounded-xl transition"
               >

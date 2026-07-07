@@ -621,6 +621,7 @@ function DashboardContent() {
 
   const activeOrders = orders.filter(o => o['Workflow Status'] !== 'Completed' && o['Workflow Status'] !== 'Cancelled');
   const completedOrders = orders.filter(o => o['Workflow Status'] === 'Completed');
+  const latestUnviewedVaultFile = vaultFiles.find(f => f.downloaded_at === null);
 
   return (
     <div className="p-6 md:p-10">
@@ -647,8 +648,16 @@ function DashboardContent() {
 
       {/* Admin Preview Banner */}
       {isAdminPreview && (
-        <div className="bg-amber-500 text-black py-2 px-6 flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest mb-6 rounded-xl shadow-md">
-          <lucide.Eye className="w-4 h-4" /> Admin Preview Mode
+        <div className="bg-amber-500 text-black py-2 px-6 flex items-center justify-center gap-4 font-black text-xs uppercase tracking-widest mb-6 rounded-xl shadow-md">
+          <div className="flex items-center gap-2">
+            <lucide.Eye className="w-4 h-4" /> Admin Preview Mode
+          </div>
+          <button 
+            onClick={() => router.push('/admin')} 
+            className="px-3 py-1 bg-black text-white hover:bg-zinc-800 transition font-black rounded-lg uppercase tracking-wider text-[9px] cursor-pointer"
+          >
+            Go to Admin Panel →
+          </button>
         </div>
       )}
 
@@ -677,6 +686,29 @@ function DashboardContent() {
             <h2 className="text-3xl font-black text-primary">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
             <p className="text-secondary mt-1">Here is the current status of your research pipeline.</p>
           </header>
+
+          {/* Latest Vault Upload notification */}
+          {latestUnviewedVaultFile && (
+            <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/25 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 mb-10 shadow-sm animate-in slide-in-from-top duration-500">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 border border-emerald-500/20 shrink-0">
+                  <lucide.FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-secondary font-black uppercase tracking-widest text-[9px]">New Vault Upload Available</p>
+                  <h4 className="text-sm font-bold text-primary mt-0.5">
+                    "{latestUnviewedVaultFile.file_name}" has been uploaded to your Secure Vault.
+                  </h4>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveTab('vault')}
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black transition font-black rounded-xl uppercase tracking-wider text-[10px] cursor-pointer shrink-0"
+              >
+                Access Secure Vault
+              </button>
+            </div>
+          )}
 
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">

@@ -81,10 +81,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           <button
             type="button"
-            onClick={() => window.open('/dashboard/client', '_blank')}
-            className="w-full flex items-center p-3 rounded-xl transition font-bold text-sm text-secondary hover:bg-white/5 hover:text-primary"
+            onClick={() => router.push('/dashboard/client')}
+            className="w-full flex items-center p-3 rounded-xl transition font-bold text-sm text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 border border-purple-500/25 mb-2 cursor-pointer"
           >
-            <lucide.ExternalLink className="w-5 h-5 mr-3" /> View Client UI
+            <lucide.User className="w-5 h-5 mr-3" /> Client Portal
           </button>
         </nav>
 
@@ -135,10 +135,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ))}
           <button
             type="button"
-            onClick={() => { window.open('/dashboard/client', '_blank'); setMobileMenuOpen(false); }}
-            className="p-3 text-secondary font-bold text-left flex items-center gap-2 rounded-xl hover:bg-white/5"
+            onClick={() => { router.push('/dashboard/client'); setMobileMenuOpen(false); }}
+            className="p-3 text-purple-400 font-bold text-left flex items-center gap-2 rounded-xl hover:bg-purple-500/10 border border-purple-500/25 mb-2 cursor-pointer"
           >
-            <lucide.ExternalLink className="w-4 h-4" /> View Client UI
+            <lucide.User className="w-4 h-4" /> Client Portal
           </button>
           <ThemeToggle />
           <button
