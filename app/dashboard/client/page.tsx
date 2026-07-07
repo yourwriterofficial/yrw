@@ -180,7 +180,7 @@ function DashboardContent() {
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [orders, setOrders] = useState<AdminOrderView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'vault' | 'wallet' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'vault' | 'wallet' | 'profile' | 'chat'>('dashboard');
   const [processingPayment, setProcessingPayment] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<AdminOrderView | null>(null);
