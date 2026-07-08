@@ -40,7 +40,7 @@ const nextConfig = {
             value: 'camera=(), microphone=(), geolocation=()',
           },
           {
-            // Keep in sync with the CSP constant in middleware.ts. Both headers
+            // Keep in sync with the CSP constant in proxy.ts. Both headers
             // are applied, so a mismatch would make the browser enforce the
             // (stricter) intersection — e.g. silently dropping Supabase realtime.
             key: 'Content-Security-Policy',

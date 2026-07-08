@@ -39,25 +39,22 @@ export async function sendSystemEmail(params: {
 
   // 2. Safely log the email in the database
   try {
-    let numericOrderId: number | null = null;
+    // email_logs.order_id is a FK to orders.order_id (the human-readable
+    // string id, e.g. "RW-483920") — NOT orders.id (the bigint PK). Confirm
+    // the order exists so we never violate the FK; fall back to null.
+    let dbOrderId: string | null = null;
     if (orderId) {
       const oidStr = String(orderId).trim();
-      if (/^\d+$/.test(oidStr)) {
-        numericOrderId = parseInt(oidStr, 10);
-      } else {
-        const { data: orderData } = await supabase
-          .from('orders')
-          .select('id')
-          .eq('order_id', oidStr)
-          .single();
-        if (orderData) {
-          numericOrderId = orderData.id;
-        }
-      }
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('order_id')
+        .eq('order_id', oidStr)
+        .maybeSingle();
+      dbOrderId = orderData?.order_id ?? null;
     }
 
     const { error: logError } = await supabase.from('email_logs').insert({
-      order_id: numericOrderId,
+      order_id: dbOrderId,
       recipient: to,
       subject,
       status: 'sent',

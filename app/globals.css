@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Theme is toggled via [data-theme="light"] on <html> (dark is the default,
+   unattributed state) — see app/components/ThemeProvider.tsx. Map Tailwind's
+   `dark:` variant to that instead of the OS-level prefers-color-scheme so
+   dark: utilities follow the in-app toggle. */
+@custom-variant dark (&:not([data-theme="light"], [data-theme="light"] *));
+
 :root {
   --bg-primary: #050505;
   --bg-secondary: #0a0a0a;

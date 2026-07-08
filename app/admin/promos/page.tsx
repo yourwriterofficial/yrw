@@ -11,7 +11,6 @@ type PromoCode = {
   code: string;
   discount_percent: number;
   active: boolean;
-  created_at: string;
 };
 
 export default function PromoCodesPage() {
@@ -21,7 +20,7 @@ export default function PromoCodesPage() {
   const [saving, setSaving] = useState(false);
 
   const fetchCodes = async () => {
-    const { data } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.from('promo_codes').select('*').order('code', { ascending: true });
     if (data) setCodes(data);
     setLoading(false);
   };
@@ -135,7 +134,6 @@ export default function PromoCodesPage() {
                   <th className="px-6 py-4 font-black">Code</th>
                   <th className="px-6 py-4 font-black">Discount</th>
                   <th className="px-6 py-4 font-black">Status</th>
-                  <th className="px-6 py-4 font-black">Created Date</th>
                   <th className="px-6 py-4 font-black text-right">Actions</th>
                 </tr>
               </thead>
@@ -149,7 +147,6 @@ export default function PromoCodesPage() {
                         {code.active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-xs text-secondary">{new Date(code.created_at).toLocaleDateString('en-GB')}</td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <button 
                         onClick={() => toggleStatus(code.code, code.active)} 

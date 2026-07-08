@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/adminAuth';
+import { requireAdmin, listAllAuthUsers } from '@/lib/adminAuth';
 import { notifyUser } from '@/lib/notify';
-import { sendSystemEmail } from '@/lib/emailService';
 import { emailTemplates, emailShell } from '@/lib/emailTemplates';
 import { upsertInvoiceForOrder } from '@/lib/invoices';
+import { sendAuthLinkEmail } from '@/lib/magicLink';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
@@ -55,27 +55,23 @@ export async function POST(request: Request) {
     let clientId: string | null = null;
     let isNewUser = false;
 
-    // Look for an existing profile by email
-    const { data: existingProfile } = await admin.from('profiles').select('id').eq('email', cleanEmail).maybeSingle();
-    if (existingProfile?.id) {
-      clientId = existingProfile.id;
+    // Look for an existing client by email (profiles has no email column —
+    // email lives on auth.users, so match against the full auth user list).
+    const authUsers = await listAllAuthUsers(admin);
+    const existingUser = authUsers.find(u => u.email?.toLowerCase() === cleanEmail);
+    if (existingUser?.id) {
+      clientId = existingUser.id;
     } else {
-      // Fall back to scanning auth users
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email: cleanEmail,
         email_confirm: true,
         user_metadata: { full_name: name },
       });
       if (createErr) {
-        // Likely already registered
-        const { data: list } = await admin.auth.admin.listUsers();
-        const match = list?.users?.find(u => u.email?.toLowerCase() === cleanEmail);
-        if (match) clientId = match.id;
-        else return NextResponse.json({ error: `Could not create client: ${createErr.message}` }, { status: 500 });
-      } else {
-        clientId = created.user?.id ?? null;
-        isNewUser = true;
+        return NextResponse.json({ error: `Could not create client: ${createErr.message}` }, { status: 500 });
       }
+      clientId = created.user?.id ?? null;
+      isNewUser = true;
     }
 
     if (!clientId) return NextResponse.json({ error: 'Failed to resolve client account' }, { status: 500 });
@@ -188,22 +184,15 @@ export async function POST(request: Request) {
       // 6. New account → send a set-password (recovery) link
       if (isNewUser) {
         try {
-          const { data: linkData } = await admin.auth.admin.generateLink({
-            type: 'recovery',
+          await sendAuthLinkEmail({
             email: cleanEmail,
-            options: { redirectTo: `${BASE}/update-password` },
+            name,
+            type: 'recovery',
+            next: '/update-password',
+            title: 'Welcome to YourResearchWriter',
+            introHtml: `<p>An account has been created for you so you can track your order <strong>${orderStringId}</strong>, view your invoice, and pay securely.</p><p>Set your password to log in:</p>`,
+            ctaText: 'Set Your Password',
           });
-          const link = linkData?.properties?.action_link;
-          if (link) {
-            const html = emailShell(
-              `<h1>Welcome to YourResearchWriter</h1>
-               <p>Hi ${name},</p>
-               <p>An account has been created for you so you can track your order <strong>${orderStringId}</strong>, view your invoice, and pay securely.</p>
-               <p>Set your password to log in:</p>`,
-              'Set Your Password', link
-            );
-            await sendSystemEmail({ to: cleanEmail, subject: 'Set up your YourResearchWriter account', html });
-          }
         } catch (e) {
           console.warn('Invite link email failed (non-fatal):', e);
         }

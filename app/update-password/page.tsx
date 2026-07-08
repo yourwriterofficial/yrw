@@ -1,12 +1,23 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 
 export default function UpdatePassword() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const router = useRouter();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        router.replace('/login?message=Your session has expired. Please log in or request a new link.');
+      } else {
+        setCheckingSession(false);
+      }
+    });
+  }, [router]);
 
   const handleUpdate = async () => {
     setLoading(true);
@@ -22,6 +33,14 @@ export default function UpdatePassword() {
     }
     setLoading(false);
   };
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white/60 text-sm">Verifying your link…</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">

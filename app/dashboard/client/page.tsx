@@ -246,56 +246,17 @@ function DashboardContent() {
     }
   }, [mergeMilestoneData]);
 
-  // Fetch vault files for the user (improved error handling)
-  const fetchVaultFiles = useCallback(async (authUser?: { id: string; email?: string | null }) => {
+  // Fetch vault files for the user via the service-role-backed API route
+  // (final_deliverables has no RLS policy for direct client-side reads).
+  const fetchVaultFiles = useCallback(async () => {
     try {
-      let u = authUser;
-      if (!u) {
-        const { data } = await supabase.auth.getUser();
-        u = data.user ?? undefined;
-      }
-      if (!u) return;
+      const res = await fetch('/api/client/vault-files');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to fetch vault files');
 
-      // Get user's order IDs
-      const { data: userOrders, error: ordersError } = await supabase
-        .from('orders')
-        .select('order_id')
-        .or(`client_id.eq.${u.id},email.eq.${u.email}`);
-
-      if (ordersError) {
-        console.error('Orders fetch error:', ordersError);
-        throw ordersError;
-      }
-
-      const orderIds = userOrders?.map(o => o.order_id) || [];
-
-      if (orderIds.length === 0) {
-        setVaultFiles([]);
-        setUnviewedVaultCount(0);
-        return;
-      }
-
-      // Fetch deliverables for these orders
-      const { data: files, error: filesError } = await supabase
-        .from('final_deliverables')
-        .select('*')
-        .in('order_id', orderIds)
-        .order('uploaded_at', { ascending: false });
-
-      if (filesError) {
-        console.error('Deliverables fetch error:', filesError);
-        throw filesError;
-      }
-
-      // Filter out files scheduled for the future
-      const now = new Date();
-      const visibleFiles = (files || []).filter(f => {
-        if (!f.scheduled_at) return true;
-        return new Date(f.scheduled_at) <= now;
-      });
-
+      const visibleFiles = json.files || [];
       setVaultFiles(visibleFiles);
-      const unviewed = visibleFiles.filter(f => f.downloaded_at === null).length || 0;
+      const unviewed = visibleFiles.filter((f: any) => f.downloaded_at === null).length || 0;
       setUnviewedVaultCount(unviewed);
     } catch (err) {
       console.error('Error fetching vault files:', err);
@@ -387,7 +348,7 @@ function DashboardContent() {
       const isAdmin = activeProfile?.is_admin === true;
       isAdminPreviewRef.current = isAdmin;
       
-      await fetchVaultFiles(activeUser);
+      await fetchVaultFiles();
 
       const previewOrderId = searchParams.get('preview');
       setIsAdminPreview(isAdmin);
@@ -460,7 +421,7 @@ function DashboardContent() {
             setWalletBalance(b => b - amount);
             showToast('Paid from wallet successfully!', 'success');
             await refreshOrders(isAdminPreview ? undefined : user?.email, isAdminPreview, searchParams.get('preview'));
-            await fetchVaultFiles(user);
+            await fetchVaultFiles();
           } else {
             showToast(data.error || 'Wallet payment failed', 'error');
           }

@@ -213,7 +213,7 @@ export async function POST(request: Request) {
           await sendMagicLinkEmail({
             email: guestEmail,
             name: name || guestEmail.split('@')[0],
-            redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback?next=${encodeURIComponent('/dashboard/client?tab=vault')}`,
+            next: '/dashboard/client?tab=vault',
             title: 'Payment Confirmed — Project Material',
             introHtml,
           });

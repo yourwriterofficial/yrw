@@ -334,7 +334,11 @@ export default function OrderForm() {
       payloadManifest.whatsapp_sync = whatsapp;
     }
 
-    const serverResponse = await createSecureOrder(payloadManifest, promoCode) as CreateOrderServerActionResponse;
+    // Only forward the promo code if it was actually applied (promoDiscount > 0) —
+    // otherwise the server would silently discount a quote the client never
+    // displayed, desyncing financial_quote/payment_milestones from the wallet
+    // debit and on-screen total, which are both computed from getUiTotalPrice().
+    const serverResponse = await createSecureOrder(payloadManifest, promoDiscount > 0 ? promoCode : '') as CreateOrderServerActionResponse;
 
     if (!serverResponse?.success) {
       alert(`Submission failed: ${serverResponse?.error}`);
@@ -408,7 +412,7 @@ export default function OrderForm() {
 
       {/* Stepper - Responsive */}
       <div className="flex justify-between items-center mb-12 relative px-2 max-w-2xl mx-auto flex-wrap gap-2">
-        <div className="absolute h-[1px] bg-zinc-800 dark:bg-zinc-805 left-8 right-8 top-[15px] -z-10 hidden md:block" />
+        <div className="absolute h-[1px] bg-zinc-800 dark:bg-zinc-900 left-8 right-8 top-[15px] -z-10 hidden md:block" />
         {[1, 2, 3, 4, 5].map((s) => (
           <div
             key={s}

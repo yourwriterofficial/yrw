@@ -448,14 +448,14 @@ export const emailTemplates = {
     `),
   }),
 
-  // Guest checkout: payment confirmed + one-click login link to their new dashboard
-  magicLinkLogin: (data: { name: string; actionLink: string; title?: string; introHtml?: string }) => ({
+  // One-click auth link (guest checkout login, admin-issued recovery, etc.)
+  magicLinkLogin: (data: { name: string; actionLink: string; title?: string; introHtml?: string; ctaText?: string }) => ({
     subject: data.title || 'Your login link — YourResearchWriter',
     html: baseLayout(`
       <h1>${data.title || 'Access Your Dashboard'}</h1>
       <p>Hi ${data.name},</p>
       ${data.introHtml || '<p>Click the button below to securely log in — no password needed.</p>'}
-      <a href="${data.actionLink}" class="button">Log In Now</a>
+      <a href="${data.actionLink}" class="button">${data.ctaText || 'Log In Now'}</a>
       <p style="margin-top:20px; font-size:11px; color:#777;">This link is single-use and expires shortly. If you didn't request this, you can ignore this email.</p>
     `),
   }),

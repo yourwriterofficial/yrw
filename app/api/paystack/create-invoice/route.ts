@@ -62,6 +62,18 @@ export async function POST(request: Request) {
       tx_ref = `INV_${orderId}_${type}_${Date.now()}`;
     }
 
+    // Refuse to re-charge an already-paid milestone (double-click / retried
+    // request) — matches the guard already present in pay-milestone-wallet.ts.
+    {
+      const milestones = isCustomInvoice ? (orderData.milestones || []) : (orderData.payment_milestones || []);
+      let milestoneIndex = 0;
+      if (type.startsWith('INDEX-')) milestoneIndex = parseInt(type.replace('INDEX-', ''), 10);
+      else if (type === 'BALANCE') milestoneIndex = 1;
+      if (milestones[milestoneIndex]?.paid) {
+        return NextResponse.json({ error: 'This milestone has already been paid.' }, { status: 400 });
+      }
+    }
+
     // 2. Check if user is logged in and has sufficient wallet balance
     if (user) {
       const { data: wallet } = await supabase

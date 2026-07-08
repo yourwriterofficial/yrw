@@ -31,6 +31,7 @@ const orderDataSchema = z.object({
   additional_info: z.string().optional(),
   media_link: z.string().optional(),
   order_id: z.string().optional(),
+  client_id: z.string().uuid().optional().nullable(),
   guest_name: z.string().optional(),
   guest_email: z.string().optional(),
   guest_whatsapp: z.string().optional(),
@@ -118,7 +119,7 @@ export async function createSecureOrder(
     ...orderData,
     ...sanitized,
     financial_quote: finalQuote,
-    client_id: null, // No user ID for guests initially
+    client_id: orderData.client_id || null,
     // Override with sanitized values
     legal_name: sanitized.legal_name,
     email: sanitized.email,

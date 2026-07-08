@@ -22,21 +22,30 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const { data: orders } = await supabase.from('admin_orders_view').select('*');
-      if (!orders) {
-        setLoading(false);
-        return;
-      }
-      const totalOrders = orders.length;
-      const pendingBriefs = orders.filter((o) => o['Workflow Status'] === 'Briefing Received').length;
-      const completedOrders = orders.filter((o) => o['Workflow Status'] === 'Completed').length;
-      const totalValue = orders.reduce((sum, o) => sum + (parseFloat(o['Financial Quote']) || 0), 0);
-      setStats({ totalOrders, pendingBriefs, completedOrders, totalValue });
+      // Counts and the value sum are computed server-side (head counts +
+      // the health_dashboard view) instead of downloading every order row
+      // just to tally 4 numbers — recentOrders is the only row data needed.
+      const [
+        { count: totalOrders },
+        { count: pendingBriefs },
+        { count: completedOrders },
+        { data: health },
+        { data: recent },
+      ] = await Promise.all([
+        supabase.from('admin_orders_view').select('*', { count: 'exact', head: true }),
+        supabase.from('admin_orders_view').select('*', { count: 'exact', head: true }).eq('Workflow Status', 'Briefing Received'),
+        supabase.from('admin_orders_view').select('*', { count: 'exact', head: true }).eq('Workflow Status', 'Completed'),
+        supabase.from('health_dashboard').select('total_value').single(),
+        supabase.from('admin_orders_view').select('*').order('Timestamp', { ascending: false }).limit(5),
+      ]);
 
-      const sorted = [...orders].sort(
-        (a, b) => new Date(b['Timestamp']).getTime() - new Date(a['Timestamp']).getTime()
-      );
-      setRecentOrders(sorted.slice(0, 5));
+      setStats({
+        totalOrders: totalOrders || 0,
+        pendingBriefs: pendingBriefs || 0,
+        completedOrders: completedOrders || 0,
+        totalValue: Number(health?.total_value) || 0,
+      });
+      setRecentOrders(recent || []);
       setLoading(false);
     };
     fetchStats();

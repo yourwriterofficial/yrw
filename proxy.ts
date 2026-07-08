@@ -19,7 +19,7 @@ const CSP = [
 
 const ADMIN_EMAIL = 'yourwriterofficial@gmail.com'
 
-export default async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(

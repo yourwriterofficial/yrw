@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/adminAuth';
+import { requireAdmin, listAllAuthUsers } from '@/lib/adminAuth';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,10 +17,9 @@ export async function GET() {
       .order('full_name');
     if (profilesError) throw profilesError;
 
-    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-    if (authError) throw authError;
+    const authUsers = await listAllAuthUsers(supabase);
     const emailMap: Record<string, string> = {};
-    authUsers.users.forEach((u: any) => { emailMap[u.id] = u.email; });
+    authUsers.forEach((u) => { emailMap[u.id] = u.email; });
 
     const { data: wallets, error: walletsError } = await supabase
       .from('wallets')
