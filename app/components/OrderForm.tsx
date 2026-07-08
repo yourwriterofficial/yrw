@@ -745,7 +745,7 @@ export default function OrderForm() {
                 </div>
                 <div className="space-y-2">
                   {milestones.map((m, idx) => (
-                    <div key={idx} className="bg-primary/50 border border-theme rounded-xl p-3 grid grid-cols-12 gap-2 items-center">
+                    <div key={idx} className="bg-primary/50 border border-theme rounded-xl p-3 grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                       <input type="text" className="col-span-4 bg-secondary border border-theme rounded-lg p-2 text-xs text-primary font-bold" value={m.name} onChange={e => {
                         const upd = [...milestones];
                         upd[idx].name = e.target.value;

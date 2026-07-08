@@ -65,16 +65,13 @@ export default function PublicInvoicePage() {
         supabase.from('invoice_defaults').select('contact_email').eq('id', 1).maybeSingle()
           .then(({ data: d }) => { if (d?.contact_email) setContactEmail(d.contact_email); });
 
-        const { data, error } = await supabase
-          .from('custom_invoices')
-          .select('*')
-          .eq('invoice_number', invoiceNumber)
-          .single();
+        const res = await fetch(`/api/invoice/${encodeURIComponent(invoiceNumber)}`);
+        const json = await res.json();
 
-        if (error || !data) {
+        if (!res.ok || !json.invoice) {
           setErrorMsg('Invoice or Receipt not found.');
         } else {
-          setInvoice(data);
+          setInvoice(json.invoice);
         }
       } catch (err: any) {
         setErrorMsg('Error loading invoice details.');

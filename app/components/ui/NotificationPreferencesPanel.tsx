@@ -56,12 +56,15 @@ export default function NotificationPreferencesPanel({ userId }: { userId: strin
   }, [userId]);
 
   const toggle = async (column: string, value: boolean) => {
+    const previous = prefs;
     const updated = { ...prefs, [column]: value } as Prefs;
     setPrefs(updated);
     setSaving(true);
     try {
-      await supabase.from('notification_preferences').upsert({ user_id: userId, ...updated, updated_at: new Date().toISOString() });
+      const { error } = await supabase.from('notification_preferences').upsert({ user_id: userId, ...updated, updated_at: new Date().toISOString() });
+      if (error) throw error;
     } catch {
+      setPrefs(previous);
       showToast('Failed to save preference', 'error');
     } finally {
       setSaving(false);

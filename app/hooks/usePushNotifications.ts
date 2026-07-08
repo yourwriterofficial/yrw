@@ -51,17 +51,19 @@ async function getSwRegistration(): Promise<ServiceWorkerRegistration | null> {
 async function saveSubscription(userId: string, sub: PushSubscription) {
   const json = sub.toJSON();
   const keys = json.keys as { p256dh: string; auth: string };
-  await supabase.from('push_subscriptions').upsert({
+  const { error } = await supabase.from('push_subscriptions').upsert({
     user_id: userId,
     endpoint: sub.endpoint,
     p256dh: keys.p256dh,
     auth: keys.auth,
     user_agent: navigator.userAgent,
   }, { onConflict: 'user_id,endpoint' });
+  if (error) throw error;
 }
 
 async function removeSubscription(userId: string, endpoint: string) {
-  await supabase.from('push_subscriptions').delete().eq('user_id', userId).eq('endpoint', endpoint);
+  const { error } = await supabase.from('push_subscriptions').delete().eq('user_id', userId).eq('endpoint', endpoint);
+  if (error) throw error;
 }
 
 function pushErrorMessage(err: unknown): string {
@@ -214,16 +216,25 @@ export function usePushNotifications(userId: string | undefined) {
     }
   }, [userId]);
 
-  const unsubscribe = useCallback(async () => {
-    if (!userId) return;
+  const unsubscribe = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {
+    if (!userId) return { ok: false, error: 'You must be signed in' };
     const reg = swRegRef.current ?? await getSwRegistration();
-    if (!reg) return;
+    if (!reg) return { ok: true };
     const sub = await reg.pushManager.getSubscription();
     if (sub) {
-      await removeSubscription(userId, sub.endpoint);
-      await sub.unsubscribe();
-      setSubscribed(false);
+      try {
+        await removeSubscription(userId, sub.endpoint);
+        await sub.unsubscribe();
+        setSubscribed(false);
+        return { ok: true };
+      } catch (err) {
+        const msg = pushErrorMessage(err);
+        console.error('[Push] unsubscribe failed:', err);
+        setLastError(msg);
+        return { ok: false, error: msg };
+      }
     }
+    return { ok: true };
   }, [userId]);
 
   return { permission, subscribed, lastError, subscribe, unsubscribe };

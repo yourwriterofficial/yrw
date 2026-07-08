@@ -30,12 +30,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) setUser(data.user);
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data?.user) {
+        router.replace('/login');
+        return;
+      }
+      const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', data.user.id).single();
+      if (!profile?.is_admin) {
+        router.replace('/dashboard/client');
+        return;
+      }
+      setUser(data.user);
+      setCheckingAdmin(false);
     });
-  }, []);
+  }, [router]);
 
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {
@@ -62,6 +73,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ? 'bg-purple-500/10 text-purple-400'
         : 'text-secondary hover:bg-white/5 hover:text-primary'
     }`;
+
+  if (checkingAdmin) {
+    return (
+      <div className="min-h-screen bg-primary flex items-center justify-center">
+        <div className="text-secondary text-xs uppercase tracking-widest font-bold">Verifying access…</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row font-['Inter'] selection:bg-purple-500/30">

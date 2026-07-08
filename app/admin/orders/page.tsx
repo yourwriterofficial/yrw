@@ -579,7 +579,7 @@ function OrdersPageContent() {
       }
 
       // 2. Parse payload
-      let payload = parseAdditionalInfo(order.additional_info);
+      const payload = parseAdditionalInfo(order.additional_info);
       if (!payload.extra_addons) payload.extra_addons = [];
 
       const newAddon = {
@@ -1052,7 +1052,7 @@ function OrdersPageContent() {
                     <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{editingOrder['Research Topic']}</p>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <span className="text-secondary block mb-1 font-bold">Word Count Limit</span>
                       <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{editingOrder['Word Count'] ? `${editingOrder['Word Count'].toLocaleString()} Words` : 'N/A'}</p>
@@ -1063,7 +1063,7 @@ function OrdersPageContent() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <span className="text-secondary block mb-1 font-bold">Reference Style</span>
                       <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{editingOrder['Reference Style'] || 'Standard'}</p>
@@ -1245,7 +1245,7 @@ function OrdersPageContent() {
               <div className="mt-4">
                 <label className="text-[10px] uppercase font-black text-secondary block mb-1.5">Schedule Vault Release Time</label>
                 
-                <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
                   <button
                     type="button"
                     onClick={() => setScheduledAt('')}
