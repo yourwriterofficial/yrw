@@ -727,15 +727,15 @@ function OrdersPageContent() {
         try {
           const { data: dbOrder } = await supabase
             .from('orders')
-            .select('user_id, id, topic')
+            .select('client_id, id, topic')
             .eq('order_id', orderId)
             .single();
-            
-          if (dbOrder?.user_id) {
+
+          if (dbOrder?.client_id) {
             const { error: notifErr } = await supabase
               .from('notifications')
               .insert({
-                user_id: dbOrder.user_id,
+                user_id: dbOrder.client_id,
                 title: 'Material uploaded to Vault',
                 message: `Chapters 1-5 for "${dbOrder.topic || 'your project'}" has been successfully uploaded to your Secure Vault.`,
                 type: 'vault_delivery',

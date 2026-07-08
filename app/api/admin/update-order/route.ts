@@ -1,11 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-)
+import { requireAdmin } from '@/lib/adminAuth'
 
 // Helper to send email via your existing API
 async function sendEmail(to: string, subject: string, html: string, orderId: string) {
@@ -36,6 +30,10 @@ type OrderData = {
 }
 
 export async function POST(request: Request) {
+  const guard = await requireAdmin();
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: guard.status });
+  const supabaseAdmin = guard.admin;
+
   try {
     const { orderId, updates } = await request.json()
     if (!orderId || !updates) {
