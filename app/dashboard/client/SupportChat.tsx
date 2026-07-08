@@ -138,6 +138,14 @@ export default function SupportChat({ user }: { user: any }) {
         last_message_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }).eq('id', convId);
+
+      // Trigger notifications asynchronously
+      fetch('/api/support/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: convId, messageText: text, senderId: user.id })
+      }).catch(e => console.warn('Notification trigger failed', e));
+
     } catch (err: any) {
       showToast(err.message || 'Failed to send', 'error');
     } finally {

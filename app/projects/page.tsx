@@ -831,6 +831,158 @@ export default function ProjectsPage() {
               BSc {naira(levelPrices.BSc)} · MSc {naira(levelPrices.MSc)} · PhD {naira(levelPrices.PhD)}
             </span>
           </div>
+
+          {/* DATABASE SEARCH CARD MOVED HERE */}
+          {!hasSearched && !isSearching ? (
+            <div className="max-w-2xl mx-auto mt-6 text-left">
+              <div className="rounded-3xl p-8 shadow-2xl space-y-6 text-center bg-white/10 text-primary">
+                <div>
+                  <h2 className="text-xl font-black text-primary">Database Search & Availability</h2>
+                  <p className="text-xs text-secondary mt-1.5 leading-relaxed font-semibold">
+                    Place your full project topic below to search our database of 3,000+ completed projects and check instant availability.
+                  </p>
+                </div>
+
+                <div className="space-y-4 text-left">
+                  <div>
+                    <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Your Full Project Topic *</label>
+                    <textarea
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      placeholder="e.g. Challenges and prospects of financial autonomy to local government administration..."
+                      rows={3}
+                      className="w-full bg-secondary border border-theme rounded-xl p-4 text-sm text-primary focus:border-emerald-500 outline-none transition font-bold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Department</label>
+                      <select
+                        value={selectedSearchDept}
+                        onChange={e => setSelectedSearchDept(e.target.value)}
+                        className="w-full bg-secondary border border-theme rounded-xl p-3.5 text-sm text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
+                      >
+                        <option value="all">📂 All Departments</option>
+                        {mergedDepts.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Academic Level</label>
+                      <select
+                        value={selectedSearchLevel}
+                        onChange={e => setSelectedSearchLevel(e.target.value)}
+                        className="w-full bg-secondary border border-theme rounded-xl p-3.5 text-sm text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
+                      >
+                        <option value="all">🎓 All Levels</option>
+                        <option value="BSc">BSc / HND</option>
+                        <option value="MSc">MSc / PGD</option>
+                        <option value="PhD">PhD</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={executeAvailabilitySearch}
+                    disabled={!search.trim() || isSearching}
+                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase text-xs tracking-widest rounded-xl transition shadow-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    Check Availability & Retrieve Material
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : hasSearched && !isSearching ? (
+            loading ? (
+              <div className="max-w-md mx-auto mt-6 py-10 text-center space-y-6 bg-card border border-theme rounded-3xl p-8 shadow-2xl">
+                <div className="relative w-16 h-16 mx-auto">
+                  <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+                  <div className="absolute inset-2 rounded-full border-4 border-indigo-500/20 border-b-indigo-500 animate-spin [animation-direction:reverse]" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-primary">Loading matching topics...</h3>
+                </div>
+              </div>
+            ) : topics.length === 0 ? (
+              /* NO DIRECT RESULTS - SHOW CUSTOM WRITEUP CARD HERE IN HERO */
+              <div className="max-w-2xl mx-auto mt-6 rounded-3xl p-4 sm:p-8 space-y-6 text-center shadow-2xl bg-card border border-theme text-primary">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-theme/25 pb-4 text-left">
+                  <div>
+                    <h3 className="text-sm font-bold text-primary">Search Results</h3>
+                    <p className="text-xs text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
+                  </div>
+                  <button 
+                    onClick={() => { setHasSearched(false); setIsSearching(false); setTopics([]); setCustomCard(null); }}
+                    className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-2 self-start sm:self-auto"
+                  >
+                    <lucide.Search className="w-3.5 h-3.5" /> Search Another Topic
+                  </button>
+                </div>
+
+                <div className="w-14 h-14 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
+                  <lucide.CheckCircle className="w-7 h-7 text-emerald-500" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-black text-primary">Custom Write-up Available!</h4>
+                  <p className="text-xs text-secondary mt-1.5 leading-relaxed max-w-md mx-auto font-semibold">
+                    Our writers can prepare your custom topic as an original project with complete Chapters 1–5, structured layout, and full references.
+                  </p>
+                </div>
+
+                <div className="bg-secondary/40 border border-theme p-4 sm:p-6 rounded-2xl text-left space-y-4 max-w-lg mx-auto">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500 text-black">✓ Available</span>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-theme text-primary">{selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel}</span>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-white/5 text-purple-400">{selectedSearchDept === 'all' ? 'General' : selectedSearchDept}</span>
+                  </div>
+                  <p className="text-xs font-bold text-primary leading-normal break-words">{search}</p>
+                  <div className="border-t border-theme/40 pt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div>
+                      <span className="text-[10px] text-secondary uppercase font-black block">Standard Cost</span>
+                      <span className="text-sm font-mono font-bold text-emerald-500">{naira(getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept))}</span>
+                    </div>
+                    <button 
+                      onClick={() => openCart({ 
+                        customTitle: search.trim(), 
+                        level: selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, 
+                        department: selectedSearchDept === 'all' ? 'General' : selectedSearchDept, 
+                        title: search.trim(), 
+                        basePrice: getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept) 
+                      })} 
+                      className="w-full sm:w-auto bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition cursor-pointer"
+                    >
+                      Order Custom Write-up
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* DIRECT MATCHES FOUND - SHOW THE COMPACT SEARCH RESULTS BANNER */
+              <div className="max-w-2xl mx-auto mt-6 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 text-left text-primary bg-card border border-theme">
+                <div>
+                  <h3 className="text-sm font-bold text-primary">Search Results</h3>
+                  <p className="text-xs text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
+                </div>
+                <button
+                  onClick={() => { setHasSearched(false); setIsSearching(false); setTopics([]); setCustomCard(null); }}
+                  className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-2 self-start sm:self-auto"
+                >
+                  <lucide.Search className="w-3.5 h-3.5" /> Search Another Topic
+                </button>
+              </div>
+            )
+          ) : isSearching ? (
+            <div className="max-w-md mx-auto mt-10 py-10 text-center space-y-6 bg-card border border-theme rounded-3xl p-8 shadow-2xl">
+              <div className="relative w-16 h-16 mx-auto">
+                <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+                <div className="absolute inset-2 rounded-full border-4 border-indigo-500/20 border-b-indigo-500 animate-spin [animation-direction:reverse]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-primary">Scanning Project Database...</h3>
+                <p className="text-xs text-secondary mt-1">Checking chapters, tables, and references availability for your topic.</p>
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -894,214 +1046,91 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* DATABASE SEARCH & AVAILABILITY OVERHAUL */}
-      <div className="max-w-[1320px] mx-auto px-4 py-8">
-        {!hasSearched && !isSearching ? (
-          <div className="max-w-2xl mx-auto py-16 px-4">
-            <div className="bg-card border border-theme rounded-3xl p-8 shadow-2xl space-y-6 text-center">
-              <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto">
-                <lucide.Search className="w-8 h-8" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-black text-primary">Database Search & Availability</h2>
-                <p className="text-sm text-secondary mt-2 leading-relaxed font-semibold">
-                  Place your full project topic below to search our database of 3,000+ completed projects and check instant availability.
-                </p>
-              </div>
-
-              <div className="space-y-4 text-left">
-                <div>
-                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Your Full Project Topic *</label>
-                  <textarea
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="e.g. Challenges and prospects of financial autonomy to local government administration..."
-                    rows={3}
-                    className="w-full bg-secondary border border-theme rounded-xl p-4 text-sm text-primary focus:border-emerald-500 outline-none transition font-bold"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Department</label>
-                    <select
-                      value={selectedSearchDept}
-                      onChange={e => setSelectedSearchDept(e.target.value)}
-                      className="w-full bg-secondary border border-theme rounded-xl p-3.5 text-sm text-primary outline-none focus:border-emerald-500 font-bold"
-                    >
-                      <option value="all">📂 All Departments</option>
-                      {mergedDepts.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Academic Level</label>
-                    <select
-                      value={selectedSearchLevel}
-                      onChange={e => setSelectedSearchLevel(e.target.value)}
-                      className="w-full bg-secondary border border-theme rounded-xl p-3.5 text-sm text-primary outline-none focus:border-emerald-500 font-bold"
-                    >
-                      <option value="all">🎓 All Levels</option>
-                      <option value="BSc">BSc / HND</option>
-                      <option value="MSc">MSc / PGD</option>
-                      <option value="PhD">PhD</option>
-                    </select>
-                  </div>
-                </div>
-
-                <button
-                  onClick={executeAvailabilitySearch}
-                  disabled={!search.trim() || isSearching}
-                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase text-xs tracking-widest rounded-xl transition shadow-lg shadow-emerald-500/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
-                >
-                  Check Availability & Retrieve Material
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : isSearching ? (
-          <div className="max-w-md mx-auto py-24 px-4 text-center space-y-6">
-            <div className="relative w-20 h-20 mx-auto">
-              <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-              <div className="absolute inset-2 rounded-full border-4 border-indigo-500/20 border-b-indigo-500 animate-spin [animation-direction:reverse]" />
-            </div>
+      {/* DATABASE SEARCH & AVAILABILITY RESULTS CONTAINER */}
+      {hasSearched && !isSearching && !loading && topics.length > 0 && (
+        <div className="max-w-[1320px] mx-auto px-4 py-8">
+          <div className="flex justify-between items-center gap-4 border-b border-theme pb-4">
             <div>
-              <h3 className="text-lg font-bold text-primary">Scanning Project Database...</h3>
-              <p className="text-xs text-secondary mt-1">Checking chapters, tables, and references availability for your topic.</p>
+              <h3 className="text-lg font-bold text-primary">Matching Database Topics</h3>
+              <p className="text-xs text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
             </div>
+            <button 
+              onClick={() => { setHasSearched(false); setIsSearching(false); setTopics([]); setCustomCard(null); }}
+              className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer"
+            >
+              🔎 Search Another Topic
+            </button>
           </div>
-        ) : (
-          <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-            <div className="flex justify-between items-center gap-4 border-b border-theme pb-4">
-              <div>
-                <h3 className="text-lg font-bold text-primary">Search Results</h3>
-                <p className="text-xs text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
+
+          {msg && !cart && <div className="mb-4 text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl p-3">{msg}</div>}
+
+          <div id="topics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+            {topics.map(t => (
+              <div key={t.id} className="bg-card border border-theme rounded-2xl p-5 flex flex-col gap-3 hover:border-emerald-500/40 hover:shadow-lg transition">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">{t.department}</span>
+                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(t.level)}`}>{t.level}</span>
+                </div>
+                <h3 className="text-sm font-bold leading-relaxed text-primary line-clamp-3">
+                  {renderTitleWithDifferences(t.title)}
+                </h3>
+                <div className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-secondary font-mono">
+                  <span>📄 {t.pages || '—'} pages</span><span>📖 Ch. {t.chapters}</span><span>📅 {t.year}</span><span>📝 {t.format}</span>
+                </div>
+                <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1 w-fit">{pageSettings.delivery_text}</span>
+                <div className="flex gap-2 mt-auto pt-1 flex-wrap">
+                  <button onClick={() => setPreview(t)} className="flex-1 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition min-w-[70px]">👁 Preview</button>
+                  <button onClick={() => copyPermalink(t.id, t.title)} className="px-3 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition whitespace-nowrap">
+                    {copiedId === t.id ? '✓ Copied' : '🔗 Share'}
+                  </button>
+                  <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) })} className="flex-1 py-2.5 rounded-lg text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 transition min-w-[90px]">Get · {naira(t.price)}</button>
+                </div>
               </div>
-              <button 
-                onClick={() => { setHasSearched(false); setIsSearching(false); setTopics([]); setCustomCard(null); }}
-                className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer"
+            ))}
+          </div>
+
+          {/* PAGINATION BAR */}
+          {Math.ceil(total / PAGE_SIZE) > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-8 flex-wrap">
+              <button
+                disabled={page === 1 || loading}
+                onClick={() => handlePageChange(page - 1)}
+                className="px-4 py-2 rounded-xl bg-secondary border border-theme text-primary text-xs font-bold hover:bg-white/5 disabled:opacity-40 transition"
               >
-                🔎 Search Another Topic
+                ◀ Prev
+              </button>
+              
+              {Array.from({ length: Math.min(5, Math.ceil(total / PAGE_SIZE)) }, (_, i) => {
+                const totalPages = Math.ceil(total / PAGE_SIZE);
+                let pageNum = page - 2 + i;
+                if (page <= 2) pageNum = i + 1;
+                if (page >= totalPages - 1) pageNum = totalPages - 4 + i;
+                pageNum = Math.max(1, Math.min(pageNum, totalPages));
+                
+                if (pageNum < 1 || pageNum > totalPages) return null;
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`w-9 h-9 rounded-xl text-xs font-bold transition ${page === pageNum ? 'bg-emerald-500 text-black' : 'bg-secondary border border-theme text-primary hover:bg-white/5'}`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+              
+              <button
+                disabled={page === Math.ceil(total / PAGE_SIZE) || loading}
+                onClick={() => handlePageChange(page + 1)}
+                className="px-4 py-2 rounded-xl bg-secondary border border-theme text-primary text-xs font-bold hover:bg-white/5 disabled:opacity-40 transition"
+              >
+                Next ▶
               </button>
             </div>
-
-            {msg && !cart && <div className="mb-4 text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl p-3">{msg}</div>}
-
-            {loading ? (
-              <div className="py-20 text-center text-secondary text-sm flex items-center justify-center gap-2">
-                <lucide.Loader2 className="w-4 h-4 animate-spin" /> Loading matching topics…
-              </div>
-            ) : topics.length === 0 ? (
-              /* NO DIRECT RESULTS - SHOW CUSTOM WRITEUP CARD AS DEFAULT */
-              <div className="max-w-2xl mx-auto bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8 space-y-6 text-center shadow-xl">
-                <div className="w-14 h-14 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
-                  <lucide.CheckCircle className="w-7 h-7 text-emerald-500" />
-                </div>
-                <div>
-                  <h4 className="text-lg font-black text-primary">Custom Write-up Available!</h4>
-                  <p className="text-xs text-secondary mt-1.5 leading-relaxed max-w-md mx-auto font-semibold">
-                    Our writers can prepare your custom topic as an original project with complete Chapters 1–5, structured layout, and full references.
-                  </p>
-                </div>
-
-                <div className="bg-card border border-theme p-6 rounded-2xl text-left space-y-4 max-w-lg mx-auto">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500 text-black">✓ Available</span>
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-theme text-primary">{selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel}</span>
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-white/5 text-purple-400">{selectedSearchDept === 'all' ? 'General' : selectedSearchDept}</span>
-                  </div>
-                  <p className="text-xs font-bold text-primary leading-normal">{search}</p>
-                  <div className="border-t border-theme/40 pt-4 flex justify-between items-center">
-                    <div>
-                      <span className="text-[10px] text-secondary uppercase font-black block">Standard Cost</span>
-                      <span className="text-sm font-mono font-bold text-emerald-500">{naira(getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept))}</span>
-                    </div>
-                    <button 
-                      onClick={() => openCart({ 
-                        customTitle: search.trim(), 
-                        level: selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, 
-                        department: selectedSearchDept === 'all' ? 'General' : selectedSearchDept, 
-                        title: search.trim(), 
-                        basePrice: getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept) 
-                      })} 
-                      className="bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition cursor-pointer"
-                    >
-                      Order Custom Write-up
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div id="topics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {topics.map(t => (
-                    <div key={t.id} className="bg-card border border-theme rounded-2xl p-5 flex flex-col gap-3 hover:border-emerald-500/40 hover:shadow-lg transition">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[11px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">{t.department}</span>
-                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(t.level)}`}>{t.level}</span>
-                      </div>
-                      <h3 className="text-sm font-bold leading-relaxed text-primary line-clamp-3">
-                        {renderTitleWithDifferences(t.title)}
-                      </h3>
-                      <div className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-secondary font-mono">
-                        <span>📄 {t.pages || '—'} pages</span><span>📖 Ch. {t.chapters}</span><span>📅 {t.year}</span><span>📝 {t.format}</span>
-                      </div>
-                      <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1 w-fit">{pageSettings.delivery_text}</span>
-                      <div className="flex gap-2 mt-auto pt-1 flex-wrap">
-                        <button onClick={() => setPreview(t)} className="flex-1 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition min-w-[70px]">👁 Preview</button>
-                        <button onClick={() => copyPermalink(t.id, t.title)} className="px-3 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition whitespace-nowrap">
-                          {copiedId === t.id ? '✓ Copied' : '🔗 Share'}
-                        </button>
-                        <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) })} className="flex-1 py-2.5 rounded-lg text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 transition min-w-[90px]">Get · {naira(t.price)}</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* PAGINATION BAR */}
-                {Math.ceil(total / PAGE_SIZE) > 1 && (
-                  <div className="flex justify-center items-center gap-2 mt-8 flex-wrap">
-                    <button
-                      disabled={page === 1 || loading}
-                      onClick={() => handlePageChange(page - 1)}
-                      className="px-4 py-2 rounded-xl bg-secondary border border-theme text-primary text-xs font-bold hover:bg-white/5 disabled:opacity-40 transition"
-                    >
-                      ◀ Prev
-                    </button>
-                    
-                    {Array.from({ length: Math.min(5, Math.ceil(total / PAGE_SIZE)) }, (_, i) => {
-                      const totalPages = Math.ceil(total / PAGE_SIZE);
-                      let pageNum = page - 2 + i;
-                      if (page <= 2) pageNum = i + 1;
-                      if (page >= totalPages - 1) pageNum = totalPages - 4 + i;
-                      pageNum = Math.max(1, Math.min(pageNum, totalPages));
-                      
-                      if (pageNum < 1 || pageNum > totalPages) return null;
-                      
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handlePageChange(pageNum)}
-                          className={`w-9 h-9 rounded-xl text-xs font-bold transition ${page === pageNum ? 'bg-emerald-500 text-black' : 'bg-secondary border border-theme text-primary hover:bg-white/5'}`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                    
-                    <button
-                      disabled={page === Math.ceil(total / PAGE_SIZE) || loading}
-                      onClick={() => handlePageChange(page + 1)}
-                      className="px-4 py-2 rounded-xl bg-secondary border border-theme text-primary text-xs font-bold hover:bg-white/5 disabled:opacity-40 transition"
-                    >
-                      Next ▶
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* BROWSE ALL PROJECT TOPICS (below search section) */}
       {!hasSearched && !isSearching && (
@@ -1246,102 +1275,6 @@ export default function ProjectsPage() {
                 <p className="text-[11px] font-bold text-amber-500 mt-1">{pageSettings.delivery_text}</p>
               </div>
 
-              {addons.length > 0 && (
-                <div>
-                  <p className="text-[11px] uppercase font-black text-secondary mb-2">Optional Add-ons</p>
-                  <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                    {addons.map(a => {
-                      const on = selectedAddons.has(a.id);
-                      return (
-                        <div key={a.id} className={`p-3 rounded-xl border transition space-y-2 ${on ? 'border-emerald-500 bg-emerald-500/5' : 'border-theme bg-secondary'}`}>
-                          <button onClick={() => setSelectedAddons(s => { const n = new Set(s); n.has(a.id) ? n.delete(a.id) : n.add(a.id); return n; })} className="w-full text-left flex items-start gap-3">
-                            <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 ${on ? 'bg-emerald-500 border-emerald-500' : 'border-theme'}`}>{on && <lucide.Check className="w-3 h-3 text-black" />}</div>
-                            <div className="flex-1">
-                              <div className="flex justify-between gap-2">
-                                <span className="text-sm font-bold text-primary">{a.name}</span>
-                                <span className="text-xs font-black text-emerald-500 shrink-0">
-                                  {a.price_type === 'per_word' ? `₦${a.price}/word` : `+${naira(a.price)}`}
-                                </span>
-                              </div>
-                              {a.description && <p className="text-[11px] text-secondary">{a.description}</p>}
-                            </div>
-                          </button>
-
-                          {on && (
-                            <div className="pl-7 space-y-2 border-t border-theme/20 pt-2 text-xs">
-                              {/* If pricing type is per word */}
-                              {a.price_type === 'per_word' && (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-secondary text-[11px]">Word count:</span>
-                                  <input
-                                    type="number"
-                                    min={500}
-                                    step={100}
-                                    value={addonWords[a.id] || 1000}
-                                    onChange={e => {
-                                      const w = Math.max(100, Number(e.target.value) || 0);
-                                      setAddonWords(prev => ({ ...prev, [a.id]: w }));
-                                    }}
-                                    className="w-24 bg-card border border-theme rounded-md px-2 py-1 text-primary outline-none focus:border-emerald-500 font-mono text-center"
-                                  />
-                                  <span className="text-emerald-500 font-bold ml-1">
-                                    ➔ {naira((addonWords[a.id] || 1000) * a.price)}
-                                  </span>
-                                </div>
-                              )}
-
-                              {/* If location changer is active */}
-                              {a.is_location_changer && (
-                                <div className="space-y-1">
-                                  <span className="text-secondary text-[11px] block">Target Location / Case Study:</span>
-                                  <input
-                                    type="text"
-                                    value={customLocation}
-                                    onChange={e => setCustomLocation(e.target.value)}
-                                    placeholder="e.g. Enugu State, University of Ibadan"
-                                    className="w-full bg-card border border-theme rounded-md px-2 py-1 text-primary outline-none focus:border-emerald-500"
-                                  />
-                                </div>
-                              )}
-
-                              {/* If it has sub-features */}
-                              {Array.isArray(a.features) && a.features.length > 0 && (
-                                <div className="space-y-1">
-                                  <span className="text-secondary text-[10px] font-black uppercase tracking-wider block mb-1">Includes Features:</span>
-                                  <div className="grid grid-cols-1 gap-1">
-                                    {a.features.map((f, fi) => {
-                                      const selected = (addonFeatures[a.id] || []).includes(f.name);
-                                      return (
-                                        <label key={`${a.id}-${fi}`} className="flex items-center gap-2 cursor-pointer py-0.5">
-                                          <input
-                                            type="checkbox"
-                                            checked={selected}
-                                            onChange={e => {
-                                              const current = addonFeatures[a.id] || [];
-                                              const next = e.target.checked
-                                                ? [...current, f.name]
-                                                : current.filter(x => x !== f.name);
-                                              setAddonFeatures(prev => ({ ...prev, [a.id]: next }));
-                                            }}
-                                            className="w-3.5 h-3.5 accent-emerald-500 shrink-0"
-                                          />
-                                          <span className="text-secondary text-[11px] flex-1">{f.name}</span>
-                                          <span className="text-secondary font-bold text-[11px] shrink-0">+{naira(f.price)}</span>
-                                        </label>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
               {/* Writer Assignment Simulation Panel */}
               <div className="bg-secondary/40 border border-theme rounded-2xl p-4 space-y-3 relative overflow-hidden">
                 {simulationState === 'searching' && (
@@ -1383,11 +1316,6 @@ export default function ProjectsPage() {
                 )}
               </div>
 
-              <div className="flex justify-between items-center border-t border-theme pt-3">
-                <span className="text-sm font-bold text-secondary">Total</span>
-                <span className="text-2xl font-black text-emerald-500">{naira(cartTotal())}</span>
-              </div>
-
               {isLoggedIn === false && (
                 <div>
                   <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Your Email (for receipt & vault access)</label>
@@ -1402,10 +1330,116 @@ export default function ProjectsPage() {
                 </div>
               )}
 
+              {addons.length > 0 && (
+                <div>
+                  <p className="text-[11px] uppercase font-black text-secondary mb-2">Optional Add-ons</p>
+                  <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                    {addons
+                      .filter(a => [13, 14, 5, 10].includes(Number(a.id)))
+                      .map(a => {
+                        const on = selectedAddons.has(a.id);
+                        return (
+                          <div key={a.id} className={`p-3 rounded-xl border transition space-y-2 ${on ? 'border-emerald-500 bg-emerald-500/5' : 'border-theme bg-secondary'}`}>
+                            <button onClick={() => setSelectedAddons(s => { const n = new Set(s); n.has(a.id) ? n.delete(a.id) : n.add(a.id); return n; })} className="w-full text-left flex items-start gap-3">
+                              <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 ${on ? 'bg-emerald-500 border-emerald-500' : 'border-theme'}`}>{on && <lucide.Check className="w-3 h-3 text-black" />}</div>
+                              <div className="flex-1">
+                                <div className="flex justify-between gap-2">
+                                  <span className="text-sm font-bold text-primary">{a.name}</span>
+                                  <span className="text-xs font-black text-emerald-500 shrink-0">
+                                    {a.price_type === 'per_word' ? `₦${a.price}/word` : `+${naira(a.price)}`}
+                                  </span>
+                                </div>
+                                {a.description && <p className="text-[11px] text-secondary">{a.description}</p>}
+                              </div>
+                            </button>
+
+                            {on && (
+                              <div className="pl-7 space-y-2 border-t border-theme/20 pt-2 text-xs">
+                                {/* If pricing type is per word */}
+                                {a.price_type === 'per_word' && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-secondary text-[11px]">Word count:</span>
+                                    <input
+                                      type="number"
+                                      min={500}
+                                      step={100}
+                                      value={addonWords[a.id] || 1000}
+                                      onChange={e => {
+                                        const w = Math.max(100, Number(e.target.value) || 0);
+                                        setAddonWords(prev => ({ ...prev, [a.id]: w }));
+                                      }}
+                                      className="w-24 bg-card border border-theme rounded-md px-2 py-1 text-primary outline-none focus:border-emerald-500 font-mono text-center"
+                                    />
+                                    <span className="text-emerald-500 font-bold ml-1">
+                                      ➔ {naira((addonWords[a.id] || 1000) * a.price)}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* If location changer is active */}
+                                {a.is_location_changer && (
+                                  <div className="space-y-1">
+                                    <span className="text-secondary text-[11px] block">Target Location / Case Study:</span>
+                                    <input
+                                      type="text"
+                                      value={customLocation}
+                                      onChange={e => setCustomLocation(e.target.value)}
+                                      placeholder="e.g. Enugu State, University of Ibadan"
+                                      className="w-full bg-card border border-theme rounded-md px-2 py-1 text-primary outline-none focus:border-emerald-500"
+                                    />
+                                  </div>
+                                )}
+
+                                {/* If it has sub-features */}
+                                {Array.isArray(a.features) && a.features.length > 0 && (
+                                  <div className="space-y-1">
+                                    <span className="text-secondary text-[10px] font-black uppercase tracking-wider block mb-1">Includes Features:</span>
+                                    <div className="grid grid-cols-1 gap-1">
+                                      {a.features.map((f, fi) => {
+                                        const selected = (addonFeatures[a.id] || []).includes(f.name);
+                                        return (
+                                          <label key={`${a.id}-${fi}`} className="flex items-center gap-2 cursor-pointer py-0.5">
+                                            <input
+                                              type="checkbox"
+                                              checked={selected}
+                                              onChange={e => {
+                                                const current = addonFeatures[a.id] || [];
+                                                const next = e.target.checked
+                                                  ? [...current, f.name]
+                                                  : current.filter(x => x !== f.name);
+                                                setAddonFeatures(prev => ({ ...prev, [a.id]: next }));
+                                              }}
+                                              className="w-3.5 h-3.5 accent-emerald-500 shrink-0"
+                                            />
+                                            <span className="text-secondary text-[11px] flex-1">{f.name}</span>
+                                            <span className="text-secondary font-bold text-[11px] shrink-0">+{naira(f.price)}</span>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center border-t border-theme pt-3">
+                <span className="text-sm font-bold text-secondary">Total</span>
+                <span className="text-2xl font-black text-emerald-500">{naira(cartTotal())}</span>
+              </div>
+
               <label className="flex items-start gap-2 cursor-pointer bg-secondary border border-theme rounded-xl p-3">
                 <input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="mt-0.5 w-4 h-4 accent-emerald-500 shrink-0" />
                 <span className="text-[11px] text-primary leading-relaxed">
                   {pageSettings.checkout_terms}
+                  <strong className="block mt-1.5 text-emerald-500 font-bold">
+                    * AI-free and plagiarism-free revisions are only performed if you select the respective "No AI" or "No Plagiarism" add-ons above.
+                  </strong>
                 </span>
               </label>
 

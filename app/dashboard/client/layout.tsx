@@ -57,16 +57,44 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkUser = async () => {
+      // 1. Try to load from cache for instant initial rendering
+      let cachedUser = null;
+      let cachedProfile = null;
+      if (typeof window !== 'undefined') {
+        try {
+          const uStr = sessionStorage.getItem('yrw_user');
+          const pStr = sessionStorage.getItem('yrw_profile');
+          if (uStr && pStr) {
+            cachedUser = JSON.parse(uStr);
+            cachedProfile = JSON.parse(pStr);
+            setUser(cachedUser);
+            setProfile(cachedProfile);
+            setLoading(false);
+          }
+        } catch (e) {}
+      }
+
+      // 2. Fetch fresh user details
       const { user, profile, isImpersonating } = await getEffectiveUser();
       if (!user) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('yrw_user');
+          sessionStorage.removeItem('yrw_profile');
+          sessionStorage.removeItem('yrw_wallet');
+        }
         router.push('/login');
         return;
       }
       setUser(user);
-      if (isImpersonating) {
-        setProfile({ ...profile, _original_is_admin: true });
-      } else {
-        setProfile(profile);
+      const activeProfile = isImpersonating ? { ...profile, _original_is_admin: true } : profile;
+      setProfile(activeProfile);
+      
+      // Save to cache
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('yrw_user', JSON.stringify(user));
+          sessionStorage.setItem('yrw_profile', JSON.stringify(activeProfile));
+        } catch (e) {}
       }
       
       await fetchUnviewedVault(user.email || '', user.id);
@@ -76,6 +104,13 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   }, [router, fetchUnviewedVault]);
 
   const handleLogout = async () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('impersonate_user_id');
+      localStorage.removeItem('impersonate_user_email');
+      sessionStorage.removeItem('yrw_user');
+      sessionStorage.removeItem('yrw_profile');
+      sessionStorage.removeItem('yrw_wallet');
+    }
     await supabase.auth.signOut();
     router.push('/');
   };

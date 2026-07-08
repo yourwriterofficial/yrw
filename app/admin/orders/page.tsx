@@ -178,13 +178,16 @@ function OrdersPageContent() {
   const [fullOrder, setFullOrder] = useState<any>(null);
   const [milestoneBusy, setMilestoneBusy] = useState<string | null>(null);
 
-  // Create-order-for-client modal
+  // Create-order-for-client modal states
   const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [creatingOrder, setCreatingOrder] = useState(false);
   const [newOrder, setNewOrder] = useState({
     name: '', email: '', whatsapp: '', company: '', address: '',
     topic: '', serviceTier: 'CUSTOM', quote: '', deadline: '', wordCount: '',
     paymentStructure: '60/40', additionalInfo: '',
+    isCatalogOrder: false,
+    markPaid: false,
+    triggerNotification: true,
   });
   const [newOrderMilestones, setNewOrderMilestones] = useState<Array<{ name: string; percentage: number; trigger: string }>>([
     { name: 'Initial Deposit', percentage: 40, trigger: 'Upon signing this agreement' },
@@ -192,9 +195,71 @@ function OrdersPageContent() {
     { name: 'Final Payment', percentage: 30, trigger: 'Final delivery and client sign off' },
   ]);
 
+  const [orderCategory, setOrderCategory] = useState<'CATALOG' | 'ACADEMIC' | 'DEV' | 'CONTENT' | 'CV'>('ACADEMIC');
+  const [deadlineType, setDeadlineType] = useState<'offset' | 'date'>('offset');
+  const [deadlineValue, setDeadlineValue] = useState('30');
+  const [deadlineUnit, setDeadlineUnit] = useState<'minutes' | 'hours' | 'days'>('minutes');
+  const [customDeadlineDate, setCustomDeadlineDate] = useState('');
+  const [catalogTopics, setCatalogTopics] = useState<any[]>([]);
+
+  // Fetch catalog topics
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('project_topics')
+        .select('id, title, department, level, price')
+        .eq('is_active', true)
+        .order('title', { ascending: true });
+      if (data) setCatalogTopics(data);
+    })();
+  }, []);
+
+  // Sync category defaults
+  useEffect(() => {
+    if (orderCategory === 'CATALOG') {
+      setNewOrder(prev => ({
+        ...prev,
+        isCatalogOrder: true,
+        serviceTier: 'STANDARD',
+        paymentStructure: '60/40',
+        markPaid: true,
+      }));
+      setDeadlineType('offset');
+    } else {
+      setNewOrder(prev => ({
+        ...prev,
+        isCatalogOrder: false,
+        serviceTier: 'CUSTOM',
+        paymentStructure: '60/40',
+        markPaid: false,
+      }));
+      setDeadlineType('date');
+    }
+  }, [orderCategory]);
+
+  // Compute deadline
+  useEffect(() => {
+    if (deadlineType === 'offset') {
+      const val = parseInt(deadlineValue) || 0;
+      let ms = 0;
+      if (deadlineUnit === 'minutes') ms = val * 60 * 1000;
+      else if (deadlineUnit === 'hours') ms = val * 60 * 60 * 1000;
+      else if (deadlineUnit === 'days') ms = val * 24 * 60 * 60 * 1000;
+
+      if (ms > 0) {
+        const computed = new Date(Date.now() + ms).toISOString();
+        setNewOrder(prev => ({ ...prev, deadline: computed }));
+      } else {
+        setNewOrder(prev => ({ ...prev, deadline: '' }));
+      }
+    } else {
+      setNewOrder(prev => ({ ...prev, deadline: customDeadlineDate }));
+    }
+  }, [deadlineType, deadlineValue, deadlineUnit, customDeadlineDate]);
+
   const submitCreateOrder = async () => {
     if (!newOrder.name || !newOrder.email || !newOrder.topic || !newOrder.deadline || !newOrder.quote) {
-      return showToast('Fill in name, email, topic, deadline and quote.', 'error');
+      return showToast('Fill in name, email, topic, deadline, and quote.', 'error');
     }
     if (newOrder.paymentStructure === 'CUSTOM') {
       const sum = newOrderMilestones.reduce((s, m) => s + Number(m.percentage || 0), 0);
@@ -216,7 +281,11 @@ function OrdersPageContent() {
       if (res.ok && data.success) {
         showToast(`Order ${data.orderId} created${data.isNewUser ? ' — client invited by email' : ' & client notified'}.`, 'success');
         setShowCreateOrder(false);
-        setNewOrder({ name: '', email: '', whatsapp: '', company: '', address: '', topic: '', serviceTier: 'CUSTOM', quote: '', deadline: '', wordCount: '', paymentStructure: '60/40', additionalInfo: '' });
+        setNewOrder({ name: '', email: '', whatsapp: '', company: '', address: '', topic: '', serviceTier: 'CUSTOM', quote: '', deadline: '', wordCount: '', paymentStructure: '60/40', additionalInfo: '', isCatalogOrder: false, markPaid: false, triggerNotification: true });
+        setOrderCategory('ACADEMIC');
+        setDeadlineValue('30');
+        setDeadlineUnit('minutes');
+        setCustomDeadlineDate('');
         await fetchOrders();
       } else {
         showToast(data.error || 'Failed to create order', 'error');
@@ -1284,41 +1353,238 @@ function OrdersPageContent() {
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Client Name *</label><input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={newOrder.name} onChange={e => setNewOrder({ ...newOrder, name: e.target.value })} placeholder="Jane Doe" /></div>
-                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Client Email *</label><input type="email" className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={newOrder.email} onChange={e => setNewOrder({ ...newOrder, email: e.target.value })} placeholder="client@example.com" /></div>
-                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">WhatsApp</label><input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={newOrder.whatsapp} onChange={e => setNewOrder({ ...newOrder, whatsapp: e.target.value })} placeholder="+234..." /></div>
-                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Company (optional)</label><input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={newOrder.company} onChange={e => setNewOrder({ ...newOrder, company: e.target.value })} /></div>
-              </div>
-              <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Project Title / Topic *</label><input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={newOrder.topic} onChange={e => setNewOrder({ ...newOrder, topic: e.target.value })} placeholder="e.g. Website Redesign & Launch" /></div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Service Tier</label><select className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={newOrder.serviceTier} onChange={e => setNewOrder({ ...newOrder, serviceTier: e.target.value })}><option value="CUSTOM">Custom</option><option value="GOLD">Gold</option><option value="SILVER">Silver</option><option value="BRONZE">Bronze</option><option value="STANDARD">Standard</option></select></div>
-                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Total Quote (₦) *</label><input type="number" className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-mono" value={newOrder.quote} onChange={e => setNewOrder({ ...newOrder, quote: e.target.value })} /></div>
-                <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Deadline *</label><input type="date" min={new Date(Date.now() + 14 * 864e5).toISOString().split('T')[0]} className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary dark:[color-scheme:dark]" value={newOrder.deadline} onChange={e => setNewOrder({ ...newOrder, deadline: e.target.value })} /></div>
+              {/* Order Category Selector */}
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Order Category *</label>
+                <select 
+                  value={orderCategory} 
+                  onChange={e => setOrderCategory(e.target.value as any)}
+                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-bold cursor-pointer focus:border-purple-500 outline-none"
+                >
+                  <option value="ACADEMIC">✍️ Standard Academic Research (Custom writing)</option>
+                  <option value="CATALOG">🎓 Ready-Made Catalog Project Topic (PRJ-)</option>
+                  <option value="DEV">💻 Custom Software Development (CUST-)</option>
+                  <option value="CONTENT">📝 Content / Article Writing (CT-)</option>
+                  <option value="CV">📄 Resume & Executive CV (CV-)</option>
+                </select>
               </div>
 
-              <div>
-                <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-2">Payment Structure</label>
-                <div className="flex gap-4 mb-3">
-                  <label className="flex items-center gap-2 text-sm text-primary font-bold cursor-pointer"><input type="radio" checked={newOrder.paymentStructure === '60/40'} onChange={() => setNewOrder({ ...newOrder, paymentStructure: '60/40' })} className="accent-purple-500" /> Standard 60/40</label>
-                  <label className="flex items-center gap-2 text-sm text-primary font-bold cursor-pointer"><input type="radio" checked={newOrder.paymentStructure === 'CUSTOM'} onChange={() => setNewOrder({ ...newOrder, paymentStructure: 'CUSTOM' })} className="accent-purple-500" /> Custom Milestones</label>
+              {/* Client Basic Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Client Name *</label>
+                  <input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-purple-500 outline-none" value={newOrder.name} onChange={e => setNewOrder({ ...newOrder, name: e.target.value })} placeholder="Jane Doe" />
                 </div>
-                {newOrder.paymentStructure === 'CUSTOM' && (
-                  <div className="space-y-2 bg-secondary/50 border border-theme rounded-xl p-3">
-                    {newOrderMilestones.map((m, idx) => (
-                      <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-                        <input className="col-span-4 bg-primary border border-theme rounded-lg p-2 text-xs text-primary" value={m.name} onChange={e => { const u = [...newOrderMilestones]; u[idx].name = e.target.value; setNewOrderMilestones(u); }} placeholder="Name" />
-                        <input className="col-span-5 bg-primary border border-theme rounded-lg p-2 text-xs text-primary" value={m.trigger} onChange={e => { const u = [...newOrderMilestones]; u[idx].trigger = e.target.value; setNewOrderMilestones(u); }} placeholder="Trigger" />
-                        <div className="col-span-2 flex items-center gap-1"><input type="number" className="w-full bg-primary border border-theme rounded-lg p-2 text-xs text-primary" value={m.percentage} onChange={e => { const u = [...newOrderMilestones]; u[idx].percentage = parseInt(e.target.value) || 0; setNewOrderMilestones(u); }} /><span className="text-xs text-secondary">%</span></div>
-                        <button type="button" onClick={() => setNewOrderMilestones(newOrderMilestones.filter((_, i) => i !== idx))} className="col-span-1 text-secondary hover:text-red-400"><lucide.Trash2 className="w-4 h-4 mx-auto" /></button>
-                      </div>
-                    ))}
-                    <div className="flex justify-between items-center">
-                      <button type="button" onClick={() => setNewOrderMilestones([...newOrderMilestones, { name: 'Milestone', percentage: 10, trigger: 'On phase completion' }])} className="text-[10px] text-purple-400 font-black uppercase flex items-center gap-1"><lucide.Plus className="w-3 h-3" /> Add Milestone</button>
-                      <span className={`text-xs font-black ${newOrderMilestones.reduce((s, m) => s + Number(m.percentage), 0) === 100 ? 'text-emerald-400' : 'text-red-400'}`}>Sum: {newOrderMilestones.reduce((s, m) => s + Number(m.percentage), 0)}%</span>
-                    </div>
+                <div>
+                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Client Email *</label>
+                  <input type="email" className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-purple-500 outline-none" value={newOrder.email} onChange={e => setNewOrder({ ...newOrder, email: e.target.value })} placeholder="client@example.com" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">WhatsApp</label>
+                  <input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-purple-500 outline-none" value={newOrder.whatsapp} onChange={e => setNewOrder({ ...newOrder, whatsapp: e.target.value })} placeholder="+234..." />
+                </div>
+                {orderCategory !== 'CATALOG' && (
+                  <div>
+                    <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Company (optional)</label>
+                    <input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-purple-500 outline-none" value={newOrder.company} onChange={e => setNewOrder({ ...newOrder, company: e.target.value })} placeholder="Company Name" />
                   </div>
                 )}
+              </div>
+
+              {/* Project Title / Topic Selection */}
+              <div>
+                <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">
+                  {orderCategory === 'CATALOG' ? 'Select Packaged Project Topic *' : 'Project Title / Topic *'}
+                </label>
+                {orderCategory === 'CATALOG' ? (
+                  <div className="relative">
+                    <input
+                      list="catalog-topics-list"
+                      className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-bold focus:border-purple-500 outline-none"
+                      value={newOrder.topic}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setNewOrder(prev => ({ ...prev, topic: val }));
+                        // Auto-fill price quote if it matches a catalog topic
+                        const matched = catalogTopics.find(t => t.title.toLowerCase() === val.toLowerCase().trim());
+                        if (matched) {
+                          setNewOrder(prev => ({ ...prev, quote: String(matched.price || 3999) }));
+                        }
+                      }}
+                      placeholder="Start typing to search ready-made project topic catalog..."
+                    />
+                    <datalist id="catalog-topics-list">
+                      {catalogTopics.map(t => (
+                        <option key={t.id} value={t.title}>
+                          {t.level} · {t.department} · ₦{Number(t.price).toLocaleString()}
+                        </option>
+                      ))}
+                    </datalist>
+                  </div>
+                ) : (
+                  <input 
+                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-purple-500 outline-none font-bold" 
+                    value={newOrder.topic} 
+                    onChange={e => setNewOrder({ ...newOrder, topic: e.target.value })} 
+                    placeholder={
+                      orderCategory === 'DEV' ? "e.g. E-Commerce Platform using Next.js & Supabase" :
+                      orderCategory === 'CV' ? "e.g. Executive Resume Redesign & LinkedIn Optimization" :
+                      orderCategory === 'CONTENT' ? "e.g. SEO Copywriting & Weekly Blog Campaign" :
+                      "e.g. Challenges and prospects of local government financial autonomy..."
+                    } 
+                  />
+                )}
+              </div>
+
+              {/* Category-peculiar Fields (Pricing, Word Count, Deadline) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+                {orderCategory === 'ACADEMIC' && (
+                  <div>
+                    <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Service Tier</label>
+                    <select className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-purple-500 outline-none" value={newOrder.serviceTier} onChange={e => setNewOrder({ ...newOrder, serviceTier: e.target.value })}><option value="CUSTOM">Custom</option><option value="GOLD">Gold</option><option value="SILVER">Silver</option><option value="BRONZE">Bronze</option><option value="STANDARD">Standard</option></select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Total Quote (₦) *</label>
+                  <input type="number" className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-mono focus:border-purple-500 outline-none" value={newOrder.quote} onChange={e => setNewOrder({ ...newOrder, quote: e.target.value })} />
+                </div>
+
+                {orderCategory === 'ACADEMIC' && (
+                  <div>
+                    <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Word Count (optional)</label>
+                    <input type="number" className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-mono focus:border-purple-500 outline-none" value={newOrder.wordCount} onChange={e => setNewOrder({ ...newOrder, wordCount: e.target.value })} placeholder="e.g. 5000" />
+                  </div>
+                )}
+
+                {/* Smarter Deadline inputs */}
+                <div className={orderCategory === 'CATALOG' ? 'col-span-1 md:col-span-2' : 'col-span-1'}>
+                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Deadline *</label>
+                  {orderCategory === 'CATALOG' ? (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <select
+                          value={deadlineType}
+                          onChange={e => setDeadlineType(e.target.value as 'offset' | 'date')}
+                          className="bg-secondary border border-theme rounded-xl text-xs font-bold text-primary p-2 outline-none focus:border-purple-500"
+                        >
+                          <option value="offset">⏱ Time Offset</option>
+                          <option value="date">📅 Specific Date</option>
+                        </select>
+
+                        {deadlineType === 'offset' ? (
+                          <div className="flex gap-2 flex-1">
+                            <input
+                              type="number"
+                              min={1}
+                              value={deadlineValue}
+                              onChange={e => setDeadlineValue(e.target.value)}
+                              className="w-20 bg-secondary border border-theme rounded-xl p-2 text-sm text-primary font-mono text-center focus:border-purple-500 outline-none"
+                            />
+                            <select
+                              value={deadlineUnit}
+                              onChange={e => setDeadlineUnit(e.target.value as any)}
+                              className="bg-secondary border border-theme rounded-xl text-xs font-bold text-primary p-2 outline-none flex-1 focus:border-purple-500"
+                            >
+                              <option value="minutes">Minutes</option>
+                              <option value="hours">Hours</option>
+                              <option value="days">Days</option>
+                            </select>
+                          </div>
+                        ) : (
+                          <input
+                            type="datetime-local"
+                            className="bg-secondary border border-theme rounded-xl p-2 text-xs text-primary outline-none flex-1 focus:border-purple-500"
+                            value={customDeadlineDate}
+                            onChange={e => setCustomDeadlineDate(e.target.value)}
+                          />
+                        )}
+                      </div>
+                      
+                      {newOrder.deadline && (
+                        <p className="text-[10px] text-purple-400 font-bold bg-purple-500/10 border border-purple-500/20 p-2 rounded-lg leading-normal">
+                          Computed release time: {new Date(newOrder.deadline).toLocaleString()} ({Math.max(0, Math.round((new Date(newOrder.deadline).getTime() - Date.now()) / 60000))} mins from now)
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <input type="date" className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary dark:[color-scheme:dark] focus:border-purple-500 outline-none" value={newOrder.deadline} onChange={e => setNewOrder({ ...newOrder, deadline: e.target.value })} />
+                  )}
+                </div>
+              </div>
+
+              {/* Payment Structure (Academic / Custom category specific) */}
+              {orderCategory !== 'CATALOG' && (
+                <div>
+                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-2">Payment Structure</label>
+                  <div className="flex gap-4 mb-3">
+                    <label className="flex items-center gap-2 text-sm text-primary font-bold cursor-pointer"><input type="radio" checked={newOrder.paymentStructure === '60/40'} onChange={() => setNewOrder({ ...newOrder, paymentStructure: '60/40' })} className="accent-purple-500" /> Standard 60/40</label>
+                    <label className="flex items-center gap-2 text-sm text-primary font-bold cursor-pointer"><input type="radio" checked={newOrder.paymentStructure === 'CUSTOM'} onChange={() => setNewOrder({ ...newOrder, paymentStructure: 'CUSTOM' })} className="accent-purple-500" /> Custom Milestones</label>
+                  </div>
+                  {newOrder.paymentStructure === 'CUSTOM' && (
+                    <div className="space-y-2 bg-secondary/50 border border-theme rounded-xl p-3">
+                      {newOrderMilestones.map((m, idx) => (
+                        <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                          <input className="col-span-4 bg-primary border border-theme rounded-lg p-2 text-xs text-primary focus:border-purple-500 outline-none" value={m.name} onChange={e => { const u = [...newOrderMilestones]; u[idx].name = e.target.value; setNewOrderMilestones(u); }} placeholder="Name" />
+                          <input className="col-span-5 bg-primary border border-theme rounded-lg p-2 text-xs text-primary focus:border-purple-500 outline-none" value={m.trigger} onChange={e => { const u = [...newOrderMilestones]; u[idx].trigger = e.target.value; setNewOrderMilestones(u); }} placeholder="Trigger" />
+                          <div className="col-span-2 flex items-center gap-1"><input type="number" className="w-full bg-primary border border-theme rounded-lg p-2 text-xs text-primary focus:border-purple-500 outline-none" value={m.percentage} onChange={e => { const u = [...newOrderMilestones]; u[idx].percentage = parseInt(e.target.value) || 0; setNewOrderMilestones(u); }} /><span className="text-xs text-secondary">%</span></div>
+                          <button type="button" onClick={() => setNewOrderMilestones(newOrderMilestones.filter((_, i) => i !== idx))} className="col-span-1 text-secondary hover:text-red-400"><lucide.Trash2 className="w-4 h-4 mx-auto" /></button>
+                        </div>
+                      ))}
+                      <div className="flex justify-between items-center">
+                        <button type="button" onClick={() => setNewOrderMilestones([...newOrderMilestones, { name: 'Milestone', percentage: 10, trigger: 'On phase completion' }])} className="text-[10px] text-purple-400 font-black uppercase flex items-center gap-1"><lucide.Plus className="w-3 h-3" /> Add Milestone</button>
+                        <span className={`text-xs font-black ${newOrderMilestones.reduce((s, m) => s + Number(m.percentage), 0) === 100 ? 'text-emerald-400' : 'text-red-400'}`}>Sum: {newOrderMilestones.reduce((s, m) => s + Number(m.percentage), 0)}%</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="bg-secondary/40 border border-theme rounded-2xl p-4 space-y-3">
+                {orderCategory === 'CATALOG' ? (
+                  <div className="p-2 border border-purple-500/20 bg-purple-500/5 rounded-xl">
+                    <p className="text-xs font-bold text-purple-400 flex items-center gap-1.5"><lucide.CheckCircle2 className="w-4 h-4" /> Ready-Made Catalog Project configuration auto-applied.</p>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-3 text-xs text-primary font-bold cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={newOrder.isCatalogOrder}
+                      onChange={e => setNewOrder({ ...newOrder, isCatalogOrder: e.target.checked })}
+                      className="w-4 h-4 rounded border-theme text-purple-600 focus:ring-purple-500 accent-purple-500 cursor-pointer"
+                    />
+                    <div>
+                      <span>Prepaid Catalog Project Topic Order (PRJ- prefix)</span>
+                      <span className="block text-[10px] text-secondary font-normal mt-0.5">Links automatically to matching ready-made topics and prefixes topic with [PROJECT]</span>
+                    </div>
+                  </label>
+                )}
+
+                <label className="flex items-center gap-3 text-xs text-primary font-bold cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={newOrder.markPaid}
+                    onChange={e => setNewOrder({ ...newOrder, markPaid: e.target.checked })}
+                    className="w-4 h-4 rounded border-theme text-purple-600 focus:ring-purple-500 accent-purple-500 cursor-pointer"
+                  />
+                  <div>
+                    <span>Mark Order as Fully Paid Instantly (Prepaid)</span>
+                    <span className="block text-[10px] text-secondary font-normal mt-0.5">Flags milestones as 100% paid and unlocks deliverables in user vault</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 text-xs text-primary font-bold cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={newOrder.triggerNotification}
+                    onChange={e => setNewOrder({ ...newOrder, triggerNotification: e.target.checked })}
+                    className="w-4 h-4 rounded border-theme text-purple-600 focus:ring-purple-500 accent-purple-500 cursor-pointer"
+                  />
+                  <div>
+                    <span>Trigger System Notifications / Email Alerts</span>
+                    <span className="block text-[10px] text-secondary font-normal mt-0.5">Sends automated onboarding recovery links and receipt emails to the client</span>
+                  </div>
+                </label>
               </div>
 
               <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Notes / Brief (optional)</label><textarea className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary resize-y" rows={3} value={newOrder.additionalInfo} onChange={e => setNewOrder({ ...newOrder, additionalInfo: e.target.value })} /></div>

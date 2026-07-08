@@ -38,6 +38,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   const handleLogout = async () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('impersonate_user_id');
+      localStorage.removeItem('impersonate_user_email');
+      sessionStorage.removeItem('yrw_user');
+      sessionStorage.removeItem('yrw_profile');
+      sessionStorage.removeItem('yrw_wallet');
+    }
     await supabase.auth.signOut();
     router.push('/');
   };

@@ -41,13 +41,18 @@ export async function sendSystemEmail(params: {
   try {
     let numericOrderId: number | null = null;
     if (orderId) {
-      const { data: orderData } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('order_id', orderId)
-        .single();
-      if (orderData) {
-        numericOrderId = orderData.id;
+      const oidStr = String(orderId).trim();
+      if (/^\d+$/.test(oidStr)) {
+        numericOrderId = parseInt(oidStr, 10);
+      } else {
+        const { data: orderData } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('order_id', oidStr)
+          .single();
+        if (orderData) {
+          numericOrderId = orderData.id;
+        }
       }
     }
 

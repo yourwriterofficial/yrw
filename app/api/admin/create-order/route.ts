@@ -8,26 +8,29 @@ import { upsertInvoiceForOrder } from '@/lib/invoices';
 const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
 /** Compile a milestones array (same shape the client uses) for an order. */
-function compileMilestones(structure: '60/40' | 'CUSTOM', milestones: any[], total: number) {
+function compileMilestones(structure: '60/40' | 'CUSTOM', milestones: any[], total: number, markPaid = false) {
   if (structure === 'CUSTOM') {
     return (milestones || []).map((m: any) => ({
       name: m.name,
       percentage: Number(m.percentage),
       amount: Math.round((Number(m.percentage) / 100) * total),
-      paid: false, delivered: false, paid_at: null, tx_ref: null, trigger: m.trigger || '',
+      paid: markPaid,
+      delivered: false,
+      paid_at: markPaid ? new Date().toISOString() : null,
+      tx_ref: markPaid ? 'PAID_OUTSIDE_PLATFORM' : null,
+      trigger: m.trigger || '',
     }));
   }
   return [
-    { name: 'Initial Deposit', percentage: 60, amount: Math.round(total * 0.6), paid: false, delivered: false, paid_at: null, tx_ref: null, trigger: 'Upon signing this agreement' },
-    { name: 'Final Payment', percentage: 40, amount: Math.round(total * 0.4), paid: false, delivered: false, paid_at: null, tx_ref: null, trigger: 'Upon project completion' },
+    { name: 'Initial Deposit', percentage: 60, amount: Math.round(total * 0.6), paid: markPaid, delivered: false, paid_at: markPaid ? new Date().toISOString() : null, tx_ref: markPaid ? 'PAID_OUTSIDE_PLATFORM' : null, trigger: 'Upon signing this agreement' },
+    { name: 'Final Payment', percentage: 40, amount: Math.round(total * 0.4), paid: markPaid, delivered: false, paid_at: markPaid ? new Date().toISOString() : null, tx_ref: markPaid ? 'PAID_OUTSIDE_PLATFORM' : null, trigger: 'Upon project completion' },
   ];
 }
 
 /**
  * Admin: create an order on behalf of a client. Works for an existing client
- * (matched by email) or a brand-new one (auto-creates the account + emails a
- * set-password link). The order is attached to the client's id so it shows in
- * their dashboard as their own.
+ * (matched by email) or a brand-new one. Supports prepaid catalog order linking,
+ * automatic copy of vault materials, and optional client notifications.
  */
 export async function POST(request: Request) {
   const guard = await requireAdmin();
@@ -40,10 +43,11 @@ export async function POST(request: Request) {
       name, email, whatsapp, company, address,
       topic, serviceTier, quote, deadline, wordCount,
       paymentStructure, milestones, additionalInfo,
+      isCatalogOrder, markPaid, triggerNotification = true
     } = body;
 
-    if (!name || !email || !topic || !deadline || !quote) {
-      return NextResponse.json({ error: 'Missing required fields (name, email, topic, deadline, quote).' }, { status: 400 });
+    if (!name || !email || !topic || !quote) {
+      return NextResponse.json({ error: 'Missing required fields (name, email, topic, quote).' }, { status: 400 });
     }
     const cleanEmail = String(email).toLowerCase().trim();
 
@@ -56,14 +60,14 @@ export async function POST(request: Request) {
     if (existingProfile?.id) {
       clientId = existingProfile.id;
     } else {
-      // Fall back to scanning auth users (profiles.email may be null for some)
+      // Fall back to scanning auth users
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email: cleanEmail,
         email_confirm: true,
         user_metadata: { full_name: name },
       });
       if (createErr) {
-        // Likely already registered — try to find them
+        // Likely already registered
         const { data: list } = await admin.auth.admin.listUsers();
         const match = list?.users?.find(u => u.email?.toLowerCase() === cleanEmail);
         if (match) clientId = match.id;
@@ -84,11 +88,30 @@ export async function POST(request: Request) {
       address: address || null,
     }).eq('id', clientId);
 
-    // 2. Build + insert the order
-    const prefix = serviceTier === 'CUSTOM' ? 'CUST' : 'RW';
+    // 2. Resolve matching ready-made project topic file if applicable
+    let catalogTopicMatched = null;
+    if (isCatalogOrder) {
+      // Search by exact title or substring
+      const { data: matchedTopics } = await admin
+        .from('project_topics')
+        .select('*')
+        .or(`title.ilike.%${topic}%,title.eq.${topic}`)
+        .eq('is_active', true)
+        .limit(1);
+      
+      if (matchedTopics && matchedTopics.length > 0) {
+        catalogTopicMatched = matchedTopics[0];
+      }
+    }
+
+    // 3. Build + insert the order
+    const prefix = isCatalogOrder ? 'PRJ' : (serviceTier === 'CUSTOM' ? 'CUST' : 'RW');
     const orderStringId = `${prefix}-${Math.floor(100000 + Math.random() * 900000)}`;
     const structure = paymentStructure === 'CUSTOM' ? 'CUSTOM' : '60/40';
-    const compiled = compileMilestones(structure, milestones || [], Number(quote));
+    const compiled = compileMilestones(structure, milestones || [], Number(quote), !!markPaid);
+
+    const hasMaterialFile = !!catalogTopicMatched?.material_file_path;
+    const finalTopic = isCatalogOrder ? (topic.startsWith('[PROJECT]') ? topic : `[PROJECT] ${topic}`) : topic;
 
     const orderRow: any = {
       order_id: orderStringId,
@@ -99,68 +122,91 @@ export async function POST(request: Request) {
       client_phone: whatsapp || null,
       client_company: company || null,
       client_address: address || null,
-      topic,
+      topic: finalTopic,
       service_tier: serviceTier || 'CUSTOM',
       financial_quote: Number(quote),
       word_count: wordCount ? Number(wordCount) : null,
-      deadline,
-      workflow_status: 'Briefing Received',
+      deadline: deadline || null,
+      workflow_status: (markPaid && hasMaterialFile) ? 'Completed' : 'Briefing Received',
       corrections_status: 'None',
-      vault_status: 'Secured in Vault',
+      vault_status: (markPaid && hasMaterialFile) ? 'Secured in Vault' : 'Awaiting Material Upload',
       payment_structure_type: structure,
       payment_milestones: compiled,
       additional_info: additionalInfo || null,
-      sixty_percent_paid: false,
-      forty_percent_paid: false,
-      work_submitted: false,
+      sixty_percent_paid: !!markPaid,
+      forty_percent_paid: !!markPaid,
+      work_submitted: (markPaid && hasMaterialFile),
     };
 
     const { data: inserted, error: insErr } = await admin.from('orders').insert(orderRow).select().single();
     if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
 
-    // 3. Auto-generate the invoice
+    // If fully paid and matching material file exists, copy it to deliverables instantly
+    if (markPaid && catalogTopicMatched && catalogTopicMatched.material_file_path) {
+      await admin.from('final_deliverables').insert({
+        order_id: orderStringId,
+        file_path: catalogTopicMatched.material_file_path,
+        file_name: `${catalogTopicMatched.title} — Chapters 4-5.docx`,
+      });
+    }
+
+    // 4. Auto-generate the invoice
     await upsertInvoiceForOrder(admin, inserted, { autoGenerated: true }).catch(() => {});
 
-    // 4. Notify the client (order + invoice link)
-    const invoiceTpl = emailTemplates.invoiceIssued({
-      legal_name: name,
-      invoice_number: orderStringId,
-      total_amount: Number(quote),
-      invoice_url: `${BASE}/invoice/${orderStringId}`,
-      project_title: topic,
-    });
-    await notifyUser({
-      userId: clientId,
-      title: `New order created: ${orderStringId}`,
-      message: `An order "${topic}" was set up for you. View your invoice and pay the deposit to begin.`,
-      type: 'order_update',
-      link: `/dashboard/client?preview=${orderStringId}`,
-      orderDbId: inserted.id,
-      emailHtml: invoiceTpl.html,
-      emailSubject: invoiceTpl.subject,
-    });
+    // 5. Optionally notify the client
+    if (triggerNotification) {
+      const invoiceTpl = emailTemplates.invoiceIssued({
+        legal_name: name,
+        invoice_number: orderStringId,
+        total_amount: Number(quote),
+        invoice_url: `${BASE}/invoice/${orderStringId}`,
+        project_title: finalTopic,
+      });
 
-    // 5. New account → send a set-password (recovery) link
-    if (isNewUser) {
-      try {
-        const { data: linkData } = await admin.auth.admin.generateLink({
-          type: 'recovery',
-          email: cleanEmail,
-          options: { redirectTo: `${BASE}/update-password` },
-        });
-        const link = linkData?.properties?.action_link;
-        if (link) {
-          const html = emailShell(
-            `<h1>Welcome to YourResearchWriter</h1>
-             <p>Hi ${name},</p>
-             <p>An account has been created for you so you can track your order <strong>${orderStringId}</strong>, view your invoice, and pay securely.</p>
-             <p>Set your password to log in:</p>`,
-            'Set Your Password', link
-          );
-          await sendSystemEmail({ to: cleanEmail, subject: 'Set up your YourResearchWriter account', html });
+      let alertMessage = `An order "${finalTopic}" was set up for you. View your invoice and pay the deposit to begin.`;
+      if (markPaid) {
+        alertMessage = `Your prepaid order "${finalTopic}" has been created and marked as paid. Check your vault/dashboard.`;
+      }
+
+      await notifyUser({
+        userId: clientId,
+        title: markPaid ? `Prepaid Order Active: ${orderStringId}` : `New order created: ${orderStringId}`,
+        message: alertMessage,
+        type: 'order_update',
+        link: `/dashboard/client?preview=${orderStringId}`,
+        orderDbId: inserted.id,
+        emailHtml: markPaid ? emailShell(
+          `<h1>Order setup confirmed</h1>
+           <p>Hi ${name},</p>
+           <p>An order has been set up for you: <strong>${finalTopic}</strong> (Order ID: ${orderStringId}).</p>
+           <p>This order has been marked as <strong>Fully Paid</strong>. ${hasMaterialFile ? 'The deliverable material is ready in your Secure Vault now!' : 'Our writing desk will upload the material to your vault shortly.'}</p>`,
+          'Access Your Dashboard', `${BASE}/dashboard/client`
+        ) : invoiceTpl.html,
+        emailSubject: markPaid ? `Prepaid Order Activated — ID: ${orderStringId}` : invoiceTpl.subject,
+      });
+
+      // 6. New account → send a set-password (recovery) link
+      if (isNewUser) {
+        try {
+          const { data: linkData } = await admin.auth.admin.generateLink({
+            type: 'recovery',
+            email: cleanEmail,
+            options: { redirectTo: `${BASE}/update-password` },
+          });
+          const link = linkData?.properties?.action_link;
+          if (link) {
+            const html = emailShell(
+              `<h1>Welcome to YourResearchWriter</h1>
+               <p>Hi ${name},</p>
+               <p>An account has been created for you so you can track your order <strong>${orderStringId}</strong>, view your invoice, and pay securely.</p>
+               <p>Set your password to log in:</p>`,
+              'Set Your Password', link
+            );
+            await sendSystemEmail({ to: cleanEmail, subject: 'Set up your YourResearchWriter account', html });
+          }
+        } catch (e) {
+          console.warn('Invite link email failed (non-fatal):', e);
         }
-      } catch (e) {
-        console.warn('Invite link email failed (non-fatal):', e);
       }
     }
 

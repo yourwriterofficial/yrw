@@ -382,6 +382,10 @@ export default function ProjectsTab({ user }: { user: any }) {
       const data = await res.json();
       if (res.ok && data.authorization_url) {
         window.location.href = data.authorization_url;
+      } else if (res.ok && data.paid_via_wallet) {
+        showToast('Purchase completed instantly using your wallet balance!', 'success');
+        setCart(null);
+        window.location.href = '/dashboard/client?tab=vault';
       } else {
         setMsg(data.error || 'Could not initiate checkout.');
       }
@@ -394,100 +398,112 @@ export default function ProjectsTab({ user }: { user: any }) {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h2 className="text-3xl font-black text-primary">Buy Already-Made Projects</h2>
-        <p className="text-secondary mt-1 text-sm">Browse, search, and instantly buy completed research projects covering Chapters 1–5.</p>
-      </header>
+      {/* HERO BANNER IN THE CLIENT TAB */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-600 to-emerald-800 text-white rounded-3xl shadow-lg border border-emerald-600/30">
+        <div className="absolute -top-16 -right-20 w-72 h-72 rounded-full bg-white/5" />
+        <div className="absolute -bottom-24 -left-16 w-96 h-96 rounded-full bg-white/[0.03]" />
+        <div className="relative z-10 text-center px-6 py-12">
+          <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-2">Buy Already-Made Projects</h2>
+          <p className="text-xs md:text-sm opacity-90 max-w-2xl mx-auto leading-relaxed">
+            Browse, search, and instantly buy completed research projects covering Chapters 1–5.
+          </p>
+          <div className="flex gap-2 justify-center flex-wrap mt-4 text-[10px] font-bold">
+            <span className="bg-white/15 px-3 py-1 rounded-full">📖 Chapters 1–5</span>
+            <span className="bg-white/15 px-3 py-1 rounded-full">🕗 Working hours 8am–7pm</span>
+            <span className="bg-white/15 px-3 py-1 rounded-full">🇳🇬 Nigerian University Standard</span>
+            <span className="bg-white/15 px-3 py-1 rounded-full">⚡ Less than 7 Hours Delivery</span>
+            <span className="bg-white/15 px-3 py-1 rounded-full">
+              BSc ₦3,999 · MSc ₦4,999 · PhD ₦5,999
+            </span>
+          </div>
 
-      {/* --- AVAILABILITY SEARCH INTERFACE --- */}
-      {!hasSearched && !isSearching ? (
-        <div className="max-w-2xl mx-auto py-4">
-          <div className="bg-card border border-theme rounded-3xl p-8 shadow-md space-y-6 text-center">
-            <div className="w-14 h-14 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto">
-              <lucide.Search className="w-7 h-7" />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-primary">Database Search & Availability</h3>
-              <p className="text-xs text-secondary mt-1.5 leading-relaxed font-semibold">
-                Place your full project topic below to search our database of 3,000+ completed projects and check instant availability.
-              </p>
-            </div>
+          {/* AVAILABILITY SEARCH INTERFACE */}
+          {!hasSearched && !isSearching ? (
+            <div className="max-w-2xl mx-auto mt-8 text-left">
+              <div className="bg-card border border-theme rounded-3xl p-6 shadow-2xl space-y-5 text-center">
+                <div>
+                  <h3 className="text-lg font-black text-primary">Database Search & Availability</h3>
+                  <p className="text-xs text-secondary mt-1 leading-relaxed font-semibold">
+                    Place your full project topic below to search our database of 3,000+ completed projects and check instant availability.
+                  </p>
+                </div>
 
-            <div className="space-y-4 text-left">
+                <div className="space-y-4 text-left">
+                  <div>
+                    <label className="text-[9px] uppercase font-black text-secondary ml-1 block mb-1">Your Full Project Topic *</label>
+                    <textarea
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      placeholder="e.g. Challenges and prospects of financial autonomy to local government administration..."
+                      rows={3}
+                      className="w-full bg-secondary border border-theme rounded-xl p-4 text-xs text-primary focus:border-emerald-500 outline-none transition font-bold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[9px] uppercase font-black text-secondary ml-1 block mb-1">Department</label>
+                      <select
+                        value={selectedSearchDept}
+                        onChange={e => setSelectedSearchDept(e.target.value)}
+                        className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
+                      >
+                        <option value="all">📂 All Departments</option>
+                        {NIGERIAN_DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[9px] uppercase font-black text-secondary ml-1 block mb-1">Academic Level</label>
+                      <select
+                        value={selectedSearchLevel}
+                        onChange={e => setSelectedSearchLevel(e.target.value)}
+                        className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
+                      >
+                        <option value="all">🎓 All Levels</option>
+                        <option value="BSc">BSc / HND</option>
+                        <option value="MSc">MSc / PGD</option>
+                        <option value="PhD">PhD</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={executeAvailabilitySearch}
+                    disabled={!search.trim()}
+                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase text-xs tracking-widest rounded-xl transition shadow-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    Check Availability & Retrieve Material
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : isSearching ? (
+            <div className="max-w-md mx-auto mt-8 py-8 text-center space-y-4 bg-card border border-theme rounded-3xl p-6 shadow-2xl">
+              <div className="relative w-12 h-12 mx-auto">
+                <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+                <div className="absolute inset-2 rounded-full border-4 border-amber-500/20 border-b-amber-500 animate-spin [animation-direction:reverse]" />
+              </div>
               <div>
-                <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Your Full Project Topic *</label>
-                <textarea
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="e.g. Challenges and prospects of financial autonomy to local government administration..."
-                  rows={3}
-                  className="w-full bg-secondary border border-theme rounded-xl p-4 text-xs text-primary focus:border-emerald-500 outline-none transition font-bold"
-                />
+                <h3 className="text-xs font-bold text-primary">Scanning Project Database...</h3>
+                <p className="text-[10px] text-secondary mt-1">Checking chapters, tables, and references availability for your topic.</p>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Department</label>
-                  <select
-                    value={selectedSearchDept}
-                    onChange={e => setSelectedSearchDept(e.target.value)}
-                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
-                  >
-                    <option value="all">📂 All Departments</option>
-                    {NIGERIAN_DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Academic Level</label>
-                  <select
-                    value={selectedSearchLevel}
-                    onChange={e => setSelectedSearchLevel(e.target.value)}
-                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
-                  >
-                    <option value="all">🎓 All Levels</option>
-                    <option value="BSc">BSc / HND</option>
-                    <option value="MSc">MSc / PGD</option>
-                    <option value="PhD">PhD</option>
-                  </select>
-                </div>
+            </div>
+          ) : (
+            <div className="max-w-2xl mx-auto mt-8 bg-card border border-theme rounded-3xl p-5 shadow-2xl flex justify-between items-center gap-4 text-left">
+              <div>
+                <h3 className="text-xs font-bold text-primary">Search Results</h3>
+                <p className="text-[10px] text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
               </div>
-
-              <button
-                onClick={executeAvailabilitySearch}
-                disabled={!search.trim()}
-                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase text-xs tracking-widest rounded-xl transition shadow-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+              <button 
+                onClick={resetSearch}
+                className="px-3.5 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
               >
-                Check Availability & Retrieve Material
+                <lucide.Search className="w-3.5 h-3.5" /> Search Another Topic
               </button>
             </div>
-          </div>
+          )}
         </div>
-      ) : isSearching ? (
-        <div className="max-w-md mx-auto py-12 text-center space-y-6">
-          <div className="relative w-16 h-16 mx-auto">
-            <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-            <div className="absolute inset-2 rounded-full border-4 border-amber-500/20 border-b-amber-500 animate-spin [animation-direction:reverse]" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-primary">Scanning Project Database...</h3>
-            <p className="text-xs text-secondary mt-1">Checking chapters, tables, and references availability for your topic.</p>
-          </div>
-        </div>
-      ) : (
-        /* SEARCH RESULTS BANNER */
-        <div className="flex justify-between items-center gap-4 border-b border-theme pb-4">
-          <div>
-            <h3 className="text-lg font-bold text-primary">Search Results</h3>
-            <p className="text-xs text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
-          </div>
-          <button 
-            onClick={resetSearch}
-            className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-2"
-          >
-            <lucide.Search className="w-3.5 h-3.5" /> Search Another Topic
-          </button>
-        </div>
-      )}
+      </section>
 
       {/* SEARCH RESULTS OR BROWSE LIST */}
       {loading ? (
@@ -629,7 +645,7 @@ export default function ProjectsTab({ user }: { user: any }) {
       {/* CHECKOUT DRAWER / MODAL */}
       {cart && (
         <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-[#0e0e0e] h-screen border-l border-zinc-800 flex flex-col shadow-2xl animate-in slide-in-from-right duration-350">
+          <div className="w-full max-w-lg bg-primary h-screen border-l border-theme flex flex-col shadow-2xl animate-in slide-in-from-right duration-350">
             <header className="p-6 border-b border-theme flex justify-between items-center shrink-0">
               <div>
                 <span className="text-[10px] font-black uppercase text-amber-400 tracking-widest">Order Processing Pipeline</span>
@@ -705,7 +721,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                     {availableAddons.map(a => {
                       const checked = selectedAddons.has(a.id);
                       return (
-                        <div key={a.id} className={`border rounded-xl p-4 transition-all ${checked ? 'bg-[#121212]/50 border-emerald-500/30' : 'bg-card border-theme hover:bg-white/5'}`}>
+                        <div key={a.id} className={`border rounded-xl p-4 transition-all ${checked ? 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/30' : 'bg-card border-theme hover:bg-white/5'}`}>
                           <label className="flex items-start gap-3 cursor-pointer">
                             <input
                               type="checkbox"
@@ -795,7 +811,7 @@ export default function ProjectsTab({ user }: { user: any }) {
       {/* PREVIEW TOPIC MODAL */}
       {previewTopic && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-[#0e0e0e] border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+          <div className="w-full max-w-lg bg-primary border border-theme rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
             <header className="p-5 border-b border-theme flex justify-between items-center">
               <h4 className="font-black text-sm text-primary">Topic Preview Details</h4>
               <button onClick={() => setPreviewTopic(null)} className="w-8 h-8 rounded-full bg-secondary hover:bg-white/5 text-primary flex items-center justify-center">

@@ -63,5 +63,20 @@ Deno.serve(async (req) => {
       throw resendError;
     }
   }
+
+  // Log successfully dispatched email to database
+  try {
+    await supabase.from('email_logs').insert({
+      order_id: String(record.id),
+      recipient: record.email,
+      subject,
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      body: html,
+    });
+  } catch (dbErr: any) {
+    console.warn('Failed to insert email log in edge function:', dbErr.message);
+  }
+
   return new Response('email sent', { status: 200 });
 });

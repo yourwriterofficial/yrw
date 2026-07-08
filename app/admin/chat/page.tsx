@@ -160,6 +160,13 @@ export default function AdminChatPage() {
         })
         .eq('id', selectedConv.id);
 
+      // Trigger notifications asynchronously
+      fetch('/api/support/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: selectedConv.id, messageText: text, senderId: adminUser.id })
+      }).catch(e => console.warn('Notification trigger failed', e));
+
       // Refresh conversations list
       loadConversations();
     } catch (err: any) {

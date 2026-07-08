@@ -105,6 +105,9 @@ export default function PublicInvoicePage() {
       const data = await response.json();
       if (response.ok && data.link) {
         window.location.href = data.link;
+      } else if (response.ok && data.paid_via_wallet) {
+        alert('Milestone successfully paid instantly using your wallet balance!');
+        window.location.reload();
       } else {
         setErrorMsg(data.error || 'Failed to initialize payment.');
       }

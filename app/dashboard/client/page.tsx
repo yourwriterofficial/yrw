@@ -307,16 +307,46 @@ function DashboardContent() {
 
   useEffect(() => {
     const init = async () => {
+      // 1. Load from cache for instant loading bypass
+      let cachedUser = null;
+      let cachedProfile = null;
+      let cachedWallet = 0;
+      if (typeof window !== 'undefined') {
+        try {
+          const uStr = sessionStorage.getItem('yrw_user');
+          const pStr = sessionStorage.getItem('yrw_profile');
+          const wStr = sessionStorage.getItem('yrw_wallet');
+          if (uStr && pStr) {
+            cachedUser = JSON.parse(uStr);
+            cachedProfile = JSON.parse(pStr);
+            cachedWallet = Number(wStr) || 0;
+            
+            setUser(cachedUser);
+            setProfile(cachedProfile);
+            setWalletBalance(cachedWallet);
+            
+            userEmailRef.current = cachedUser.email || null;
+            isAdminPreviewRef.current = cachedProfile?.is_admin === true;
+            setIsAdminPreview(cachedProfile?.is_admin === true);
+            
+            setLoading(false);
+          }
+        } catch (e) {}
+      }
+
+      // 2. Fetch fresh user details
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (!user) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('yrw_user');
+          sessionStorage.removeItem('yrw_profile');
+          sessionStorage.removeItem('yrw_wallet');
+        }
         router.push('/login');
         return;
       }
       setUser(user);
 
-      // Profile is needed to decide admin vs. client orders; the vault fetch is
-      // independent, so run both in parallel (and reuse `user` to avoid a second
-      // getUser() round-trip inside fetchVaultFiles).
       const [{ data: userProfile }, { data: walletRow }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('wallets').select('balance').eq('user_id', user.id).maybeSingle(),
@@ -344,7 +374,15 @@ function DashboardContent() {
       setProfile(activeProfile);
       setWalletBalance(Number(activeWallet?.balance) || 0);
       
-      // Update refs to avoid stale closure in real-time subscription
+      // Update cache
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('yrw_user', JSON.stringify(activeUser));
+          sessionStorage.setItem('yrw_profile', JSON.stringify(activeProfile));
+          sessionStorage.setItem('yrw_wallet', String(Number(activeWallet?.balance) || 0));
+        } catch (e) {}
+      }
+
       userEmailRef.current = activeUser.email || null;
       const isAdmin = activeProfile?.is_admin === true;
       isAdminPreviewRef.current = isAdmin;
