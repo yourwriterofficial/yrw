@@ -434,7 +434,7 @@ export default function AdminLogsPage() {
       {/* LOG DETAILS DRAWER / MODAL */}
       {selectedLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-2xl bg-[#090909] h-screen border-l border-zinc-800 flex flex-col shadow-2xl animate-in slide-in-from-right duration-350">
+          <div className="w-full max-w-2xl bg-primary h-screen border-l border-theme flex flex-col shadow-2xl animate-in slide-in-from-right duration-350">
             <header className="p-6 border-b border-theme flex justify-between items-center shrink-0">
               <div>
                 <span className="text-[10px] font-black uppercase text-purple-400 tracking-widest">{selectedType === 'email' ? 'Email Dispatch Audit' : 'In-App Notification Audit'}</span>
@@ -495,7 +495,7 @@ export default function AdminLogsPage() {
                 <h4 className="text-[10px] font-black uppercase tracking-wider text-secondary">Logged Message Contents</h4>
                 
                 {selectedType === 'email' ? (
-                  <div className="border border-theme rounded-2xl overflow-hidden bg-black">
+                  <div className="border border-theme rounded-2xl overflow-hidden bg-primary">
                     <iframe
                       srcDoc={selectedLog.body || '<div style="color: #999; text-align: center; padding: 20px; font-family: sans-serif;">(No content body logged for this record)</div>'}
                       className="w-full h-[360px] bg-white"
