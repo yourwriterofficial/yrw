@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
-import { ToastContainer, showToast } from '@/app/components/ui/Toast';
+import { showToast } from '@/app/components/ui/Toast';
 import PageHeader from '@/app/components/ui/PageHeader';
 import Link from 'next/link';
 import type { CustomInvoice, CustomInvoiceMilestone } from '@/lib/types';
@@ -126,7 +126,6 @@ export default function InvoicesListPage() {
 
   return (
     <div className="p-6 md:p-10 space-y-10">
-      <ToastContainer />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <PageHeader

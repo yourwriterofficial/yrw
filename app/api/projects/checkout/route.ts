@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { listAllAuthUsers } from '@/lib/adminAuth';
+import { creditReferralCommission } from '@/lib/affiliate';
 
 const admin = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -200,6 +201,7 @@ export async function POST(request: Request) {
           reference,
           status: 'completed',
         });
+        await creditReferralCommission(admin, { buyerId, amount: total, reference, note: `Project material: ${title}` });
 
         // 3. Create the order
         const orderStringId = `PRJ-${Math.floor(100000 + Math.random() * 900000)}`;

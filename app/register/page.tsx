@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
+import { showToast } from '@/app/components/ui/Toast';
+import { REFERRAL_STORAGE_KEY } from '@/app/components/ReferralCapture';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -36,18 +38,29 @@ export default function RegisterPage() {
         full_name: fullName,
         is_admin: false,
       });
+
+      const refCode = localStorage.getItem(REFERRAL_STORAGE_KEY);
+      if (refCode) {
+        await fetch('/api/auth/apply-referral', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: authData.user.id, refCode }),
+        }).catch(() => {});
+      }
     }
 
-    alert('Registration successful! Please check your email to confirm.');
+    showToast('Registration successful! Please check your email to confirm.', 'success');
     router.push('/login');
     setLoading(false);
   };
 
   const handleGoogleSignUp = async () => {
     setLoading(true);
+    const refCode = localStorage.getItem(REFERRAL_STORAGE_KEY);
+    const callbackUrl = `${window.location.origin}/auth/callback${refCode ? `?ref=${encodeURIComponent(refCode)}` : ''}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: callbackUrl },
     });
     if (error) {
       setError(error.message);

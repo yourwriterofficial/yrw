@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
-import { showToast, ToastContainer } from '@/app/components/ui/Toast';
+import { showToast } from '@/app/components/ui/Toast';
+import PageHeader from '@/app/components/ui/PageHeader';
 
 export default function AdminAffiliatePage() {
   const [loading, setLoading] = useState(true);
@@ -90,18 +91,16 @@ export default function AdminAffiliatePage() {
   };
 
   const handleWithdrawalAction = async (id: number, status: 'approved' | 'rejected') => {
-    if (!confirm(`Are you sure you want to ${status} this withdrawal?`)) return;
+    if (!confirm(`Are you sure you want to ${status} this withdrawal?${status === 'rejected' ? ' The amount will be refunded to the client\'s wallet.' : ''}`)) return;
 
     try {
-      const { error } = await supabase
-        .from('withdrawals')
-        .update({
-          status,
-          processed_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) throw error;
+      const res = await fetch('/api/admin/process-withdrawal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ withdrawalId: id, status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Action failed');
       showToast(`Withdrawal successfully marked as ${status}`, 'success');
       fetchAffiliateData();
     } catch (err: any) {
@@ -112,22 +111,21 @@ export default function AdminAffiliatePage() {
 
   return (
     <div className="p-6 md:p-10 space-y-8">
-      <ToastContainer />
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-primary flex items-center gap-2">
-            <lucide.Coins className="w-6 h-6 text-purple-500" /> Affiliate System & Payouts
-          </h1>
-          <p className="text-xs text-secondary mt-1">Configure referral commission rates and process client payout requests.</p>
-        </div>
-        <button 
-          onClick={fetchAffiliateData}
-          className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
-        >
-          <lucide.RefreshCw className="w-3.5 h-3.5" /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Affiliate System & Payouts"
+        description="Configure referral commission rates and process client payout requests."
+        breadcrumb="Admin / Affiliates"
+        icon={<lucide.Coins className="w-8 h-8 text-purple-500" />}
+        actions={
+          <button
+            onClick={fetchAffiliateData}
+            className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
+          >
+            <lucide.RefreshCw className="w-3.5 h-3.5" /> Refresh
+          </button>
+        }
+      />
 
       {loading ? (
         <div className="py-20 text-center text-sm text-secondary flex items-center justify-center gap-2">

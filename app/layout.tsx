@@ -5,6 +5,8 @@ import PWAUpdater from "./components/PWAUpdater";
 import { ThemeProvider } from "./components/ThemeProvider";
 import OrderAssistant from "./components/OrderAssistant";
 import PushAutoSubscriber from "./components/PushAutoSubscriber";
+import { ToastContainer } from "./components/ui/Toast";
+import ReferralCapture from "./components/ReferralCapture";
 import { siteUrl } from "@/lib/siteUrl";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -14,6 +16,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
 };
 
 const SITE = siteUrl();
@@ -87,6 +90,8 @@ export default function RootLayout({
         <ThemeProvider>
           <PWAUpdater />
           <PushAutoSubscriber />
+          <ToastContainer />
+          <ReferralCapture />
           {children}
           <OrderAssistant />
           {/* Floating WhatsApp Support Button */}
@@ -94,7 +99,7 @@ export default function RootLayout({
             href="https://wa.me/2348121443666"
             target="_blank"
             rel="noopener noreferrer"
-            className="fixed bottom-6 right-6 z-50 bg-[#25D366] p-3 rounded-full shadow-lg hover:bg-[#20b859] transition"
+            className="fixed fab-bottom-safe right-6 z-50 bg-[#25D366] p-3 rounded-full shadow-lg hover:bg-[#20b859] transition"
             aria-label="Chat on WhatsApp"
           >
             <svg

@@ -813,9 +813,9 @@ export default function ProjectsPage() {
       <Header projectsContext />
       {/* HERO */}
       <section className="relative overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-600 to-emerald-800 text-white">
-        <div className="absolute -top-16 -right-20 w-72 h-72 rounded-full bg-white/5" />
-        <div className="absolute -bottom-24 -left-16 w-96 h-96 rounded-full bg-white/[0.03]" />
-        <div className="relative z-10 max-w-4xl mx-auto text-center px-6 pt-28 pb-12">
+        <div className="absolute -top-16 -right-20 w-72 h-72 rounded-full bg-white/5 animate-blob" />
+        <div className="absolute -bottom-24 -left-16 w-96 h-96 rounded-full bg-white/[0.03] animate-blob animation-delay-2000" />
+        <div className="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 pt-header-24 sm:pt-header-28 pb-12">
           <div className="text-5xl mb-2">📚</div>
           <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-3">
             {pageSettings.hero_title}
@@ -835,7 +835,7 @@ export default function ProjectsPage() {
           {/* DATABASE SEARCH CARD MOVED HERE */}
           {!hasSearched && !isSearching ? (
             <div className="max-w-2xl mx-auto mt-6 text-left">
-              <div className="rounded-3xl p-8 shadow-2xl space-y-6 text-center bg-white/10 text-primary">
+              <div className="rounded-[28px] sm:rounded-3xl p-5 sm:p-8 shadow-2xl space-y-6 text-center bg-white/10 backdrop-blur-xl border border-white/15 text-primary">
                 <div>
                   <h2 className="text-xl font-black text-primary">Database Search & Availability</h2>
                   <p className="text-xs text-secondary mt-1.5 leading-relaxed font-semibold">
@@ -991,17 +991,17 @@ export default function ProjectsPage() {
         <div className="max-w-5xl mx-auto">
           <h2 className="text-lg md:text-xl font-black text-primary text-center mb-6">What's Included With Every Topic</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-card border border-theme rounded-2xl p-5 text-center">
+            <div className="glass-panel rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform duration-300">
               <div className="text-2xl mb-2">📚</div>
               <h3 className="text-sm font-bold text-primary mb-1">Ready-made Chapters 1–5</h3>
               <p className="text-xs text-secondary">Full academic material in MS Word, matched to your department and level.</p>
             </div>
-            <div className="bg-card border border-theme rounded-2xl p-5 text-center">
+            <div className="glass-panel rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform duration-300">
               <div className="text-2xl mb-2">🧩</div>
               <h3 className="text-sm font-bold text-primary mb-1">Optional Add-ons</h3>
               <p className="text-xs text-secondary">Extend any topic with extras like SPSS analysis, PowerPoint slides, or a location/case-study change.</p>
             </div>
-            <div className="bg-card border border-theme rounded-2xl p-5 text-center">
+            <div className="glass-panel rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform duration-300">
               <div className="text-2xl mb-2">🔒</div>
               <h3 className="text-sm font-bold text-primary mb-1">Secure Vault Delivery</h3>
               <p className="text-xs text-secondary">Your material lands in your dashboard's Secure Vault, ready to download.</p>
@@ -1066,7 +1066,7 @@ export default function ProjectsPage() {
 
           <div id="topics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
             {topics.map(t => (
-              <div key={t.id} className="bg-card border border-theme rounded-2xl p-5 flex flex-col gap-3 hover:border-emerald-500/40 hover:shadow-lg transition">
+              <div key={t.id} className="glass-panel rounded-[24px] p-5 flex flex-col gap-3 hover:border-emerald-500/40 hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[11px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">{t.department}</span>
                   <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(t.level)}`}>{t.level}</span>
@@ -1175,7 +1175,7 @@ export default function ProjectsPage() {
             <>
               <div id="topics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {topics.map(t => (
-                  <div key={t.id} className="bg-card border border-theme rounded-2xl p-5 flex flex-col gap-3 hover:border-emerald-500/40 hover:shadow-lg transition">
+                  <div key={t.id} className="glass-panel rounded-[24px] p-5 flex flex-col gap-3 hover:border-emerald-500/40 hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[11px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">{t.department}</span>
                       <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(t.level)}`}>{t.level}</span>

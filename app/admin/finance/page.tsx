@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
-import { ToastContainer, showToast } from '@/app/components/ui/Toast';
+import { showToast } from '@/app/components/ui/Toast';
 import PageHeader from '@/app/components/ui/PageHeader';
 
 const formatNaira = (amount: number) => '₦' + amount.toLocaleString('en-NG');
@@ -134,7 +134,6 @@ export default function FinancePage() {
 
   return (
     <div className="p-6 md:p-10 space-y-10">
-      <ToastContainer />
 
       <PageHeader
         title="Finance"

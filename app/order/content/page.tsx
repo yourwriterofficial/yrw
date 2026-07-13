@@ -180,16 +180,19 @@ export default function ContentOrderForm() {
   }
 
   return (
-    <div className="min-h-screen bg-primary text-primary py-12 px-6 font-['Inter']">
+    <div className="min-h-screen bg-primary text-primary py-10 sm:py-12 px-4 sm:px-6 font-['Inter'] overflow-x-hidden">
       <OrderCategoryNav />
-      <div className="max-w-3xl mx-auto space-y-12 mt-6">
-        <div className="text-center">
-          <div className="inline-block px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Creative Pipeline</div>
-          <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Content & Creative Writing</h1>
-          <p className="text-secondary text-sm">Tailored copy, eBooks, and SEO content designed to engage your exact audience.</p>
+      <div className="max-w-3xl mx-auto space-y-10 sm:space-y-12 mt-6">
+        <div className="text-center relative">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-amber-500/15 blur-[90px] rounded-full pointer-events-none" />
+          <div className="relative">
+            <div className="inline-block px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Creative Pipeline</div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black mb-4 tracking-tight">Content & Creative Writing</h1>
+            <p className="text-secondary text-sm px-2">Tailored copy, eBooks, and SEO content designed to engage your exact audience.</p>
+          </div>
         </div>
 
-        <div className="space-y-8 bg-secondary p-8 rounded-[32px] border border-theme">
+        <div className="space-y-8 glass-panel p-5 sm:p-8 rounded-[28px] sm:rounded-[32px]">
           <div>
             <label className="text-[10px] font-black uppercase tracking-widest text-secondary mb-2 block ml-1">Proposed Base Budget (₦)</label>
             <input
@@ -352,7 +355,7 @@ export default function ContentOrderForm() {
           <button
             onClick={submitOrder}
             disabled={!acceptTerms || submitting}
-            className="w-full bg-amber-500 text-black font-black uppercase text-xs tracking-[1px] py-5 rounded-2xl shadow-xl shadow-amber-500/20 hover:bg-amber-400 transition disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-black font-black uppercase text-xs tracking-[1px] py-5 rounded-2xl shadow-xl shadow-amber-500/25 transition disabled:opacity-50"
           >
             {submitting ? 'Processing...' : 'Submit Content Request'}
           </button>

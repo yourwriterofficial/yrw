@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
-import { showToast, ToastContainer } from '@/app/components/ui/Toast';
+import { showToast } from '@/app/components/ui/Toast';
+import PageHeader from '@/app/components/ui/PageHeader';
 
 const naira = (amount: number) => '₦' + Math.round(amount || 0).toLocaleString('en-NG');
 
@@ -91,22 +92,21 @@ export default function AdminTransactionsPage() {
 
   return (
     <div className="p-6 md:p-10 space-y-6">
-      <ToastContainer />
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-primary flex items-center gap-2">
-            <lucide.History className="w-6 h-6 text-purple-500" /> Transactions List
-          </h1>
-          <p className="text-xs text-secondary mt-1">Review, monitor, and query all financial movements inside the system.</p>
-        </div>
-        <button 
-          onClick={() => { setPage(1); fetchTransactions(); }}
-          className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
-        >
-          <lucide.RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Transactions List"
+        description="Review, monitor, and query all financial movements inside the system."
+        breadcrumb="Admin / Transactions"
+        icon={<lucide.History className="w-8 h-8 text-purple-500" />}
+        actions={
+          <button
+            onClick={() => { setPage(1); fetchTransactions(); }}
+            className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
+          >
+            <lucide.RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </button>
+        }
+      />
 
       {/* FILTER BAR */}
       <div className="bg-card border border-theme rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">

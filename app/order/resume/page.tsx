@@ -159,16 +159,19 @@ export default function ResumeOrderForm() {
   if (loading) return <div className="min-h-screen bg-primary flex items-center justify-center"><div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-primary text-primary py-12 px-6 font-['Inter']">
+    <div className="min-h-screen bg-primary text-primary py-10 sm:py-12 px-4 sm:px-6 font-['Inter'] overflow-x-hidden">
       <OrderCategoryNav />
-      <div className="max-w-3xl mx-auto space-y-12 mt-6">
-        <div className="text-center">
-          <div className="inline-block px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Executive Pipeline</div>
-          <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Executive Resumes & CVs</h1>
-          <p className="text-secondary text-sm">ATS-compliant resumes, Cover Letters, and LinkedIn optimizations to secure top-tier interviews.</p>
+      <div className="max-w-3xl mx-auto space-y-10 sm:space-y-12 mt-6">
+        <div className="text-center relative">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-500/15 blur-[90px] rounded-full pointer-events-none" />
+          <div className="relative">
+            <div className="inline-block px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Executive Pipeline</div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black mb-4 tracking-tight">Executive Resumes & CVs</h1>
+            <p className="text-secondary text-sm px-2">ATS-compliant resumes, Cover Letters, and LinkedIn optimizations to secure top-tier interviews.</p>
+          </div>
         </div>
 
-        <div className="space-y-8 bg-secondary p-8 rounded-[32px] border border-theme">
+        <div className="space-y-8 glass-panel p-5 sm:p-8 rounded-[28px] sm:rounded-[32px]">
           
           {availableAddons.length > 0 && (
             <div className="space-y-3">
@@ -293,7 +296,7 @@ export default function ResumeOrderForm() {
             <p className="text-[9px] uppercase font-black text-secondary mt-2 tracking-widest">Total Package Price</p>
           </div>
 
-          <button onClick={submitOrder} disabled={!acceptTerms || selectedAddons.size === 0 || submitting} className="w-full bg-blue-600 text-white font-black uppercase text-xs tracking-[1px] py-5 rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-blue-500 transition disabled:opacity-50">
+          <button onClick={submitOrder} disabled={!acceptTerms || selectedAddons.size === 0 || submitting} className="w-full bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-300 hover:to-indigo-400 text-black font-black uppercase text-xs tracking-[1px] py-5 rounded-2xl shadow-xl shadow-blue-500/25 transition disabled:opacity-50">
             {submitting ? 'Encrypting Documents...' : 'Finalize Resume Request'}
           </button>
         </div>

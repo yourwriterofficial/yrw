@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import * as lucide from 'lucide-react';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
-import { ToastContainer, showToast } from '@/app/components/ui/Toast';
+import { showToast } from '@/app/components/ui/Toast';
 import PageHeader from '@/app/components/ui/PageHeader';
 import Link from 'next/link';
 
@@ -288,7 +288,6 @@ export default function NewInvoicePage() {
 
   return (
     <div className="p-6 md:p-10 space-y-10 max-w-5xl">
-      <ToastContainer />
       <PageHeader
         title="Generate Invoice Contract"
         description="Create a dynamic milestone-based invoice contract matching premium styling rules."

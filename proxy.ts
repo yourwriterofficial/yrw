@@ -45,9 +45,13 @@ export default async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname
 
-  // Public routes and API routes are not auth-gated here.
-  const publicPaths = ['/', '/login', '/register', '/auth/callback', '/complete-registration']
-  if (publicPaths.includes(path) || path.startsWith('/api/') || path.startsWith('/invoice/')) {
+  // Only /dashboard and /admin actually consult the auth session below — every
+  // other route (marketing/service pages, catalogs, order forms, API routes)
+  // used to fall through to a blocking supabase.auth.getUser() network call on
+  // every single request regardless, adding real latency to pages that never
+  // even looked at the result. Skip the check entirely unless it's needed.
+  const needsAuthCheck = path.startsWith('/dashboard') || path.startsWith('/admin')
+  if (!needsAuthCheck) {
     const response = NextResponse.next({ request })
     response.headers.set('Content-Security-Policy', CSP)
     return response

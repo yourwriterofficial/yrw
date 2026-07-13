@@ -8,13 +8,16 @@ import type { AdminOrderView } from '@/lib/types';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import WalletPage from './wallet/page';
 import { DashboardSkeleton } from '@/app/components/ui/Skeleton';
-import { ToastContainer, showToast } from '@/app/components/ui/Toast';
+import { showToast } from '@/app/components/ui/Toast';
 import StatusBadge from '@/app/components/ui/StatusBadge';
+import StatCard from '@/app/components/ui/StatCard';
 import NotificationPreferencesPanel from '@/app/components/ui/NotificationPreferencesPanel';
 import MilestoneTimeline from '@/app/components/ui/MilestoneTimeline';
 import { isOrderFullyPaid, isCustomPayment } from '@/lib/orderPayment';
 import SupportChat from './SupportChat';
 import ProjectsTab from './ProjectsTab';
+import ScriptsTab from './ScriptsTab';
+import AffiliateTab from './AffiliateTab';
 
 // ==========================================
 // 1. HELPER FUNCTIONS
@@ -181,7 +184,7 @@ function DashboardContent() {
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [orders, setOrders] = useState<AdminOrderView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'vault' | 'wallet' | 'profile' | 'chat' | 'projects'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'vault' | 'wallet' | 'profile' | 'chat' | 'projects' | 'scripts' | 'affiliate'>('dashboard');
 
   const [processingPayment, setProcessingPayment] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -201,7 +204,7 @@ function DashboardContent() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'vault' || tab === 'wallet' || tab === 'profile' || tab === 'dashboard' || tab === 'chat' || tab === 'projects') {
+    if (tab === 'vault' || tab === 'wallet' || tab === 'profile' || tab === 'dashboard' || tab === 'chat' || tab === 'projects' || tab === 'scripts' || tab === 'affiliate') {
       setActiveTab(tab as any);
     }
   }, [searchParams]);
@@ -960,6 +963,20 @@ function DashboardContent() {
         </div>
       )}
 
+      {/* === TAB: SCRIPTS === */}
+      {activeTab === 'scripts' && (
+        <div className="animate-in fade-in duration-500 max-w-6xl mx-auto">
+          <ScriptsTab user={user} />
+        </div>
+      )}
+
+      {/* === TAB: AFFILIATE === */}
+      {activeTab === 'affiliate' && (
+        <div className="animate-in fade-in duration-500">
+          <AffiliateTab user={user} />
+        </div>
+      )}
+
       {/* === TAB: PROFILE === */}
       {activeTab === 'profile' && (
         <div className="animate-in fade-in duration-500 max-w-2xl mx-auto">
@@ -1319,20 +1336,6 @@ function SidebarBtn({ active, onClick, icon, label, badge }: any) {
         <span className="px-2 py-0.5 bg-emerald-500 text-black rounded-md text-[10px] font-black">{badge}</span>
       )}
     </button>
-  );
-}
-
-function StatCard({ label, value, icon, color = "text-emerald-500" }: any) {
-  return (
-    <div className="bg-card border border-theme rounded-2xl p-5 flex flex-col justify-between">
-      <div className="flex justify-between items-start mb-4">
-        <div className={`p-2 rounded-lg bg-secondary border border-theme ${color}`}>{icon}</div>
-      </div>
-      <div>
-        <div className="text-3xl font-black text-primary">{value}</div>
-        <div className="text-xs text-secondary uppercase tracking-widest font-bold mt-1">{label}</div>
-      </div>
-    </div>
   );
 }
 

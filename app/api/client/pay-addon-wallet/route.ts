@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { notifyUser, notifyAdmins } from '@/lib/notify';
+import { creditReferralCommission } from '@/lib/affiliate';
 
 const supabaseAdmin = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -105,6 +106,7 @@ export async function POST(request: Request) {
       console.error('Addon payment transaction log error:', txError);
       // We don't fail the request here, but it's good to log
     }
+    await creditReferralCommission(supabaseAdmin, { buyerId: session.user.id, amount: price, reference: txRef, note: `Add-on: ${orderId}` });
 
     // 6. Mark addon as PAID and update db
     addon.status = 'PAID';

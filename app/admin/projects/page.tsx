@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import * as lucide from 'lucide-react';
 import PageHeader from '@/app/components/ui/PageHeader';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
-import { ToastContainer, showToast } from '@/app/components/ui/Toast';
+import { showToast } from '@/app/components/ui/Toast';
 
 type Topic = {
   id?: number;
@@ -194,7 +194,6 @@ export default function AdminProjectsPage() {
 
   return (
     <div className="p-6 md:p-10">
-      <ToastContainer />
       <PageHeader
         title="Project Topics"
         description="Manage the /projects catalogue, per-topic prices, purchase add-ons, and page copy."

@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 import * as lucide from 'lucide-react';
 import PageHeader from '@/app/components/ui/PageHeader';
 import StatusBadge from '@/app/components/ui/StatusBadge';
+import StatCard from '@/app/components/ui/StatCard';
 import { DashboardSkeleton } from '@/app/components/ui/Skeleton';
 
 const formatNaira = (amount: number) => '₦' + Math.round(amount).toLocaleString('en-NG');
@@ -106,28 +107,6 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  color = 'text-primary',
-  icon,
-}: {
-  label: string;
-  value: string | number;
-  color?: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="bg-card border border-theme rounded-2xl p-5">
-      <div className={`p-2 rounded-lg bg-secondary border border-theme inline-flex mb-3 ${color}`}>
-        {icon}
-      </div>
-      <div className={`text-2xl font-black ${color}`}>{value}</div>
-      <div className="text-[10px] text-secondary uppercase tracking-widest font-bold mt-1">{label}</div>
     </div>
   );
 }

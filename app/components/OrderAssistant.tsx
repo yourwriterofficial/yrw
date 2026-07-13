@@ -1084,14 +1084,14 @@ export default function OrderAssistant() {
   return (
     <>
       {!open && !tourActive && (
-        <button onClick={openAssistant} className="fixed bottom-6 left-6 z-50 flex items-center gap-2 pl-3 pr-4 py-3 rounded-full shadow-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:brightness-110 transition" aria-label="Open order assistant">
+        <button onClick={openAssistant} className="fixed fab-bottom-safe left-6 z-50 flex items-center gap-2 pl-3 pr-4 py-3 rounded-full shadow-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:brightness-110 transition" aria-label="Open order assistant">
           <Sparkles className="w-5 h-5" />
           <span className="text-xs font-black uppercase tracking-wide hidden sm:inline">Need Help Ordering?</span>
         </button>
       )}
 
       {open && (
-        <div className="fixed bottom-6 left-6 z-50 w-[92vw] max-w-sm bg-card border border-theme rounded-[24px] shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '82vh' }}>
+        <div className="fixed fab-bottom-safe left-6 z-50 w-[92vw] max-w-sm bg-card border border-theme rounded-[24px] shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '82vh' }}>
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shrink-0">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
@@ -1101,8 +1101,8 @@ export default function OrderAssistant() {
               <button onClick={contactWriter} title="Contact Writer directly on WhatsApp" className="flex items-center gap-1 px-2 py-1.5 hover:bg-white/10 rounded-lg cursor-pointer text-[10px] font-black uppercase">
                 <MessageCircle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Contact Writer</span>
               </button>
-              {history.length > 0 && <button onClick={reset} title="Start over" className="p-1.5 hover:bg-white/10 rounded-lg cursor-pointer"><ArrowLeft className="w-4 h-4" /></button>}
-              <button onClick={() => setOpen(false)} className="p-1.5 hover:bg-white/10 rounded-lg cursor-pointer"><X className="w-4 h-4" /></button>
+              {history.length > 0 && <button onClick={reset} title="Start over" className="p-2.5 hover:bg-white/10 rounded-lg cursor-pointer"><ArrowLeft className="w-4 h-4" /></button>}
+              <button onClick={() => setOpen(false)} className="p-2.5 hover:bg-white/10 rounded-lg cursor-pointer"><X className="w-4 h-4" /></button>
             </div>
           </div>
 

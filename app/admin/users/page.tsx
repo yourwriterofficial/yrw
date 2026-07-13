@@ -13,7 +13,7 @@ import {
   Bell,
 } from 'lucide-react';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
-import { ToastContainer, showToast } from '@/app/components/ui/Toast';
+import { showToast } from '@/app/components/ui/Toast';
 import PageHeader from '@/app/components/ui/PageHeader';
 
 const formatNaira = (amount: number) => '₦' + amount.toLocaleString('en-NG');
@@ -258,7 +258,6 @@ export default function AdminUsersPage() {
 
   return (
     <div className="p-6 md:p-10">
-      <ToastContainer />
 
       {/* ========== MODALS ========== */}
 

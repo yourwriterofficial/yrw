@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { createSecureOrder } from '@/app/actions/createOrder';
-import { HelpCircle, ChevronRight, ChevronLeft, Upload, Paperclip, CheckCircle2, Calendar, Trash2 } from 'lucide-react';
+import { HelpCircle, ChevronRight, ChevronLeft, ChevronDown, Upload, Paperclip, CheckCircle2, Calendar, Trash2 } from 'lucide-react';
 import type { ServiceTier, CreateOrderServerActionResponse } from '@/lib/types';
 import OrderCategoryNav from './OrderCategoryNav';
 import { getEffectiveUser } from '@/lib/impersonate';
+import { showToast } from '@/app/components/ui/Toast';
 
 type Plan = ServiceTier;
 
@@ -108,6 +109,7 @@ export default function OrderForm() {
   const [customPrice, setCustomPrice] = useState<number>(50000);
   const [refStyle, setRefStyle] = useState<string>('APA 7th Edition');
   const [fontStyle, setFontStyle] = useState<string>('Times New Roman (12pt)');
+  const [showFormattingOptions, setShowFormattingOptions] = useState<boolean>(false);
 
   const [dbRefStyles, setDbRefStyles] = useState<string[]>([]);
   const [dbFontStyles, setDbFontStyles] = useState<string[]>([]);
@@ -239,7 +241,7 @@ export default function OrderForm() {
     const sizeCeiling = 25 * 1024 * 1024;
     for (const file of selectedFiles) {
       if (file.size > sizeCeiling) {
-        alert(`File Too Large: "${file.name}" exceeds the 25MB limit.`);
+        showToast(`File Too Large: "${file.name}" exceeds the 25MB limit.`, 'error');
         e.target.value = '';
         return;
       }
@@ -252,12 +254,12 @@ export default function OrderForm() {
     if (currentStep === 1) {
       if (!isLoggedIn) {
         if (!name.trim() || !email.trim() || !whatsapp.trim() || !topic.trim()) {
-          alert("Please fill out your Name, Email, WhatsApp, and Research Topic.");
+          showToast("Please fill out your Name, Email, WhatsApp, and Research Topic.", 'error');
           return false;
         }
       } else {
         if (!topic.trim()) {
-          alert("Research Topic is required.");
+          showToast("Research Topic is required.", 'error');
           return false;
         }
       }
@@ -271,11 +273,11 @@ export default function OrderForm() {
   };
 
   const submitOrder = async () => {
-    if (!acceptTerms) return alert('You must accept the Terms of Service.');
+    if (!acceptTerms) return showToast('You must accept the Terms of Service.', 'error');
     if (!validateStep(1)) return;
-    if (!deadline) return alert('Please assign a deadline.');
+    if (!deadline) return showToast('Please assign a deadline.', 'error');
     if (paymentMethod === 'wallet' && isLoggedIn && walletBalance < depositAmount) {
-      alert('Insufficient wallet balance. Please top up or choose card payment.');
+      showToast('Insufficient wallet balance. Please top up or choose card payment.', 'error');
       return;
     }
 
@@ -341,7 +343,7 @@ export default function OrderForm() {
     const serverResponse = await createSecureOrder(payloadManifest, promoDiscount > 0 ? promoCode : '') as CreateOrderServerActionResponse;
 
     if (!serverResponse?.success) {
-      alert(`Submission failed: ${serverResponse?.error}`);
+      showToast(`Submission failed: ${serverResponse?.error}`, 'error');
       setLoading(false);
       return;
     }
@@ -366,27 +368,24 @@ export default function OrderForm() {
 
     // --- PAYMENT HANDLING ---
     if (isLoggedIn && paymentMethod === 'wallet') {
-      // Deduct deposit from wallet
-      const { error: deductError } = await supabase.rpc('increment_wallet', {
-        user_id: loggedInUser.id,
-        add_amount: -depositAmount,
-      });
-      if (deductError) {
-        alert('Wallet deduction failed. Please contact support.');
+      try {
+        const res = await fetch('/api/client/pay-order-deposit-wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: orderStringId, amount: depositAmount }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showToast(data.error || 'Wallet deduction failed. Please contact support.', 'error');
+          setLoading(false);
+          return;
+        }
+      } catch {
+        showToast('Network error during wallet payment.', 'error');
         setLoading(false);
         return;
       }
-      // Mark order as deposit paid
-      await supabase.from('orders').update({ sixty_percent_paid: true, workflow_status: 'Synthesis Active' }).eq('order_id', orderStringId);
-      // Log transaction
-      await supabase.from('transactions').insert({
-        user_id: loggedInUser.id,
-        amount: depositAmount,
-        type: 'payment',
-        reference: `DEPOSIT_${orderStringId}`,
-        status: 'completed',
-      });
-      alert('Order placed! Deposit paid from wallet.');
+      showToast('Order placed! Deposit paid from wallet.', 'success');
       router.push('/dashboard/client');
     } else {
       // Pay with card – redirect to Paystack (guest or card payment)
@@ -557,21 +556,35 @@ export default function OrderForm() {
           </div>
 
           <div className="space-y-4">
-            <div className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 font-bold">Formatting Requirements</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setShowFormattingOptions(v => !v)}
+              className="w-full flex items-center justify-between text-left"
+            >
               <div>
-                <label className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 block ml-1">Citation Style</label>
-                <select value={refStyle} onChange={e => setRefStyle(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-xs text-primary outline-none focus:border-emerald-500 font-bold">
-                  {dbRefStyles.map(s => <option key={s}>{s}</option>)}
-                </select>
+                <div className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 font-bold">Formatting Requirements</div>
+                {!showFormattingOptions && (
+                  <p className="text-[10px] text-secondary ml-1 mt-1">Using default: {refStyle} · {fontStyle}. Tap to customize.</p>
+                )}
               </div>
-              <div>
-                <label className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 block ml-1">Font Preference</label>
-                <select value={fontStyle} onChange={e => setFontStyle(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-xs text-primary outline-none focus:border-emerald-500 font-bold">
-                  {dbFontStyles.map(f => <option key={f}>{f}</option>)}
-                </select>
+              <ChevronDown className={`w-4 h-4 text-secondary shrink-0 transition-transform ${showFormattingOptions ? 'rotate-180' : ''}`} />
+            </button>
+            {showFormattingOptions && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div>
+                  <label className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 block ml-1">Citation Style</label>
+                  <select value={refStyle} onChange={e => setRefStyle(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-xs text-primary outline-none focus:border-emerald-500 font-bold">
+                    {dbRefStyles.map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 block ml-1">Font Preference</label>
+                  <select value={fontStyle} onChange={e => setFontStyle(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-xs text-primary outline-none focus:border-emerald-500 font-bold">
+                    {dbFontStyles.map(f => <option key={f}>{f}</option>)}
+                  </select>
+                </div>
               </div>
-            </div>
+            )}
           </div>
           <button onClick={() => { if (validateStep(1)) goToStep(2); }} className="w-full bg-[#1DB954] text-black font-black uppercase text-[11px] tracking-[1.5px] py-5 rounded-full hover:bg-[#1ed760] transition flex items-center justify-center gap-2">
             Proceed to Instructions <ChevronRight className="w-4 h-4" />

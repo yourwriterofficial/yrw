@@ -8,22 +8,58 @@ import { useState, useEffect } from 'react';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import NotificationBell from '@/app/components/ui/NotificationBell';
 
-const NAV_ITEMS: { href: string; label: string; icon: typeof lucide.LayoutDashboard; exact?: boolean }[] = [
-  { href: '/admin', label: 'Dashboard', icon: lucide.LayoutDashboard, exact: true },
-  { href: '/admin/orders', label: 'Orders', icon: lucide.Database },
-  { href: '/admin/invoices', label: 'Invoices', icon: lucide.FileSpreadsheet },
-  { href: '/admin/projects', label: 'Project Topics', icon: lucide.BookOpen },
-  { href: '/admin/finance', label: 'Finance', icon: lucide.Wallet },
-  { href: '/admin/users', label: 'Users', icon: lucide.Users },
-  { href: '/admin/chat', label: 'Support Chat', icon: lucide.MessageSquare },
-  { href: '/admin/transactions', label: 'Transactions', icon: lucide.History },
-  { href: '/admin/logs', label: 'System Logs', icon: lucide.FileText },
-  { href: '/admin/affiliate', label: 'Affiliates', icon: lucide.Coins },
-  { href: '/admin/promos', label: 'Promo Codes', icon: lucide.Tag },
-  { href: '/admin/email', label: 'Messaging', icon: lucide.Send },
-  { href: '/admin/settings', label: 'Settings', icon: lucide.Settings },
-  { href: '/admin/vault', label: 'Vault Files', icon: lucide.FolderArchive },
+type NavItem = { href: string; label: string; icon: typeof lucide.LayoutDashboard; exact?: boolean };
+type NavGroup = { label: string; items: NavItem[] };
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Overview',
+    items: [
+      { href: '/admin', label: 'Dashboard', icon: lucide.LayoutDashboard, exact: true },
+    ],
+  },
+  {
+    label: 'Sales & Orders',
+    items: [
+      { href: '/admin/orders', label: 'Orders', icon: lucide.Database },
+      { href: '/admin/invoices', label: 'Invoices', icon: lucide.FileSpreadsheet },
+      { href: '/admin/transactions', label: 'Transactions', icon: lucide.History },
+      { href: '/admin/finance', label: 'Finance', icon: lucide.Wallet },
+    ],
+  },
+  {
+    label: 'Catalog',
+    items: [
+      { href: '/admin/projects', label: 'Project Topics', icon: lucide.BookOpen },
+      { href: '/admin/dev-shop', label: 'Dev Shop', icon: lucide.ShoppingBag },
+      { href: '/admin/promos', label: 'Promo Codes', icon: lucide.Tag },
+    ],
+  },
+  {
+    label: 'People',
+    items: [
+      { href: '/admin/users', label: 'Users', icon: lucide.Users },
+      { href: '/admin/affiliate', label: 'Affiliates', icon: lucide.Coins },
+    ],
+  },
+  {
+    label: 'Communication',
+    items: [
+      { href: '/admin/chat', label: 'Support Chat', icon: lucide.MessageSquare },
+      { href: '/admin/email', label: 'Messaging', icon: lucide.Send },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { href: '/admin/vault', label: 'Vault Files', icon: lucide.FolderArchive },
+      { href: '/admin/logs', label: 'System Logs', icon: lucide.FileText },
+      { href: '/admin/settings', label: 'Settings', icon: lucide.Settings },
+    ],
+  },
 ];
+
+const NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap(g => g.items);
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -74,6 +110,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         : 'text-secondary hover:bg-white/5 hover:text-primary'
     }`;
 
+  const currentPageLabel = NAV_ITEMS.find(item => isActive(item.href, item.exact))?.label || 'Admin';
+
   if (checkingAdmin) {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
@@ -96,14 +134,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
-          {NAV_ITEMS.map(({ href, label, icon: Icon, exact }) => (
-            <Link key={href} href={href} className={navLinkClass(href, exact)}>
-              <Icon className="w-5 h-5 mr-3 shrink-0" /> {label}
-            </Link>
+        <nav className="flex flex-col gap-4 flex-1 overflow-y-auto">
+          {NAV_GROUPS.map(group => (
+            <div key={group.label}>
+              <p className="text-[9px] uppercase tracking-widest text-secondary/70 font-black pl-3 mb-1.5">{group.label}</p>
+              <div className="flex flex-col gap-0.5">
+                {group.items.map(({ href, label, icon: Icon, exact }) => (
+                  <Link key={href} href={href} className={navLinkClass(href, exact)}>
+                    <Icon className="w-5 h-5 mr-3 shrink-0" /> {label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
 
-          <div className="my-4 border-t border-theme" />
+          <div className="my-2 border-t border-theme" />
 
           <button
             type="button"
@@ -129,7 +174,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Mobile topbar */}
-      <div className="md:hidden bg-secondary border-b border-theme p-4 flex justify-between items-center sticky top-0 z-50">
+      <div className="md:hidden bg-secondary border-b border-theme px-4 pb-4 topbar-safe flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center text-white">
             <lucide.Shield className="w-4 h-4" />
@@ -139,7 +184,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <button
           type="button"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 text-primary rounded-lg hover:bg-white/5"
+          className="p-2.5 text-primary rounded-lg hover:bg-white/5"
           aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={mobileMenuOpen}
         >
@@ -148,16 +193,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-1 absolute w-full z-40 top-[73px] shadow-lg max-h-[70vh] overflow-y-auto">
-          {NAV_ITEMS.map(({ href, label, icon: Icon, exact }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMobileMenuOpen(false)}
-              className={navLinkClass(href, exact)}
-            >
-              <Icon className="w-4 h-4 mr-3 shrink-0" /> {label}
-            </Link>
+        <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-3 absolute w-full z-40 dropdown-top-safe shadow-lg max-h-[70vh] overflow-y-auto">
+          {NAV_GROUPS.map(group => (
+            <div key={group.label}>
+              <p className="text-[9px] uppercase tracking-widest text-secondary/70 font-black pl-3 mb-1">{group.label}</p>
+              <div className="flex flex-col gap-0.5">
+                {group.items.map(({ href, label, icon: Icon, exact }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={navLinkClass(href, exact)}
+                  >
+                    <Icon className="w-4 h-4 mr-3 shrink-0" /> {label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
           <button
             type="button"
@@ -180,13 +232,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <main className="flex-1 overflow-y-auto flex flex-col h-screen bg-primary">
         {/* Top Header */}
         <header className="bg-secondary/40 backdrop-blur-md border-b border-theme px-6 py-4 flex justify-between items-center sticky top-0 z-30 shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="font-black text-xs uppercase tracking-widest text-secondary">
-              {pathname === '/admin' ? 'Dashboard' : pathname.replace('/admin/', '').replace('-', ' ')}
-            </span>
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest">
+            <span className="text-secondary/60">Admin</span>
+            <lucide.ChevronRight className="w-3 h-3 text-secondary/40" />
+            <span className="text-primary">{currentPageLabel}</span>
           </div>
           <div className="flex items-center gap-4">
-            <NotificationBell isAdmin={true} userEmail={user?.email || ''} />
+            <NotificationBell isAdmin={true} userEmail={user?.email || ''} userId={user?.id} />
           </div>
         </header>
         <div className="flex-1 overflow-y-auto">{children}</div>

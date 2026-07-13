@@ -235,3 +235,81 @@ textarea:focus-visible {
   text-align: center;
   background: var(--bg-card);
 }
+
+/* ============================================================
+   Bold SaaS Gradient design primitives — public marketing pages
+   (homepage, service landing pages, order forms). Theme-aware via
+   the existing --bg-card / --border custom properties, so these
+   work in both dark and light mode without separate dark: rules.
+   ============================================================ */
+
+.glass-panel {
+  background: color-mix(in srgb, var(--bg-card) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.glass-panel-strong {
+  background: color-mix(in srgb, var(--bg-card) 75%, transparent);
+  border: 1px solid var(--border);
+}
+
+.glass-panel, .glass-panel-strong {
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+.glass-panel-strong {
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+
+/* Floating gradient blobs used behind hero sections */
+@keyframes blob-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.15); }
+  66% { transform: translate(-25px, 25px) scale(0.9); }
+}
+.animate-blob {
+  animation: blob-float 12s ease-in-out infinite;
+}
+.animation-delay-2000 { animation-delay: 2s; }
+.animation-delay-4000 { animation-delay: 4s; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob { animation: none; }
+}
+
+/* iOS safe-area padding (notch / home indicator) */
+.pt-safe { padding-top: max(env(safe-area-inset-top), 0px); }
+.pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 1rem); }
+.pl-safe { padding-left: max(env(safe-area-inset-left), 0px); }
+.pr-safe { padding-right: max(env(safe-area-inset-right), 0px); }
+
+/* Header clearance: Header is `fixed` + adds pt-safe internally, so its real height
+   grows on notched devices. Page content must add the SAME safe-area inset on top of
+   its base clearance or it gets covered on iOS. Use these instead of raw pt-* after <Header/>. */
+:root { --safe-t: env(safe-area-inset-top, 0px); }
+.pt-header-20 { padding-top: calc(5rem + var(--safe-t)); }
+.pt-header-24 { padding-top: calc(6rem + var(--safe-t)); }
+.pt-header-28 { padding-top: calc(7rem + var(--safe-t)); }
+.pt-header-32 { padding-top: calc(8rem + var(--safe-t)); }
+.pt-header-36 { padding-top: calc(9rem + var(--safe-t)); }
+.pt-header-40 { padding-top: calc(10rem + var(--safe-t)); }
+@media (min-width: 640px) {
+  .sm\:pt-header-28 { padding-top: calc(7rem + var(--safe-t)); }
+  .sm\:pt-header-32 { padding-top: calc(8rem + var(--safe-t)); }
+  .sm\:pt-header-40 { padding-top: calc(10rem + var(--safe-t)); }
+}
+/* Sticky mobile topbars (admin/client dashboards) also need safe-area on top */
+.topbar-safe { padding-top: calc(1rem + var(--safe-t)); }
+/* Dropdown panels anchored below those topbars via a hardcoded px offset */
+.dropdown-top-safe { top: calc(73px + var(--safe-t)); }
+
+/* Floating action buttons (WhatsApp, order/projects assistants) pinned at a raw
+   `bottom-6` sit too close to the iOS home-indicator gesture area on notched
+   devices. Use instead of bottom-6 on any `fixed` floating button/panel. */
+.fab-bottom-safe { bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); }
+
+/* Prevent iOS Safari from auto-zooming on input focus (requires >=16px) */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea { font-size: 16px; }
+}

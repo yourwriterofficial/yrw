@@ -175,18 +175,21 @@ export default function DevOrderForm() {
   }
 
   return (
-    <div className="min-h-screen bg-primary text-primary py-12 px-6 font-['Inter']">
+    <div className="min-h-screen bg-primary text-primary py-10 sm:py-12 px-4 sm:px-6 font-['Inter'] overflow-x-hidden">
       <OrderCategoryNav />
-      <div className="max-w-3xl mx-auto space-y-12 mt-6">
-        <div className="text-center">
-          <div className="inline-block px-3 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Development Pipeline</div>
-          <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight flex items-center justify-center gap-3">
-            <Terminal className="w-8 h-8 text-cyan-400" /> Full Stack & Custom Software
-          </h1>
-          <p className="text-secondary text-sm">For web apps, API integrations, database setup, scripts, or prototype MVP builds.</p>
+      <div className="max-w-3xl mx-auto space-y-10 sm:space-y-12 mt-6">
+        <div className="text-center relative">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/15 blur-[90px] rounded-full pointer-events-none" />
+          <div className="relative">
+            <div className="inline-block px-3 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Development Pipeline</div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black mb-4 tracking-tight flex items-center justify-center gap-3">
+              <Terminal className="w-7 h-7 sm:w-8 sm:h-8 text-cyan-400 shrink-0" /> Full Stack & Custom Software
+            </h1>
+            <p className="text-secondary text-sm px-2">For web apps, API integrations, database setup, scripts, or prototype MVP builds.</p>
+          </div>
         </div>
 
-        <div className="space-y-8 bg-secondary p-8 rounded-[32px] border border-theme">
+        <div className="space-y-8 glass-panel p-5 sm:p-8 rounded-[28px] sm:rounded-[32px]">
           <div>
             <label className="text-[10px] font-black uppercase tracking-widest text-secondary mb-2 block ml-1">Proposed Project Budget (₦)</label>
             <input
@@ -325,7 +328,7 @@ export default function DevOrderForm() {
           <button
             onClick={submitOrder}
             disabled={!acceptTerms || submitting}
-            className="w-full bg-cyan-600 text-black font-black uppercase text-xs tracking-[1px] py-5 rounded-2xl shadow-xl shadow-cyan-500/20 hover:bg-cyan-500 transition disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black font-black uppercase text-xs tracking-[1px] py-5 rounded-2xl shadow-xl shadow-cyan-500/25 transition disabled:opacity-50"
           >
             {submitting ? 'Initializing Project Space...' : 'Initialize Software Request'}
           </button>

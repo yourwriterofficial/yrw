@@ -19,7 +19,7 @@ export default function OrderCategoryNav() {
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 md:px-6 mb-2 mt-4 animate-in fade-in duration-300">
-      <div className="flex flex-wrap gap-2 bg-secondary border border-theme p-2 rounded-[20px] justify-center md:justify-start">
+      <div className="flex flex-wrap gap-2 glass-panel p-2 rounded-[20px] justify-center md:justify-start">
         {categories.map((cat) => {
           const catUrl = `${basePath}${cat.path}`;
           const isActive = pathname === catUrl;

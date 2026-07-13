@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
-import { showToast, ToastContainer } from '@/app/components/ui/Toast';
+import { showToast } from '@/app/components/ui/Toast';
 
 interface Conversation {
   id: string;
@@ -183,7 +183,6 @@ export default function AdminChatPage() {
 
   return (
     <div className="flex h-[calc(100vh-65px)] bg-primary overflow-hidden">
-      <ToastContainer />
 
       {/* LEFT: CONVERSATIONS LIST */}
       <aside className="w-80 border-r border-theme bg-secondary/30 flex flex-col shrink-0">

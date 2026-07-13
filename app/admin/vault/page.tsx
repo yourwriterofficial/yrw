@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
-import { ToastContainer, showToast } from '@/app/components/ui/Toast';
+import { showToast } from '@/app/components/ui/Toast';
 import PageHeader from '@/app/components/ui/PageHeader';
 
 const formatDate = (iso: string) => new Date(iso).toLocaleString();
@@ -63,7 +63,6 @@ export default function AdminVaultPage() {
 
   return (
     <div className="p-6 md:p-10">
-      <ToastContainer />
 
       <PageHeader
         title="Vault Management"

@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import * as lucide from 'lucide-react';
 import NotificationPreferencesPanel from '@/app/components/ui/NotificationPreferencesPanel';
+import PageHeader from '@/app/components/ui/PageHeader';
+import { showToast } from '@/app/components/ui/Toast';
 
 type Addon = {
   id: string;
@@ -39,12 +41,6 @@ const KEY_LABELS: Record<string, string> = {
   dev_tos: 'Full Stack & Software Development Terms of Service',
 };
 
-let toastId = 0;
-const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-  const event = new CustomEvent('app:toast', { detail: { id: toastId++, message, type } });
-  window.dispatchEvent(event);
-};
-
 export default function AdminSettingsPage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -74,18 +70,8 @@ function SettingsContent() {
   const [editingAddon, setEditingAddon] = useState<Partial<GroupedAddon> | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
   const [previewHtml, setPreviewHtml] = useState<Record<string, string>>({});
   const [invoiceDefaults, setInvoiceDefaults] = useState<any>(null);
-
-  useEffect(() => {
-    const handler = (e: any) => {
-      setToasts(prev => [...prev, e.detail]);
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== e.detail.id)), 4000);
-    };
-    window.addEventListener('app:toast', handler);
-    return () => window.removeEventListener('app:toast', handler);
-  }, []);
 
   const fetchSettingsData = async () => {
     setLoading(true);
@@ -224,41 +210,30 @@ function SettingsContent() {
 
   return (
     <>
-      {/* Toast container */}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2">
-        {toasts.map(t => (
-          <div key={t.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-bold animate-in slide-in-from-right duration-300 ${
-            t.type === 'success' ? 'bg-emerald-500 text-black' : t.type === 'error' ? 'bg-red-500 text-white' : 'bg-card text-primary'
-          }`}>
-            {t.message}
-          </div>
-        ))}
-      </div>
-
       <div className="p-6 md:p-10 overflow-y-auto relative max-w-[1600px]">
         <div className="animate-in fade-in duration-300">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-theme pb-6 mb-8">
-            <div>
-              <h1 className="text-3xl font-black tracking-tight text-primary flex items-center gap-3">
-                <lucide.Settings className="text-purple-500 w-8 h-8" /> Platform Configuration
-              </h1>
-              <p className="text-secondary text-sm mt-2">Manage dynamic pricing variables, pipeline add-ons, and site-wide copy (HTML supported).</p>
-            </div>
-            <div className="flex bg-secondary border border-theme rounded-full p-1 flex-wrap gap-1 md:gap-0">
-              <button onClick={() => setActiveTab('ADDONS')} className={`px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'ADDONS' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
-                Pricing & Add-ons
-              </button>
-              <button onClick={() => setActiveTab('CONTENT')} className={`px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'CONTENT' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
-                Site Content (HTML)
-              </button>
-              <button onClick={() => setActiveTab('INVOICE')} className={`px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'INVOICE' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
-                Invoice Defaults
-              </button>
-              <button onClick={() => setActiveTab('NOTIFICATIONS')} className={`px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'NOTIFICATIONS' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
-                Push Notifications
-              </button>
-            </div>
-          </div>
+          <PageHeader
+            title="Platform Configuration"
+            description="Manage dynamic pricing variables, pipeline add-ons, and site-wide copy (HTML supported)."
+            breadcrumb="Admin / Settings"
+            icon={<lucide.Settings className="text-purple-500 w-8 h-8" />}
+            actions={
+              <div className="flex bg-secondary border border-theme rounded-full p-1 flex-wrap gap-1 md:gap-0">
+                <button onClick={() => setActiveTab('ADDONS')} className={`px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'ADDONS' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+                  Pricing & Add-ons
+                </button>
+                <button onClick={() => setActiveTab('CONTENT')} className={`px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'CONTENT' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+                  Site Content (HTML)
+                </button>
+                <button onClick={() => setActiveTab('INVOICE')} className={`px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'INVOICE' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+                  Invoice Defaults
+                </button>
+                <button onClick={() => setActiveTab('NOTIFICATIONS')} className={`px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'NOTIFICATIONS' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+                  Push Notifications
+                </button>
+              </div>
+            }
+          />
 
           {/* ADDONS TAB */}
           {activeTab === 'ADDONS' && (

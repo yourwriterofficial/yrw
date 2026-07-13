@@ -1,11 +1,19 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { applyReferralIfEligible } from '@/lib/affiliate';
+
+const admin = createServiceClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   const next = requestUrl.searchParams.get('next');
+  const refCode = requestUrl.searchParams.get('ref');
 
   if (code) {
     const supabase = await createClient();
@@ -22,6 +30,10 @@ export async function GET(request: NextRequest) {
           full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
           is_admin: isAdminEmail,
         });
+
+        if (refCode) {
+          await applyReferralIfEligible(admin, { userId: user.id, refCode });
+        }
 
         const redirectUrl = isAdminEmail
           ? `${requestUrl.origin}/admin`

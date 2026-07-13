@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
-import { showToast, ToastContainer } from '@/app/components/ui/Toast';
+import { showToast } from '@/app/components/ui/Toast';
+import PageHeader from '@/app/components/ui/PageHeader';
 
 export default function AdminLogsPage() {
   const [activeTab, setActiveTab] = useState<'system' | 'notifications' | 'emails'>('system');
@@ -167,22 +168,21 @@ export default function AdminLogsPage() {
 
   return (
     <div className="p-6 md:p-10 space-y-6">
-      <ToastContainer />
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-primary flex items-center gap-2">
-            <lucide.FileText className="w-6 h-6 text-purple-500" /> System & Audit Logs
-          </h1>
-          <p className="text-xs text-secondary mt-1">Review live notifications, transactions, and email transmission audits.</p>
-        </div>
-        <button 
-          onClick={() => { setPage(1); fetchLogs(); }}
-          className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
-        >
-          <lucide.RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh Logs
-        </button>
-      </div>
+      <PageHeader
+        title="System & Audit Logs"
+        description="Review live notifications, transactions, and email transmission audits."
+        breadcrumb="Admin / System Logs"
+        icon={<lucide.FileText className="w-8 h-8 text-purple-500" />}
+        actions={
+          <button
+            onClick={() => { setPage(1); fetchLogs(); }}
+            className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
+          >
+            <lucide.RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh Logs
+          </button>
+        }
+      />
 
       {/* TAB SELECTOR */}
       <div className="flex border-b border-theme gap-6">

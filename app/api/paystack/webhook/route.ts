@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { notifyAdmins } from '@/lib/notify';
+import { creditReferralCommission } from '@/lib/affiliate';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -181,6 +182,7 @@ export async function POST(request: Request) {
       await supabase.from('transactions').insert({
         user_id: userId, amount, type: 'payment', reference, status: 'completed',
       });
+      await creditReferralCommission(supabase, { buyerId: userId, amount, reference, note: `Project material: ${title}` });
 
       // Instant delivery if a pre-uploaded material exists
       if (instant && materialPath) {
@@ -271,6 +273,102 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
+    // --- DEV SHOP SCRIPT PURCHASE ---
+    if (type === 'dev_product') {
+      const { userId, productId, title, price, name, guestCheckout, guestEmail } = metadata;
+      console.log(`🛒 Dev shop purchase by ${userId}: "${title}"`);
+
+      if (!userId || !productId) {
+        return NextResponse.json({ error: 'Invalid dev product metadata' }, { status: 400 });
+      }
+
+      // Idempotency: prevent double-crediting on webhook retry
+      const { data: existingTx } = await supabase.from('transactions').select('id').eq('reference', reference).maybeSingle();
+      if (existingTx) {
+        console.log('dev product purchase already processed for reference', reference);
+        return NextResponse.json({ received: true });
+      }
+
+      const { data: buyer } = await supabase.auth.admin.getUserById(userId);
+      const email = buyer?.user?.email || '';
+      const amount = Number(price) || 0;
+
+      await supabase.from('transactions').insert({
+        user_id: userId, amount, type: 'payment', reference, status: 'completed',
+      });
+      await creditReferralCommission(supabase, { buyerId: userId, amount, reference, note: `Dev shop: ${title}` });
+
+      const { error: purchaseErr } = await supabase.from('dev_product_purchases').insert({
+        product_id: productId, user_id: userId, amount_paid: amount, reference,
+      });
+      if (purchaseErr) {
+        console.error('❌ dev_product_purchases insert failed:', purchaseErr);
+        return NextResponse.json({ error: purchaseErr.message }, { status: 500 });
+      }
+
+      try {
+        const { notifyUser } = await import('@/lib/notify');
+        const { emailShell } = await import('@/lib/emailTemplates');
+
+        if (guestCheckout && guestEmail) {
+          const { sendMagicLinkEmail } = await import('@/lib/magicLink');
+          const introHtml = `
+            <p>Thank you! Your payment of ₦${amount.toLocaleString()} for <strong>${title}</strong> is confirmed.</p>
+            <p><strong>Security Info:</strong> We have set up a client account for you. Your temporary password is set to your email address: <strong>${guestEmail}</strong>.</p>
+            <p>Please click below to log in instantly and download your script from <strong>My Scripts</strong>. Make sure to change your password under <strong>Profile Settings</strong>.</p>`;
+          await sendMagicLinkEmail({
+            email: guestEmail,
+            name: name || guestEmail.split('@')[0],
+            next: '/dashboard/client?tab=scripts',
+            title: 'Purchase Confirmed — ' + title,
+            introHtml,
+          });
+          await notifyUser({
+            userId,
+            title: 'Script purchased',
+            message: `"${title}" is ready to download in My Scripts.`,
+            type: 'payment',
+            link: '/dashboard/client?tab=scripts',
+          });
+        } else {
+          const buyerHtml = emailShell(
+            `<h1>Purchase Confirmed — ${title}</h1>
+             <p>Hi ${name || 'there'},</p>
+             <p>Thank you! Your payment of ₦${amount.toLocaleString()} for <strong>${title}</strong> is confirmed.</p>
+             <p>Download it anytime from <strong>My Scripts</strong> in your dashboard.</p>`,
+            'Go to My Scripts', `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?tab=scripts`
+          );
+          await notifyUser({
+            userId,
+            title: 'Script purchased',
+            message: `"${title}" is ready to download in My Scripts.`,
+            type: 'payment',
+            link: '/dashboard/client?tab=scripts',
+            emailHtml: buyerHtml,
+            emailSubject: `Purchase confirmed: ${title}`,
+          });
+        }
+
+        const adminHtml = emailShell(
+          `<h2>New Dev Shop Sale</h2>
+           <p><strong>${name}</strong> (${email}) purchased a script.</p>
+           <p>Script: <strong>${title}</strong><br/>Amount: ₦${amount.toLocaleString()}<br/>Reference: ${reference}</p>`,
+          'Open Dev Shop', `${process.env.NEXT_PUBLIC_BASE_URL}/admin/dev-shop`
+        );
+        await notifyAdmins({
+          title: `Dev Shop Sale: ₦${amount.toLocaleString()}`,
+          message: `${name} purchased script "${title}" for ₦${amount.toLocaleString()}.`,
+          type: 'payment',
+          link: '/admin/dev-shop',
+          emailHtml: adminHtml,
+          emailSubject: `Dev shop sale: ${title}`,
+        });
+      } catch (e) { console.warn('Dev shop notifications failed:', e); }
+
+      console.log(`✅ Dev product purchase processed in ${Date.now() - startTime}ms`);
+      return NextResponse.json({ received: true });
+    }
+
     // --- CUSTOM INVOICE PAYMENT ---
     if (reference && reference.startsWith('CUSTINV_')) {
       console.log('Processing custom invoice payment...');
@@ -284,17 +382,24 @@ export async function POST(request: Request) {
       }
       
       const milestoneIndex = parseInt(milestoneType.replace('INDEX-', ''), 10);
-      
+
+      // Idempotency: don't double-log or double-apply on a Paystack webhook retry
+      const { data: existingInvTx } = await supabase.from('transactions').select('id').eq('reference', reference).maybeSingle();
+      if (existingInvTx) {
+        console.log('custom invoice payment already processed for reference', reference);
+        return NextResponse.json({ received: true });
+      }
+
       const { data: invoiceData, error: invoiceErr } = await supabase
         .from('custom_invoices')
         .select('*')
         .eq('invoice_number', invoiceNumber)
         .single();
-        
+
       if (invoiceErr || !invoiceData) {
         throw new Error(`Custom invoice ${invoiceNumber} not found.`);
       }
-      
+
       const milestones = invoiceData.milestones || [];
       if (milestones[milestoneIndex]) {
         milestones[milestoneIndex].paid = true;
@@ -321,7 +426,27 @@ export async function POST(request: Request) {
       const paidMilestone = milestones[milestoneIndex];
       const amountPaid = paidMilestone?.amount || 0;
       const milestoneName = paidMilestone?.name || `Milestone #${milestoneIndex + 1}`;
-      
+
+      // Custom invoices aren't always tied to a platform account — best-effort match
+      // by email so the payment still shows attributed in admin's transactions log.
+      let invoiceUserId: string | null = null;
+      if (invoiceData.email) {
+        const { data: matchedProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .ilike('email', invoiceData.email)
+          .maybeSingle();
+        invoiceUserId = matchedProfile?.id || null;
+      }
+      await supabase.from('transactions').insert({
+        user_id: invoiceUserId,
+        amount: amountPaid,
+        type: 'payment',
+        reference,
+        status: 'completed',
+        notes: `Custom Invoice ${invoiceNumber} — ${milestoneName} (${invoiceData.client_name || invoiceData.email || 'Client'})`,
+      });
+
       try {
         const { emailShell } = await import('@/lib/emailTemplates');
 
@@ -388,12 +513,20 @@ export async function POST(request: Request) {
 
     const { data: orderInfo, error: orderError } = await supabase
       .from('orders')
-      .select('id, email, legal_name, financial_quote, topic, order_id, service_tier')
+      .select('id, email, legal_name, financial_quote, topic, order_id, service_tier, client_id')
       .eq('order_id', orderStringId)
       .single();
 
     if (orderError || !orderInfo) {
       throw new Error(`Order ${orderStringId} not found.`);
+    }
+
+    // Idempotency: Paystack retries webhooks on timeout/non-200, and this branch
+    // (ADDON-/INDEX-/DEPOSIT/BALANCE) had no guard against double-logging a retry.
+    const { data: existingOrderTx } = await supabase.from('transactions').select('id').eq('reference', tx_ref).maybeSingle();
+    if (existingOrderTx) {
+      console.log('order payment already processed for reference', tx_ref);
+      return NextResponse.json({ received: true });
     }
 
     const orderEmailData = {
@@ -444,6 +577,12 @@ export async function POST(request: Request) {
               type: 'payment',
               reference: tx_ref,
               status: 'completed',
+            });
+            await creditReferralCommission(supabase, {
+              buyerId: orderDetails.client_id,
+              amount: addonPayload.extra_addons[addonIndex].price,
+              reference: tx_ref,
+              note: `Add-on: ${orderStringId}`,
             });
           }
 
@@ -576,17 +715,37 @@ export async function POST(request: Request) {
           reference: tx_ref,
           status: 'completed',
         });
+        await creditReferralCommission(supabase, {
+          buyerId: orderData.client_id,
+          amount: milestones[milestoneIndex].amount,
+          reference: tx_ref,
+          note: `Milestone: ${orderStringId}`,
+        });
       }
     } else if (paymentType === 'DEPOSIT') {
       updates = { sixty_percent_paid: true, workflow_status: 'Synthesis Active' };
       const { emailTemplates } = await import('@/lib/emailTemplates');
       template = emailTemplates.depositPaid(orderEmailData);
       adminTemplate = emailTemplates.adminDepositPaid(orderEmailData);
+      if (orderInfo.client_id) {
+        await supabase.from('transactions').insert({
+          user_id: orderInfo.client_id, amount: rawAmountPaid, type: 'payment', reference: tx_ref, status: 'completed',
+          notes: `Deposit — Order #${orderStringId}`,
+        });
+        await creditReferralCommission(supabase, { buyerId: orderInfo.client_id, amount: rawAmountPaid, reference: tx_ref, note: `Deposit: ${orderStringId}` });
+      }
     } else if (paymentType === 'BALANCE') {
       updates = { forty_percent_paid: true, workflow_status: 'Completed' };
       const { emailTemplates } = await import('@/lib/emailTemplates');
       template = emailTemplates.balancePaid(orderEmailData);
       adminTemplate = emailTemplates.adminBalancePaid(orderEmailData);
+      if (orderInfo.client_id) {
+        await supabase.from('transactions').insert({
+          user_id: orderInfo.client_id, amount: rawAmountPaid, type: 'payment', reference: tx_ref, status: 'completed',
+          notes: `Balance — Order #${orderStringId}`,
+        });
+        await creditReferralCommission(supabase, { buyerId: orderInfo.client_id, amount: rawAmountPaid, reference: tx_ref, note: `Balance: ${orderStringId}` });
+      }
     } else {
       console.warn(`Unknown payment type: ${paymentType}`);
       return NextResponse.json({ received: true });

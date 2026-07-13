@@ -10,6 +10,7 @@ import type { CreateOrderServerActionResponse } from '@/lib/types';
 import OrderCategoryNav from '@/app/components/OrderCategoryNav';
 
 import { getEffectiveUser } from '@/lib/impersonate';
+import { showToast } from '@/app/components/ui/Toast';
 
 type OrderAddon = {
   id: string;
@@ -103,11 +104,11 @@ export default function LoggedInContentOrderPage() {
 
   const submitOrder = async () => {
     if (!topic || !deadline || !audience) {
-      alert('Please fill out all mandatory fields (Topic, Deadline, Target Audience).');
+      showToast('Please fill out all mandatory fields (Topic, Deadline, Target Audience).', 'error');
       return;
     }
     if (!acceptTerms) {
-      alert('You must accept the Content Terms of Service.');
+      showToast('You must accept the Content Terms of Service.', 'error');
       return;
     }
 
@@ -153,7 +154,7 @@ export default function LoggedInContentOrderPage() {
     const serverResponse = (await createSecureOrder(payload as any, '')) as CreateOrderServerActionResponse;
 
     if (!serverResponse?.success) {
-      alert(`Submission failed: ${serverResponse?.error}`);
+      showToast(`Submission failed: ${serverResponse?.error}`, 'error');
       setSubmitting(false);
       return;
     }
@@ -173,7 +174,7 @@ export default function LoggedInContentOrderPage() {
     router.push('/dashboard/client');
   };
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />

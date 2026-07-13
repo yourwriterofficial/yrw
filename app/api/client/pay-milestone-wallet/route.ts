@@ -4,6 +4,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { notifyUser, notifyAdmins } from '@/lib/notify';
 import { emailTemplates } from '@/lib/emailTemplates';
 import { isOrderFullyPaid } from '@/lib/orderPayment';
+import { creditReferralCommission } from '@/lib/affiliate';
 
 const admin = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -80,6 +81,7 @@ export async function POST(request: Request) {
     await admin.from('transactions').insert({
       user_id: user.id, amount: price, type: 'payment', reference: txRef, status: 'completed',
     });
+    await creditReferralCommission(admin, { buyerId: user.id, amount: price, reference: txRef, note: `Milestone: ${orderId}` });
 
     // Mark milestone paid + sync legacy booleans (same shape as the webhook)
     m.paid = true;

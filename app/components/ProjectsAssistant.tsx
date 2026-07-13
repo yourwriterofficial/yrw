@@ -65,18 +65,18 @@ export default function ProjectsAssistant() {
   return (
     <>
       {!open && (
-        <button onClick={openIt} className="fixed bottom-6 left-6 z-50 flex items-center gap-2 pl-3 pr-4 py-3 rounded-full shadow-lg bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:brightness-110 transition" aria-label="Open projects assistant">
+        <button onClick={openIt} className="fixed fab-bottom-safe left-6 z-50 flex items-center gap-2 pl-3 pr-4 py-3 rounded-full shadow-lg bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:brightness-110 transition" aria-label="Open projects assistant">
           <Sparkles className="w-5 h-5" />
           <span className="text-xs font-black uppercase tracking-wide hidden sm:inline">Materials Help</span>
         </button>
       )}
       {open && (
-        <div className="fixed bottom-6 left-6 z-50 w-[92vw] max-w-sm bg-card border border-theme rounded-[24px] shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '78vh' }}>
+        <div className="fixed fab-bottom-safe left-6 z-50 w-[92vw] max-w-sm bg-card border border-theme rounded-[24px] shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '78vh' }}>
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shrink-0">
             <div className="flex items-center gap-2"><Sparkles className="w-4 h-4" /><span className="text-xs font-black uppercase tracking-wide">Project Materials</span></div>
             <div className="flex items-center gap-1">
-              {history.length > 0 && <button onClick={reset} className="p-1.5 hover:bg-white/10 rounded-lg"><ArrowLeft className="w-4 h-4" /></button>}
-              <button onClick={() => setOpen(false)} className="p-1.5 hover:bg-white/10 rounded-lg"><X className="w-4 h-4" /></button>
+              {history.length > 0 && <button onClick={reset} className="p-2.5 hover:bg-white/10 rounded-lg"><ArrowLeft className="w-4 h-4" /></button>}
+              <button onClick={() => setOpen(false)} className="p-2.5 hover:bg-white/10 rounded-lg"><X className="w-4 h-4" /></button>
             </div>
           </div>
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[140px]">

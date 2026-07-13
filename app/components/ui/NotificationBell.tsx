@@ -20,7 +20,7 @@ interface Notification {
   link?: string | null;
 }
 
-export default function NotificationBell({ isAdmin, userEmail }: { isAdmin: boolean; userEmail: string }) {
+export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdmin: boolean; userEmail: string; userId?: string }) {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -41,20 +41,6 @@ export default function NotificationBell({ isAdmin, userEmail }: { isAdmin: bool
   useEffect(() => {
     fetchNotifications();
 
-    // Set up realtime channel
-    const channel = supabase
-      .channel('notification-alerts')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications' },
-        () => {
-          fetchNotifications();
-          // Visual feedback
-          showToast('🔔 New in-app alert received', 'info');
-        }
-      )
-      .subscribe();
-
     // Close on click outside
     const clickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -63,11 +49,29 @@ export default function NotificationBell({ isAdmin, userEmail }: { isAdmin: bool
     };
     document.addEventListener('mousedown', clickOutside);
 
+    if (!userId) {
+      return () => document.removeEventListener('mousedown', clickOutside);
+    }
+
+    // Set up realtime channel, scoped to this user's own notifications only
+    const channel = supabase
+      .channel(`notification-alerts-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+        () => {
+          fetchNotifications();
+          // Visual feedback
+          showToast('🔔 New in-app alert received', 'info');
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
       document.removeEventListener('mousedown', clickOutside);
     };
-  }, [fetchNotifications]);
+  }, [fetchNotifications, userId]);
 
   const handleNotificationClick = async (notif: Notification) => {
     setIsOpen(false);

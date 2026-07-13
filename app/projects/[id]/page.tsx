@@ -233,7 +233,7 @@ export default function ProjectPermalinkPage() {
   }
 
   return (
-    <div className="min-h-screen bg-primary text-primary font-['Inter'] pb-12 pt-20">
+    <div className="min-h-screen bg-primary text-primary font-['Inter'] pb-12 pt-header-20">
       <Header projectsContext />
       {/* HEADER BREADCRUMB */}
       <div className="border-b border-theme bg-secondary/30 px-4 md:px-8 py-4">

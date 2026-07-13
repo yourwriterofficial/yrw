@@ -7,9 +7,10 @@ import type { AdminOrderView, WorkflowStatus, CorrectionsStatus } from '@/lib/ty
 import { useSearchParams } from 'next/navigation';
 import { emailTemplates } from '@/lib/emailTemplates';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
-import { ToastContainer, showToast } from '@/app/components/ui/Toast';
+import { showToast } from '@/app/components/ui/Toast';
 import StatusBadge from '@/app/components/ui/StatusBadge';
 import PageHeader from '@/app/components/ui/PageHeader';
+import StatCard from '@/app/components/ui/StatCard';
 
 // ==========================================
 // 1. HELPER FUNCTIONS
@@ -801,7 +802,6 @@ function OrdersPageContent() {
 
   return (
     <div className="p-6 md:p-10 overflow-y-auto relative max-w-[1600px]">
-      <ToastContainer />
 
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
@@ -1599,15 +1599,6 @@ function OrdersPageContent() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value, color = "text-white" }: any) {
-  return (
-    <div className="bg-card border border-theme rounded-2xl p-5 flex flex-col justify-center">
-      <div className={`text-2xl font-black ${color} truncate`}>{value}</div>
-      <div className="text-[10px] text-secondary uppercase tracking-widest font-bold mt-1">{label}</div>
     </div>
   );
 }
