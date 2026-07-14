@@ -4,21 +4,26 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { createSecureOrder } from '@/app/actions/createOrder';
-import { HelpCircle, ChevronRight, ChevronLeft, ChevronDown, Upload, Paperclip, CheckCircle2, Calendar, Trash2 } from 'lucide-react';
+import { HelpCircle, ChevronRight, ChevronLeft, ChevronDown, Upload, Paperclip, CheckCircle2, Calendar, Trash2, Star, Info } from 'lucide-react';
 import type { ServiceTier, CreateOrderServerActionResponse } from '@/lib/types';
 import OrderCategoryNav from './OrderCategoryNav';
 import { getEffectiveUser } from '@/lib/impersonate';
 import { showToast } from '@/app/components/ui/Toast';
+import { fetchPricingTiers, type PricingTier } from '@/lib/pricingTiers';
+import { fetchPageSettings } from '@/lib/pageSettings';
+import { ORDER_PAGE_DEFAULTS, type OrderPageContent } from '@/lib/pageContentDefaults';
 
 type Plan = ServiceTier;
 
-const PLAN_RATES: Record<Exclude<Plan, 'CUSTOM'>, number> = {
-  GOLD: 100, SILVER: 80, BRONZE: 70, STANDARD: 60,
+// Fixed, per-tier accent so the visual identity stays stable even though admins can rename,
+// reprice, or re-describe each tier via /admin/settings.
+const TIER_ACCENT: Record<string, { text: string; border: string; bg: string; glow: string; ring: string }> = {
+  GOLD: { text: 'text-amber-400', border: 'border-amber-400', bg: 'bg-amber-400/5', glow: 'shadow-[0_0_20px_rgba(251,191,36,0.12)]', ring: 'bg-amber-400/10' },
+  SILVER: { text: 'text-slate-400', border: 'border-slate-400', bg: 'bg-slate-400/5', glow: 'shadow-[0_0_20px_rgba(203,213,225,0.12)]', ring: 'bg-slate-400/10' },
+  BRONZE: { text: 'text-orange-500', border: 'border-orange-500', bg: 'bg-orange-500/5', glow: 'shadow-[0_0_20px_rgba(249,115,22,0.12)]', ring: 'bg-orange-500/10' },
+  STANDARD: { text: 'text-emerald-500', border: 'border-emerald-500', bg: 'bg-emerald-500/5', glow: 'shadow-[0_0_20px_rgba(16,185,129,0.12)]', ring: 'bg-emerald-500/10' },
 };
-
-const PLAN_DISCOUNTS: Record<Exclude<Plan, 'CUSTOM'>, number> = {
-  GOLD: 15, SILVER: 10, BRONZE: 8, STANDARD: 6,
-};
+const DEFAULT_ACCENT = TIER_ACCENT.STANDARD;
 
 function decodeHtml(str: string) {
   if (!str) return '';
@@ -92,6 +97,8 @@ export default function OrderForm() {
   const [loading, setLoading] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [termsText, setTermsText] = useState<string>('');
+  const [tiers, setTiers] = useState<PricingTier[]>([]);
+  const [pageContent, setPageContent] = useState<OrderPageContent>(ORDER_PAGE_DEFAULTS.order_academic);
 
   // Session & wallet
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -138,6 +145,8 @@ export default function OrderForm() {
     { name: 'Final Payment', percentage: 30, trigger: 'Final delivery and client sign off' }
   ]);
 
+  const getTier = useCallback((key: string) => tiers.find(t => t.tier_key === key), [tiers]);
+
   // Check login status and fetch wallet balance
   useEffect(() => {
     const checkSession = async () => {
@@ -165,6 +174,13 @@ export default function OrderForm() {
       const { data: fonts } = await supabase.from('font_styles').select('name').eq('active', true).order('sort_order');
       if (refs) setDbRefStyles(refs.map(r => r.name));
       if (fonts) setDbFontStyles(fonts.map(f => f.name));
+
+      const [tierData, content] = await Promise.all([
+        fetchPricingTiers('ACADEMIC'),
+        fetchPageSettings('order_academic', ORDER_PAGE_DEFAULTS.order_academic),
+      ]);
+      setTiers(tierData);
+      setPageContent(content);
 
       const { data: tos } = await supabase
         .from('site_content')
@@ -204,8 +220,10 @@ export default function OrderForm() {
 
   const getUiTotalPrice = (): number => {
     if (isCustom) return customPrice;
-    const base = words * PLAN_RATES[plan as Exclude<Plan, 'CUSTOM'>];
-    const volumeDiscount = words >= 10000 ? PLAN_DISCOUNTS[plan as Exclude<Plan, 'CUSTOM'>] : 0;
+    const tier = getTier(plan);
+    if (!tier || !tier.rate_per_word) return 0;
+    const base = words * tier.rate_per_word;
+    const volumeDiscount = words >= tier.volume_discount_threshold_words ? tier.volume_discount_percent : 0;
     let afterVolume = base * (1 - volumeDiscount / 100);
     if (promoDiscount > 0) afterVolume = afterVolume * (1 - promoDiscount / 100);
     return Math.round(afterVolume);
@@ -284,7 +302,7 @@ export default function OrderForm() {
     setLoading(true);
     const orderStringId = `RW-${Math.floor(100000 + Math.random() * 900000)}`;
     const calculatedPages = Math.ceil(words / 275);
-    
+
     const payloadManifest: any = {
       order_id: orderStringId,
       topic: isCustom ? `[PROPOSAL] ${topic}` : topic,
@@ -432,81 +450,50 @@ export default function OrderForm() {
       {step === 1 && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div>
-            <h2 className="text-xl font-black uppercase tracking-wider text-primary mb-2">Select Your Price Plan</h2>
-            <p className="text-sm text-secondary leading-relaxed mb-6">We operate strictly within the following structures to ensure transparency and quality. Please select the plan that best aligns with your academic requirements.</p>
+            <h2 className="text-xl font-bold text-primary mb-2">{pageContent.hero.title}</h2>
+            <p className="text-sm text-secondary leading-relaxed mb-6">{pageContent.hero.subtitle}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* GOLD PLAN */}
-              <div onClick={() => setPlan('GOLD')} className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'GOLD' ? 'border-amber-400 bg-amber-400/5 shadow-[0_0_20px_rgba(251,191,36,0.1)]' : 'border-theme bg-secondary hover:border-zinc-500/50'}`}>
-                {plan === 'GOLD' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-amber-400" /></div>}
-                <h3 className="text-sm font-black uppercase tracking-wider text-amber-400 mb-1">GOLD PLAN</h3>
-                <p className="text-[10px] text-secondary uppercase tracking-widest font-bold mb-4">Premium Academic Excellence</p>
-                <div className="text-2xl font-black mb-4">₦100<span className="text-sm text-secondary font-medium">/word</span></div>
-                <ul className="text-xs text-primary space-y-2 mb-4 break-words">
-                  <li><span className="text-amber-400 mr-2">★</span><strong>95–100%</strong> plagiarism-free guaranteed</li>
-                  <li><span className="text-amber-400 mr-2">★</span>Best for: MSc and PhD level research</li>
-                  <li><span className="text-amber-400 mr-2">★</span>Includes Plagiarism & AI reports</li>
-                  <li><span className="text-amber-400 mr-2">★</span>Grade-A delivery with intensive auditing</li>
-                  <li><span className="text-amber-400 mr-2">★</span>Flexible submission (by chapters) & Google Docs</li>
-                  <li><span className="text-amber-400 mr-2">★</span>Full preliminary pages included</li>
-                  <li><span className="text-amber-400 mr-2">★</span><strong>5 correction cycles</strong></li>
-                </ul>
-                <div className="text-[10px] text-amber-400 bg-amber-400/10 inline-block px-2 py-1 rounded font-bold break-words">15% discount for projects &gt; 10,000 words</div>
-              </div>
+              {tiers.map(tier => {
+                const accent = TIER_ACCENT[tier.tier_key] || DEFAULT_ACCENT;
+                const isSelected = plan === tier.tier_key;
+                return (
+                  <div
+                    key={tier.id}
+                    onClick={() => setPlan(tier.tier_key as Plan)}
+                    className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words bg-card ${isSelected ? `${accent.border} ${accent.bg} ${accent.glow}` : 'border-theme hover:border-zinc-500/50'}`}
+                  >
+                    {tier.highlight && (
+                      <div className={`absolute top-0 right-0 ${accent.ring} ${accent.text} text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-bl-xl flex items-center gap-1`}>
+                        <Star className="w-3 h-3 fill-current" /> Most Popular
+                      </div>
+                    )}
+                    {isSelected && <div className="absolute top-4 right-4"><CheckCircle2 className={`w-5 h-5 ${accent.text}`} /></div>}
+                    <h3 className={`text-sm font-bold uppercase tracking-wide mb-1 ${accent.text}`}>{tier.name}</h3>
+                    <p className="text-[11px] text-secondary font-medium mb-4">{tier.tagline}</p>
+                    <div className="text-2xl font-bold mb-4">₦{tier.rate_per_word}<span className="text-sm text-secondary font-medium">/word</span></div>
+                    <ul className="text-xs text-primary space-y-2 mb-4 break-words">
+                      {tier.features.map((f, i) => (
+                        <li key={i} className="flex gap-2"><span className={`${accent.text} shrink-0`}>•</span><span>{f}</span></li>
+                      ))}
+                    </ul>
+                    {tier.volume_discount_percent > 0 && (
+                      <div className={`text-[10px] ${accent.text} ${accent.ring} inline-block px-2 py-1 rounded font-semibold break-words`}>
+                        {tier.volume_discount_percent}% discount for projects &gt; {tier.volume_discount_threshold_words.toLocaleString()} words
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
 
-              {/* SILVER PLAN */}
-              <div onClick={() => setPlan('SILVER')} className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'SILVER' ? 'border-slate-400 bg-slate-400/5 shadow-[0_0_20px_rgba(203,213,225,0.1)]' : 'border-theme bg-secondary hover:border-zinc-500/50'}`}>
-                {plan === 'SILVER' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-slate-400" /></div>}
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-400 mb-1">SILVER PLAN</h3>
-                <p className="text-[10px] text-secondary uppercase tracking-widest font-bold mb-4">Standard Academic Support</p>
-                <div className="text-2xl font-black mb-4">₦80<span className="text-sm text-secondary font-medium">/word</span></div>
-                <ul className="text-xs text-primary space-y-2 mb-4 break-words">
-                  <li><span className="text-slate-400 mr-2">★</span><strong>90–100%</strong> plagiarism-free level</li>
-                  <li><span className="text-slate-400 mr-2">★</span>Best for: Standard university assignments</li>
-                  <li><span className="text-slate-400 mr-2">★</span>Includes Plagiarism & AI reports</li>
-                  <li><span className="text-slate-400 mr-2">★</span>Standard grammar checks & on-time delivery</li>
-                  <li><span className="text-slate-400 mr-2">★</span>Full preliminary pages included</li>
-                  <li><span className="text-slate-400 mr-2">★</span><strong>3 correction cycles</strong></li>
-                </ul>
-                <div className="text-[10px] text-slate-400 bg-slate-400/10 inline-block px-2 py-1 rounded font-bold break-words">10% discount for projects &gt; 10,000 words</div>
-              </div>
-
-              {/* BRONZE PLAN */}
-              <div onClick={() => setPlan('BRONZE')} className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'BRONZE' ? 'border-orange-500 bg-orange-500/5 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'border-theme bg-secondary hover:border-zinc-500/50'}`}>
-                {plan === 'BRONZE' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-orange-500" /></div>}
-                <h3 className="text-sm font-black uppercase tracking-wider text-orange-500 mb-1">BRONZE PLAN</h3>
-                <p className="text-[10px] text-secondary uppercase tracking-widest font-bold mb-4">Essential Writing Support</p>
-                <div className="text-2xl font-black mb-4">₦70<span className="text-sm text-secondary font-medium">/word</span></div>
-                <ul className="text-xs text-primary space-y-2 mb-4 break-words">
-                  <li><span className="text-orange-500 mr-2">★</span><strong>85–90%</strong> plagiarism-free level</li>
-                  <li><span className="text-orange-500 mr-2">★</span>Includes Plagiarism & AI reports</li>
-                  <li><span className="text-orange-500 mr-2">★</span>Standard formatting & citations</li>
-                  <li><span className="text-orange-500 mr-2">★</span>Cover page, TOC, and References</li>
-                  <li><span className="text-orange-500 mr-2">★</span><strong>2 correction cycles</strong></li>
-                </ul>
-                <div className="text-[10px] text-orange-500 bg-orange-500/10 inline-block px-2 py-1 rounded font-bold break-words">8% discount for projects &gt; 10,000 words</div>
-              </div>
-
-              {/* STANDARD PLAN */}
-              <div onClick={() => setPlan('STANDARD')} className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'STANDARD' ? 'border-emerald-500 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'border-theme bg-secondary hover:border-zinc-550'}`}>
-                {plan === 'STANDARD' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-emerald-500" /></div>}
-                <h3 className="text-sm font-black uppercase tracking-wider text-emerald-500 mb-1">STANDARD PLAN</h3>
-                <p className="text-[10px] text-secondary uppercase tracking-widest font-bold mb-4">Basic Drafting</p>
-                <div className="text-2xl font-black mb-4">₦60<span className="text-sm text-secondary font-medium">/word</span></div>
-                <ul className="text-xs text-primary space-y-2 mb-4 break-words">
-                  <li><span className="text-emerald-500 mr-2">★</span><strong>75–80%</strong> plagiarism-free level</li>
-                  <li><span className="text-emerald-500 mr-2">★</span>Includes Plagiarism & AI reports</li>
-                  <li><span className="text-emerald-500 mr-2">★</span>Basic formatting</li>
-                  <li><span className="text-emerald-500 mr-2">★</span>Cover page, TOC, and References</li>
-                  <li><span className="text-emerald-500 mr-2">★</span><strong>1 correction cycle</strong></li>
-                </ul>
-                <div className="text-[10px] text-emerald-500 bg-emerald-500/10 inline-block px-2 py-1 rounded font-bold break-words">6% discount for projects &gt; 10,000 words</div>
-              </div>
-
-              {/* CUSTOM PLAN */}
-              <div onClick={() => setPlan('CUSTOM')} className={`col-span-1 md:col-span-2 p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words ${plan === 'CUSTOM' ? 'border-purple-500 bg-purple-500/5 shadow-[0_0_20px_rgba(168,85,247,0.1)]' : 'border-theme bg-secondary hover:border-zinc-550'}`}>
+              {/* PROPOSE YOUR OWN BUDGET */}
+              <div onClick={() => setPlan('CUSTOM')} className={`col-span-1 md:col-span-2 p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words bg-card ${plan === 'CUSTOM' ? 'border-purple-500 bg-purple-500/5 shadow-[0_0_20px_rgba(168,85,247,0.12)]' : 'border-theme hover:border-zinc-500/50'}`}>
                 {plan === 'CUSTOM' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-purple-500" /></div>}
-                <h3 className="text-sm font-black uppercase tracking-wider text-purple-500 mb-1">CUSTOM / EMERGENCY ORDERS</h3>
-                <p className="text-xs text-secondary leading-relaxed break-words">Emergency requests, PowerPoint presentations, and technical works involving complex calculations are subject to custom pricing and are treated as independent contracts. Propose your budget here.</p>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-purple-500 mb-1">Propose Your Own Budget</h3>
+                <p className="text-xs text-secondary leading-relaxed break-words mb-3">{pageContent.budget_note.title}</p>
+                <div className="flex items-start gap-2 text-xs text-secondary bg-purple-500/5 border border-purple-500/15 rounded-xl p-3">
+                  <Info className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                  <span>{pageContent.budget_note.text}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -514,7 +501,7 @@ export default function OrderForm() {
           {!isLoggedIn && (
             <div className="space-y-4">
               <div className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 font-bold">Your Personal Details</div>
-              
+
               <div className="space-y-1">
                 <label className="text-[10px] text-secondary block ml-1 font-bold">Full Name</label>
                 <input type="text" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition hover:border-zinc-550 font-bold" required />
@@ -534,7 +521,7 @@ export default function OrderForm() {
               </div>
             </div>
           )}
-          
+
           <div className="space-y-1">
             <div className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 mb-2 font-bold">Research Topic</div>
             <input type="text" placeholder="Research Topic Title" value={topic} onChange={e => setTopic(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition hover:border-zinc-550 font-bold" required />
@@ -679,7 +666,7 @@ export default function OrderForm() {
             ) : (
               <div className="space-y-4">
                 <label className="text-[10px] font-black uppercase tracking-widest text-secondary block ml-1">Current Pricing Tier</label>
-                <div className="w-full bg-primary border border-theme p-4 rounded-xl text-sm font-black outline-none text-primary">{plan} TIER (₦{PLAN_RATES[plan]}/word)</div>
+                <div className="w-full bg-primary border border-theme p-4 rounded-xl text-sm font-black outline-none text-primary">{getTier(plan)?.name || plan} TIER (₦{getTier(plan)?.rate_per_word || 0}/word)</div>
               </div>
             )}
             <div className="pt-4 border-t border-theme">
@@ -701,13 +688,13 @@ export default function OrderForm() {
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none group-focus-within:text-emerald-500 transition-colors">
                 <Calendar className="w-5 h-5" />
               </div>
-              <input 
-                type="date" 
-                value={deadline} 
-                onChange={e => setDeadline(e.target.value)} 
-                min={new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} 
-                className="w-full bg-card border border-theme p-4 pl-12 rounded-[16px] text-sm text-primary outline-none focus:border-emerald-500 transition-all font-bold hover:border-theme cursor-pointer dark:[color-scheme:dark]" 
-                required 
+              <input
+                type="date"
+                value={deadline}
+                onChange={e => setDeadline(e.target.value)}
+                min={new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                className="w-full bg-card border border-theme p-4 pl-12 rounded-[16px] text-sm text-primary outline-none focus:border-emerald-500 transition-all font-bold hover:border-theme cursor-pointer dark:[color-scheme:dark]"
+                required
               />
             </div>
             <p className="text-[9px] text-secondary ml-1 leading-relaxed">
@@ -830,8 +817,10 @@ export default function OrderForm() {
               );
             }
 
-            const originalPrice = words * PLAN_RATES[plan as Exclude<Plan, 'CUSTOM'>];
-            const volumeDiscountPercent = words >= 10000 ? PLAN_DISCOUNTS[plan as Exclude<Plan, 'CUSTOM'>] : 0;
+            const tier = getTier(plan);
+            const rate = tier?.rate_per_word || 0;
+            const originalPrice = words * rate;
+            const volumeDiscountPercent = tier && words >= tier.volume_discount_threshold_words ? tier.volume_discount_percent : 0;
             const volumeSaved = originalPrice * (volumeDiscountPercent / 100);
             const afterVolume = originalPrice - volumeSaved;
             const promoAmount = afterVolume * (promoDiscount / 100);
@@ -840,7 +829,7 @@ export default function OrderForm() {
             return (
               <div className="bg-emerald-500/5 p-6 rounded-[30px] border border-emerald-500/20 overflow-x-auto">
                 <div className="space-y-2 text-sm min-w-[280px]">
-                  <div className="flex justify-between flex-wrap gap-2 text-primary font-medium"> <span>Base price ({words.toLocaleString()} words × ₦{PLAN_RATES[plan]})</span> <span>₦{originalPrice.toLocaleString()}</span> </div>
+                  <div className="flex justify-between flex-wrap gap-2 text-primary font-medium"> <span>Base price ({words.toLocaleString()} words × ₦{rate})</span> <span>₦{originalPrice.toLocaleString()}</span> </div>
                   {volumeDiscountPercent > 0 && ( <div className="flex justify-between text-emerald-500 font-bold flex-wrap gap-2"> <span>Volume discount ({volumeDiscountPercent}%)</span> <span>- ₦{Math.round(volumeSaved).toLocaleString()}</span> </div> )}
                   {promoDiscount > 0 && ( <div className="flex justify-between text-emerald-500 font-bold flex-wrap gap-2"> <span>Promo code ({promoDiscount}%)</span> <span>- ₦{Math.round(promoAmount).toLocaleString()}</span> </div> )}
                   <div className="flex justify-between font-black text-lg pt-2 border-t border-emerald-500/10 flex-wrap gap-2 text-primary"> <span>Total Quote</span> <span className="text-emerald-500 font-black">₦{finalQuote.toLocaleString()}</span> </div>

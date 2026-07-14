@@ -15,13 +15,13 @@ export default function PageHeader({ title, description, icon, actions, breadcru
         {breadcrumb && (
           <p className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">{breadcrumb}</p>
         )}
-        <h1 className="text-2xl md:text-3xl font-black text-primary flex items-center gap-3">
+        <h1 className="text-2xl md:text-3xl font-bold text-primary flex items-center gap-3">
           {icon}
           {title}
         </h1>
         {description && <p className="text-secondary text-sm mt-2 max-w-2xl">{description}</p>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2 shrink-0">{actions}</div>}
+      {actions && <div className="flex flex-wrap gap-2 min-w-0">{actions}</div>}
     </header>
   );
 }

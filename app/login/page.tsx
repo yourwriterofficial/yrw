@@ -45,20 +45,27 @@ function LoginInner() {
       return;
     }
 
-    const isAdminEmail = user.email?.toLowerCase() === 'yourwriterofficial@gmail.com';
+    const isBootstrapAdminEmail = user.email?.toLowerCase() === 'yourwriterofficial@gmail.com';
 
-    // Best-effort profile sync — never block or error the login on this.
+    // Best-effort profile sync — never block or error the login on this. Only ever
+    // force is_admin TRUE for the bootstrap email (self-healing on first login);
+    // never force it false, or every login by an admin promoted via /admin/users
+    // would silently downgrade them back to a regular client on their next visit.
+    let isAdmin = isBootstrapAdminEmail;
     try {
-      await supabase.from('profiles').upsert({
+      const upsertPayload: { id: string; full_name: string; is_admin?: boolean } = {
         id: user.id,
-        full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
-        is_admin: isAdminEmail,
-      }, { onConflict: 'id' });
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
+      };
+      if (isBootstrapAdminEmail) upsertPayload.is_admin = true;
+      await supabase.from('profiles').upsert(upsertPayload, { onConflict: 'id' });
+      const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+      isAdmin = profile?.is_admin === true;
     } catch { /* non-fatal */ }
 
     await new Promise(resolve => setTimeout(resolve, 400));
 
-    if (isAdminEmail) {
+    if (isAdmin) {
       window.location.href = '/admin';
     } else if (nextPath && nextPath.startsWith('/')) {
       window.location.href = nextPath;

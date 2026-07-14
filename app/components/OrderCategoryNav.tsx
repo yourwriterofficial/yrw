@@ -14,7 +14,7 @@ export default function OrderCategoryNav() {
     { id: 'content', label: 'Content', path: '/content', color: 'text-amber-500 border-amber-500/30 bg-amber-500/5', inactiveColor: 'hover:text-amber-400 hover:bg-amber-500/5', icon: <PenTool className="w-4 h-4 text-amber-500" /> },
     { id: 'dev', label: 'Software Dev', path: '/dev', color: 'text-cyan-500 border-cyan-500/30 bg-cyan-500/5', inactiveColor: 'hover:text-cyan-400 hover:bg-cyan-500/5', icon: <Terminal className="w-4 h-4 text-cyan-500" /> },
     { id: 'resume', label: 'CV & Resume', path: '/resume', color: 'text-blue-500 border-blue-500/30 bg-blue-500/5', inactiveColor: 'hover:text-blue-400 hover:bg-blue-500/5', icon: <Briefcase className="w-4 h-4 text-blue-500" /> },
-    { id: 'custom', label: 'Custom Work', path: '/custom', color: 'text-purple-500 border-purple-500/30 bg-purple-500/5', inactiveColor: 'hover:text-purple-400 hover:bg-purple-500/5', icon: <Settings className="w-4 h-4 text-purple-500" /> },
+    { id: 'statistics', label: 'Statistics', path: '/statistics', color: 'text-purple-500 border-purple-500/30 bg-purple-500/5', inactiveColor: 'hover:text-purple-400 hover:bg-purple-500/5', icon: <Settings className="w-4 h-4 text-purple-500" /> },
   ];
 
   return (

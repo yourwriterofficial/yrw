@@ -13,6 +13,16 @@ const nextConfig = {
     ],
   },
 
+  // "Custom Data & Fieldwork" was renamed to "Statistics, Maths, Financial & Fieldwork"
+  // (2026-07-14) — keep old links/bookmarks working.
+  async redirects() {
+    return [
+      { source: '/custom-research', destination: '/statistics-fieldwork', permanent: true },
+      { source: '/order/custom', destination: '/order/statistics', permanent: true },
+      { source: '/dashboard/client/order/new/custom', destination: '/dashboard/client/order/new/statistics', permanent: true },
+    ];
+  },
+
   // Security headers to prevent clickjacking, MIME sniffing, XSS, etc.
   async headers() {
     return [

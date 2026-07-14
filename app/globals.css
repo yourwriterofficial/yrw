@@ -51,6 +51,17 @@ body {
   transition: background 0.2s ease, color 0.2s ease;
 }
 
+/* Registers --accent/--accent-hover as real Tailwind theme colors so
+   bg-accent/text-accent/border-accent/hover:bg-accent-hover (etc.) are
+   generated for every variant, instead of only the hand-authored
+   .accent/.accent-bg classes below. Without this, those utilities were
+   literal no-ops — e.g. the login page's submit button had no background
+   and black-on-black text. */
+@theme inline {
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+}
+
 /* Utility classes – use these in your components */
 .bg-primary { background: var(--bg-primary); }
 .bg-secondary { background: var(--bg-secondary); }
@@ -58,6 +69,10 @@ body {
 .text-primary { color: var(--text-primary); }
 .text-secondary { color: var(--text-secondary); }
 .border-theme { border-color: var(--border); }
+.border-strong { border-color: var(--border-strong); }
+.hover\:border-strong:hover { border-color: var(--border-strong); }
+.divide-theme > :not([hidden]) ~ :not([hidden]) { border-color: var(--border); }
+.bg-theme { background: var(--border); }
 .accent { color: var(--accent); }
 .accent-bg { background: var(--accent); }
 

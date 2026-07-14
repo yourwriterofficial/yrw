@@ -8,6 +8,14 @@ import ThemeToggle from './ThemeToggle';
 import { Menu, X, ArrowRight } from 'lucide-react';
 import * as lucide from 'lucide-react';
 
+const SERVICE_LINKS = [
+  { href: '/developer', label: 'Full Stack Development', icon: lucide.Code2 },
+  { href: '/academic-writing', label: 'Academic Writing & Research', icon: lucide.GraduationCap },
+  { href: '/content-writing', label: 'Content & Creative Writing', icon: lucide.PenLine },
+  { href: '/resume-cv', label: 'Executive CVs & Resumes', icon: lucide.FileText },
+  { href: '/statistics-fieldwork', label: 'Statistics, Maths & Fieldwork', icon: lucide.LineChart },
+];
+
 export default function Header({ projectsContext = false }: { projectsContext?: boolean }) {
   const router = useRouter();
   const servicesHref = projectsContext ? '/projects#services' : '/#services';
@@ -76,132 +84,123 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
   };
 
   return (
-    <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 pt-safe ${scrolled ? 'glass-panel-strong border-x-0 border-t-0 py-3 shadow-lg' : 'bg-transparent py-5'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex justify-between items-center">
+    <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-200 pt-safe ${scrolled ? 'bg-primary/90 backdrop-blur-md border-b border-theme' : 'bg-transparent border-b border-transparent'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
         {/* Logo */}
-        <Link href="/" className="text-xl font-black tracking-tighter flex items-center gap-2 select-none group">
-          <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-lg flex items-center justify-center text-black font-black transform group-hover:scale-105 transition-transform duration-200">
+        <Link href="/" className="text-[15px] font-semibold tracking-tight flex items-center gap-2 select-none group">
+          <div className="w-7 h-7 bg-primary border border-theme rounded-md flex items-center justify-center text-primary font-bold text-xs group-hover:border-accent transition-colors">
             RW
           </div>
-          <span className="text-primary group-hover:text-emerald-400 transition-colors">
-            ResearchWriter<span className="text-emerald-500">.</span>
+          <span className="text-primary">
+            ResearchWriter
           </span>
         </Link>
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-8 text-xs font-bold text-secondary uppercase tracking-widest">
+        <div className="hidden lg:flex items-center gap-6 text-[13px] font-medium text-secondary">
           {/* Services Dropdown */}
           <div className="relative group/menu py-2">
-            <button className="flex items-center gap-1 hover:text-emerald-400 text-secondary transition-colors duration-200 outline-none font-bold">
-              Our Services <lucide.ChevronDown className="w-3 h-3 transition-transform duration-200 group-hover/menu:rotate-180" />
+            <button className="flex items-center gap-1 hover:text-primary text-secondary transition-colors outline-none">
+              Services <lucide.ChevronDown className="w-3.5 h-3.5 transition-transform duration-200 group-hover/menu:rotate-180" />
             </button>
-            <div className="absolute top-full left-0 mt-1 w-60 glass-panel-strong rounded-xl shadow-xl py-2 hidden group-hover/menu:block animate-in fade-in slide-in-from-top-1 duration-200">
-              <Link href="/developer" className="block px-4 py-2 text-[11px] text-primary hover:bg-white/5 hover:text-cyan-400 font-bold transition-all">
-                🖥️ Full Stack Dev Services
-              </Link>
-              <Link href="/academic-writing" className="block px-4 py-2 text-[11px] text-primary hover:bg-white/5 hover:text-emerald-400 font-bold transition-all">
-                🎓 Academic Writing & Research
-              </Link>
-              <Link href="/content-writing" className="block px-4 py-2 text-[11px] text-primary hover:bg-white/5 hover:text-amber-400 font-bold transition-all">
-                ✍ Content & Creative Writing
-              </Link>
-              <Link href="/resume-cv" className="block px-4 py-2 text-[11px] text-primary hover:bg-white/5 hover:text-blue-400 font-bold transition-all">
-                📄 Executive CVs & Resumes
-              </Link>
-              <Link href="/custom-research" className="block px-4 py-2 text-[11px] text-primary hover:bg-white/5 hover:text-purple-400 font-bold transition-all">
-                📊 Complex Data & Fieldwork
-              </Link>
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-72 bg-secondary border border-theme rounded-xl shadow-lg py-2 hidden group-hover/menu:block animate-in fade-in slide-in-from-top-1 duration-150">
+              {SERVICE_LINKS.map(s => {
+                const Icon = s.icon;
+                return (
+                  <Link key={s.href} href={s.href} className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-primary hover:bg-primary font-medium transition-colors">
+                    <Icon className="w-4 h-4 text-secondary shrink-0" /> {s.label}
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
-          <Link href={user ? (isAdmin ? "/projects" : "/dashboard/client?tab=projects") : "/projects"} className="hover:text-emerald-400 transition-colors duration-200 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />Buy Already-Made Projects
+          <Link href={user ? (isAdmin ? "/projects" : "/dashboard/client?tab=projects") : "/projects"} className="hover:text-primary transition-colors whitespace-nowrap">
+            Ready-made projects
           </Link>
-          <Link href={processHref} className="hover:text-emerald-400 transition-colors duration-200">
-            How it Works
+          <Link href={processHref} className="hover:text-primary transition-colors whitespace-nowrap">
+            How it works
           </Link>
-          <div className="w-40 border-l border-theme pl-4">
-            <ThemeToggle />
-          </div>
           {user ? (
             <>
               <Link
                 href={isAdmin ? "/admin" : "/dashboard/client"}
-                className="text-primary hover:text-emerald-400 transition-colors duration-200"
+                className="hover:text-primary transition-colors whitespace-nowrap"
               >
                 Dashboard
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-primary hover:text-red-400 transition-colors duration-200 cursor-pointer font-bold uppercase tracking-widest"
+                className="hover:text-primary transition-colors cursor-pointer whitespace-nowrap"
               >
-                Logout
+                Log out
               </button>
             </>
           ) : (
-            <Link href="/login" className="text-primary hover:text-emerald-400 transition-colors duration-200">
-              Client Login
+            <Link href="/login" className="hover:text-primary transition-colors whitespace-nowrap">
+              Log in
             </Link>
           )}
+          <ThemeToggle className="flex items-center justify-center w-8 h-8 rounded-lg text-secondary hover:bg-secondary hover:text-primary transition-colors shrink-0 [&_span]:hidden" />
         </div>
 
         {/* Desktop CTA */}
         <Link
           href={startHref}
-          className="hidden md:flex bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 text-black px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-wider active:scale-95 transition-all duration-200 items-center gap-1.5 shadow-md shadow-emerald-500/20"
+          className="hidden lg:flex bg-accent hover:bg-accent-hover text-black px-5 py-2 rounded-full text-[13px] font-semibold active:scale-[0.98] transition-all items-center gap-1.5"
         >
-          Start Project <ArrowRight className="w-3.5 h-3.5" />
+          Start a project <ArrowRight className="w-3.5 h-3.5" />
         </Link>
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden text-primary p-2.5 hover:bg-secondary/50 rounded-xl transition-colors"
+          className="lg:hidden text-primary p-2 hover:bg-secondary rounded-lg transition-colors"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle Navigation Menu"
         >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
-      {/* Mobile Menu Drawer Bottom Sheet (subsKription style) */}
+      {/* Mobile Menu Drawer Bottom Sheet */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[150] flex flex-col justify-end">
+        <div className="lg:hidden fixed inset-0 z-[150] flex flex-col justify-end">
           {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-[4px] transition-opacity duration-300 animate-in fade-in" 
-            onClick={() => setMobileMenuOpen(false)} 
+          <div
+            className="absolute inset-0 bg-black/50 transition-opacity duration-200 animate-in fade-in"
+            onClick={() => setMobileMenuOpen(false)}
           />
-          
+
           {/* Bottom Sheet */}
-          <div className="relative glass-panel-strong border-x-0 border-b-0 rounded-t-[2.5rem] shadow-2xl max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300 pb-8 pb-safe z-10 text-primary">
+          <div className="relative bg-secondary border-t border-theme rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-200 pb-8 pb-safe z-10 text-primary">
             {/* Drag Handle */}
-            <div className="flex justify-center pt-4 pb-2 shrink-0">
-              <div className="w-12 h-1 bg-black/15 dark:bg-white/15 rounded-full" />
+            <div className="flex justify-center pt-3 pb-2 shrink-0">
+              <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border-strong)' }} />
             </div>
 
             {/* Content Area */}
-            <div className="overflow-y-auto flex-1 px-5 sm:px-6 pt-3 space-y-5 select-none">
+            <div className="overflow-y-auto flex-1 px-5 sm:px-6 pt-2 space-y-5 select-none">
 
               {/* Account/Header Info */}
               <div className="flex items-center justify-between border-b border-theme pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-black font-black text-lg shadow-md shadow-emerald-500/10">
+                  <div className="w-10 h-10 rounded-full bg-card border border-theme flex items-center justify-center text-primary font-semibold text-sm">
                     {user ? (user.email?.charAt(0).toUpperCase() || 'U') : 'G'}
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-primary truncate max-w-[180px]">
-                      {user ? user.email?.split('@')[0] : 'Guest Visitor'}
+                    <h4 className="text-sm font-semibold text-primary truncate max-w-[180px]">
+                      {user ? user.email?.split('@')[0] : 'Guest'}
                     </h4>
-                    <p className="text-[10px] text-secondary font-bold uppercase tracking-wider">
-                      {user ? 'Authenticated Client' : 'Browse Platform'}
+                    <p className="text-xs text-secondary">
+                      {user ? 'Signed in' : 'Browsing'}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-8 h-8 bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 text-secondary rounded-full flex items-center justify-center active:scale-90 transition-transform shrink-0"
+                  className="w-8 h-8 bg-card hover:bg-primary text-secondary rounded-full flex items-center justify-center transition-colors shrink-0"
                 >
-                  <X className="w-4 h-4 text-primary" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
@@ -210,88 +209,60 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
                 <Link
                   href="/"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-card border border-theme hover:border-emerald-500/30 text-xs font-black text-primary transition-all active:scale-[0.98]"
+                  className="flex items-center justify-center gap-2 p-3 rounded-xl bg-card border border-theme text-sm font-medium text-primary transition-colors active:scale-[0.98]"
                 >
-                  🏠 Home Page
+                  Home
                 </Link>
                 <Link
                   href={user ? (isAdmin ? "/projects" : "/dashboard/client?tab=projects") : "/projects"}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 text-xs font-black text-amber-400 transition-all active:scale-[0.98]"
+                  className="flex items-center justify-center gap-2 p-3 rounded-xl bg-card border border-theme text-sm font-medium text-primary transition-colors active:scale-[0.98]"
                 >
-                  📚 Buy Already-Made Projects
+                  Ready-made projects
                 </Link>
               </div>
 
               {/* services provided */}
-              <div className="bg-card border border-theme rounded-2xl p-4 space-y-3 shadow-sm">
-                <p className="text-[9px] font-extrabold text-emerald-500 uppercase tracking-widest leading-none">Our Services</p>
-                <div className="grid grid-cols-1 gap-2">
-                  <Link
-                    href="/developer"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition text-xs font-bold text-primary"
-                  >
-                    <span className="flex items-center gap-2">🖥️ Full Stack Dev Services</span>
-                    <lucide.ChevronRight className="w-3.5 h-3.5 text-secondary" />
-                  </Link>
-                  <Link
-                    href="/academic-writing"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition text-xs font-bold text-primary"
-                  >
-                    <span className="flex items-center gap-2">🎓 Academic Writing & Research</span>
-                    <lucide.ChevronRight className="w-3.5 h-3.5 text-secondary" />
-                  </Link>
-                  <Link
-                    href="/content-writing"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition text-xs font-bold text-primary"
-                  >
-                    <span className="flex items-center gap-2">✍ Content & Creative Writing</span>
-                    <lucide.ChevronRight className="w-3.5 h-3.5 text-secondary" />
-                  </Link>
-                  <Link
-                    href="/resume-cv"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition text-xs font-bold text-primary"
-                  >
-                    <span className="flex items-center gap-2">📄 Executive CVs & Resumes</span>
-                    <lucide.ChevronRight className="w-3.5 h-3.5 text-secondary" />
-                  </Link>
-                  <Link
-                    href="/custom-research"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition text-xs font-bold text-primary"
-                  >
-                    <span className="flex items-center gap-2">📊 Complex Data & Fieldwork</span>
-                    <lucide.ChevronRight className="w-3.5 h-3.5 text-secondary" />
-                  </Link>
-                </div>
+              <div className="bg-card border border-theme rounded-xl p-3 space-y-1">
+                <p className="text-[11px] font-semibold text-secondary px-1 pb-1">Services</p>
+                {SERVICE_LINKS.map(s => {
+                  const Icon = s.icon;
+                  return (
+                    <Link
+                      key={s.href}
+                      href={s.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-primary transition-colors text-sm font-medium text-primary"
+                    >
+                      <span className="flex items-center gap-2.5"><Icon className="w-4 h-4 text-secondary" /> {s.label}</span>
+                      <lucide.ChevronRight className="w-4 h-4 text-secondary" />
+                    </Link>
+                  );
+                })}
               </div>
 
               {/* Theme Selector */}
-              <div className="flex justify-between items-center bg-card border border-theme p-3 rounded-2xl">
-                <span className="text-xs text-secondary font-bold">Interface Style</span>
+              <div className="flex justify-between items-center bg-card border border-theme p-3 rounded-xl">
+                <span className="text-sm text-secondary font-medium">Appearance</span>
                 <ThemeToggle />
               </div>
 
               {/* Auth Settings / CTA */}
-              <div className="pt-2 space-y-2">
+              <div className="pt-1 space-y-2">
                 {user ? (
                   <>
                     <Link
                       href={isAdmin ? "/admin" : "/dashboard/client"}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-card hover:bg-black/5 dark:hover:bg-white/5 border border-theme rounded-2xl text-xs font-black text-primary transition active:scale-[0.98]"
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-card hover:bg-primary border border-theme rounded-xl text-sm font-medium text-primary transition-colors active:scale-[0.98]"
                     >
-                      <lucide.LayoutDashboard className="w-4 h-4 text-emerald-500" /> Go to Dashboard
+                      <lucide.LayoutDashboard className="w-4 h-4" /> Go to dashboard
                     </Link>
                     <button
                       onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 rounded-2xl text-xs font-black text-red-400 transition active:scale-[0.98] cursor-pointer"
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-card hover:bg-primary border border-theme rounded-xl text-sm font-medium text-red-500 transition-colors active:scale-[0.98] cursor-pointer"
                     >
-                      <lucide.LogOut className="w-4 h-4" /> Sign Out
+                      <lucide.LogOut className="w-4 h-4" /> Sign out
                     </button>
                   </>
                 ) : (
@@ -299,16 +270,16 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
                     <Link
                       href="/login"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-card hover:bg-black/5 dark:hover:bg-white/5 border border-theme rounded-2xl text-xs font-black text-primary transition active:scale-[0.98]"
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-card hover:bg-primary border border-theme rounded-xl text-sm font-medium text-primary transition-colors active:scale-[0.98]"
                     >
-                      <lucide.User className="w-4 h-4 text-emerald-500" /> Client Login Area
+                      <lucide.User className="w-4 h-4" /> Log in
                     </Link>
                     <Link
                       href={startHref}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="w-full py-3 bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 text-black text-center font-black rounded-2xl text-xs uppercase tracking-wider block transition active:scale-[0.98]"
+                      className="w-full py-3 bg-accent hover:bg-accent-hover text-black text-center font-semibold rounded-xl text-sm block transition-colors active:scale-[0.98]"
                     >
-                      Start Project
+                      Start a project
                     </Link>
                   </>
                 )}

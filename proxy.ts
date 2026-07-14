@@ -17,8 +17,6 @@ const CSP = [
   "base-uri 'self'",
 ].join('; ')
 
-const ADMIN_EMAIL = 'yourwriterofficial@gmail.com'
-
 export default async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -66,11 +64,16 @@ export default async function proxy(request: NextRequest) {
     return response
   }
 
-  // Redirect non-admin users away from /admin
-  if (user && user.email?.toLowerCase() !== ADMIN_EMAIL && path.startsWith('/admin')) {
-    const response = NextResponse.redirect(new URL('/dashboard/client', request.url))
-    response.headers.set('Content-Security-Policy', CSP)
-    return response
+  // Redirect non-admin users away from /admin. Source of truth is profiles.is_admin —
+  // the same flag the admin UI (and RLS via is_admin()) already use — not a hardcoded
+  // email, so any account the admin panel promotes to admin actually gets edge access.
+  if (user && path.startsWith('/admin')) {
+    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single()
+    if (!profile?.is_admin) {
+      const response = NextResponse.redirect(new URL('/dashboard/client', request.url))
+      response.headers.set('Content-Security-Policy', CSP)
+      return response
+    }
   }
 
   supabaseResponse.headers.set('Content-Security-Policy', CSP)

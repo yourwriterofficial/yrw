@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { createSecureOrder } from '@/app/actions/createOrder';
 import { compileMilestones } from './OrderMilestonesPayment';
 import type { CreateOrderServerActionResponse } from '@/lib/types';
+import { fetchPricingTiers } from '@/lib/pricingTiers';
 import {
   Sparkles, X, ArrowLeft, GraduationCap, PenTool, Terminal, Briefcase, Settings,
   CheckCircle2, Loader2, Bot, User as UserIcon, MessageCircle, Compass, Wallet,
@@ -26,13 +27,17 @@ type Msg = { role: 'bot' | 'user'; text: string };
 const WHATSAPP_NUMBER = '2348121443666';
 const MIN_LEAD_DAYS = 14;
 
-const PLAN_RATES: Record<'GOLD' | 'SILVER' | 'BRONZE' | 'STANDARD', number> = {
+type PlanKey = 'GOLD' | 'SILVER' | 'BRONZE' | 'STANDARD';
+
+// Fallbacks shown instantly while the live rates load from service_pricing_tiers
+// (admin-editable in /admin/settings) — replaced by pickPlanRates()/pickPlanBlurb() below.
+const DEFAULT_PLAN_RATES: Record<PlanKey, number> = {
   GOLD: 100, SILVER: 80, BRONZE: 70, STANDARD: 60,
 };
-const PLAN_DISCOUNTS: Record<'GOLD' | 'SILVER' | 'BRONZE' | 'STANDARD', number> = {
+const DEFAULT_PLAN_DISCOUNTS: Record<PlanKey, number> = {
   GOLD: 15, SILVER: 10, BRONZE: 8, STANDARD: 6,
 };
-const PLAN_BLURB: Record<'GOLD' | 'SILVER' | 'BRONZE' | 'STANDARD', string> = {
+const DEFAULT_PLAN_BLURB: Record<PlanKey, string> = {
   GOLD: 'Premium — MSc/PhD level, 5 correction cycles, 95–100% originality.',
   SILVER: 'Standard — university assignments, 3 correction cycles.',
   BRONZE: 'Essential — solid writing support, 2 correction cycles.',
@@ -45,7 +50,7 @@ const CATEGORIES: { id: CategoryId; label: string; blurb: string; icon: React.Re
   { id: 'content', label: 'Content & Creative Writing', blurb: 'Website copy, eBooks, SEO articles & fictional narratives, tailored to your voice and audience.', icon: <PenTool className="w-5 h-5" />, accent: 'amber', addonCategory: 'CONTENT', tosKey: 'content_tos', prefix: 'CT' },
   { id: 'dev', label: 'Software & Web Development', blurb: 'Web apps, mobile apps, APIs, dashboards, and database-backed systems, built to spec.', icon: <Terminal className="w-5 h-5" />, accent: 'cyan', addonCategory: 'DEV', tosKey: 'dev_tos', prefix: 'DEV' },
   { id: 'resume', label: 'Executive Resumes & CVs', blurb: 'ATS-optimized resumes, cover letters, and LinkedIn overhauls designed to land interviews.', icon: <Briefcase className="w-5 h-5" />, accent: 'blue', addonCategory: 'RESUME', tosKey: 'resume_tos', prefix: 'CV' },
-  { id: 'custom', label: 'Custom Data & Fieldwork', blurb: 'SPSS analysis, survey design, fieldwork, and bespoke projects with emergency turnaround.', icon: <Settings className="w-5 h-5" />, accent: 'purple', addonCategory: 'CUSTOM', tosKey: 'academic_tos', prefix: 'CUST' },
+  { id: 'custom', label: 'Statistics, Maths, Financial & Fieldwork', blurb: 'SPSS analysis, mathematical modelling, financial computation, and fieldwork with emergency turnaround.', icon: <Settings className="w-5 h-5" />, accent: 'purple', addonCategory: 'CUSTOM', tosKey: 'academic_tos', prefix: 'STAT' },
 ];
 
 const SUBTYPES: Record<CategoryId, string[]> = {
@@ -152,6 +157,29 @@ export default function OrderAssistant() {
 
   const [termsText, setTermsText] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
+
+  const [planRates, setPlanRates] = useState<Record<PlanKey, number>>(DEFAULT_PLAN_RATES);
+  const [planDiscounts, setPlanDiscounts] = useState<Record<PlanKey, number>>(DEFAULT_PLAN_DISCOUNTS);
+  const [planBlurb, setPlanBlurb] = useState<Record<PlanKey, string>>(DEFAULT_PLAN_BLURB);
+
+  useEffect(() => {
+    fetchPricingTiers('ACADEMIC').then(tiers => {
+      if (tiers.length === 0) return;
+      const rates = { ...DEFAULT_PLAN_RATES };
+      const discounts = { ...DEFAULT_PLAN_DISCOUNTS };
+      const blurbs = { ...DEFAULT_PLAN_BLURB };
+      tiers.forEach(t => {
+        const key = t.tier_key as PlanKey;
+        if (!(key in rates)) return;
+        if (t.rate_per_word) rates[key] = t.rate_per_word;
+        discounts[key] = t.volume_discount_percent;
+        blurbs[key] = t.tagline || blurbs[key];
+      });
+      setPlanRates(rates);
+      setPlanDiscounts(discounts);
+      setPlanBlurb(blurbs);
+    });
+  }, []);
 
   const [finalOrderId, setFinalOrderId] = useState('');
   const [finalEmail, setFinalEmail] = useState('');
@@ -515,7 +543,7 @@ export default function OrderAssistant() {
     advance('plan', `Here's what ${n.toLocaleString()} words looks like across our quality tiers — pick one:`);
   };
 
-  const pickPlan = (plan: keyof typeof PLAN_RATES) => {
+  const pickPlan = (plan: PlanKey) => {
     reply(`${plan} tier`);
     setData(d => ({ ...d, plan }));
     goToLeadTime();
@@ -683,9 +711,9 @@ export default function OrderAssistant() {
   const computeTotal = (): number => {
     if (category === 'academic') {
       const words = data.words || 0;
-      const plan = (data.plan || 'STANDARD') as keyof typeof PLAN_RATES;
-      const base = words * PLAN_RATES[plan];
-      const volumeDiscount = words >= 10000 ? PLAN_DISCOUNTS[plan] : 0;
+      const plan = (data.plan || 'STANDARD') as PlanKey;
+      const base = words * planRates[plan];
+      const volumeDiscount = words >= 10000 ? planDiscounts[plan] : 0;
       return Math.round(base * (1 - volumeDiscount / 100));
     }
     const base = category === 'resume' ? 0 : (data.budget || 0);
@@ -720,7 +748,7 @@ export default function OrderAssistant() {
     if (category === 'content') topic = `[CONTENT] ${topic}`;
     if (category === 'dev') topic = `[DEV] ${topic}`;
     if (category === 'resume') topic = `[RESUME] ${topic}`;
-    if (category === 'custom') topic = `[COMPLEX] ${topic}`;
+    if (category === 'custom') topic = `[CUSTOM] ${topic}`;
     if (negotiated) topic = `[PROPOSAL] ${topic}`;
 
     const serviceTier = (category === 'academic' && !negotiated) ? data.plan : 'CUSTOM';
@@ -946,16 +974,16 @@ export default function OrderAssistant() {
       case 'plan':
         return (
           <div className="flex flex-col gap-2">
-            {(Object.keys(PLAN_RATES) as (keyof typeof PLAN_RATES)[]).map(p => {
+            {(Object.keys(planRates) as PlanKey[]).map(p => {
               const words = data.words || 0;
-              const base = words * PLAN_RATES[p];
-              const disc = words >= 10000 ? PLAN_DISCOUNTS[p] : 0;
+              const base = words * planRates[p];
+              const disc = words >= 10000 ? planDiscounts[p] : 0;
               const price = Math.round(base * (1 - disc / 100));
               return (
                 <button key={p} onClick={() => pickPlan(p)} className={`flex items-center justify-between p-3 rounded-xl border border-theme bg-card hover:${accent.bg} transition text-left cursor-pointer`}>
                   <span>
-                    <span className="block text-sm font-black text-primary">{p} <span className="text-secondary font-normal text-[11px]">— ₦{PLAN_RATES[p]}/word</span></span>
-                    <span className="block text-[10px] text-secondary">{PLAN_BLURB[p]}</span>
+                    <span className="block text-sm font-black text-primary">{p} <span className="text-secondary font-normal text-[11px]">— ₦{planRates[p]}/word</span></span>
+                    <span className="block text-[10px] text-secondary">{planBlurb[p]}</span>
                   </span>
                   <span className="text-sm font-black text-emerald-500 shrink-0 ml-3">₦{price.toLocaleString()}</span>
                 </button>

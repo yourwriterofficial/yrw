@@ -8,11 +8,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
     '',
     '/projects',
+    '/academic-writing',
+    '/content-writing',
+    '/resume-cv',
+    '/statistics-fieldwork',
+    '/developer',
     '/order/academic',
     '/order/content',
     '/order/dev',
     '/order/resume',
-    '/order/custom',
+    '/order/statistics',
     '/login',
     '/register',
   ];

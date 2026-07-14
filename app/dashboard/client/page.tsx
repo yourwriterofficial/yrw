@@ -103,14 +103,14 @@ const getPipelineDetails = (order: any) => {
       ]
     };
   }
-  if (oid.startsWith('CUST-') || top.startsWith('[COMPLEX]')) {
+  if (oid.startsWith('CUST-') || oid.startsWith('STAT-') || top.startsWith('[COMPLEX]') || top.startsWith('[CUSTOM]')) {
     return {
       category: 'Bespoke Fieldwork',
       icon: 'LineChart',
       colorClass: 'text-purple-400',
       bgClass: 'bg-purple-500/10',
       borderClass: 'border-purple-500/20',
-      label: 'Custom Data & Fieldwork',
+      label: 'Statistics, Maths, Financial & Fieldwork',
       steps: [
         { title: 'Research Briefing', desc: 'Fieldwork parameters and methodologies logged.' },
         { title: 'Data Collection & Processing', desc: 'Surveys and raw datasets compiled.' },

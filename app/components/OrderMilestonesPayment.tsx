@@ -123,22 +123,22 @@ export function PaymentStructureFields({
           </div>
           <div className="space-y-2">
             {milestones.map((m, idx) => (
-              <div key={idx} className="bg-primary/50 border border-theme rounded-xl p-3 grid grid-cols-12 gap-2 items-center">
+              <div key={idx} className="bg-primary/50 border border-theme rounded-xl p-3 grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                 <input
                   type="text"
-                  className="col-span-4 bg-secondary border border-theme rounded-lg p-2 text-xs text-primary font-bold"
+                  className="sm:col-span-4 bg-secondary border border-theme rounded-lg p-2 text-xs text-primary font-bold"
                   value={m.name}
                   onChange={e => updateMilestone(idx, 'name', e.target.value)}
                   placeholder="Name"
                 />
                 <input
                   type="text"
-                  className="col-span-4 bg-secondary border border-theme rounded-lg p-2 text-xs text-primary"
+                  className="sm:col-span-4 bg-secondary border border-theme rounded-lg p-2 text-xs text-primary"
                   value={m.trigger}
                   onChange={e => updateMilestone(idx, 'trigger', e.target.value)}
                   placeholder="Trigger"
                 />
-                <div className="col-span-3 flex items-center gap-1">
+                <div className="sm:col-span-3 flex items-center gap-1">
                   <input
                     type="number"
                     className="w-full bg-secondary border border-theme rounded-lg p-2 text-xs text-primary font-bold"
@@ -146,8 +146,11 @@ export function PaymentStructureFields({
                     onChange={e => updateMilestone(idx, 'percentage', parseInt(e.target.value) || 0)}
                   />
                   <span className="text-xs font-bold text-secondary">%</span>
+                  <button type="button" onClick={() => removeMilestone(idx)} className="sm:hidden text-secondary hover:text-red-400 shrink-0 p-1">
+                    <lucide.Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <button type="button" onClick={() => removeMilestone(idx)} className="col-span-1 text-secondary hover:text-red-400 text-center">
+                <button type="button" onClick={() => removeMilestone(idx)} className="hidden sm:block sm:col-span-1 text-secondary hover:text-red-400 text-center">
                   <lucide.Trash2 className="w-4 h-4 mx-auto" />
                 </button>
               </div>

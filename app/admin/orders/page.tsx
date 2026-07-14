@@ -58,10 +58,10 @@ const getPipelineDetails = (order: any) => {
       label: 'Content & Creative Writing',
     };
   }
-  if (oid.startsWith('CUST-') || top.startsWith('[COMPLEX]')) {
+  if (oid.startsWith('CUST-') || oid.startsWith('STAT-') || top.startsWith('[COMPLEX]') || top.startsWith('[CUSTOM]')) {
     return {
       category: 'Bespoke Fieldwork',
-      label: 'Custom Data & Fieldwork',
+      label: 'Statistics, Maths, Financial & Fieldwork',
     };
   }
   if (oid.startsWith('CV-') || top.startsWith('[RESUME]')) {

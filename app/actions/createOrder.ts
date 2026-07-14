@@ -14,8 +14,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const PLAN_RATES = { GOLD: 100, SILVER: 80, BRONZE: 70, STANDARD: 60 };
-const PLAN_DISCOUNTS = { GOLD: 15, SILVER: 10, BRONZE: 8, STANDARD: 6 };
 const MIN_CUSTOM_QUOTE = 10000;
 
 const orderDataSchema = z.object({
@@ -77,9 +75,18 @@ export async function createSecureOrder(
     if (!words || words < 50) {
       return { success: false, error: 'Word count must be at least 50.' };
     }
-    const plan = orderData.service_tier as keyof typeof PLAN_RATES;
-    const base = words * PLAN_RATES[plan];
-    const volumeDiscount = words >= 10000 ? PLAN_DISCOUNTS[plan] : 0;
+    const { data: tier } = await supabase
+      .from('service_pricing_tiers')
+      .select('rate_per_word, volume_discount_percent, volume_discount_threshold_words')
+      .eq('service_category', 'ACADEMIC')
+      .eq('tier_key', orderData.service_tier)
+      .eq('is_active', true)
+      .single();
+    if (!tier || !tier.rate_per_word) {
+      return { success: false, error: 'Selected plan is no longer available. Please refresh and choose another plan.' };
+    }
+    const base = words * tier.rate_per_word;
+    const volumeDiscount = words >= tier.volume_discount_threshold_words ? tier.volume_discount_percent : 0;
     let afterVolume = base * (1 - volumeDiscount / 100);
 
     if (promoCode) {

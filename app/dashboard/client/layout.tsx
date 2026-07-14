@@ -187,6 +187,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               <button onClick={() => router.push('/dashboard/client/order/new/academic')} className={navBtnClass('new/academic')}>
                 <div className="flex items-center gap-2.5 text-xs"><lucide.GraduationCap className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Premium Academic Writing</span></div>
               </button>
+              <button onClick={() => router.push('/dashboard/client/order/new/statistics')} className={navBtnClass('new/statistics')}>
+                <div className="flex items-center gap-2.5 text-xs"><lucide.LineChart className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Statistics & Fieldwork</span></div>
+              </button>
             </div>
           </div>
 
@@ -288,6 +291,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
             </button>
             <button onClick={() => { router.push('/dashboard/client/order/new/academic'); setMobileMenuOpen(false); }} className={navBtnClass('new/academic')}>
               <div className="flex items-center gap-2.5 text-xs"><lucide.GraduationCap className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Premium Academic Writing</span></div>
+            </button>
+            <button onClick={() => { router.push('/dashboard/client/order/new/statistics'); setMobileMenuOpen(false); }} className={navBtnClass('new/statistics')}>
+              <div className="flex items-center gap-2.5 text-xs"><lucide.LineChart className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Statistics & Fieldwork</span></div>
             </button>
           </div>
 

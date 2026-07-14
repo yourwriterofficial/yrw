@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { showToast } from '@/app/components/ui/Toast';
 import { REFERRAL_STORAGE_KEY } from '@/app/components/ReferralCapture';
+import ThemeToggle from '@/app/components/ThemeToggle';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -69,44 +70,47 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 font-['Inter']">
-      <div className="bg-[#0a0a0a] border border-zinc-800 p-8 rounded-3xl w-full max-w-md shadow-2xl">
-        <div className="text-center mb-8">
-          <div className="inline-block px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Registration</div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Create Account</h1>
+    <div className="min-h-screen bg-primary text-primary flex items-center justify-center p-4 font-['Inter']">
+      <div className="bg-secondary border border-theme p-8 rounded-3xl w-full max-w-md shadow-2xl">
+        <div className="flex justify-end mb-4">
+          <ThemeToggle />
         </div>
-        
+        <div className="text-center mb-8">
+          <div className="inline-block px-3 py-1 bg-accent/10 text-accent border border-accent/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Registration</div>
+          <h1 className="text-2xl font-black tracking-tight">Create Account</h1>
+        </div>
+
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 ml-1">Full Name</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-secondary mb-2 ml-1">Full Name</label>
             <input
               type="text"
               placeholder="John Doe"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-emerald-500 transition"
+              className="input-box"
               required
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 ml-1">Email Address</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-secondary mb-2 ml-1">Email Address</label>
             <input
               type="email"
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-emerald-500 transition"
+              className="input-box"
               required
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 ml-1">Password</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-secondary mb-2 ml-1">Password</label>
             <input
               type="password"
               placeholder="At least 6 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-emerald-500 transition"
+              className="input-box"
               required
             />
           </div>
@@ -115,15 +119,15 @@ export default function RegisterPage() {
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="accent-emerald-500 bg-black border-zinc-800 rounded w-4 h-4"
+              className="bg-primary border-theme rounded w-4 h-4"
             />
-            <span className="text-xs font-bold text-zinc-400">Remember me on this device</span>
+            <span className="text-xs font-bold text-secondary">Remember me on this device</span>
           </label>
           {error && <p className="text-red-500 text-xs font-bold bg-red-500/10 p-3 rounded-lg border border-red-500/20">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-500 text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-xl hover:bg-emerald-400 transition mt-2 disabled:opacity-50"
+            className="w-full bg-accent text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-xl hover:bg-accent-hover transition mt-2 disabled:opacity-50"
           >
             {loading ? 'Processing...' : 'Register'}
           </button>
@@ -131,10 +135,10 @@ export default function RegisterPage() {
 
         <div className="relative my-8">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-zinc-800"></div>
+            <div className="w-full border-t border-theme"></div>
           </div>
           <div className="relative flex justify-center text-[10px] font-black tracking-widest uppercase">
-            <span className="bg-[#0a0a0a] px-4 text-zinc-600">Or Continue With</span>
+            <span className="bg-secondary px-4 text-secondary">Or Continue With</span>
           </div>
         </div>
 
@@ -153,9 +157,9 @@ export default function RegisterPage() {
           Google Authentication
         </button>
 
-        <p className="text-center text-xs text-zinc-500 mt-8">
+        <p className="text-center text-xs text-secondary mt-8">
           Already have an account?{' '}
-          <a href="/login" className="text-emerald-500 hover:text-emerald-400 font-bold transition">Login securely</a>
+          <a href="/login" className="text-accent hover:text-accent-hover font-bold transition">Login securely</a>
         </p>
       </div>
     </div>

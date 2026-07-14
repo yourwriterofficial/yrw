@@ -62,14 +62,14 @@ export default function SelectServicePage() {
             </ul>
           </Link>
 
-          {/* Custom Card */}
-          <Link href="/dashboard/client/order/new/custom" className="group block p-6 md:p-8 rounded-[32px] bg-secondary border border-theme hover:border-purple-500/50 transition duration-300 relative overflow-hidden">
+          {/* Statistics Card */}
+          <Link href="/dashboard/client/order/new/statistics" className="group block p-6 md:p-8 rounded-[32px] bg-secondary border border-theme hover:border-purple-500/50 transition duration-300 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-6 md:p-8 opacity-0 group-hover:opacity-100 transition transform translate-x-4 group-hover:translate-x-0"><ArrowRight className="text-purple-500 w-5 h-5" /></div>
             <div className="w-12 h-12 md:w-14 md:h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-6 border border-purple-500/20">
               <LineChart className="w-5 h-5 md:w-6 md:h-6 text-purple-400" />
             </div>
-            <h3 className="text-lg md:text-xl font-black mb-3 break-words text-primary">Complex Data & Fieldwork</h3>
-            <p className="text-xs md:text-sm text-secondary mb-6 leading-relaxed break-words">SPSS analysis, surveys, statistical modelling – custom add‑ons available.</p>
+            <h3 className="text-lg md:text-xl font-black mb-3 break-words text-primary">Statistics, Maths, Financial & Fieldwork</h3>
+            <p className="text-xs md:text-sm text-secondary mb-6 leading-relaxed break-words">SPSS analysis, mathematical modelling, financial computation – custom add‑ons available.</p>
             <ul className="space-y-2 text-xs font-medium text-secondary">
               <li className="flex items-center gap-2 break-words">✅ Add‑on toggles (Slides, Data)</li>
               <li className="flex items-center gap-2 break-words">✅ Bespoke emergency pricing</li>

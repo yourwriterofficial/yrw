@@ -2,19 +2,19 @@ import ServiceLandingTemplate from '@/app/components/ServiceLandingTemplate';
 import { LineChart, BarChart3, ClipboardList, Presentation, Sliders, Zap } from 'lucide-react';
 
 export const metadata = {
-  title: 'Complex Data & Fieldwork | ResearchWriter',
-  description: 'For large-scale projects requiring custom add-ons — SPSS analysis, fieldwork, survey gathering, and PowerPoint summaries.',
+  title: 'Statistics, Maths, Financial & Fieldwork | ResearchWriter',
+  description: 'For large-scale projects requiring custom add-ons — SPSS and statistical analysis, mathematical modelling, financial computation, fieldwork, and survey gathering.',
 };
 
-export default function CustomResearchPage() {
+export default function StatisticsFieldworkPage() {
   return (
     <ServiceLandingTemplate
       accent="purple"
-      badgeLabel="Data & Fieldwork Pipeline"
+      badgeLabel="Statistics, Maths, Financial & Fieldwork"
       icon={LineChart}
-      title="Complex Data & Fieldwork"
-      description="For large-scale projects requiring custom add-ons — SPSS analysis, fieldwork, survey gathering, and PowerPoint summaries, priced to scope."
-      ctaHref="/order/custom"
+      title="Statistics, Maths, Financial & Fieldwork"
+      description="For large-scale projects requiring custom add-ons — SPSS and statistical analysis, mathematical modelling, financial computation, fieldwork, and survey gathering, priced to scope."
+      ctaHref="/order/statistics"
       ctaLabel="Start Your Order"
       bullets={['Add-on toggles (Slides, Data)', 'Bespoke emergency pricing', 'Large-scale project management']}
       capabilitiesTitle="What We Handle"
@@ -31,7 +31,7 @@ export default function CustomResearchPage() {
         { title: 'Submit Brief', description: 'Describe your project scope and required add-ons.' },
         { title: 'Custom Quote', description: 'Receive bespoke pricing scoped to your specific requirements.' },
         { title: 'Work in Progress', description: 'Track each phase and add-on through your dashboard.' },
-        { title: 'Vault Delivery', description: 'Every deliverable lands securely in your vault as it\'s completed.' },
+        { title: 'Vault Delivery', description: "Every deliverable lands securely in your vault as it's completed." },
       ]}
     />
   );

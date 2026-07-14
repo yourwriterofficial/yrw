@@ -3,13 +3,13 @@
 import { Sun, Moon } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ className = 'flex items-center gap-2 w-full p-2 rounded-xl text-secondary hover:bg-white/5 hover:text-primary transition text-sm font-bold' }: { className?: string }) {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <button
       onClick={toggleTheme}
-      className="flex items-center gap-2 w-full p-2 rounded-xl text-secondary hover:bg-white/5 hover:text-primary transition text-sm font-bold"
+      className={className}
       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
       type="button"
     >
