@@ -3,11 +3,13 @@
 -- 1. Enable RLS on final_deliverables
 ALTER TABLE public.final_deliverables ENABLE ROW LEVEL SECURITY;
 
--- 2. Drop existing policies if they exist to avoid conflict
+-- 2. Drop existing policies on final_deliverables
 DROP POLICY IF EXISTS "Users can view final deliverables of their own orders" ON public.final_deliverables;
 DROP POLICY IF EXISTS "Admins manage all final deliverables" ON public.final_deliverables;
+DROP POLICY IF EXISTS "Clients can view own deliverables" ON public.final_deliverables;
+DROP POLICY IF EXISTS "Admins can manage deliverables" ON public.final_deliverables;
 
--- 3. Create SELECT policy for final_deliverables
+-- 3. Create SELECT policy for final_deliverables using auth.email() instead of auth.users subqueries
 CREATE POLICY "Users can view final deliverables of their own orders" ON public.final_deliverables
   FOR SELECT USING (
     EXISTS (
@@ -15,8 +17,8 @@ CREATE POLICY "Users can view final deliverables of their own orders" ON public.
       WHERE o.order_id = final_deliverables.order_id
         AND (
           o.client_id = auth.uid()
-          OR o.email = (SELECT email FROM auth.users WHERE id = auth.uid())
-          OR o.guest_email = (SELECT email FROM auth.users WHERE id = auth.uid())
+          OR o.email = auth.email()
+          OR o.guest_email = auth.email()
         )
     )
     OR EXISTS (
@@ -32,10 +34,14 @@ CREATE POLICY "Admins manage all final deliverables" ON public.final_deliverable
     )
   );
 
--- 5. Drop and recreate client orders SELECT policy to support matching the email column
+-- 5. Drop and recreate client orders SELECT policy using auth.email() instead of auth.users subqueries
 DROP POLICY IF EXISTS "Clients can view own orders" ON public.orders;
-CREATE POLICY "Clients can view own orders" ON public.orders FOR SELECT USING (
-  auth.uid() = client_id 
-  OR guest_email = (SELECT email FROM auth.users WHERE id = auth.uid())
-  OR email = (SELECT email FROM auth.users WHERE id = auth.uid())
-);
+DROP POLICY IF EXISTS "Users can view own orders" ON public.orders;
+
+CREATE POLICY "Clients can view own orders" ON public.orders 
+  FOR SELECT USING (
+    auth.uid() = client_id 
+    OR guest_email = auth.email()
+    OR email = auth.email()
+    OR legal_name = auth.email()
+  );
