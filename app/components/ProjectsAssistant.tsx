@@ -38,7 +38,7 @@ export default function ProjectsAssistant() {
   const answer = (q: string) => {
     reply(q);
     if (q === 'How does it work?') {
-      say("Browse or search 3,000+ topics by department and level (BSc/MSc/PhD). Click “Get”, pick any add-ons, accept the terms, and pay. Your material (Chapters 1–5, MS Word) lands in your secure vault. Working hours are 8am–7pm and delivery is within 4 hours.");
+      say("Browse or search 100,000+ topics by department and level (BSc/MSc/PhD). Click “Get”, pick any add-ons, accept the terms, and pay. Your material (Chapters 1–5, MS Word) lands in your secure vault. Working hours are 8am–7pm and delivery is within 4 hours.");
       setStep('menu');
     } else if (q === 'What are the prices?') {
       say("BSc/HND ₦3,999 · MSc/PGD ₦4,500 · PhD ₦10,000. Optional add-ons (plagiarism report, SPSS analysis, slides, express delivery, etc.) are shown at checkout with their prices.");

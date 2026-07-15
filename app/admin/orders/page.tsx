@@ -963,7 +963,7 @@ function OrdersPageContent() {
                 </h2>
                 <p className="text-xs text-secondary mt-1">Client: {editingOrder['Legal Name']} ({editingOrder['Email']})</p>
               </div>
-              <button type="button" onClick={() => setEditingOrder(null)} className="p-2 bg-secondary hover:bg-white/10 rounded-full transition" aria-label="Close">
+              <button type="button" onClick={() => setEditingOrder(null)} className="p-2.5 bg-secondary hover:bg-white/10 rounded-full transition" aria-label="Close">
                 <lucide.X className="w-5 h-5 text-secondary" />
               </button>
             </div>

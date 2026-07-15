@@ -24,6 +24,19 @@
   /* Skeleton */
   --skeleton-base: #1a1a1a;
   --skeleton-shine: #262626;
+
+  /* Material-style tonal surface scale (Phase 2 of the client/admin redesign).
+     surface-4/5 give dropdown/modal content a real resting tier beyond the
+     existing bg-primary/secondary/card/elevated — additive, nothing above is redefined. */
+  --surface-4: #1c1c1c;
+  --surface-5: #212121;
+  /* Numbered elevation tiers: dark surfaces are near-black, so shadow alone barely
+     reads — pair with a hairline border (applied by consumers, e.g. Card.tsx) rather
+     than relying on shadow alone like Material's light-mode convention. */
+  --elevation-0: none;
+  --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elevation-2: 0 3px 8px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --elevation-3: 0 8px 24px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 [data-theme="light"] {
@@ -42,6 +55,14 @@
   --shadow-lg: 0 12px 40px rgba(16, 24, 40, 0.12);
   --skeleton-base: #e9ebef;
   --skeleton-shine: #f4f5f7;
+
+  --surface-4: #ffffff;
+  --surface-5: #ffffff;
+  /* Light theme differentiates elevation by shadow depth, not tone — Material convention. */
+  --elevation-0: none;
+  --elevation-1: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --elevation-2: 0 3px 8px rgba(16, 24, 40, 0.10), 0 1px 3px rgba(16, 24, 40, 0.06);
+  --elevation-3: 0 8px 24px rgba(16, 24, 40, 0.14), 0 2px 6px rgba(16, 24, 40, 0.06);
 }
 
 body {
@@ -60,12 +81,25 @@ body {
 @theme inline {
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
+  --color-surface-4: var(--surface-4);
+  --color-surface-5: var(--surface-5);
+  --shadow-elevation-1: var(--elevation-1);
+  --shadow-elevation-2: var(--elevation-2);
+  --shadow-elevation-3: var(--elevation-3);
 }
+
+/* Radius convention (Material redesign, Phase 2) — Tailwind's default radius scale
+   already covers this, this is a documented convention, not new tokens:
+     rounded-xl   (12px) — controls, buttons, inputs
+     rounded-2xl  (16-20px) — cards, panels, modals
+     rounded-full — pills, avatars, icon buttons
+   New code should follow this instead of mixing rounded-lg/xl/2xl/3xl arbitrarily. */
 
 /* Utility classes – use these in your components */
 .bg-primary { background: var(--bg-primary); }
 .bg-secondary { background: var(--bg-secondary); }
 .bg-card { background: var(--bg-card); }
+.bg-elevated { background: var(--bg-elevated); }
 .text-primary { color: var(--text-primary); }
 .text-secondary { color: var(--text-secondary); }
 .border-theme { border-color: var(--border); }
@@ -182,7 +216,10 @@ input[type="date"] {
 .shadow-card { box-shadow: var(--shadow-md); }
 .shadow-pop { box-shadow: var(--shadow-lg); }
 
-/* Buttons */
+/* Buttons
+   @deprecated for new code — use <Button variant="primary|secondary"> from
+   app/components/ui/Button.tsx, which matches these exactly (see Card.tsx/Button.tsx
+   for the Phase 2 Material-redesign foundation). Left live for existing call sites. */
 .btn-primary {
   background: var(--accent);
   color: #000;

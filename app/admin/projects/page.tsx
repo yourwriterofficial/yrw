@@ -222,7 +222,7 @@ export default function AdminProjectsPage() {
         <>
           <div className="mb-4 relative max-w-md">
             <lucide.Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-secondary" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search 3,000+ topics by title…" className="w-full bg-secondary border border-theme rounded-full pl-11 pr-4 py-2.5 text-sm text-primary outline-none focus:border-emerald-500" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search 100,000+ topics by title…" className="w-full bg-secondary border border-theme rounded-full pl-11 pr-4 py-2.5 text-sm text-primary outline-none focus:border-emerald-500" />
           </div>
           <p className="text-[11px] text-secondary mb-3">{total.toLocaleString()} topics total · showing up to 200 (refine with search).</p>
           <div className="bg-secondary border border-theme rounded-2xl overflow-hidden">

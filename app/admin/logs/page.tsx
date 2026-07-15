@@ -440,7 +440,7 @@ export default function AdminLogsPage() {
                 <span className="text-[10px] font-black uppercase text-purple-400 tracking-widest">{selectedType === 'email' ? 'Email Dispatch Audit' : 'In-App Notification Audit'}</span>
                 <h3 className="text-lg font-black text-primary mt-1">{selectedLog.subject || selectedLog.title || 'Log Details'}</h3>
               </div>
-              <button onClick={() => { setSelectedLog(null); setSelectedType(null); }} className="w-8 h-8 rounded-full bg-secondary hover:bg-white/5 text-primary flex items-center justify-center transition cursor-pointer">
+              <button onClick={() => { setSelectedLog(null); setSelectedType(null); }} className="w-11 h-11 rounded-full bg-secondary hover:bg-white/5 text-primary flex items-center justify-center transition cursor-pointer">
                 <lucide.X className="w-4 h-4" />
               </button>
             </header>

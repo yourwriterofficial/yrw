@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import * as lucide from 'lucide-react';
 import NotificationPreferencesPanel from '@/app/components/ui/NotificationPreferencesPanel';
 import PageHeader from '@/app/components/ui/PageHeader';
+import Card from '@/app/components/ui/Card';
 import { showToast } from '@/app/components/ui/Toast';
 import type { PricingTier, ServicePricingCategory } from '@/lib/pricingTiers';
 import { savePageSetting, fetchPageSettings } from '@/lib/pageSettings';
@@ -621,7 +622,7 @@ function SettingsContent() {
               </h2>
               <p className="text-secondary text-sm">These values prefill the invoice builder and every auto-generated invoice. Update them once here instead of per invoice.</p>
 
-              <div className="bg-card border border-theme rounded-2xl p-6 space-y-5">
+              <Card padding="lg" className="space-y-5">
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Contact Email (shown on invoices)</label>
                   <input type="email" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none" value={invoiceDefaults.contact_email || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, contact_email: e.target.value })} />
@@ -656,13 +657,14 @@ function SettingsContent() {
                 <button onClick={saveInvoiceDefaults} disabled={saving} className="bg-purple-500 hover:bg-purple-400 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2 disabled:opacity-50">
                   <lucide.Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Invoice Defaults'}
                 </button>
-              </div>
+              </Card>
             </div>
           )}
 
           {/* NOTIFICATIONS TAB */}
           {activeTab === 'NOTIFICATIONS' && user && (
-            <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl bg-card border border-theme rounded-2xl p-6 md:p-8">
+            <div className="max-w-2xl">
+            <Card padding="lg" className="space-y-6 animate-in fade-in duration-300">
               <div>
                 <h2 className="text-lg font-black uppercase tracking-wider text-purple-400 flex items-center gap-2 mb-2">
                   <lucide.BellRing className="w-5 h-5 text-purple-500" /> Admin Push Settings
@@ -670,6 +672,7 @@ function SettingsContent() {
                 <p className="text-secondary text-sm">Configure push notifications for this device to receive alerts on new orders, payments, and client requests.</p>
               </div>
               <NotificationPreferencesPanel userId={user.id} />
+            </Card>
             </div>
           )}
         </div>

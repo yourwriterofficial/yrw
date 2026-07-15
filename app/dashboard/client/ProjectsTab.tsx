@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import { showToast } from '@/app/components/ui/Toast';
+import Card from '@/app/components/ui/Card';
+import Button from '@/app/components/ui/Button';
 
 type Topic = {
   id: number;
@@ -420,11 +422,11 @@ export default function ProjectsTab({ user }: { user: any }) {
           {/* AVAILABILITY SEARCH INTERFACE */}
           {!hasSearched && !isSearching ? (
             <div className="max-w-2xl mx-auto mt-8 text-left">
-              <div className="bg-card border border-theme rounded-3xl p-6 shadow-2xl space-y-5 text-center">
+              <Card elevation={2} padding="lg" className="space-y-5 text-center">
                 <div>
                   <h3 className="text-lg font-black text-primary">Database Search & Availability</h3>
                   <p className="text-xs text-secondary mt-1 leading-relaxed font-semibold">
-                    Place your full project topic below to search our database of 3,000+ completed projects and check instant availability.
+                    Place your full project topic below to search our database of 100,000+ completed projects and check instant availability.
                   </p>
                 </div>
 
@@ -475,31 +477,32 @@ export default function ProjectsTab({ user }: { user: any }) {
                     Check Availability & Retrieve Material
                   </button>
                 </div>
-              </div>
+              </Card>
             </div>
           ) : isSearching ? (
-            <div className="max-w-md mx-auto mt-8 py-8 text-center space-y-4 bg-card border border-theme rounded-3xl p-6 shadow-2xl">
-              <div className="relative w-12 h-12 mx-auto">
-                <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                <div className="absolute inset-2 rounded-full border-4 border-amber-500/20 border-b-amber-500 animate-spin [animation-direction:reverse]" />
-              </div>
-              <div>
-                <h3 className="text-xs font-bold text-primary">Scanning Project Database...</h3>
-                <p className="text-[10px] text-secondary mt-1">Checking chapters, tables, and references availability for your topic.</p>
-              </div>
+            <div className="max-w-md mx-auto mt-8 text-center">
+              <Card elevation={2} padding="lg" className="space-y-4">
+                <div className="relative w-12 h-12 mx-auto">
+                  <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+                  <div className="absolute inset-2 rounded-full border-4 border-amber-500/20 border-b-amber-500 animate-spin [animation-direction:reverse]" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-primary">Scanning Project Database...</h3>
+                  <p className="text-[10px] text-secondary mt-1">Checking chapters, tables, and references availability for your topic.</p>
+                </div>
+              </Card>
             </div>
           ) : (
-            <div className="max-w-2xl mx-auto mt-8 bg-card border border-theme rounded-3xl p-5 shadow-2xl flex justify-between items-center gap-4 text-left">
-              <div>
-                <h3 className="text-xs font-bold text-primary">Search Results</h3>
-                <p className="text-[10px] text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
-              </div>
-              <button 
-                onClick={resetSearch}
-                className="px-3.5 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
-              >
-                <lucide.Search className="w-3.5 h-3.5" /> Search Another Topic
-              </button>
+            <div className="max-w-2xl mx-auto mt-8 text-left">
+              <Card elevation={2} padding="md" className="flex justify-between items-center gap-4">
+                <div>
+                  <h3 className="text-xs font-bold text-primary">Search Results</h3>
+                  <p className="text-[10px] text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
+                </div>
+                <Button variant="secondary" size="sm" icon={<lucide.Search className="w-3.5 h-3.5" />} onClick={resetSearch}>
+                  Search Another Topic
+                </Button>
+              </Card>
             </div>
           )}
         </div>
@@ -562,7 +565,7 @@ export default function ProjectsTab({ user }: { user: any }) {
 
           {/* FILTER BAR FOR DIRECTORY */}
           {!hasSearched && (
-            <div className="bg-card border border-theme rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+            <Card elevation={1} padding="sm" className="flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="relative flex-1 w-full">
                 <lucide.Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-secondary" />
                 <input
@@ -594,13 +597,13 @@ export default function ProjectsTab({ user }: { user: any }) {
                   <option value="PhD">PhD</option>
                 </select>
               </div>
-            </div>
+            </Card>
           )}
 
           {/* CATALOG GRID */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
             {topics.map(t => (
-              <div key={t.id} className="bg-card border border-theme rounded-2xl p-5 flex flex-col gap-3 hover:border-emerald-500/40 hover:shadow-lg transition">
+              <Card key={t.id} elevation={1} padding="md" interactive className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[11px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">{t.department}</span>
                   <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-theme text-primary">{t.level}</span>
@@ -616,7 +619,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                   <button onClick={() => setPreviewTopic(t)} className="flex-1 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition min-w-[70px]">👁 Preview</button>
                   <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: getTopicPrice(t.level, t.department) })} className="flex-2 py-2.5 rounded-lg text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 transition">Get · {naira(getTopicPrice(t.level, t.department))}</button>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
 
@@ -651,7 +654,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                 <span className="text-[10px] font-black uppercase text-amber-400 tracking-widest">Order Processing Pipeline</span>
                 <h3 className="text-lg font-black text-primary mt-1">Configure Deliverable</h3>
               </div>
-              <button onClick={() => setCart(null)} className="w-8 h-8 rounded-full bg-secondary hover:bg-white/5 text-primary flex items-center justify-center transition">
+              <button onClick={() => setCart(null)} className="w-11 h-11 rounded-full bg-secondary hover:bg-white/5 text-primary flex items-center justify-center transition">
                 <lucide.X className="w-4 h-4" />
               </button>
             </header>
@@ -668,7 +671,7 @@ export default function ProjectsTab({ user }: { user: any }) {
               </div>
 
               {/* Writer Assignment Simulator Box */}
-              <div className="bg-card border border-theme rounded-2xl p-5 space-y-4">
+              <Card elevation={1} padding="md" className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-black uppercase tracking-wider text-secondary flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Writer Selection Status
@@ -711,7 +714,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                     </div>
                   </div>
                 )}
-              </div>
+              </Card>
 
               {/* Add-ons */}
               {availableAddons.length > 0 && (
@@ -722,33 +725,59 @@ export default function ProjectsTab({ user }: { user: any }) {
                       const checked = selectedAddons.has(a.id);
                       return (
                         <div key={a.id} className={`border rounded-xl p-4 transition-all ${checked ? 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/30' : 'bg-card border-theme hover:bg-white/5'}`}>
-                          <label className="flex items-start gap-3 cursor-pointer">
+                          <div className="flex items-start gap-3">
                             <input
                               type="checkbox"
                               checked={checked}
                               onChange={() => handleAddonChange(a.id)}
-                              className="mt-1 accent-emerald-500"
+                              className="mt-1 accent-emerald-500 cursor-pointer"
                             />
                             <div className="flex-1">
-                              <div className="flex justify-between items-center">
+                              <div className="flex justify-between items-center cursor-pointer" onClick={() => handleAddonChange(a.id)}>
                                 <span className="text-xs font-bold text-primary">{a.name}</span>
-                                <span className="text-xs font-mono font-black text-emerald-500">+{naira(a.price)}</span>
+                                <span className="text-xs font-mono font-black text-emerald-500">
+                                  {a.price_type === 'per_word' ? `₦${a.price}/word` : `+${naira(a.price)}`}
+                                </span>
                               </div>
                               {a.description && <p className="text-[10px] text-secondary mt-0.5 leading-relaxed">{a.description}</p>}
                               
-                              {a.is_location_changer && checked && (
-                                <div className="mt-3 space-y-1.5 animate-in slide-in-from-top-1 duration-200">
-                                  <label className="text-[9px] font-black uppercase tracking-wider text-secondary block">Specify Case Study Location/Region *</label>
-                                  <input
-                                    value={customLocation}
-                                    onChange={e => setCustomLocation(e.target.value)}
-                                    placeholder="e.g. Kaduna State, First Bank Nigeria Plc..."
-                                    className="w-full bg-secondary border border-theme rounded-lg px-3 py-2 text-xs text-primary outline-none focus:border-emerald-500 font-bold"
-                                  />
+                              {checked && (
+                                <div className="mt-3 space-y-3 border-t border-theme/20 pt-3">
+                                  {a.price_type === 'per_word' && (
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <span className="text-secondary text-[11px]">Word count:</span>
+                                      <input
+                                        type="number"
+                                        min={500}
+                                        step={100}
+                                        value={addonWords[a.id] || 1000}
+                                        onChange={e => {
+                                          const w = Math.max(100, Number(e.target.value) || 0);
+                                          setAddonWords(prev => ({ ...prev, [a.id]: w }));
+                                        }}
+                                        className="w-20 bg-secondary border border-theme rounded-md px-2 py-1 text-primary outline-none focus:border-emerald-500 font-mono text-center font-bold"
+                                      />
+                                      <span className="text-emerald-500 font-bold ml-1">
+                                        ➔ {naira((addonWords[a.id] || 1000) * a.price)}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {a.is_location_changer && (
+                                    <div className="space-y-1 text-xs">
+                                      <label className="text-[9px] font-black uppercase tracking-wider text-secondary block">Specify Case Study Location/Region *</label>
+                                      <input
+                                        value={customLocation}
+                                        onChange={e => setCustomLocation(e.target.value)}
+                                        placeholder="e.g. Kaduna State, First Bank Nigeria Plc..."
+                                        className="w-full bg-secondary border border-theme rounded-lg px-3 py-2 text-xs text-primary outline-none focus:border-emerald-500 font-bold"
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
-                          </label>
+                          </div>
                         </div>
                       );
                     })}
@@ -814,7 +843,7 @@ export default function ProjectsTab({ user }: { user: any }) {
           <div className="w-full max-w-lg bg-primary border border-theme rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
             <header className="p-5 border-b border-theme flex justify-between items-center">
               <h4 className="font-black text-sm text-primary">Topic Preview Details</h4>
-              <button onClick={() => setPreviewTopic(null)} className="w-8 h-8 rounded-full bg-secondary hover:bg-white/5 text-primary flex items-center justify-center">
+              <button onClick={() => setPreviewTopic(null)} className="w-11 h-11 rounded-full bg-secondary hover:bg-white/5 text-primary flex items-center justify-center">
                 <lucide.X className="w-4 h-4" />
               </button>
             </header>

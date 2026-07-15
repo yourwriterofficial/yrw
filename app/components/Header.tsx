@@ -9,11 +9,11 @@ import { Menu, X, ArrowRight } from 'lucide-react';
 import * as lucide from 'lucide-react';
 
 const SERVICE_LINKS = [
-  { href: '/developer', label: 'Full Stack Development', icon: lucide.Code2 },
-  { href: '/academic-writing', label: 'Academic Writing & Research', icon: lucide.GraduationCap },
-  { href: '/content-writing', label: 'Content & Creative Writing', icon: lucide.PenLine },
-  { href: '/resume-cv', label: 'Executive CVs & Resumes', icon: lucide.FileText },
-  { href: '/statistics-fieldwork', label: 'Statistics, Maths & Fieldwork', icon: lucide.LineChart },
+  { href: '/developer', label: 'Full Stack Development', icon: lucide.Code2, hoverColor: 'hover:text-cyan-500 hover:bg-cyan-500/[0.03]' },
+  { href: '/academic-writing', label: 'Academic Writing & Research', icon: lucide.GraduationCap, hoverColor: 'hover:text-emerald-500 hover:bg-emerald-500/[0.03]' },
+  { href: '/content-writing', label: 'Content & Creative Writing', icon: lucide.PenLine, hoverColor: 'hover:text-amber-500 hover:bg-amber-500/[0.03]' },
+  { href: '/resume-cv', label: 'Executive CVs & Resumes', icon: lucide.FileText, hoverColor: 'hover:text-blue-500 hover:bg-blue-500/[0.03]' },
+  { href: '/statistics-fieldwork', label: 'Statistics, Maths & Fieldwork', icon: lucide.LineChart, hoverColor: 'hover:text-purple-500 hover:bg-purple-500/[0.03]' },
 ];
 
 export default function Header({ projectsContext = false }: { projectsContext?: boolean }) {
@@ -107,8 +107,12 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
               {SERVICE_LINKS.map(s => {
                 const Icon = s.icon;
                 return (
-                  <Link key={s.href} href={s.href} className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-primary hover:bg-primary font-medium transition-colors">
-                    <Icon className="w-4 h-4 text-secondary shrink-0" /> {s.label}
+                  <Link
+                    key={s.href}
+                    href={s.href}
+                    className={`group/item flex items-center gap-3 px-4 py-2.5 text-[13px] text-primary font-medium transition-all duration-200 rounded-lg mx-1.5 ${s.hoverColor}`}
+                  >
+                    <Icon className="w-4 h-4 text-secondary shrink-0 transition-colors duration-200 group-hover/item:text-current" /> {s.label}
                   </Link>
                 );
               })}
@@ -232,10 +236,13 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
                       key={s.href}
                       href={s.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center justify-between p-2 rounded-lg hover:bg-primary transition-colors text-sm font-medium text-primary"
+                      className={`group/item flex items-center justify-between p-2 rounded-lg transition-all duration-200 text-sm font-medium text-primary ${s.hoverColor}`}
                     >
-                      <span className="flex items-center gap-2.5"><Icon className="w-4 h-4 text-secondary" /> {s.label}</span>
-                      <lucide.ChevronRight className="w-4 h-4 text-secondary" />
+                      <span className="flex items-center gap-2.5">
+                        <Icon className="w-4 h-4 text-secondary transition-colors duration-200 group-hover/item:text-current" />
+                        {s.label}
+                      </span>
+                      <lucide.ChevronRight className="w-4 h-4 text-secondary transition-colors duration-200 group-hover/item:text-current" />
                     </Link>
                   );
                 })}

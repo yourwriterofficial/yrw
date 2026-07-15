@@ -3,10 +3,58 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import * as lucide from 'lucide-react';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import NotificationBell from '@/app/components/ui/NotificationBell';
 import { getEffectiveUser } from '@/lib/impersonate';
+
+interface NavItem {
+  key: string;
+  label: string;
+  href: string;
+  icon: keyof typeof lucide;
+  iconColor?: string;
+  tourId?: string;
+}
+interface NavGroup {
+  title?: string;
+  items: NavItem[];
+}
+
+// Single source of truth for both the desktop sidebar and mobile menu — previously
+// hand-duplicated in two places, which risked the two falling out of sync.
+const NAV_GROUPS: NavGroup[] = [
+  {
+    title: 'Workspace',
+    items: [
+      { key: 'dashboard', label: 'Dashboard Overview', href: '/dashboard/client', icon: 'LayoutDashboard', tourId: 'rw-tour-dashboard' },
+      { key: 'new', label: 'Create New Order', href: '/dashboard/client/order/new', icon: 'PlusCircle', tourId: 'rw-tour-neworder' },
+    ],
+  },
+  {
+    title: 'Project Store',
+    items: [
+      { key: 'projects', label: 'Buy Pre-Made Projects', href: '/dashboard/client?tab=projects', icon: 'BookOpen' },
+      { key: 'scripts', label: 'My Scripts / Software', href: '/dashboard/client?tab=scripts', icon: 'ShoppingBag' },
+    ],
+  },
+  {
+    title: 'Billing & Escrow',
+    items: [
+      { key: 'vault', label: 'Secure Deliverables Vault', href: '/dashboard/client?tab=vault', icon: 'Lock', tourId: 'rw-tour-vault' },
+      { key: 'wallet', label: 'My Wallet Ledger', href: '/dashboard/client?tab=wallet', icon: 'Wallet', tourId: 'rw-tour-wallet' },
+      { key: 'affiliate', label: 'Affiliate Earnings Hub', href: '/dashboard/client?tab=affiliate', icon: 'Coins' },
+    ],
+  },
+  {
+    title: 'Account Settings',
+    items: [
+      { key: 'profile', label: 'Profile & Credentials', href: '/dashboard/client?tab=profile', icon: 'User', tourId: 'rw-tour-profile' },
+      { key: 'chat', label: 'Helpdesk & Support Chat', href: '/dashboard/client?tab=chat', icon: 'MessageSquare' },
+    ],
+  },
+];
 
 const Spinner = () => (
   <div className="min-h-screen bg-primary flex items-center justify-center">
@@ -127,12 +175,33 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
     return activeTab === tab || pathname.includes(`/dashboard/client/${tab}`);
   };
 
-  const navBtnClass = (tab: string) =>
-    `w-full flex items-center justify-between p-3 rounded-xl transition font-bold text-sm ${
-      isActive(tab)
-        ? 'bg-emerald-500/10 text-emerald-500'
-        : 'text-secondary hover:bg-white/5 hover:text-primary'
-    }`;
+  const renderNavItem = (item: NavItem, top: boolean, onNavigate?: () => void) => {
+    const active = isActive(item.key);
+    const Icon = lucide[item.icon] as lucide.LucideIcon;
+    return (
+      <Link
+        key={item.key}
+        id={item.tourId}
+        href={item.href}
+        title={item.label}
+        onClick={onNavigate}
+        className={`relative w-full flex items-center justify-between gap-2.5 pl-4 pr-3 py-2.5 rounded-xl transition font-bold ${top ? 'text-sm' : 'text-xs'} ${
+          active
+            ? 'bg-emerald-500/10 text-emerald-500'
+            : 'text-secondary hover:bg-white/5 hover:text-primary'
+        }`}
+      >
+        {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-emerald-500" />}
+        <div className="flex items-center gap-3 min-w-0">
+          <Icon className={`w-5 h-5 shrink-0 ${item.iconColor || ''}`} />
+          <span className="truncate">{item.label}</span>
+        </div>
+        {item.key === 'vault' && unviewedVaultCount > 0 && (
+          <span className="px-2 py-0.5 bg-emerald-500 text-black rounded-md text-[10px] font-black shrink-0">{unviewedVaultCount}</span>
+        )}
+      </Link>
+    );
+  };
 
   if (loading) {
     return (
@@ -155,80 +224,23 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto pr-1">
+        <nav className="flex flex-col gap-1 flex-1 overflow-y-auto pr-1">
           {(profile?.is_admin || profile?._original_is_admin) && (
             <button
               onClick={() => router.push('/admin')}
-              className="flex items-center justify-center gap-2 w-full p-2.5 mb-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 font-black text-xs uppercase tracking-wider border border-purple-500/25 transition cursor-pointer shrink-0"
+              className="flex items-center justify-center gap-2 w-full p-2.5 mb-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 font-black text-xs uppercase tracking-wider border border-purple-500/25 transition cursor-pointer shrink-0"
             >
               <lucide.Shield className="w-4 h-4" /> Admin Control Panel
             </button>
           )}
-          <button id="rw-tour-dashboard" onClick={() => router.push('/dashboard/client')} className={navBtnClass('dashboard')}>
-            <div className="flex items-center gap-3"><lucide.LayoutDashboard className="w-5 h-5" /> <span>Dashboard</span></div>
-          </button>
-          <button id="rw-tour-neworder" onClick={() => router.push('/dashboard/client/order/new')} className={navBtnClass('new')}>
-            <div className="flex items-center gap-3"><lucide.PlusCircle className="w-5 h-5" /> <span>New Order</span></div>
-          </button>
-          
-          {/* Services Group */}
-          <div className="mt-2 mb-1">
-            <p className="text-[9px] uppercase tracking-widest text-secondary font-black pl-3 mb-1.5">Writing Services</p>
-            <div className="space-y-1 pl-2 border-l border-zinc-800">
-              <button onClick={() => router.push('/dashboard/client/order/new/dev')} className={navBtnClass('new/dev')}>
-                <div className="flex items-center gap-2.5 text-xs"><lucide.Code className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Web Development</span></div>
-              </button>
-              <button onClick={() => router.push('/dashboard/client/order/new/resume')} className={navBtnClass('new/resume')}>
-                <div className="flex items-center gap-2.5 text-xs"><lucide.FileText className="w-4 h-4 text-emerald-400 shrink-0" /> <span>CV / Resume</span></div>
-              </button>
-              <button onClick={() => router.push('/dashboard/client/order/new/content')} className={navBtnClass('new/content')}>
-                <div className="flex items-center gap-2.5 text-xs"><lucide.PenTool className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Content Writing</span></div>
-              </button>
-              <button onClick={() => router.push('/dashboard/client/order/new/academic')} className={navBtnClass('new/academic')}>
-                <div className="flex items-center gap-2.5 text-xs"><lucide.GraduationCap className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Premium Academic Writing</span></div>
-              </button>
-              <button onClick={() => router.push('/dashboard/client/order/new/statistics')} className={navBtnClass('new/statistics')}>
-                <div className="flex items-center gap-2.5 text-xs"><lucide.LineChart className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Statistics & Fieldwork</span></div>
-              </button>
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={group.title || `group-${gi}`} className={gi === 0 ? 'flex flex-col gap-1' : 'mt-5 flex flex-col gap-1'}>
+              {group.title && (
+                <p className="text-[10px] uppercase tracking-widest text-secondary font-black pl-4 mb-1.5">{group.title}</p>
+              )}
+              {group.items.map(item => renderNavItem(item, gi === 0))}
             </div>
-          </div>
-
-          {/* Project Topics */}
-          <div className="mt-2 mb-1">
-            <p className="text-[9px] uppercase tracking-widest text-secondary font-black pl-3 mb-1.5">Project Materials</p>
-            <div className="space-y-1 pl-2 border-l border-zinc-800">
-              <button onClick={() => router.push('/dashboard/client?tab=projects')} className={navBtnClass('projects')}>
-                <div className="flex items-center gap-2.5 text-xs"><lucide.BookOpen className="w-4 h-4 text-amber-400 shrink-0" /> <span>Buy Already-Made Projects</span></div>
-              </button>
-              <button onClick={() => router.push('/dashboard/client?tab=scripts')} className={navBtnClass('scripts')}>
-                <div className="flex items-center gap-2.5 text-xs"><lucide.ShoppingBag className="w-4 h-4 text-cyan-400 shrink-0" /> <span>My Scripts</span></div>
-              </button>
-            </div>
-          </div>
-
-          {/* Account Group */}
-          <div className="mt-2 mb-1">
-            <p className="text-[9px] uppercase tracking-widest text-secondary font-black pl-3 mb-1.5">Account</p>
-            <div className="space-y-1 pl-2 border-l border-zinc-800">
-              <button id="rw-tour-vault" onClick={() => router.push('/dashboard/client?tab=vault')} className={navBtnClass('vault')}>
-                <div className="flex items-center gap-2.5 text-xs"><lucide.Lock className="w-4 h-4 shrink-0" /> <span>Secure Vault</span></div>
-                {unviewedVaultCount > 0 && <span className="px-2 py-0.5 bg-emerald-500 text-black rounded-md text-[10px] font-black">{unviewedVaultCount}</span>}
-              </button>
-              <button id="rw-tour-wallet" onClick={() => router.push('/dashboard/client?tab=wallet')} className={navBtnClass('wallet')}>
-                <div className="flex items-center gap-2.5 text-xs"><lucide.Wallet className="w-4 h-4 shrink-0" /> <span>Wallet</span></div>
-              </button>
-              <button onClick={() => router.push('/dashboard/client?tab=affiliate')} className={navBtnClass('affiliate')}>
-                <div className="flex items-center gap-2.5 text-xs"><lucide.Coins className="w-4 h-4 text-purple-400 shrink-0" /> <span>Affiliate</span></div>
-              </button>
-              <button id="rw-tour-profile" onClick={() => router.push('/dashboard/client?tab=profile')} className={navBtnClass('profile')}>
-                <div className="flex items-center gap-2.5 text-xs"><lucide.User className="w-4 h-4 shrink-0" /> <span>My Profile</span></div>
-              </button>
-            </div>
-          </div>
-
-          <button id="rw-tour-chat" onClick={() => router.push('/dashboard/client?tab=chat')} className={navBtnClass('chat')}>
-            <div className="flex items-center gap-3"><lucide.MessageSquare className="w-5 h-5" /> <span>Support Chat</span></div>
-          </button>
+          ))}
         </nav>
 
         <div className="border-t border-theme pt-6 mt-6">
@@ -271,56 +283,14 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               <lucide.Shield className="w-4 h-4" /> Admin Control Panel
             </button>
           )}
-          <button onClick={() => { router.push('/dashboard/client'); setMobileMenuOpen(false); }} className={navBtnClass('dashboard')}>
-            <div className="flex items-center gap-3"><lucide.LayoutDashboard className="w-5 h-5" /> <span>Dashboard</span></div>
-          </button>
-          <button onClick={() => { router.push('/dashboard/client/order/new'); setMobileMenuOpen(false); }} className={navBtnClass('new')}>
-            <div className="flex items-center gap-3"><lucide.PlusCircle className="w-5 h-5" /> <span>New Order</span></div>
-          </button>
-
-          {/* Mobile subpath items */}
-          <div className="pl-4 border-l border-zinc-800 space-y-1 my-1">
-            <button onClick={() => { router.push('/dashboard/client/order/new/dev'); setMobileMenuOpen(false); }} className={navBtnClass('new/dev')}>
-              <div className="flex items-center gap-2.5 text-xs"><lucide.Code className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Web Development</span></div>
-            </button>
-            <button onClick={() => { router.push('/dashboard/client/order/new/resume'); setMobileMenuOpen(false); }} className={navBtnClass('new/resume')}>
-              <div className="flex items-center gap-2.5 text-xs"><lucide.FileText className="w-4 h-4 text-emerald-400 shrink-0" /> <span>CV / Resume</span></div>
-            </button>
-            <button onClick={() => { router.push('/dashboard/client/order/new/content'); setMobileMenuOpen(false); }} className={navBtnClass('new/content')}>
-              <div className="flex items-center gap-2.5 text-xs"><lucide.PenTool className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Content Writing</span></div>
-            </button>
-            <button onClick={() => { router.push('/dashboard/client/order/new/academic'); setMobileMenuOpen(false); }} className={navBtnClass('new/academic')}>
-              <div className="flex items-center gap-2.5 text-xs"><lucide.GraduationCap className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Premium Academic Writing</span></div>
-            </button>
-            <button onClick={() => { router.push('/dashboard/client/order/new/statistics'); setMobileMenuOpen(false); }} className={navBtnClass('new/statistics')}>
-              <div className="flex items-center gap-2.5 text-xs"><lucide.LineChart className="w-4 h-4 text-emerald-400 shrink-0" /> <span>Statistics & Fieldwork</span></div>
-            </button>
-          </div>
-
-          {/* Mobile: Project Topics */}
-          <button onClick={() => { router.push('/dashboard/client?tab=projects'); setMobileMenuOpen(false); }} className={navBtnClass('projects')}>
-            <div className="flex items-center gap-2.5 text-xs"><lucide.BookOpen className="w-4 h-4 text-amber-400 shrink-0" /> <span>Buy Already-Made Projects</span></div>
-          </button>
-          <button onClick={() => { router.push('/dashboard/client?tab=scripts'); setMobileMenuOpen(false); }} className={navBtnClass('scripts')}>
-            <div className="flex items-center gap-2.5 text-xs"><lucide.ShoppingBag className="w-4 h-4 text-cyan-400 shrink-0" /> <span>My Scripts</span></div>
-          </button>
-
-          <p className="text-[9px] uppercase tracking-widest text-secondary font-black pl-3 mt-2 mb-1">Account</p>
-          <button onClick={() => { router.push('/dashboard/client?tab=vault'); setMobileMenuOpen(false); }} className={navBtnClass('vault')}>
-            <div className="flex items-center gap-3"><lucide.Lock className="w-5 h-5" /> <span>Secure Vault</span></div>
-          </button>
-          <button onClick={() => { router.push('/dashboard/client?tab=wallet'); setMobileMenuOpen(false); }} className={navBtnClass('wallet')}>
-            <div className="flex items-center gap-3"><lucide.Wallet className="w-5 h-5" /> <span>Wallet</span></div>
-          </button>
-          <button onClick={() => { router.push('/dashboard/client?tab=affiliate'); setMobileMenuOpen(false); }} className={navBtnClass('affiliate')}>
-            <div className="flex items-center gap-3"><lucide.Coins className="w-5 h-5 text-purple-400" /> <span>Affiliate</span></div>
-          </button>
-          <button onClick={() => { router.push('/dashboard/client?tab=profile'); setMobileMenuOpen(false); }} className={navBtnClass('profile')}>
-            <div className="flex items-center gap-3"><lucide.User className="w-5 h-5" /> <span>My Profile</span></div>
-          </button>
-          <button onClick={() => { router.push('/dashboard/client?tab=chat'); setMobileMenuOpen(false); }} className={navBtnClass('chat')}>
-            <div className="flex items-center gap-3"><lucide.MessageSquare className="w-5 h-5" /> <span>Support Chat</span></div>
-          </button>
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={group.title || `mgroup-${gi}`} className={gi === 0 ? 'flex flex-col gap-1' : 'mt-3 flex flex-col gap-1'}>
+              {group.title && (
+                <p className="text-[10px] uppercase tracking-widest text-secondary font-black pl-4 mb-1">{group.title}</p>
+              )}
+              {group.items.map(item => renderNavItem(item, gi === 0, () => setMobileMenuOpen(false)))}
+            </div>
+          ))}
           <div className="p-2 border-t border-theme mt-1">
             <ThemeToggle />
           </div>
@@ -337,7 +307,14 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               Client Portal
             </span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard/client?tab=chat"
+              title="Support Desk"
+              className="p-2 text-secondary hover:text-primary hover:bg-white/5 rounded-full transition relative flex items-center justify-center cursor-pointer"
+            >
+              <lucide.MessageSquare className="w-5 h-5" />
+            </Link>
             <NotificationBell isAdmin={false} userEmail={user?.email || ''} userId={user?.id} />
           </div>
         </header>

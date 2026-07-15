@@ -14,11 +14,31 @@ const supabase = createBrowserClient(
 interface Notification {
   id: string;
   subject: string;
+  message?: string | null;
+  type?: string | null;
   status: string;
   sent_at: string;
   order_id: string | null;
   link?: string | null;
 }
+
+const TYPE_ICON: Record<string, keyof typeof lucide> = {
+  order_update: 'Package',
+  payment: 'Wallet',
+  vault_delivery: 'FolderCheck',
+  admin_message: 'MessageCircle',
+  promotion: 'Megaphone',
+  system: 'Info',
+};
+
+const TYPE_COLOR: Record<string, string> = {
+  order_update: 'bg-blue-500/10 text-blue-400',
+  payment: 'bg-emerald-500/10 text-emerald-400',
+  vault_delivery: 'bg-purple-500/10 text-purple-400',
+  admin_message: 'bg-amber-500/10 text-amber-400',
+  promotion: 'bg-pink-500/10 text-pink-400',
+  system: 'bg-slate-500/10 text-slate-400',
+};
 
 export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdmin: boolean; userEmail: string; userId?: string }) {
   const router = useRouter();
@@ -93,7 +113,9 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
       }
     }
 
-    // 2. Route to the linked page, or fall back to the order
+    // 2. Route to the linked page, fall back to the order, then to the dashboard home —
+    // every notification must go somewhere, even generic broadcast messages that have
+    // neither a link nor an order_id (e.g. admin mass-notify, individual admin DMs).
     if (notif.link) {
       router.push(notif.link);
     } else if (notif.order_id) {
@@ -102,6 +124,8 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
       } else {
         router.push(`/dashboard/client?preview=${notif.order_id}`);
       }
+    } else {
+      router.push(isAdmin ? '/admin' : '/dashboard/client');
     }
   };
 
@@ -159,7 +183,7 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-80 bg-primary border border-theme rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-200">
+        <div className="absolute right-0 mt-3 w-96 max-w-[calc(100vw-2rem)] bg-primary border border-theme rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-200">
           {/* Header */}
           <div className="p-4 bg-secondary border-b border-theme flex justify-between items-center">
             <div className="flex items-center gap-2">
@@ -182,36 +206,50 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
           </div>
 
           {/* List */}
-          <div className="max-h-[300px] overflow-y-auto divide-y divide-theme">
+          <div className="max-h-[380px] overflow-y-auto divide-y divide-theme">
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-secondary text-xs">
                 <lucide.BellOff className="w-8 h-8 mx-auto mb-2 text-slate-600" />
                 <p>No notifications yet</p>
               </div>
             ) : (
-              notifications.map(n => (
-                <button
-                  key={n.id}
-                  type="button"
-                  onClick={() => handleNotificationClick(n)}
-                  className={`w-full p-4 text-left hover:bg-white/5 transition flex items-start gap-3 text-xs ${
-                    n.status !== 'read' ? 'bg-purple-500/5' : ''
-                  }`}
-                >
-                  <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                    n.status !== 'read' ? 'bg-purple-500' : 'bg-transparent'
-                  }`} />
-                  <div className="flex-1 space-y-1 overflow-hidden">
-                    <p className={`text-primary leading-snug ${n.status !== 'read' ? 'font-bold' : 'font-medium'}`}>
-                      {n.subject}
-                    </p>
-                    <div className="flex justify-between items-center text-[10px] text-secondary font-bold pt-1">
-                      <span>{n.order_id ? `#${n.order_id}` : 'System'}</span>
-                      <span>{formatDate(n.sent_at)}</span>
+              notifications.map(n => {
+                const unread = n.status !== 'read';
+                const IconComp = lucide[TYPE_ICON[n.type || 'system'] || 'Info'] as lucide.LucideIcon;
+                const typeColor = TYPE_COLOR[n.type || 'system'] || TYPE_COLOR.system;
+                return (
+                  <button
+                    key={n.id}
+                    type="button"
+                    onClick={() => handleNotificationClick(n)}
+                    className={`relative w-full p-4 text-left hover:bg-white/5 transition flex items-start gap-3 text-xs ${
+                      unread ? 'bg-purple-500/5' : ''
+                    }`}
+                  >
+                    {unread && <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-purple-500" />}
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${typeColor}`}>
+                      <IconComp className="w-4 h-4" />
                     </div>
-                  </div>
-                </button>
-              ))
+                    <div className="flex-1 space-y-1 overflow-hidden min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className={`text-primary leading-snug ${unread ? 'font-bold' : 'font-medium'}`}>
+                          {n.subject}
+                        </p>
+                        {unread && <span className="w-2 h-2 rounded-full bg-purple-500 mt-1 shrink-0" />}
+                      </div>
+                      {n.message && (
+                        <p className="text-secondary leading-snug line-clamp-2 font-medium">
+                          {n.message}
+                        </p>
+                      )}
+                      <div className="flex justify-between items-center text-[10px] text-secondary font-bold pt-1">
+                        <span>{n.order_id ? `#${n.order_id}` : 'System'}</span>
+                        <span>{formatDate(n.sent_at)}</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
             )}
           </div>
         </div>

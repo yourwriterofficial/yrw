@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import { showToast } from '@/app/components/ui/Toast';
 import { isValidPermalink, slugifyPermalink } from '@/lib/permalink';
+import Card from '@/app/components/ui/Card';
+import Button from '@/app/components/ui/Button';
 
 const naira = (n: number) => '₦' + Math.round(n || 0).toLocaleString('en-NG');
 
@@ -144,22 +146,22 @@ export default function AffiliateTab({ user }: { user: any }) {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-card border border-theme rounded-2xl p-5">
+        <Card padding="sm">
           <span className="text-[10px] font-black uppercase tracking-wider text-secondary">Wallet Balance</span>
           <h3 className="text-2xl font-black text-primary mt-1">{naira(walletBalance)}</h3>
-        </div>
-        <div className="bg-card border border-theme rounded-2xl p-5">
+        </Card>
+        <Card padding="sm">
           <span className="text-[10px] font-black uppercase tracking-wider text-secondary">Total Earned</span>
           <h3 className="text-2xl font-black text-emerald-500 mt-1">{naira(totalEarned)}</h3>
-        </div>
-        <div className="bg-card border border-theme rounded-2xl p-5">
+        </Card>
+        <Card padding="sm">
           <span className="text-[10px] font-black uppercase tracking-wider text-secondary">People Referred</span>
           <h3 className="text-2xl font-black text-primary mt-1">{totalReferred}</h3>
-        </div>
+        </Card>
       </div>
 
       {/* Referral link + username */}
-      <div className="bg-card border border-theme rounded-3xl p-6 space-y-5">
+      <Card padding="lg" className="space-y-5">
         <h3 className="text-sm font-black text-primary uppercase tracking-wider border-b border-theme pb-3">Your Referral Link</h3>
 
         <div>
@@ -186,20 +188,16 @@ export default function AffiliateTab({ user }: { user: any }) {
             <label className="text-[10px] uppercase font-black text-secondary block mb-1.5">Share this link</label>
             <div className="flex gap-2">
               <input readOnly value={referralLink} className="flex-1 bg-secondary border border-theme rounded-xl p-3 text-xs text-primary font-mono" />
-              <button
-                onClick={copyLink}
-                className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary font-black text-xs uppercase tracking-wider rounded-xl transition flex items-center gap-1.5 shrink-0"
-              >
-                {copied ? <lucide.Check className="w-3.5 h-3.5 text-emerald-500" /> : <lucide.Copy className="w-3.5 h-3.5" />}
+              <Button variant="secondary" size="sm" className="shrink-0" onClick={copyLink} icon={copied ? <lucide.Check className="w-3.5 h-3.5 text-emerald-500" /> : <lucide.Copy className="w-3.5 h-3.5" />}>
                 {copied ? 'Copied' : 'Copy'}
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Withdraw */}
-      <div className="bg-card border border-theme rounded-3xl p-6 space-y-4">
+      <Card padding="lg" className="space-y-4">
         <h3 className="text-sm font-black text-primary uppercase tracking-wider border-b border-theme pb-3">Request a Payout</h3>
         <p className="text-xs text-secondary">Minimum withdrawal is {naira(minWithdrawal)}. Funds are deducted from your wallet immediately once requested.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -236,10 +234,10 @@ export default function AffiliateTab({ user }: { user: any }) {
         >
           {submitting ? 'Submitting...' : 'Request Withdrawal'}
         </button>
-      </div>
+      </Card>
 
       {/* History */}
-      <div className="bg-card border border-theme rounded-3xl p-6 space-y-4">
+      <Card padding="lg" className="space-y-4">
         <h3 className="text-sm font-black text-primary uppercase tracking-wider border-b border-theme pb-3">Payout History</h3>
         {withdrawals.length === 0 ? (
           <div className="empty-state">
@@ -265,7 +263,7 @@ export default function AffiliateTab({ user }: { user: any }) {
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

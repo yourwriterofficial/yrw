@@ -96,11 +96,9 @@ export const HOME_PAGE_DEFAULTS: HomePageContent = {
     { icon: 'Award', title: 'Flexible Payments', text: 'Pay upfront, in milestones, or from your wallet balance — whichever structure fits your budget.' },
   ],
   faqs: [
-    { q: 'How fast is delivery?', a: 'Ready-made project materials are delivered within 4 hours. Custom writing, resumes, and software are scoped to a deadline you set when you submit your brief.' },
-    { q: 'Is the ready-made project catalogue plagiarism-checked?', a: "No — those are pre-written materials delivered as-is, without a plagiarism or AI-detection guarantee. If you need a plagiarism-free, AI-free custom write-up, use our Academic Writing service instead." },
+    { q: 'How fast is delivery?', a: 'Ready-made materials are delivered within 4 hours. Custom writing, resumes, and software are scoped to a deadline you set when you submit your brief.' },
     { q: 'Can I pay in installments?', a: 'Yes. Custom academic, content, resume, and software orders support milestone-based payment plans — a deposit followed by a balance, or a custom schedule for larger software builds.' },
     { q: 'Is my payment and data secure?', a: 'Payments are processed through Paystack. Every final deliverable is encrypted and stays locked in your Secure Vault until your balance is fully cleared.' },
     { q: 'Do I get full source code for software projects?', a: 'Yes — complete source code and IP transfer are included for custom development orders and every script purchased from the Dev Shop marketplace.' },
-    { q: "What if my exact topic isn't in the catalogue?", a: 'Search the ready-made catalogue for availability first — if nothing matches, submit a custom brief and a writer will produce it from scratch.' },
   ],
 };

@@ -111,7 +111,7 @@ export default function SelectServicePage() {
               <Library className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
             </div>
             <h3 className="text-lg md:text-xl font-black mb-3 break-words text-primary">Ready-made Project Materials</h3>
-            <p className="text-xs md:text-sm text-secondary mb-6 leading-relaxed break-words">Browse 3,000+ ready-made topics across every department — instant pricing, delivered to your vault.</p>
+            <p className="text-xs md:text-sm text-secondary mb-6 leading-relaxed break-words">Browse 100,000+ ready-made topics across every department — instant pricing, delivered to your vault.</p>
             <ul className="space-y-2 text-xs font-medium text-secondary">
               <li className="flex items-center gap-2 break-words">✅ Chapters 1–5, MS Word</li>
               <li className="flex items-center gap-2 break-words">✅ Fast delivery to Secure Vault</li>

@@ -839,7 +839,7 @@ export default function ProjectsPage() {
                 <div>
                   <h2 className="text-xl font-black text-primary">Database Search & Availability</h2>
                   <p className="text-xs text-secondary mt-1.5 leading-relaxed font-semibold">
-                    Place your full project topic below to search our database of 3,000+ completed projects and check instant availability.
+                    Place your full project topic below to search our database of 100,000+ completed projects and check instant availability.
                   </p>
                 </div>
 
@@ -1016,7 +1016,7 @@ export default function ProjectsPage() {
           <h2 className="text-lg md:text-xl font-black text-primary text-center mb-6">How It Works</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { n: '1', label: 'Pick a Topic', desc: 'Browse or search 3,000+ ready-made topics.' },
+              { n: '1', label: 'Pick a Topic', desc: 'Browse or search 100,000+ ready-made topics.' },
               { n: '2', label: 'Choose Add-ons', desc: 'Extend it with optional extras if you need them.' },
               { n: '3', label: 'Pay Securely', desc: 'Checkout with card — no account required upfront.' },
               { n: '4', label: 'Get Delivered', desc: 'Material lands in your Secure Vault within hours.' },

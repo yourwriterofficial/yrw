@@ -31,6 +31,7 @@ export async function GET() {
       id: n.id,
       subject: n.title || n.message || 'System Notification',
       message: n.message,
+      type: n.type,
       status: n.read ? 'read' : 'sent',
       sent_at: n.sent_at,
       link: n.link,

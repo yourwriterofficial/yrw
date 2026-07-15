@@ -282,8 +282,14 @@ export default function OrderForm() {
         }
       }
     }
+    if (currentStep === 4) {
+      if (plan === 'CUSTOM' && (!customPrice || customPrice < 15000)) {
+        showToast("Proposed budget must be at least ₦15,000.", 'error');
+        return false;
+      }
+    }
     return true;
-  }, [name, email, whatsapp, topic, isLoggedIn]);
+  }, [name, email, whatsapp, topic, isLoggedIn, plan, customPrice]);
 
   const goToStep = (n: number) => {
     if (n > step && !validateStep(step)) return;
@@ -293,6 +299,9 @@ export default function OrderForm() {
   const submitOrder = async () => {
     if (!acceptTerms) return showToast('You must accept the Terms of Service.', 'error');
     if (!validateStep(1)) return;
+    if (plan === 'CUSTOM' && (!customPrice || customPrice < 15000)) {
+      return showToast('Proposed budget must be at least ₦15,000.', 'error');
+    }
     if (!deadline) return showToast('Please assign a deadline.', 'error');
     if (paymentMethod === 'wallet' && isLoggedIn && walletBalance < depositAmount) {
       showToast('Insufficient wallet balance. Please top up or choose card payment.', 'error');
@@ -490,10 +499,20 @@ export default function OrderForm() {
                 {plan === 'CUSTOM' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-purple-500" /></div>}
                 <h3 className="text-sm font-bold uppercase tracking-wide text-purple-500 mb-1">Propose Your Own Budget</h3>
                 <p className="text-xs text-secondary leading-relaxed break-words mb-3">{pageContent.budget_note.title}</p>
-                <div className="flex items-start gap-2 text-xs text-secondary bg-purple-500/5 border border-purple-500/15 rounded-xl p-3">
+                <div className="flex items-start gap-2 text-xs text-secondary bg-purple-500/5 border border-purple-500/15 rounded-xl p-3 mb-4">
                   <Info className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
                   <span>{pageContent.budget_note.text}</span>
                 </div>
+                {plan === 'CUSTOM' && (
+                  <input
+                    type="number"
+                    className="w-full bg-primary border border-theme p-4 rounded-xl font-bold text-lg outline-none focus:border-purple-500 transition text-primary"
+                    value={customPrice || ''}
+                    onClick={e => e.stopPropagation()}
+                    onChange={e => setCustomPrice(parseInt(e.target.value) || 0)}
+                    placeholder="Minimum ₦15,000"
+                  />
+                )}
               </div>
             </div>
           </div>

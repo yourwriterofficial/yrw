@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import { showToast } from '@/app/components/ui/Toast';
 import BuyModal from '@/app/developer/BuyModal';
+import Card from '@/app/components/ui/Card';
 
 const naira = (n: number) => '₦' + Math.round(n || 0).toLocaleString('en-NG');
 
@@ -119,7 +120,7 @@ export default function ScriptsTab({ user }: { user: any }) {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {purchases.map(p => (
-              <div key={p.id} className="rounded-[28px] bg-card border border-theme overflow-hidden flex flex-col">
+              <Card key={p.id} elevation={1} padding="none" className="overflow-hidden flex flex-col">
                 <div className="aspect-video bg-secondary relative overflow-hidden">
                   {p.dev_products?.preview_images?.[0] ? (
                     <Image src={previewUrl(p.dev_products.preview_images[0])} alt={p.dev_products.title || 'Script'} fill sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
@@ -144,7 +145,7 @@ export default function ScriptsTab({ user }: { user: any }) {
                     </button>
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         )}

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
-export default function HomeStats({ className = '' }: { className?: string }) {
+export default function HomeStats({ className = '', compact = false }: { className?: string; compact?: boolean }) {
   const [topicCount, setTopicCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function HomeStats({ className = '' }: { className?: string }) {
 
   return (
     <span className={className}>
-      {rounded.toLocaleString()}+ ready-made topics in stock
+      {compact ? `${rounded.toLocaleString()}+` : `${rounded.toLocaleString()}+ ready-made topics in stock`}
     </span>
   );
 }

@@ -7,6 +7,7 @@ import * as lucide from 'lucide-react';
 import PageHeader from '@/app/components/ui/PageHeader';
 import StatusBadge from '@/app/components/ui/StatusBadge';
 import StatCard from '@/app/components/ui/StatCard';
+import Card from '@/app/components/ui/Card';
 import { DashboardSkeleton } from '@/app/components/ui/Skeleton';
 
 const formatNaira = (amount: number) => '₦' + Math.round(amount).toLocaleString('en-NG');
@@ -75,7 +76,7 @@ export default function AdminDashboard() {
         <StatCard label="Pipeline Value" value={formatNaira(stats.totalValue)} icon={<lucide.Banknote className="w-5 h-5" />} />
       </div>
 
-      <div className="bg-card border border-theme rounded-2xl p-6">
+      <Card padding="lg">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-black text-primary">Recent Orders</h2>
           <Link href="/admin/orders" className="text-purple-400 text-sm font-bold hover:text-purple-300 transition">
@@ -106,7 +107,7 @@ export default function AdminDashboard() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

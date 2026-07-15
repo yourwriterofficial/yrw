@@ -11,6 +11,8 @@ import { DashboardSkeleton } from '@/app/components/ui/Skeleton';
 import { showToast } from '@/app/components/ui/Toast';
 import StatusBadge from '@/app/components/ui/StatusBadge';
 import StatCard from '@/app/components/ui/StatCard';
+import Card from '@/app/components/ui/Card';
+import Button from '@/app/components/ui/Button';
 import NotificationPreferencesPanel from '@/app/components/ui/NotificationPreferencesPanel';
 import MilestoneTimeline from '@/app/components/ui/MilestoneTimeline';
 import { isOrderFullyPaid, isCustomPayment } from '@/lib/orderPayment';
@@ -189,7 +191,9 @@ function DashboardContent() {
   const [processingPayment, setProcessingPayment] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<AdminOrderView | null>(null);
+  const [inspectorTab, setInspectorTab] = useState<'specs' | 'payments' | 'timeline'>('specs');
   const [isAdminPreview, setIsAdminPreview] = useState(false);
+  const [realUserIsAdmin, setRealUserIsAdmin] = useState(false);
   const [unviewedVaultCount, setUnviewedVaultCount] = useState(0);
   const [vaultFiles, setVaultFiles] = useState<any[]>([]);
   const [newAddonName, setNewAddonName] = useState('');
@@ -201,6 +205,7 @@ function DashboardContent() {
 
   const userEmailRef = useRef<string | null>(null);
   const isAdminPreviewRef = useRef<boolean>(false);
+  const isRealAdminRef = useRef<boolean>(false);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -230,18 +235,29 @@ function DashboardContent() {
 
   const refreshOrders = useCallback(async (userId?: string, adminMode?: boolean, previewId?: string | null) => {
     try {
-      if (adminMode && previewId) {
+      const isRealAdmin = isRealAdminRef.current;
+      const effectiveAdminMode = adminMode && isRealAdmin;
+      const effectiveEmail = isRealAdmin ? userId : (userEmailRef.current || userId);
+
+      let freshOrders: AdminOrderView[] = [];
+      if (effectiveAdminMode && previewId) {
         const { data, error } = await supabase.from('admin_orders_view').select('*').eq('Order ID', previewId);
         if (error) throw error;
-        if (data) setOrders(await mergeMilestoneData(data as AdminOrderView[]));
-      } else if (adminMode) {
+        if (data) freshOrders = await mergeMilestoneData(data as AdminOrderView[]);
+      } else if (effectiveAdminMode) {
         const { data, error } = await supabase.from('admin_orders_view').select('*').limit(10).order('Timestamp', { ascending: false });
         if (error) throw error;
-        if (data) setOrders(await mergeMilestoneData(data as AdminOrderView[]));
-      } else if (userId) {
-        const { data, error } = await supabase.from('admin_orders_view').select('*').eq('Email', userId).order('Timestamp', { ascending: false });
+        if (data) freshOrders = await mergeMilestoneData(data as AdminOrderView[]);
+      } else if (effectiveEmail) {
+        const { data, error } = await supabase.from('admin_orders_view').select('*').eq('Email', effectiveEmail).order('Timestamp', { ascending: false });
         if (error) throw error;
-        if (data) setOrders(await mergeMilestoneData(data as AdminOrderView[]));
+        if (data) freshOrders = await mergeMilestoneData(data as AdminOrderView[]);
+      }
+      setOrders(freshOrders);
+      if (typeof window !== 'undefined' && freshOrders.length > 0) {
+        try {
+          sessionStorage.setItem('yrw_orders', JSON.stringify(freshOrders));
+        } catch (e) {}
       }
     } catch (err) {
       // Transient load errors shouldn't alarm the user right after login — log only.
@@ -249,16 +265,27 @@ function DashboardContent() {
     }
   }, [mergeMilestoneData]);
 
-  // Fetch vault files for the user via the service-role-backed API route
-  // (final_deliverables has no RLS policy for direct client-side reads).
   const fetchVaultFiles = useCallback(async () => {
     try {
-      const res = await fetch('/api/client/vault-files');
+      const impId = typeof window !== 'undefined' ? localStorage.getItem('impersonate_user_id') : null;
+      const impEmail = typeof window !== 'undefined' ? localStorage.getItem('impersonate_user_email') : null;
+      
+      let url = '/api/client/vault-files';
+      if (impId && impEmail) {
+        url += `?impersonate_user_id=${encodeURIComponent(impId)}&impersonate_user_email=${encodeURIComponent(impEmail)}`;
+      }
+      
+      const res = await fetch(url);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to fetch vault files');
 
       const visibleFiles = json.files || [];
       setVaultFiles(visibleFiles);
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('yrw_vault_files', JSON.stringify(visibleFiles));
+        } catch (e) {}
+      }
       const unviewed = visibleFiles.filter((f: any) => f.downloaded_at === null).length || 0;
       setUnviewedVaultCount(unviewed);
     } catch (err) {
@@ -275,11 +302,15 @@ function DashboardContent() {
       let cachedUser = null;
       let cachedProfile = null;
       let cachedWallet = 0;
+      let cachedOrders = null;
+      let cachedVault = null;
       if (typeof window !== 'undefined') {
         try {
           const uStr = sessionStorage.getItem('yrw_user');
           const pStr = sessionStorage.getItem('yrw_profile');
           const wStr = sessionStorage.getItem('yrw_wallet');
+          const oStr = sessionStorage.getItem('yrw_orders');
+          const vStr = sessionStorage.getItem('yrw_vault_files');
           if (uStr && pStr) {
             cachedUser = JSON.parse(uStr);
             cachedProfile = JSON.parse(pStr);
@@ -292,6 +323,22 @@ function DashboardContent() {
             userEmailRef.current = cachedUser.email || null;
             isAdminPreviewRef.current = cachedProfile?.is_admin === true;
             setIsAdminPreview(cachedProfile?.is_admin === true);
+            
+            const cacheIsAdmin = cachedProfile?.is_admin === true;
+            const cacheHasImpersonation = localStorage.getItem('impersonate_user_id') !== null;
+            const cacheIsRealAdmin = cacheIsAdmin || cacheHasImpersonation;
+            isRealAdminRef.current = cacheIsRealAdmin;
+            setRealUserIsAdmin(cacheIsRealAdmin);
+            
+            if (oStr) {
+              cachedOrders = JSON.parse(oStr);
+              setOrders(cachedOrders);
+            }
+            if (vStr) {
+              cachedVault = JSON.parse(vStr);
+              setVaultFiles(cachedVault);
+              setUnviewedVaultCount(cachedVault.filter((f: any) => f.downloaded_at === null).length || 0);
+            }
             
             setLoading(false);
           }
@@ -334,6 +381,10 @@ function DashboardContent() {
           activeUser = { ...user, id: impId, email: impEmail || undefined };
         }
       }
+
+      const isRealAdmin = userProfile?.is_admin === true;
+      isRealAdminRef.current = isRealAdmin;
+      setRealUserIsAdmin(isRealAdmin);
 
       setProfile(activeProfile);
       setWalletBalance(Number(activeWallet?.balance) || 0);
@@ -684,9 +735,14 @@ function DashboardContent() {
       {/* === TAB: DASHBOARD === */}
       {activeTab === 'dashboard' && (
         <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
-          <header className="mb-10">
-            <h2 className="text-3xl font-black text-primary">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
-            <p className="text-secondary mt-1">Here is the current status of your research pipeline.</p>
+          <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-theme pb-8">
+            <div>
+              <h2 className="text-3xl font-black text-primary tracking-tight">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
+              <p className="text-secondary mt-1.5 text-xs font-semibold uppercase tracking-wider">Here is the current status of your research pipeline.</p>
+            </div>
+            <div className="text-xs font-bold text-secondary bg-secondary px-4 py-2.5 rounded-xl border border-theme max-w-xs shrink-0 select-none">
+              Client Portal · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </div>
           </header>
 
           {/* Latest Vault Upload notification */}
@@ -703,30 +759,43 @@ function DashboardContent() {
                   </h4>
                 </div>
               </div>
-              <button
-                onClick={() => setActiveTab('vault')}
-                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black transition font-black rounded-xl uppercase tracking-wider text-[10px] cursor-pointer shrink-0"
-              >
+              <Button size="sm" onClick={() => setActiveTab('vault')} className="shrink-0">
                 Access Secure Vault
-              </button>
+              </Button>
             </div>
           )}
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-            <StatCard label="Total Orders" value={orders.length} icon={<lucide.Layers />} />
-            <StatCard label="Active" value={activeOrders.length} icon={<lucide.Activity />} color="text-amber-400" />
-            <StatCard label="Completed" value={completedOrders.length} icon={<lucide.CheckCircle2 />} color="text-emerald-400" />
-            <StatCard label="In Vault" value={vaultFiles.length} icon={<lucide.Lock />} color="text-purple-400" />
+          {/* Redesigned Quick Stats Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+            {[
+              { label: "Total Projects", value: orders.length, icon: lucide.Layers, color: "text-emerald-500", bg: "bg-emerald-500/[0.02]" },
+              { label: "Active Pipelines", value: activeOrders.length, icon: lucide.Activity, color: "text-amber-500", bg: "bg-amber-500/[0.02]" },
+              { label: "Completed Projects", value: completedOrders.length, icon: lucide.CheckCircle2, color: "text-purple-500", bg: "bg-purple-500/[0.02]" },
+              { label: "In Secure Vault", value: vaultFiles.length, icon: lucide.Lock, color: "text-cyan-500", bg: "bg-cyan-500/[0.02]" }
+            ].map((stat, i) => {
+              const Icon = stat.icon;
+              return (
+                <div key={i} className="p-6 rounded-2xl border border-theme bg-card transition-all duration-300 hover:scale-[1.01] hover:shadow-lg relative overflow-hidden group select-none">
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="text-[10px] uppercase tracking-widest font-black text-secondary">{stat.label}</span>
+                    <div className={`p-2 rounded-xl ${stat.bg} border border-theme`}>
+                      <Icon className={`w-4 h-4 ${stat.color}`} />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-black text-primary tracking-tight">{stat.value}</div>
+                  <div className="absolute -right-6 -bottom-6 w-16 h-16 rounded-full opacity-[0.02] bg-white pointer-events-none" />
+                </div>
+              );
+            })}
           </div>
 
           {/* Orders List */}
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-black">Active Projects</h3>
-              <button onClick={() => router.push('/dashboard/client/order/new')} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-xs font-bold transition flex items-center gap-2 cursor-pointer">
-                <lucide.Plus className="w-3 h-3" /> New Order
-              </button>
+              <Button variant="ghost" size="sm" icon={<lucide.Plus className="w-3 h-3" />} onClick={() => router.push('/dashboard/client/order/new')}>
+                New Order
+              </Button>
             </div>
 
             {orders.length === 0 ? (
@@ -778,10 +847,10 @@ function DashboardContent() {
           </header>
           
           {vaultFiles.length === 0 ? (
-            <div className="border border-theme bg-card rounded-3xl p-12 text-center">
+            <Card padding="lg" className="text-center">
               <lucide.Shield className="w-12 h-12 text-secondary mx-auto mb-4" />
               <p className="text-secondary">Your vault is currently empty. Files will appear here once drafting is complete.</p>
-            </div>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {vaultFiles.map(file => {
@@ -800,7 +869,7 @@ function DashboardContent() {
                 const nextIdx = milestones.findIndex((m: any) => !m.paid);
                 const nextUnpaid = milestones[nextIdx];
                 return (
-                  <div key={file.id} className="bg-card border border-theme rounded-2xl p-6 relative overflow-hidden group">
+                  <Card key={file.id} elevation={1} padding="none" interactive className="p-6 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24 text-secondary" /></div>
                     <h4 className="font-bold text-lg mb-1 relative z-10 text-primary">{file.order_id}</h4>
                     <p className="text-xs text-secondary mb-2 relative z-10">{file.file_name}</p>
@@ -928,7 +997,7 @@ function DashboardContent() {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </Card>
                 );
               })}
             </div>
@@ -985,7 +1054,7 @@ function DashboardContent() {
             <p className="text-secondary mt-1">Manage your personal information and account security.</p>
           </header>
           
-          <div className="bg-card border border-theme rounded-3xl p-8">
+          <Card padding="lg">
             <div className="flex items-center gap-6 mb-8 border-b border-theme pb-8">
               <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-500 font-black text-2xl">
                 {profile?.full_name?.charAt(0) || 'U'}
@@ -1046,7 +1115,7 @@ function DashboardContent() {
 
               {user?.id && <NotificationPreferencesPanel userId={user.id} />}
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
@@ -1065,6 +1134,7 @@ function DashboardContent() {
           : renderBool(selectedOrderDetails['40% Paid']);
         
         const workSubmitted = renderBool(selectedOrderDetails['Work Submitted']);
+        const awaitingAdminApproval = selectedOrderDetails['Workflow Status'] === 'Briefing Received' || total <= 0;
         const addonInfo = parseAdditionalInfo(selectedOrderDetails['Additional Info']);
         
         const steps = [
@@ -1087,7 +1157,7 @@ function DashboardContent() {
               className="bg-primary w-full max-w-lg h-full border-l border-theme flex flex-col animate-in slide-in-from-right duration-300"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-6 border-b border-theme flex justify-between items-center bg-secondary">
+              <div className="p-5 md:p-6 border-b border-theme flex justify-between items-center bg-secondary">
                 <div>
                   <h3 className="font-black text-lg text-primary flex items-center gap-2">
                     {selectedOrderDetails['Order ID']}
@@ -1098,216 +1168,246 @@ function DashboardContent() {
                 </div>
                 <button onClick={() => setSelectedOrderDetails(null)} className="p-2 bg-secondary hover:bg-white/10 rounded-full transition cursor-pointer" aria-label="Close details"><lucide.X className="w-5 h-5 text-secondary" /></button>
               </div>
+
+              {/* Redesigned Inspector Tab Controls */}
+              <div className="flex border-b border-theme bg-secondary px-4 md:px-6">
+                {(['specs', 'payments', 'timeline'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setInspectorTab(tab)}
+                    className={`flex-1 text-center py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                      inspectorTab === tab
+                        ? 'border-emerald-500 text-emerald-400 font-black'
+                        : 'border-transparent text-secondary hover:text-primary'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
               
-              <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                {/* 1. PROJECT SPECIFICATIONS (Read-Only) */}
-                <div>
-                  <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-4 border-b border-theme pb-2 flex items-center gap-2">
-                    <lucide.FileText className="w-4 h-4 text-purple-400" /> Project Specifications
-                  </h4>
-                  <div className="space-y-4 text-xs">
-                    <div>
-                      <span className="text-secondary block mb-1 font-bold">Topic / Objective</span>
-                      <p className="text-sm bg-card p-3 rounded-xl border border-theme text-primary font-bold">{selectedOrderDetails['Research Topic']}</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+              <div className="flex-1 overflow-y-auto p-5 md:p-6 space-y-6">
+                {/* 1. PROJECT SPECIFICATIONS */}
+                {inspectorTab === 'specs' && (
+                  <div className="space-y-6 animate-in fade-in duration-250">
+                    <div className="space-y-4 text-xs">
                       <div>
-                        <span className="text-secondary block mb-1 font-bold">Deadline</span>
-                        <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{formatDate(selectedOrderDetails['Deadline'])}</p>
+                        <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Topic / Objective</span>
+                        <p className="text-sm bg-secondary p-3.5 rounded-xl border border-theme text-primary font-bold leading-relaxed">{selectedOrderDetails['Research Topic']}</p>
                       </div>
-                      <div>
-                        <span className="text-secondary block mb-1 font-bold">Service Tier</span>
-                        <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Service Tier'] || 'Custom Quote'}</p>
-                      </div>
-                    </div>
 
-                    {selectedOrderDetails['Word Count'] && selectedOrderDetails['Word Count'] > 0 && (
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <span className="text-secondary block mb-1 font-bold">Word Count</span>
-                          <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Word Count'].toLocaleString()} Words</p>
+                          <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Deadline</span>
+                          <p className="p-3 bg-secondary/40 border border-theme rounded-xl text-primary font-bold">{formatDate(selectedOrderDetails['Deadline'])}</p>
                         </div>
                         <div>
-                          <span className="text-secondary block mb-1 font-bold">Estimated Pages</span>
-                          <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{Math.ceil(selectedOrderDetails['Word Count'] / 275)} Pages</p>
+                          <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Service Tier</span>
+                          <p className="p-3 bg-secondary/40 border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Service Tier'] || 'Custom Quote'}</p>
                         </div>
                       </div>
-                    )}
 
-                    {(selectedOrderDetails['Reference Style'] || selectedOrderDetails['Font Specification']) && (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-secondary block mb-1 font-bold">Reference Style</span>
-                          <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Reference Style'] || 'Standard'}</p>
-                        </div>
-                        <div>
-                          <span className="text-secondary block mb-1 font-bold">Font Preference</span>
-                          <p className="p-3 bg-secondary border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Font Specification'] || 'Standard'}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedOrderDetails['Media Sync'] && (
-                      <div>
-                        <span className="text-secondary block mb-1 font-bold">External Storage Link</span>
-                        <a href={selectedOrderDetails['Media Sync']} target="_blank" rel="noopener noreferrer" className="p-3 bg-secondary border border-theme rounded-xl text-blue-450 font-bold block truncate hover:underline">
-                          🔗 {selectedOrderDetails['Media Sync']}
-                        </a>
-                      </div>
-                    )}
-
-                    {addonInfo.notes && (
-                      <div>
-                        <span className="text-secondary block mb-1 font-bold">Client Notes & Instructions</span>
-                        <p className="bg-card p-4 rounded-xl border border-theme text-primary whitespace-pre-wrap leading-relaxed font-medium">{addonInfo.notes}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* PAYMENT MILESTONES */}
-                {orderMilestones.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-4 border-b border-theme pb-2 flex items-center gap-2">
-                      <lucide.CreditCard className="w-4 h-4 text-purple-400" /> Payment Milestones
-                    </h4>
-                    <div className="space-y-3">
-                      {orderMilestones.map((m: any, idx: number) => (
-                        <div key={idx} className="bg-secondary border border-theme rounded-2xl p-4 flex justify-between items-center text-xs">
+                      {selectedOrderDetails['Word Count'] && selectedOrderDetails['Word Count'] > 0 && (
+                        <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="font-bold text-primary">{m.name} ({m.percentage}%)</p>
-                            <p className="text-[10px] text-secondary mt-1">Trigger: {m.trigger || 'Manual'}</p>
+                            <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Word Count</span>
+                            <p className="p-3 bg-secondary/40 border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Word Count'].toLocaleString()} Words</p>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="font-black text-primary font-mono">{formatNaira(m.amount)}</span>
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
-                              m.paid ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                            }`}>
-                              {m.paid ? 'Paid ✓' : 'Unpaid'}
-                            </span>
+                          <div>
+                            <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Estimated Pages</span>
+                            <p className="p-3 bg-secondary/40 border border-theme rounded-xl text-primary font-bold">{Math.ceil(selectedOrderDetails['Word Count'] / 275)} Pages</p>
                           </div>
-                        </div>
-                      ))}
-                      {!paid40 && (
-                        <div className="pt-2">
-                          {(() => {
-                            const nextUnpaidIdx = orderMilestones.findIndex((m: any) => !m.paid);
-                            const nextUnpaid = orderMilestones[nextUnpaidIdx];
-                            if (nextUnpaid) {
-                              return (
-                                <button
-                                  onClick={() => handlePayment(selectedOrderDetails['Order ID'], nextUnpaid.amount, selectedOrderDetails['Email'], selectedOrderDetails['Legal Name'], ('INDEX-' + nextUnpaidIdx) as any)}
-                                  disabled={processingPayment !== null}
-                                  className="w-full py-3 bg-emerald-500 text-black text-xs font-black uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition cursor-pointer disabled:opacity-50"
-                                >
-                                  {processingPayment === selectedOrderDetails['Order ID'] ? 'Connecting...' : `Pay ${nextUnpaid.name} (${formatNaira(nextUnpaid.amount)})`}
-                                </button>
-                              );
-                            }
-                            return null;
-                          })()}
                         </div>
                       )}
+
+                      {(selectedOrderDetails['Reference Style'] || selectedOrderDetails['Font Specification']) && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Reference Style</span>
+                            <p className="p-3 bg-secondary/40 border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Reference Style'] || 'Standard'}</p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Font Preference</span>
+                            <p className="p-3 bg-secondary/40 border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Font Specification'] || 'Standard'}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedOrderDetails['Media Sync'] && (
+                        <div>
+                          <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">External Storage Link</span>
+                          <a href={selectedOrderDetails['Media Sync']} target="_blank" rel="noopener noreferrer" className="p-3 bg-secondary/40 border border-theme rounded-xl text-blue-450 font-bold block truncate hover:underline">
+                            🔗 {selectedOrderDetails['Media Sync']}
+                          </a>
+                        </div>
+                      )}
+
+                      {addonInfo.notes && (
+                        <div>
+                          <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Client Notes & Instructions</span>
+                          <p className="bg-card p-4 rounded-xl border border-theme text-primary whitespace-pre-wrap leading-relaxed font-medium">{addonInfo.notes}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* EXTRA REQUIREMENTS */}
+                    <div className="pt-6 border-t border-theme/60 space-y-4">
+                      <h4 className="text-xs font-black text-secondary uppercase tracking-widest flex items-center gap-1.5">
+                        <lucide.PlusCircle className="w-4 h-4 text-emerald-400" /> Extra Requirements & Custom Add-ons
+                      </h4>
+                      
+                      {/* List existing addon requests */}
+                      {addonInfo.extra_addons && addonInfo.extra_addons.length > 0 ? (
+                        <div className="space-y-3">
+                          {addonInfo.extra_addons.map((a: any) => (
+                            <div key={a.id} className="p-3.5 bg-secondary border border-theme rounded-xl text-xs space-y-3">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className="font-bold text-primary">{a.name}</p>
+                                  <p className="text-[9px] text-secondary mt-1">Requested {formatDate(a.created_at)}</p>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                  a.status === 'PAID' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                  a.status === 'AWAITING_PAYMENT' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                                  'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                                }`}>
+                                  {a.status === 'PENDING_QUOTE' ? 'Reviewing' : a.status === 'AWAITING_PAYMENT' ? 'Approved' : 'Paid'}
+                                </span>
+                              </div>
+
+                              {a.status !== 'PENDING_QUOTE' && (
+                                <div className="flex justify-between items-center bg-primary p-2.5 rounded-lg border border-theme text-[10px]">
+                                  <span className="text-secondary font-bold font-black">Charge:</span>
+                                  <span className="font-black text-primary text-xs">{formatNaira(a.price)}</span>
+                                </div>
+                              )}
+
+                              {a.status === 'AWAITING_PAYMENT' && (
+                                <div className="flex gap-2 pt-1">
+                                  <button 
+                                    onClick={() => handlePayAddonWallet(selectedOrderDetails['Order ID'], a.id, a.price)}
+                                    disabled={processingAddonPayment !== null}
+                                    className="flex-1 py-2 bg-emerald-500 text-black text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-400 transition cursor-pointer disabled:opacity-50"
+                                  >
+                                    {processingAddonPayment === a.id ? 'Processing...' : 'Pay from Wallet'}
+                                  </button>
+                                  <button 
+                                    onClick={() => handlePayAddonCard(selectedOrderDetails['Order ID'], a.id, a.price)}
+                                    disabled={processingAddonPayment !== null}
+                                    className="flex-1 py-2 bg-secondary border border-theme text-primary text-[9px] font-bold uppercase tracking-widest rounded-lg hover:bg-primary transition cursor-pointer disabled:opacity-50"
+                                  >
+                                    Card
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-secondary text-xs">No custom add-ons requested yet.</p>
+                      )}
+
+                      {/* Addon Request Form */}
+                      <div className="bg-card border border-theme p-4 rounded-2xl space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-secondary ml-1 font-bold">Request Extra Requirement</label>
+                        <textarea 
+                          placeholder="Enter details of your extra requirements (e.g. 'Add 5 slides presentation', 'Add SPSS output file' or custom software module)" 
+                          value={newAddonName} 
+                          onChange={e => setNewAddonName(e.target.value)} 
+                          rows={2}
+                          className="w-full bg-secondary border border-theme p-3 rounded-xl text-xs text-primary focus:border-emerald-500 outline-none transition font-bold"
+                        />
+                        <button 
+                          onClick={() => handleRequestAddon(selectedOrderDetails['Order ID'])}
+                          disabled={submittingAddon || !newAddonName.trim()}
+                          className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-black uppercase tracking-wider rounded-xl transition cursor-pointer disabled:opacity-50"
+                        >
+                          {submittingAddon ? 'Submitting...' : 'Submit Add-on Request'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* 2. EXTRA ADD-ONS & EXTRA REQUIREMENTS */}
-                <div>
-                  <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-4 border-b border-theme pb-2 flex items-center gap-2">
-                    <lucide.PlusCircle className="w-4 h-4 text-emerald-400" /> Extra Requirements & Custom Add-ons
-                  </h4>
-                  
-                  {/* List existing addon requests */}
-                  {addonInfo.extra_addons && addonInfo.extra_addons.length > 0 ? (
-                    <div className="space-y-3 mb-6">
-                      {addonInfo.extra_addons.map((a: any) => (
-                        <div key={a.id} className="p-4 bg-secondary border border-theme rounded-2xl text-xs space-y-3">
-                          <div className="flex justify-between items-start">
+                {/* 2. ESCROW & PAYMENTS */}
+                {inspectorTab === 'payments' && (
+                  <div className="space-y-6 animate-in fade-in duration-250">
+                    <div className="bg-secondary p-4 rounded-xl border border-theme flex justify-between items-center text-xs">
+                      <div>
+                        <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-0.5">Total Project Valuation</span>
+                        <span className="text-2xl font-black text-primary">{awaitingAdminApproval ? 'Pending...' : formatNaira(total)}</span>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                        paid40 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      }`}>
+                        {paid40 ? 'Fully Settled' : paid60 ? 'Deposit Paid' : 'Awaiting Deposit'}
+                      </span>
+                    </div>
+
+                    {orderMilestones.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-black text-secondary uppercase tracking-widest flex items-center gap-1.5">
+                          <lucide.CreditCard className="w-4 h-4 text-purple-400" /> Milestone Breakdown
+                        </h4>
+                        
+                        {orderMilestones.map((m: any, idx: number) => (
+                          <div key={idx} className="bg-secondary/40 border border-theme rounded-xl p-4 flex justify-between items-center text-xs">
                             <div>
-                              <p className="font-bold text-primary">{a.name}</p>
-                              <p className="text-[10px] text-secondary mt-1">Requested {formatDate(a.created_at)}</p>
+                              <p className="font-bold text-primary">{m.name} ({m.percentage}%)</p>
+                              <p className="text-[10px] text-secondary mt-1">Trigger: {m.trigger || 'Upon request'}</p>
                             </div>
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
-                              a.status === 'PAID' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                              a.status === 'AWAITING_PAYMENT' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                              'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                            }`}>
-                              {a.status === 'PENDING_QUOTE' ? 'Reviewing Quote' : a.status === 'AWAITING_PAYMENT' ? 'Approved & Unpaid' : 'Active / Paid'}
-                            </span>
+                            <div className="flex items-center gap-3">
+                              <span className="font-black text-primary font-mono">{formatNaira(m.amount)}</span>
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                m.paid ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                              }`}>
+                                {m.paid ? 'Paid' : 'Unpaid'}
+                              </span>
+                            </div>
                           </div>
+                        ))}
 
-                          {a.status !== 'PENDING_QUOTE' && (
-                            <div className="flex justify-between items-center bg-primary p-3 rounded-xl border border-theme">
-                              <span className="text-secondary font-bold font-black">Charge Amount:</span>
-                              <span className="font-black text-primary text-sm">{formatNaira(a.price)}</span>
-                            </div>
-                          )}
+                        {!paid40 && (
+                          <div className="pt-2">
+                            {(() => {
+                              const nextUnpaidIdx = orderMilestones.findIndex((m: any) => !m.paid);
+                              const nextUnpaid = orderMilestones[nextUnpaidIdx];
+                              if (nextUnpaid) {
+                                return (
+                                  <button
+                                    onClick={() => handlePayment(selectedOrderDetails['Order ID'], nextUnpaid.amount, selectedOrderDetails['Email'], selectedOrderDetails['Legal Name'], ('INDEX-' + nextUnpaidIdx) as any)}
+                                    disabled={processingPayment !== null}
+                                    className="w-full py-3 bg-emerald-500 text-black text-xs font-black uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition cursor-pointer disabled:opacity-50"
+                                  >
+                                    {processingPayment === selectedOrderDetails['Order ID'] ? 'Connecting...' : `Pay ${nextUnpaid.name} (${formatNaira(nextUnpaid.amount)})`}
+                                  </button>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                          {a.status === 'AWAITING_PAYMENT' && (
-                            <div className="flex gap-2 pt-1">
-                              <button 
-                                onClick={() => handlePayAddonWallet(selectedOrderDetails['Order ID'], a.id, a.price)}
-                                disabled={processingAddonPayment !== null}
-                                className="flex-1 py-2 bg-emerald-500 text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-400 transition cursor-pointer disabled:opacity-50"
-                              >
-                                {processingAddonPayment === a.id ? 'Processing...' : 'Pay from Wallet'}
-                              </button>
-                              <button 
-                                onClick={() => handlePayAddonCard(selectedOrderDetails['Order ID'], a.id, a.price)}
-                                disabled={processingAddonPayment !== null}
-                                className="flex-1 py-2 bg-secondary border border-theme text-primary text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-primary transition cursor-pointer disabled:opacity-50"
-                              >
-                                Pay with Card
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                {/* 3. DYNAMIC PIPELINE TIMELINE */}
+                {inspectorTab === 'timeline' && (
+                  <div className="space-y-6 animate-in fade-in duration-250 pt-2">
+                    <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-zinc-800">
+                      {steps.map((step, i) => (
+                        <TimelineItem 
+                          key={i}
+                          title={step.title}
+                          desc={step.desc}
+                          date={i === 0 ? formatDate(selectedOrderDetails['Timestamp']) : 'Logged'}
+                          done={step.done}
+                        />
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-secondary text-xs mb-4">No custom add-ons requested yet.</p>
-                  )}
-
-                  {/* Addon Request Form */}
-                  <div className="bg-card border border-theme p-4 rounded-2xl space-y-3">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-secondary ml-1 font-bold">Request Extra Requirement</label>
-                    <textarea 
-                      placeholder="Enter details of your extra requirements (e.g. 'Add 5 slides presentation', 'Add SPSS output file' or custom software module)" 
-                      value={newAddonName} 
-                      onChange={e => setNewAddonName(e.target.value)} 
-                      rows={2}
-                      className="w-full bg-secondary border border-theme p-3 rounded-xl text-xs text-primary focus:border-emerald-500 outline-none transition font-bold"
-                    />
-                    <button 
-                      onClick={() => handleRequestAddon(selectedOrderDetails['Order ID'])}
-                      disabled={submittingAddon || !newAddonName.trim()}
-                      className="w-full py-3 bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition cursor-pointer disabled:opacity-50"
-                    >
-                      {submittingAddon ? 'Submitting Request...' : 'Submit Add-on Request'}
-                    </button>
                   </div>
-                </div>
-
-                {/* 3. DYNAMIC TIMELINE */}
-                <div>
-                  <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-6 border-b border-theme pb-2 flex items-center gap-2">
-                    <lucide.Activity className="w-4 h-4 text-emerald-400" /> Pipeline Progress History
-                  </h4>
-                  
-                  <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-zinc-800">
-                    {steps.map((step, i) => (
-                      <TimelineItem 
-                        key={i}
-                        title={step.title}
-                        desc={step.desc}
-                        date={i === 0 ? formatDate(selectedOrderDetails['Timestamp']) : 'Logged'}
-                        done={step.done}
-                      />
-                    ))}
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -1383,35 +1483,43 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
 
   const renderPipelineIcon = (iconName: string) => {
     switch (iconName) {
-      case 'Terminal': return <lucide.Terminal className="w-4 h-4 text-cyan-455" />;
-      case 'PenTool': return <lucide.PenTool className="w-4 h-4 text-amber-455" />;
-      case 'LineChart': return <lucide.LineChart className="w-4 h-4 text-purple-455" />;
-      case 'Briefcase': return <lucide.Briefcase className="w-4 h-4 text-blue-455" />;
-      default: return <lucide.BookOpen className="w-4 h-4 text-emerald-455" />;
+      case 'Terminal': return <lucide.Terminal className="w-4 h-4 text-cyan-400" />;
+      case 'PenTool': return <lucide.PenTool className="w-4 h-4 text-amber-400" />;
+      case 'LineChart': return <lucide.LineChart className="w-4 h-4 text-purple-400" />;
+      case 'Briefcase': return <lucide.Briefcase className="w-4 h-4 text-blue-400" />;
+      default: return <lucide.BookOpen className="w-4 h-4 text-emerald-400" />;
     }
   };
+
+  const borderAccent = 
+    details.category === 'Project Material' ? 'border-l-emerald-500' :
+    details.category === 'Software Dev' ? 'border-l-cyan-500' :
+    details.category === 'Content Writing' ? 'border-l-amber-500' :
+    details.category === 'Bespoke Fieldwork' ? 'border-l-purple-500' :
+    details.category === 'Resume & CV' ? 'border-l-blue-500' :
+    'border-l-emerald-500';
 
   const paidCount = milestones.filter((m: any) => m.paid).length;
   const totalCount = milestones.length;
   const progressPercentage = totalCount > 0 ? (paidCount / totalCount) * 100 : 0;
 
   return (
-    <div className="bg-card border border-theme hover:border-emerald-500/50 transition-colors rounded-3xl p-6 md:p-8 relative overflow-hidden group">
+    <div className={`bg-card border-y border-r border-theme border-l-4 ${borderAccent} hover:bg-secondary/10 transition-all duration-300 rounded-2xl p-5 md:p-6 relative overflow-hidden group select-none`}>
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <div className={`w-8 h-8 rounded-xl ${details.bgClass} flex items-center justify-center border ${details.borderClass}`}>
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+        <div className="space-y-1.5 min-w-0">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className={`w-7 h-7 rounded-lg ${details.bgClass} flex items-center justify-center border ${details.borderClass} shrink-0`}>
               {renderPipelineIcon(details.icon)}
             </div>
-            <h3 className="text-xl font-black tracking-tight text-primary">{order['Order ID']}</h3>
-            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${details.bgClass} ${details.colorClass} border ${details.borderClass}`}>
+            <h3 className="text-lg font-black tracking-tight text-primary truncate">{order['Order ID']}</h3>
+            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${details.bgClass} ${details.colorClass} border ${details.borderClass} shrink-0`}>
               {details.category}
             </span>
             <StatusBadge status={awaitingAdminApproval ? 'Awaiting Quote' : order['Workflow Status']} size="md" />
           </div>
-          <p className="text-secondary text-sm max-w-2xl leading-relaxed">{order['Research Topic']}</p>
+          <p className="text-secondary text-sm font-semibold leading-snug truncate max-w-3xl">{order['Research Topic']}</p>
           {/* Show assigned writer for project material orders */}
           {(() => {
             const oid = order?.['Order ID'] || '';
@@ -1420,72 +1528,72 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
             const match = info.match(/Assigned Writer:\s*(.+)/);
             if (!match) return null;
             return (
-              <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-emerald-400 font-bold">
+              <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold">
                 <lucide.Pencil className="w-3.5 h-3.5 shrink-0" />
-                <span>Writer: <span className="underline decoration-emerald-500/50 decoration-dotted">{match[1].trim()}</span></span>
+                <span>Writer: <span className="underline decoration-emerald-500/30 decoration-dotted">{match[1].trim()}</span></span>
               </div>
             );
           })()}
         </div>
 
         <div className="text-left md:text-right shrink-0">
-          <div className="text-xs font-bold text-secondary uppercase tracking-widest mb-1">Financial Quote</div>
-          <div className="text-3xl font-black text-primary">
+          <div className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-0.5">Financial Quote</div>
+          <div className="text-2xl font-black text-primary">
             {awaitingAdminApproval ? 'Pending...' : formatNaira(total)}
           </div>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="mb-8">
-        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">
+      <div className="mb-6 bg-secondary/30 p-4 rounded-xl border border-theme/40">
+        <div className="flex justify-between text-[9px] font-bold uppercase tracking-widest text-secondary mb-2.5">
           {isCustomPayment ? (
             <>
-              <span className={paid60 ? 'text-emerald-500 font-bold' : ''}>1. Deposit ({milestones[0]?.percentage || 0}%)</span>
-              <span className={workSubmitted ? 'text-emerald-500 font-bold' : ''}>2. Working Phase</span>
-              <span className={paid40 ? 'text-emerald-500 font-bold' : ''}>3. Delivery ({milestones[milestones.length-1]?.percentage || 0}%)</span>
+              <span className={paid60 ? 'text-emerald-400 font-black' : ''}>1. Deposit ({milestones[0]?.percentage || 0}%)</span>
+              <span className={workSubmitted ? 'text-emerald-400 font-black' : ''}>2. Working Phase</span>
+              <span className={paid40 ? 'text-emerald-400 font-black' : ''}>3. Release ({milestones[milestones.length-1]?.percentage || 0}%)</span>
             </>
           ) : (
             <>
-              <span className={paid60 ? 'text-emerald-500 font-bold' : ''}>1. Deposit</span>
-              <span className={workSubmitted ? 'text-emerald-500 font-bold' : ''}>2. Working Phase</span>
-              <span className={paid40 ? 'text-emerald-500 font-bold' : ''}>3. Delivery</span>
+              <span className={paid60 ? 'text-emerald-400 font-black' : ''}>1. Deposit</span>
+              <span className={workSubmitted ? 'text-emerald-400 font-black' : ''}>2. Working Phase</span>
+              <span className={paid40 ? 'text-emerald-400 font-black' : ''}>3. Delivery</span>
             </>
           )}
         </div>
-        <div className="w-full bg-secondary border border-theme rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-secondary border border-theme/40 rounded-full h-1.5 overflow-hidden">
           <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-out relative" 
             style={{ width: isCustomPayment ? `${progressPercentage}%` : (paid40 && workSubmitted ? '100%' : paid60 && workSubmitted ? '75%' : paid60 ? '33%' : '0%') }}>
-            <div className="absolute inset-0 bg-white/20 w-full h-full animate-[shimmer_2s_infinite]"></div>
+            <div className="absolute inset-0 bg-white/10 w-full h-full animate-[shimmer_2s_infinite]" />
           </div>
         </div>
       </div>
 
       {/* Footer Actions */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-theme">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-theme/40">
         <div className="flex items-center gap-6 text-xs w-full md:w-auto">
-          <div><span className="text-secondary block mb-1">Deadline</span> <span className="font-bold text-primary">{formatDate(order['Deadline'])}</span></div>
-          <div><span className="text-secondary block mb-1">Payment</span> <span className={paid60 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>{paid40 ? 'Fully Cleared' : paid60 ? 'Deposit Paid' : 'Pending'}</span></div>
+          <div><span className="text-secondary block text-[10px] font-bold mb-0.5">Deadline</span> <span className="font-bold text-primary">{formatDate(order['Deadline'])}</span></div>
+          <div><span className="text-secondary block text-[10px] font-bold mb-0.5">Payment</span> <span className={paid60 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>{paid40 ? 'Fully Cleared' : paid60 ? 'Deposit Paid' : 'Pending'}</span></div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
           <button 
             onClick={() => {
               const text = `Hello, I need support for my ${details.label} order #${order['Order ID']}: "${order['Research Topic']}"`;
               window.open(`https://wa.me/2348121443666?text=${encodeURIComponent(text)}`, '_blank');
             }} 
-            className="px-4 py-2.5 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] text-xs font-bold rounded-xl transition flex items-center gap-2 border border-[#25D366]/20 cursor-pointer"
+            className="px-4 py-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] text-xs font-bold rounded-xl transition-all duration-200 flex items-center gap-2 border border-[#25D366]/20 cursor-pointer"
           >
-            <lucide.MessageCircle className="w-4 h-4" /> Support Chat
+            <lucide.MessageCircle className="w-3.5 h-3.5" /> Support Chat
           </button>
 
-          <button onClick={openDetails} className="px-4 py-2.5 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition flex items-center gap-2 cursor-pointer">
-            <lucide.Activity className="w-4 h-4" /> View Details
+          <button onClick={openDetails} className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition-all duration-200 flex items-center gap-2 cursor-pointer">
+            <lucide.Activity className="w-3.5 h-3.5 text-secondary" /> Details
           </button>
 
           {awaitingAdminApproval ? (
-            <div className="px-5 py-2.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-xl text-xs font-bold flex items-center gap-2">
-              <lucide.Clock className="w-4 h-4" /> Admin Reviewing Brief
+            <div className="px-4 py-2 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-xl text-xs font-bold flex items-center gap-2">
+              <lucide.Clock className="w-3.5 h-3.5" /> Under Review
             </div>
           ) : (
             <>
@@ -1499,7 +1607,7 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
                         <button
                           onClick={() => handlePayment(order['Order ID'], nextUnpaid.amount, order['Email'], order['Legal Name'], ('INDEX-' + nextIdx) as any)}
                           disabled={processingPayment}
-                          className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer"
+                          className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer"
                         >
                           {processingPayment ? 'Connecting...' : `Pay ${nextUnpaid.name} (${formatNaira(nextUnpaid.amount)})`}
                         </button>
@@ -1514,7 +1622,7 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
                     <button
                       onClick={() => handlePayment(order['Order ID'], depositAmount, order['Email'], order['Legal Name'], 'DEPOSIT')}
                       disabled={processingPayment}
-                      className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer"
+                      className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer"
                     >
                       {processingPayment ? 'Connecting...' : `Pay Deposit (${formatNaira(depositAmount)})`}
                     </button>
@@ -1523,16 +1631,16 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
                     <button
                       onClick={() => handlePayment(order['Order ID'], balanceAmount, order['Email'], order['Legal Name'], 'BALANCE')}
                       disabled={processingPayment}
-                      className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                      className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                     >
-                      <lucide.Unlock className="w-4 h-4" /> {processingPayment ? 'Connecting...' : `Clear Balance & Unlock Vault`}
+                      <lucide.Unlock className="w-4 h-4 text-black" /> {processingPayment ? 'Connecting...' : `Clear Balance & Unlock`}
                     </button>
                   )}
                 </>
               )}
               {paid60 && paid40 && (
-                <div className="px-5 py-2.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold flex items-center gap-2">
-                  <lucide.CheckCircle2 className="w-4 h-4" /> Contract Fulfilled
+                <div className="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold flex items-center gap-1.5 select-none">
+                  <lucide.CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Completed
                 </div>
               )}
             </>

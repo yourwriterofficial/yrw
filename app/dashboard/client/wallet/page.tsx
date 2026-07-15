@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Wallet, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
 import { showToast } from '@/app/components/ui/Toast';
+import Card from '@/app/components/ui/Card';
+import Button from '@/app/components/ui/Button';
 
 import { getEffectiveUser } from '@/lib/impersonate';
 
@@ -121,7 +123,7 @@ export default function WalletPage({ embedded = false }: WalletPageProps) {
         <p className="text-4xl md:text-5xl font-black mt-1">₦{balance.toLocaleString('en-NG')}</p>
       </div>
 
-      <div className="bg-card border border-theme rounded-2xl p-6 mb-8">
+      <Card padding="lg" className="mb-8">
         <h2 className="text-lg font-black text-primary mb-1">Add Funds</h2>
         <p className="text-secondary text-xs mb-4">Select a preset amount or enter a custom value.</p>
         <div className="flex flex-wrap gap-3 mb-6">
@@ -150,18 +152,13 @@ export default function WalletPage({ embedded = false }: WalletPageProps) {
             placeholder="Custom amount (min ₦100)"
             aria-label="Top-up amount"
           />
-          <button
-            type="button"
-            onClick={handleTopUp}
-            disabled={processing || topUpAmount < 100}
-            className="btn-primary disabled:opacity-50 whitespace-nowrap"
-          >
+          <Button onClick={handleTopUp} disabled={processing || topUpAmount < 100} loading={processing} className="whitespace-nowrap">
             {processing ? 'Processing...' : 'Top Up via Paystack'}
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
-      <div className="bg-card border border-theme rounded-2xl p-6">
+      <Card padding="lg">
         <h2 className="text-lg font-black text-primary mb-4">Transaction History</h2>
         {transactions.length === 0 ? (
           <div className="empty-state">
@@ -196,7 +193,7 @@ export default function WalletPage({ embedded = false }: WalletPageProps) {
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

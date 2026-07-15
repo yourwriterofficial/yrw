@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import { showToast } from '@/app/components/ui/Toast';
 import PageHeader from '@/app/components/ui/PageHeader';
+import StatCard from '@/app/components/ui/StatCard';
+import Card from '@/app/components/ui/Card';
 
 export default function AdminAffiliatePage() {
   const [loading, setLoading] = useState(true);
@@ -134,24 +136,15 @@ export default function AdminAffiliatePage() {
       ) : (
         <>
           {/* STATS */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="bg-card border border-theme rounded-2xl p-6 space-y-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-secondary">Total Commissions Handled</span>
-              <h3 className="text-2xl font-black text-primary">₦{stats.totalCommissions.toLocaleString()}</h3>
-            </div>
-            <div className="bg-card border border-theme rounded-2xl p-6 space-y-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-secondary">Total Referral Conversions</span>
-              <h3 className="text-2xl font-black text-primary">{stats.totalReferred} referrals</h3>
-            </div>
-            <div className="bg-card border border-theme rounded-2xl p-6 space-y-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-secondary">Pending Payout Requests</span>
-              <h3 className="text-2xl font-black text-purple-500">{stats.pendingPayouts} pending</h3>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard label="Total Commissions Handled" value={`₦${stats.totalCommissions.toLocaleString()}`} icon={<lucide.Banknote />} />
+            <StatCard label="Total Referral Conversions" value={`${stats.totalReferred} referrals`} icon={<lucide.Users />} />
+            <StatCard label="Pending Payout Requests" value={`${stats.pendingPayouts} pending`} color="text-purple-400" icon={<lucide.Clock />} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* SETTINGS CARD */}
-            <div className="bg-card border border-theme rounded-3xl p-6 space-y-6 h-fit">
+            <Card padding="lg" className="space-y-6 h-fit">
               <h3 className="text-sm font-black text-primary uppercase tracking-wider border-b border-theme pb-3">Affiliate Settings</h3>
               
               <div className="space-y-4">
@@ -185,10 +178,10 @@ export default function AdminAffiliatePage() {
                   {savingSettings ? <lucide.Loader2 className="w-4 h-4 animate-spin" /> : null} Save Config
                 </button>
               </div>
-            </div>
+            </Card>
 
             {/* WITHDRAWALS LIST */}
-            <div className="lg:col-span-2 bg-card border border-theme rounded-3xl p-6 space-y-4">
+            <Card padding="lg" className="lg:col-span-2 space-y-4">
               <h3 className="text-sm font-black text-primary uppercase tracking-wider border-b border-theme pb-3">Payout Requests</h3>
               
               {withdrawals.length === 0 ? (
@@ -238,7 +231,7 @@ export default function AdminAffiliatePage() {
                   ))}
                 </div>
               )}
-            </div>
+            </Card>
           </div>
         </>
       )}
