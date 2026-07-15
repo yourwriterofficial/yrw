@@ -185,7 +185,7 @@ export default function AdminChatPage() {
     <div className="flex h-[calc(100vh-65px)] bg-primary overflow-hidden">
 
       {/* LEFT: CONVERSATIONS LIST */}
-      <aside className="w-80 border-r border-theme bg-secondary/30 flex flex-col shrink-0">
+      <aside className={`${selectedConv ? 'hidden md:flex' : 'flex w-full md:w-80'} border-r border-theme bg-secondary/30 flex-col shrink-0`}>
         <div className="p-4 border-b border-theme space-y-3">
           <div>
             <h2 className="font-black text-sm text-primary uppercase tracking-widest flex items-center gap-2">
@@ -265,16 +265,25 @@ export default function AdminChatPage() {
       </aside>
 
       {/* RIGHT: ACTIVE THREAD */}
-      <main className="flex-1 flex flex-col h-full bg-secondary/15">
+      <main className={`${!selectedConv ? 'hidden md:flex' : 'flex w-full md:flex-1'} flex-col h-full bg-secondary/15`}>
         {selectedConv ? (
           <div className="flex-grow flex flex-col h-full overflow-hidden">
             {/* Thread Header */}
-            <div className="bg-card border-b border-theme p-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-sm text-primary">
-                  {selectedConv.profiles?.full_name || 'Guest Client'}
-                </h3>
-                <p className="text-[10px] text-secondary mt-0.5">{selectedConv.profiles?.email}</p>
+            <div className="bg-card border-b border-theme p-4 flex items-center gap-3 justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedConv(null)}
+                  className="md:hidden p-1 -ml-1 text-secondary hover:text-primary transition shrink-0"
+                >
+                  <lucide.ArrowLeft className="w-5 h-5" />
+                </button>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm text-primary truncate">
+                    {selectedConv.profiles?.full_name || 'Guest Client'}
+                  </h3>
+                  <p className="text-[10px] text-secondary mt-0.5 truncate">{selectedConv.profiles?.email}</p>
+                </div>
               </div>
             </div>
 

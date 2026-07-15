@@ -29,8 +29,117 @@ export default function EmailNotificationsPage() {
   const [html, setHtml] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
 
+  // Email preview
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [previewSubject, setPreviewSubject] = useState('');
+
   // Prune
   const [pruning, setPruning] = useState(false);
+
+  const clientEmailShell = (bodyHtml: string) => {
+    const currentYear = new Date().getFullYear();
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YourResearchWriter</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: #050505;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      padding: 20px;
+    }
+    .container {
+      max-width: 560px;
+      margin: 0 auto;
+      background: #0a0a0a;
+      border-radius: 32px;
+      border: 1px solid #1DB954;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .header {
+      background: linear-gradient(135deg, #0a2e1a, #050505);
+      padding: 32px 28px;
+      text-align: center;
+      border-bottom: 1px solid #1DB954;
+    }
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #1DB954, #10b981);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      letter-spacing: -0.5px;
+    }
+    .tagline {
+      font-size: 10px;
+      color: #1DB954;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 8px;
+    }
+    .content {
+      padding: 32px 28px;
+      color: #e5e5e5;
+    }
+    h1, h2 {
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+    h1 { font-size: 24px; color: white; }
+    h2 { font-size: 18px; color: #1DB954; }
+    .button {
+      display: inline-block;
+      background: #1DB954;
+      color: #000 !important;
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 40px;
+      font-weight: 800;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 20px;
+      transition: background 0.2s;
+    }
+    .button:hover {
+      background: #17a44b;
+    }
+    .footer {
+      padding: 20px 28px;
+      text-align: center;
+      font-size: 11px;
+      color: #555;
+      border-top: 1px solid #222;
+      background: #050505;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">YourResearchWriter</div>
+      <div class="tagline">Academic & Professional Excellence</div>
+    </div>
+    <div class="content">
+      ${bodyHtml}
+    </div>
+    <div class="footer">
+      © ${currentYear} YourResearchWriter – All documents encrypted. <br>
+      Need help? <a href="https://wa.me/2348121443666" style="color: #1DB954; text-decoration: none;">Contact Support</a>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+  };
 
   // Mass-send audit log
   const [massLogs, setMassLogs] = useState<MassLog[]>([]);
@@ -240,18 +349,31 @@ export default function EmailNotificationsPage() {
                 placeholder="<h2>Hello,</h2><p>We have an update for you...</p>"
               />
             </div>
-            <div className="flex items-center justify-between gap-4 flex-wrap">
+             <div className="flex items-center justify-between gap-4 flex-wrap">
               <p className="text-xs text-secondary flex items-center gap-1.5">
                 <lucide.Users className="w-3.5 h-3.5" /> Sending to <span className="text-primary font-bold">{recipientCount}</span> {recipientCount === 1 ? 'user' : 'users'}
               </p>
-              <button
-                onClick={sendEmail}
-                disabled={sendingEmail}
-                className="px-6 py-3.5 bg-purple-500 hover:bg-purple-400 text-white font-black uppercase text-xs tracking-widest rounded-xl transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
-              >
-                {sendingEmail ? <Spinner /> : <lucide.Send className="w-4 h-4" />}
-                {sendingEmail ? 'Sending...' : 'Send Mass Email'}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewSubject(subject || 'No Subject Line');
+                    setPreviewHtml(html || '<p style="color:#666">Please enter some HTML content in the editor to preview it here.</p>');
+                    setPreviewOpen(true);
+                  }}
+                  className="px-5 py-3 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-black uppercase tracking-wider rounded-xl transition flex items-center gap-2 cursor-pointer"
+                >
+                  <lucide.Eye className="w-4 h-4" /> Preview Sample
+                </button>
+                <button
+                  onClick={sendEmail}
+                  disabled={sendingEmail}
+                  className="px-6 py-3.5 bg-purple-500 hover:bg-purple-400 text-white font-black uppercase text-xs tracking-widest rounded-xl transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                >
+                  {sendingEmail ? <Spinner /> : <lucide.Send className="w-4 h-4" />}
+                  {sendingEmail ? 'Sending...' : 'Send Mass Email'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -269,13 +391,32 @@ export default function EmailNotificationsPage() {
           <div className="space-y-2">
             {massLogs.map(log => (
               <div key={log.id} className="flex items-center justify-between gap-4 bg-primary border border-theme rounded-xl px-4 py-3 text-xs">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="font-bold text-primary truncate">{log.subject}</p>
                   <p className="text-secondary mt-0.5">{new Date(log.sent_at).toLocaleString()}</p>
                 </div>
-                <span className="shrink-0 text-[10px] font-black uppercase px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                  {log.recipient_count} {log.recipient_count === 1 ? 'recipient' : 'recipients'}{log.all_users ? ' · all' : ''}
-                </span>
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewSubject(log.subject);
+                      setPreviewHtml(`
+                        <h2 style="color: #1DB954; font-weight: 800; font-size: 18px; margin-bottom: 12px;">${log.subject}</h2>
+                        <p style="margin-bottom: 16px;">This is a sample layout preview for the mass email broadcast sent to your registered audience.</p>
+                        <div style="background: #050505; border: 1px dashed #1DB954; border-radius: 12px; padding: 16px; margin: 16px 0; color: #aaa; font-style: italic; text-align: center;">
+                          (The specific customized dynamic content sent to individual clients is not fully stored in the audit logs, but is rendered in this template view).
+                        </div>
+                      `);
+                      setPreviewOpen(true);
+                    }}
+                    className="px-2.5 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/25 rounded-lg font-bold text-[10px] transition cursor-pointer"
+                  >
+                    <lucide.Eye className="w-3 h-3 inline mr-1" /> Preview Layout
+                  </button>
+                  <span className="text-[10px] font-black uppercase px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    {log.recipient_count} {log.recipient_count === 1 ? 'recipient' : 'recipients'}{log.all_users ? ' · all' : ''}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -314,7 +455,42 @@ export default function EmailNotificationsPage() {
             <lucide.Trash2 className="w-4 h-4" /> Clear everything
           </button>
         </div>
-      </div>
+     </div>
+
+      {/* Preview Modal */}
+      {previewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-primary border border-theme rounded-[32px] p-6 md:p-8 max-w-2xl w-full shadow-2xl flex flex-col h-[85vh] animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-black text-primary">Branded Email Preview</h3>
+                <p className="text-xs text-secondary mt-0.5">Subject: {previewSubject}</p>
+              </div>
+              <button 
+                onClick={() => setPreviewOpen(false)} 
+                className="w-10 h-10 rounded-full bg-secondary hover:bg-white/5 text-primary flex items-center justify-center transition cursor-pointer"
+              >
+                <lucide.X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="border border-theme/30 rounded-2xl overflow-hidden flex-1 bg-white">
+              <iframe
+                srcDoc={clientEmailShell(previewHtml)}
+                className="w-full h-full bg-white border-0"
+                title="Branded Email Broadcast Preview"
+              />
+            </div>
+            <div className="flex justify-end gap-3 mt-4 shrink-0">
+              <button 
+                onClick={() => setPreviewOpen(false)} 
+                className="px-5 py-2.5 bg-secondary border border-theme text-primary font-bold text-xs rounded-xl transition hover:bg-white/5 cursor-pointer"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

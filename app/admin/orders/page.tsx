@@ -1343,7 +1343,7 @@ function OrdersPageContent() {
 
       {/* Create order for client */}
       {showCreateOrder && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
           <div className="bg-primary border border-theme rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl my-8">
             <div className="flex justify-between items-center mb-6">
               <div>

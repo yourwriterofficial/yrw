@@ -81,21 +81,26 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [unviewedVaultCount, setUnviewedVaultCount] = useState(0);
 
-  const fetchUnviewedVault = useCallback(async (email: string, id: string) => {
+  const fetchUnviewedVault = useCallback(async () => {
     try {
-      const { data: userOrders } = await supabase
-        .from('orders')
-        .select('order_id')
-        .or(`client_id.eq.${id},email.eq.${email}`);
+      let impId = null;
+      let impEmail = null;
+      if (typeof window !== 'undefined') {
+        impId = localStorage.getItem('impersonate_user_id');
+        impEmail = localStorage.getItem('impersonate_user_email');
+      }
 
-      const orderIds = userOrders?.map(o => o.order_id) || [];
-      if (orderIds.length > 0) {
-        const { data: files } = await supabase
-          .from('final_deliverables')
-          .select('id')
-          .in('order_id', orderIds)
-          .is('downloaded_at', null);
-        setUnviewedVaultCount(files?.length || 0);
+      let url = '/api/client/vault-files';
+      if (impId) {
+        url += `?impersonate_user_id=${impId}&impersonate_user_email=${impEmail}`;
+      }
+
+      const res = await fetch(url);
+      if (res.ok) {
+        const json = await res.json();
+        const files = json.files || [];
+        const unviewed = files.filter((f: any) => f.downloaded_at === null).length;
+        setUnviewedVaultCount(unviewed);
       }
     } catch (e) {
       console.error(e);
@@ -144,7 +149,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         } catch (e) {}
       }
       
-      await fetchUnviewedVault(user.email || '', user.id);
+      await fetchUnviewedVault();
       setLoading(false);
     };
     checkUser();
