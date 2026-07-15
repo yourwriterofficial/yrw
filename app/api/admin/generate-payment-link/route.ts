@@ -118,47 +118,38 @@ export async function POST(request: Request) {
 
     // 3. Send Email Notification with Template
     const emailSubject = `Payment Link Generated: ${topic}`;
-    const emailHtml = `
-      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff; color: #1f2937;">
-        <div style="text-align: center; margin-bottom: 25px;">
-          <div style="display: inline-block; padding: 12px; background-color: #ecfdf5; border-radius: 12px; color: #10b981; font-weight: 800; font-size: 24px; line-height: 1;">Y</div>
-          <h2 style="font-size: 20px; font-weight: 900; color: #111827; margin: 10px 0 0 0; tracking: -0.025em;">YourResearchWriter</h2>
-        </div>
-        
-        <p style="font-size: 14px; line-height: 1.6; color: #4b5563;">Hello,</p>
-        <p style="font-size: 14px; line-height: 1.6; color: #4b5563;">An administrator has prepared a custom payment link for your research project topic. Please find the order and billing specification details below:</p>
-        
-        <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin: 24px 0;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-            <tr>
-              <td style="padding: 6px 0; color: #6b7280; font-weight: 600; width: 120px;">Project Topic:</td>
-              <td style="padding: 6px 0; color: #111827; font-weight: 700;">${topic}</td>
-            </tr>
-            <tr>
-              <td style="padding: 6px 0; color: #6b7280; font-weight: 600;">Department:</td>
-              <td style="padding: 6px 0; color: #111827; font-weight: 700;">${department}</td>
-            </tr>
-            <tr>
-              <td style="padding: 6px 0; color: #6b7280; font-weight: 600;">Academic Level:</td>
-              <td style="padding: 6px 0; color: #111827; font-weight: 700;">${level}</td>
-            </tr>
-            <tr style="border-top: 1px dashed #e5e7eb;">
-              <td style="padding: 12px 0 6px 0; color: #6b7280; font-weight: 600;">Total Cost:</td>
-              <td style="padding: 12px 0 6px 0; color: #10b981; font-weight: 900; font-size: 16px;">₦${numericPrice.toLocaleString()}</td>
-            </tr>
-          </table>
-        </div>
-        
-        <p style="font-size: 14px; line-height: 1.6; color: #4b5563;">To proceed, please click the secure payment link below. Once payment is completed successfully, your dashboard account will be provisioned automatically, and the writing pipeline will be activated.</p>
-        
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="${authUrl}" style="background-color: #10b981; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 10px; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">Pay & Activate Order</a>
-        </div>
-        
-        <p style="font-size: 12px; line-height: 1.5; color: #9ca3af; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 20px;">If you did not request this service, please ignore this email. For support, reach out to support@yourresearchwriter.com.ng</p>
-      </div>
-    `;
-
+    const { emailShell } = await import('@/lib/emailTemplates');
+    const emailHtml = emailShell(
+      `<h2>Payment Link Prepared</h2>
+       <p>Hello,</p>
+       <p>An administrator has prepared a custom payment link for your research project topic. Please find the order and billing specification details below:</p>
+       
+       <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin: 24px 0;">
+         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+           <tr>
+             <td style="padding: 6px 0; color: #6b7280; font-weight: 600; width: 120px;">Project Topic:</td>
+             <td style="padding: 6px 0; color: #111827; font-weight: 700;">${topic}</td>
+           </tr>
+           <tr>
+             <td style="padding: 6px 0; color: #6b7280; font-weight: 600;">Department:</td>
+             <td style="padding: 6px 0; color: #111827; font-weight: 700;">${department}</td>
+           </tr>
+           <tr>
+             <td style="padding: 6px 0; color: #6b7280; font-weight: 600;">Academic Level:</td>
+             <td style="padding: 6px 0; color: #111827; font-weight: 700;">${level}</td>
+           </tr>
+           <tr style="border-top: 1px dashed #e5e7eb;">
+             <td style="padding: 12px 0 6px 0; color: #6b7280; font-weight: 600;">Total Cost:</td>
+             <td style="padding: 12px 0 6px 0; color: #10b981; font-weight: 900; font-size: 16px;">₦${numericPrice.toLocaleString()}</td>
+           </tr>
+         </table>
+       </div>
+       
+       <p>To proceed, please click the secure payment link below. Once payment is completed successfully, your dashboard account will be provisioned automatically, and the writing pipeline will be activated.</p>`,
+      'Pay & Activate Order',
+      authUrl
+    );
+ 
     await sendSystemEmail({
       to: email.trim().toLowerCase(),
       subject: emailSubject,

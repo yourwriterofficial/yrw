@@ -616,21 +616,22 @@ function OrdersPageContent() {
       // 5. Send notification email to user
       try {
         const { sendSystemEmail } = await import('@/lib/emailService');
+        const { emailShell } = await import('@/lib/emailTemplates');
+        const customHtml = emailShell(
+          `<h2 style="color: #10b981;">Extra Requirement Added</h2>
+           <p>An extra charge has been tagged to your order <strong>Order #${orderId}</strong> for additional requests not in the initial brief.</p>
+           <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #10b981; margin: 20px 0;">
+             <strong>Requirement:</strong> ${newAddon.name}<br/>
+             <strong>Price Tagged:</strong> <span style="font-size: 16px; color: #10b981; font-weight: bold;">${formatNaira(price)}</span>
+           </div>
+           <p>You can pay for this addon from your client dashboard wallet or via debit/credit card to authorize implementation.</p>`,
+          'Pay & Activate Now',
+          `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?preview=${orderId}`
+        );
         sendSystemEmail({
           to: order.email,
           subject: `💰 Extra Requirement Charge Added: Order #${orderId}`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
-              <h2 style="color: #10b981;">Extra Requirement Added</h2>
-              <p>An extra charge has been tagged to your order <strong>Order #${orderId}</strong> for additional requests not in the initial brief.</p>
-              <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #10b981; margin: 20px 0;">
-                <strong>Requirement:</strong> ${newAddon.name}<br/><br/>
-                <strong>Price Tagged:</strong> <span style="font-size: 16px; color: #10b981; font-weight: bold;">${formatNaira(price)}</span>
-              </div>
-              <p>You can pay for this addon from your client dashboard wallet or via debit/credit card to authorize implementation.</p>
-              <p style="margin-top: 30px;"><a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" style="background-color: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Pay & Activate Now</a></p>
-            </div>
-          `,
+          html: customHtml,
           orderId: orderId,
         }).catch(err => console.warn('Notification email failed:', err));
       } catch (emailErr) {

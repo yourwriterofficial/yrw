@@ -38,19 +38,22 @@ export async function POST(request: Request) {
       
       const clientName = profile?.full_name || 'Client';
 
+      const { emailShell } = await import('@/lib/emailTemplates');
+      const adminHtml = emailShell(
+        `<h2>New Support Message</h2>
+         <p>You have received a new support chat from <strong>${clientName}</strong>:</p>
+         <blockquote>"${messageText}"</blockquote>`,
+        'Reply in Admin Dashboard',
+        `${process.env.NEXT_PUBLIC_BASE_URL}/admin/chat?open=${conversationId}`
+      );
+
       await notifyAdmins({
         title: `Support Chat from ${clientName}`,
         message: messageText,
         type: 'admin_message',
         link: `/admin/chat?open=${conversationId}`,
         emailSubject: `[SUPPORT] New message from ${clientName}`,
-        emailHtml: `
-          <h3>New message from ${clientName}</h3>
-          <p>Topic: <em>Support Chat Queue</em></p>
-          <p>Message: <strong>${messageText}</strong></p>
-          <hr />
-          <p><a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin/chat?open=${conversationId}">Reply in Admin Dashboard</a></p>
-        `,
+        emailHtml: adminHtml,
       });
     } else {
       // 2. Admin sent a message -> notify the client

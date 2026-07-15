@@ -77,22 +77,25 @@ export async function POST(request: Request) {
     // 6. Send email notification to Client
     try {
       const { sendSystemEmail } = await import('@/lib/emailService');
+      const { emailShell } = await import('@/lib/emailTemplates');
       const formatNaira = (amount: number): string => '₦' + Math.round(amount).toLocaleString('en-NG');
+      
+      const customHtml = emailShell(
+        `<h2 style="color: #10b981;">Custom Add-on Approved</h2>
+         <p>Your requested extra requirement for <strong>Order #${orderId}</strong> has been approved and quoted.</p>
+         <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #10b981; margin: 20px 0;">
+           <strong>Requirement:</strong> ${payload.extra_addons[addonIndex].name}<br/>
+           <strong>Quote Amount:</strong> <span style="font-size: 16px; color: #10b981; font-weight: bold;">${formatNaira(price)}</span>
+         </div>
+         <p>You can clear this payment from your client dashboard using your wallet balance or a debit/credit card to activate this feature.</p>`,
+        'Pay & Activate Now',
+        `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?preview=${orderId}`
+      );
+
       await sendSystemEmail({
         to: order.email,
         subject: `💰 Price Quoted for Custom Add-on: Order #${orderId}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
-            <h2 style="color: #10b981;">Custom Add-on Approved</h2>
-            <p>Your requested extra requirement for <strong>Order #${orderId}</strong> has been approved and quoted.</p>
-            <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #10b981; margin: 20px 0;">
-              <strong>Requirement:</strong> ${payload.extra_addons[addonIndex].name}<br/><br/>
-              <strong>Quote Amount:</strong> <span style="font-size: 16px; color: #10b981; font-weight: bold;">${formatNaira(price)}</span>
-            </div>
-            <p>You can clear this payment from your client dashboard using your wallet balance or a debit/credit card to activate this feature.</p>
-            <p style="margin-top: 30px;"><a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" style="background-color: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Pay & Activate Now</a></p>
-          </div>
-        `,
+        html: customHtml,
         orderId: orderId,
       });
     } catch (emailErr) {

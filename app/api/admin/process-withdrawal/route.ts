@@ -57,6 +57,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: updErr.message }, { status: 500 });
     }
 
+    // Notify client of approval/rejection
+    try {
+      const { notifyUser } = await import('@/lib/notify');
+      const { emailShell } = await import('@/lib/emailTemplates');
+      const { data: userProfile } = await admin
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', withdrawal.user_id)
+        .single();
+      
+      if (userProfile) {
+        const clientHtml = emailShell(
+          `<h2>Affiliate Withdrawal Request ${status === 'approved' ? 'Approved' : 'Rejected'}</h2>
+           <p>Hello ${userProfile.full_name || 'Partner'},</p>
+           <p>Your affiliate withdrawal request for <strong>₦${withdrawal.amount.toLocaleString()}</strong> has been <strong>${status}</strong>.</p>
+           ${status === 'rejected' ? '<p>The requested amount has been fully refunded back to your wallet balance.</p>' : '<p>The funds will be transferred to your nominated bank account shortly.</p>'}`,
+          'Go to Wallet Ledger',
+          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/dashboard/client?tab=wallet`
+        );
+
+        await notifyUser({
+          userId: withdrawal.user_id,
+          title: `Withdrawal ${status === 'approved' ? 'Approved' : 'Rejected'}`,
+          message: `Your affiliate payout of ₦${withdrawal.amount.toLocaleString()} was ${status}.`,
+          type: 'payment',
+          link: '/dashboard/client?tab=wallet',
+          emailHtml: clientHtml,
+          emailSubject: `Affiliate Payout Request ${status === 'approved' ? 'Approved' : 'Rejected'}`,
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to notify client of withdrawal processing:', e);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Process withdrawal error:', error);

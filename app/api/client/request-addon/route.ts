@@ -92,18 +92,18 @@ export async function POST(request: Request) {
 
     // 5. Notify Admins
     try {
-      const adminTemplateHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
-          <h2 style="color: #8b5cf6;">New Add-on Requested</h2>
-          <p>A client has requested a custom extra requirement for <strong>Order #${orderId}</strong>.</p>
-          <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #8b5cf6; margin: 20px 0;">
-            <strong>Requirement:</strong><br/>
-            ${sanitizedAddonName}
-          </div>
-          <p>Please log in to the Admin Dashboard to review this request and set the pricing quote.</p>
-          <p style="margin-top: 30px;"><a href="${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/admin/orders" style="background-color: #8b5cf6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review Request</a></p>
-        </div>
-      `;
+      const { emailShell } = await import('@/lib/emailTemplates');
+      const adminTemplateHtml = emailShell(
+        `<h2 style="color: #8b5cf6;">New Add-on Requested</h2>
+         <p>A client has requested a custom extra requirement for <strong>Order #${orderId}</strong>.</p>
+         <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #8b5cf6; margin: 20px 0;">
+           <strong>Requirement:</strong><br/>
+           ${sanitizedAddonName}
+         </div>
+         <p>Please log in to the Admin Dashboard to review this request and set the pricing quote.</p>`,
+        'Review Request',
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/admin/orders?open=${orderId}`
+      );
 
       await notifyAdmins({
         title: `Addon Requested: #${orderId}`,

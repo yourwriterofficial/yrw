@@ -17,6 +17,9 @@ export async function POST(request: Request) {
     const users = await listAllAuthUsers(guard.admin);
     const match = users.find((u) => u.email.toLowerCase() === String(to).toLowerCase());
 
+    const { emailShell } = await import('@/lib/emailTemplates');
+    const wrappedHtml = emailShell(html);
+
     if (match) {
       await notifyUser({
         userId: match.id,
@@ -24,11 +27,11 @@ export async function POST(request: Request) {
         message: 'You have a new message from YourResearchWriter — tap to view.',
         type: 'admin_message',
         isAdminSent: true,
-        emailHtml: html,
+        emailHtml: wrappedHtml,
         emailSubject: subject,
       });
     } else {
-      await sendSystemEmail({ to, subject, html });
+      await sendSystemEmail({ to, subject, html: wrappedHtml });
     }
 
     return NextResponse.json({ success: true });

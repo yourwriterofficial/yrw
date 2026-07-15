@@ -124,43 +124,48 @@ export async function POST(request: Request) {
       const emailText = `Your payment for addon "${addon.name}" (₦${price.toLocaleString()}) on Order #${orderId} has been confirmed.`;
       const title = `Addon Paid: ${addon.name}`;
       
+      const { emailShell } = await import('@/lib/emailTemplates');
+
+      const clientHtml = emailShell(
+        `<h2 style="color: #10b981;">Addon Payment Confirmed</h2>
+         <p>Your payment for the custom requirement on <strong>Order #${orderId}</strong> has been successfully processed.</p>
+         <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #10b981; margin: 20px 0;">
+           <strong>Requirement:</strong> ${addon.name}<br/>
+           <strong>Amount Paid:</strong> ₦${price.toLocaleString()}
+         </div>
+         <p>You can view your order dashboard for further updates.</p>`,
+        'View Order Dashboard',
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/dashboard/client?preview=${orderId}`
+      );
+
       await notifyUser({
         userId: order.client_id,
         title,
         message: emailText,
         type: 'payment',
         link: `/dashboard/client?preview=${orderId}`,
-        emailHtml: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
-            <h2 style="color: #10b981;">Addon Payment Confirmed</h2>
-            <p>Your payment for the custom requirement on <strong>Order #${orderId}</strong> has been successfully processed.</p>
-            <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #10b981; margin: 20px 0;">
-              <strong>Requirement:</strong> ${addon.name}<br/>
-              <strong>Amount Paid:</strong> ₦${price.toLocaleString()}
-            </div>
-            <p>You can view your order dashboard for further updates.</p>
-          </div>
-        `,
+        emailHtml: clientHtml,
         emailSubject: `[PAID] Addon Confirmed: ${addon.name} - Order #${orderId}`,
       }).catch(e => console.warn('Client addon payment notification failed', e));
+
+      const adminHtml = emailShell(
+        `<h2 style="color: #8b5cf6;">Addon Payment Confirmed</h2>
+         <p>The client paid for custom addon <strong>${addon.name}</strong> on <strong>Order #${orderId}</strong>.</p>
+         <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #8b5cf6; margin: 20px 0;">
+           <strong>Client Email:</strong> ${order.email}<br/>
+           <strong>Addon:</strong> ${addon.name}<br/>
+           <strong>Amount Paid:</strong> ₦${price.toLocaleString()}
+         </div>`,
+        'View Order in Admin',
+        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/admin/orders?open=${orderId}`
+      );
 
       await notifyAdmins({
         title: `Addon Paid: Order #${orderId}`,
         message: `${order.email} paid ₦${price.toLocaleString()} for addon "${addon.name}" on order #${orderId}.`,
         type: 'payment',
         link: `/admin/orders?open=${orderId}`,
-        emailHtml: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
-            <h2 style="color: #8b5cf6;">Addon Payment Confirmed</h2>
-            <p>The client paid for custom addon <strong>${addon.name}</strong> on <strong>Order #${orderId}</strong>.</p>
-            <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #8b5cf6; margin: 20px 0;">
-              <strong>Client Email:</strong> ${order.email}<br/>
-              <strong>Addon:</strong> ${addon.name}<br/>
-              <strong>Amount Paid:</strong> ₦${price.toLocaleString()}
-            </div>
-            <p><a href="${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/admin/orders" style="background-color: #8b5cf6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Order</a></p>
-          </div>
-        `,
+        emailHtml: adminHtml,
         emailSubject: `[PAID] Addon: ${addon.name} - Order #${orderId}`,
       }).catch(e => console.warn('Admin addon payment notification failed', e));
     }
