@@ -191,17 +191,20 @@ export default function AdminProjectsPage() {
     });
     if (error) { setSaving(false); return showToast(error.message, 'error'); }
 
-    // Bulk-update all project_topics when saving level prices or page counts
-    if (key === 'level_prices') {
-      const priceMap = value as Record<string, number>;
-      for (const [lvl, price] of Object.entries(priceMap)) {
-        await supabase.from('project_topics').update({ price: Number(price), updated_at: new Date().toISOString() }).eq('level', lvl);
-      }
-    }
-    if (key === 'level_page_counts') {
-      const pageMap = value as Record<string, number>;
-      for (const [lvl, pages] of Object.entries(pageMap)) {
-        await supabase.from('project_topics').update({ pages: Number(pages), updated_at: new Date().toISOString() }).eq('level', lvl);
+    // Bulk-update all project_topics when saving level prices or page counts via server-side API
+    if (key === 'level_prices' || key === 'level_page_counts') {
+      const res = await fetch('/api/admin/bulk-update-topics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: key === 'level_prices' ? 'prices' : 'pages',
+          mapping: value
+        })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setSaving(false);
+        return showToast(data.error || 'Failed to update topic values.', 'error');
       }
     }
 
