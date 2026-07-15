@@ -35,7 +35,7 @@ type Addon = {
 };
 
 const BLANK: Topic = {
-  title: '', department: '', description: '', pages: 70, chapters: '1-5',
+  title: '', department: '', description: '', pages: 50, chapters: '1-5',
   format: 'MS Word', year: 2026, level: 'BSc', price: 3999, is_active: true,
 };
 const BLANK_ADDON: Addon = {
@@ -57,6 +57,7 @@ export default function AdminProjectsPage() {
 
   // Settings State variables
   const [levelPrices, setLevelPrices] = useState<Record<string, number>>({ BSc: 3999, MSc: 4500, PhD: 10000 });
+  const [levelPageCounts, setLevelPageCounts] = useState<Record<string, number>>({ BSc: 50, MSc: 50, PhD: 50 });
   const [deptPrices, setDeptPrices] = useState<Record<string, number>>({});
   const [pageSettings, setPageSettings] = useState<any>({
     hero_title: '', hero_description: '', disclaimer_text: '', checkout_terms: '', delivery_text: '⚡ Delivered within 4 hours', show_random: true, features: []
@@ -84,14 +85,17 @@ export default function AdminProjectsPage() {
     const { data: settingsData } = await supabase.from('project_settings').select('*');
     if (settingsData) {
       let lp = { BSc: 3999, MSc: 4500, PhD: 10000 };
+      let lpc = { BSc: 50, MSc: 50, PhD: 50 };
       let dp = {};
       let ps: any = { hero_title: '', hero_description: '', disclaimer_text: '', checkout_terms: '', delivery_text: '⚡ Delivered within 4 hours', show_random: true, features: [] };
       settingsData.forEach(s => {
         if (s.key === 'level_prices') lp = s.value;
+        if (s.key === 'level_page_counts') lpc = s.value;
         if (s.key === 'department_prices') dp = s.value;
         if (s.key === 'page_settings') ps = { ...ps, ...s.value };
       });
       setLevelPrices(lp);
+      setLevelPageCounts(lpc);
       setDeptPrices(dp);
       setPageSettings(ps);
     }
@@ -185,9 +189,25 @@ export default function AdminProjectsPage() {
       value,
       updated_at: new Date().toISOString()
     });
+    if (error) { setSaving(false); return showToast(error.message, 'error'); }
+
+    // Bulk-update all project_topics when saving level prices or page counts
+    if (key === 'level_prices') {
+      const priceMap = value as Record<string, number>;
+      for (const [lvl, price] of Object.entries(priceMap)) {
+        await supabase.from('project_topics').update({ price: Number(price), updated_at: new Date().toISOString() }).eq('level', lvl);
+      }
+    }
+    if (key === 'level_page_counts') {
+      const pageMap = value as Record<string, number>;
+      for (const [lvl, pages] of Object.entries(pageMap)) {
+        await supabase.from('project_topics').update({ pages: Number(pages), updated_at: new Date().toISOString() }).eq('level', lvl);
+      }
+    }
+
     setSaving(false);
-    if (error) return showToast(error.message, 'error');
     showToast('Settings saved successfully', 'success');
+    load(search);
   };
 
   if (loading) return <LoadingScreen label="Loading project topics..." accent="emerald" />;
@@ -327,12 +347,48 @@ export default function AdminProjectsPage() {
                 </div>
               ))}
             </div>
+            <p className="text-[10px] text-secondary mt-3 flex items-center gap-1">
+              <lucide.Info className="w-3.5 h-3.5" /> Saving will update <strong>all existing topics</strong> to match these level prices.
+            </p>
             <button
               onClick={() => saveSettings('level_prices', levelPrices)}
               disabled={saving}
-              className="mt-4 bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition disabled:opacity-50"
+              className="mt-2 bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition disabled:opacity-50"
             >
-              Save Level Prices
+              {saving ? 'Applying to all topics…' : 'Save Level Prices'}
+            </button>
+          </div>
+
+          {/* LEVEL PAGE COUNTS */}
+          <div className="bg-secondary border border-theme rounded-2xl p-6">
+            <h2 className="text-sm font-black uppercase text-emerald-400 mb-4 flex items-center gap-2">
+              <lucide.FileText className="w-5 h-5" /> Global Level Page Counts
+            </h2>
+            <p className="text-xs text-secondary mb-4">
+              Set the default number of pages for project materials by academic level.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {Object.keys(levelPageCounts).map(lvl => (
+                <div key={lvl}>
+                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">{lvl} Pages</label>
+                  <input
+                    type="number"
+                    value={levelPageCounts[lvl]}
+                    onChange={e => setLevelPageCounts(prev => ({ ...prev, [lvl]: Number(e.target.value) || 0 }))}
+                    className="w-full bg-primary border border-theme rounded-xl p-3 text-sm text-primary font-mono"
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-secondary mt-3 flex items-center gap-1">
+              <lucide.Info className="w-3.5 h-3.5" /> Saving will update <strong>all existing topics</strong> to match these page counts.
+            </p>
+            <button
+              onClick={() => saveSettings('level_page_counts', levelPageCounts)}
+              disabled={saving}
+              className="mt-2 bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition disabled:opacity-50"
+            >
+              {saving ? 'Applying to all topics…' : 'Save Level Page Counts'}
             </button>
           </div>
 
@@ -653,7 +709,7 @@ export default function AdminProjectsPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Department *</label><input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={editing.department} onChange={e => setEditing({ ...editing, department: e.target.value })} placeholder="e.g. Computer Science" /></div>
                 <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Level</label>
-                  <select className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={editing.level} onChange={e => { const lv = e.target.value; setEditing({ ...editing, level: lv, price: levelPrices[lv] || editing.price }); }}>
+                  <select className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={editing.level} onChange={e => { const lv = e.target.value; setEditing({ ...editing, level: lv, price: levelPrices[lv] || editing.price, pages: levelPageCounts[lv] || editing.pages }); }}>
                     <option value="BSc">BSc / HND</option><option value="MSc">MSc / PGD</option><option value="PhD">PhD</option>
                   </select>
                 </div>
