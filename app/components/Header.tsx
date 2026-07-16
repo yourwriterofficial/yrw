@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { clearImpersonation } from '@/lib/impersonate';
 import ThemeToggle from './ThemeToggle';
+import ImpersonationBanner from './ImpersonationBanner';
 import { Menu, X, ArrowRight } from 'lucide-react';
 import * as lucide from 'lucide-react';
 
@@ -72,8 +74,7 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
 
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('impersonate_user_id');
-      localStorage.removeItem('impersonate_user_email');
+      clearImpersonation();
       sessionStorage.removeItem('yrw_user');
       sessionStorage.removeItem('yrw_profile');
       sessionStorage.removeItem('yrw_wallet');
@@ -84,6 +85,8 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
   };
 
   return (
+    <>
+    <ImpersonationBanner />
     <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-200 pt-safe ${scrolled ? 'bg-primary/90 backdrop-blur-md border-b border-theme' : 'bg-transparent border-b border-transparent'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
         {/* Logo */}
@@ -297,5 +300,6 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
         </div>
       )}
     </header>
+    </>
   );
 }

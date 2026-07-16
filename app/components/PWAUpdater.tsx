@@ -26,8 +26,7 @@ export default function PWAUpdater() {
             name &&
             !name.startsWith('sb-') && 
             !name.startsWith('supabase-') && 
-            name !== 'impersonate_user_id' && 
-            name !== 'impersonate_user_email'
+            !name.startsWith('impersonate_')
           ) {
             document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
             document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
@@ -49,8 +48,7 @@ export default function PWAUpdater() {
             !key.startsWith('sb-') && 
             !key.startsWith('supabase-') && 
             key !== 'theme' && 
-            key !== 'impersonate_user_id' && 
-            key !== 'impersonate_user_email'
+            !key.startsWith('impersonate_')
           ) {
             localStorage.removeItem(key);
           }

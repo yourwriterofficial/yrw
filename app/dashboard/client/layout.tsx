@@ -7,7 +7,7 @@ import Link from 'next/link';
 import * as lucide from 'lucide-react';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import NotificationBell from '@/app/components/ui/NotificationBell';
-import { getEffectiveUser } from '@/lib/impersonate';
+import { getEffectiveUser, clearImpersonation } from '@/lib/impersonate';
 
 interface NavItem {
   key: string;
@@ -157,8 +157,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('impersonate_user_id');
-      localStorage.removeItem('impersonate_user_email');
+      clearImpersonation();
       sessionStorage.removeItem('yrw_user');
       sessionStorage.removeItem('yrw_profile');
       sessionStorage.removeItem('yrw_wallet');

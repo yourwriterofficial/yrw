@@ -476,11 +476,12 @@ export default function ProjectsPage() {
   // Secure Document Preview States & Effects
   const [userEmail, setUserEmail] = useState('');
   const [isWindowBlurred, setIsWindowBlurred] = useState(false);
-  const [previewTab, setPreviewTab] = useState<'title' | 'abstract' | 'contents' | 'chapter1' | 'references'>('title');
+  const [previewPage, setPreviewPage] = useState(1);
+  const [previewZoom, setPreviewZoom] = useState(100);
 
   useEffect(() => {
     if (!preview) return;
-    setPreviewTab('title');
+    setPreviewPage(1);
     setIsWindowBlurred(false);
 
     // Prevent copying
@@ -562,7 +563,12 @@ Historically, Nigeria has faced unique challenges related to infrastructure, pol
 
 Furthermore, there is a lack of localized research that addresses the specific cultural, political, and economic nuances of implementing ${cleanTitle} in Nigeria. This gap in knowledge creates a significant problem for policy makers and administrators who require evidence-based data to make informed decisions. This study is therefore designed to address this problem by conducting a detailed analysis of ${cleanTitle}.`;
 
-    return { abstract, background, problem };
+    const words = cleanTitle.split(' ').filter(w => w.length > 3);
+    const varA = words.slice(0, Math.min(3, words.length)).join(' ') || cleanTitle;
+    const varB = 'Organizational Performance and Institutional Development';
+    const caseStudy = `selected ${dept} organizations in Lagos State, Nigeria`;
+
+    return { abstract, background, problem, varA, varB, caseStudy };
   };
 
   // Writer match simulation states
@@ -1325,236 +1331,395 @@ Furthermore, there is a lack of localized research that addresses the specific c
 
       {/* PREVIEW MODAL */}
 
-      {preview && (
-        <div className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setPreview(null)}>
-          <div className="bg-card border border-theme rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="p-4 border-b border-theme/50 flex justify-between items-center gap-4 bg-secondary/20">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">{preview.department}</span>
-                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(preview.level)}`}>{preview.level}</span>
-                <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1.5 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10">
-                  <lucide.Lock className="w-3.5 h-3.5" /> SECURE PREVIEW (ANTI-COPY/SCREENSHOT ACTIVE)
-                </span>
-              </div>
-              <button onClick={() => setPreview(null)} className="text-secondary hover:text-primary p-1 bg-white/5 hover:bg-white/10 rounded-lg transition"><lucide.X className="w-5 h-5" /></button>
-            </div>
-
-            {/* Document Viewer Body */}
-            <div className="p-6 overflow-y-auto flex-1 bg-secondary/30">
-              <h2 className="text-base font-black text-primary leading-snug mb-4">{preview.title}</h2>
-              
-              <div className="flex flex-col lg:flex-row gap-6 items-stretch">
-                {/* Document Navigation Tabs */}
-                <div className="flex lg:flex-col overflow-x-auto lg:overflow-x-visible shrink-0 gap-2 pb-3 lg:pb-0 border-b lg:border-b-0 lg:border-r border-theme/30 lg:pr-4 lg:w-48">
-                  <button onClick={() => setPreviewTab('title')} className={`px-4 py-2.5 rounded-xl text-xs font-bold text-left whitespace-nowrap transition flex items-center gap-2 ${previewTab === 'title' ? 'bg-emerald-500 text-black' : 'bg-card text-primary border border-theme hover:bg-white/5'}`}>
-                    <lucide.FileText className="w-3.5 h-3.5" /> Title Page
-                  </button>
-                  <button onClick={() => setPreviewTab('abstract')} className={`px-4 py-2.5 rounded-xl text-xs font-bold text-left whitespace-nowrap transition flex items-center gap-2 ${previewTab === 'abstract' ? 'bg-emerald-500 text-black' : 'bg-card text-primary border border-theme hover:bg-white/5'}`}>
-                    <lucide.Bookmark className="w-3.5 h-3.5" /> Abstract
-                  </button>
-                  <button onClick={() => setPreviewTab('contents')} className={`px-4 py-2.5 rounded-xl text-xs font-bold text-left whitespace-nowrap transition flex items-center gap-2 ${previewTab === 'contents' ? 'bg-emerald-500 text-black' : 'bg-card text-primary border border-theme hover:bg-white/5'}`}>
-                    <lucide.List className="w-3.5 h-3.5" /> Table of Contents
-                  </button>
-                  <button onClick={() => setPreviewTab('chapter1')} className={`px-4 py-2.5 rounded-xl text-xs font-bold text-left whitespace-nowrap transition flex items-center gap-2 ${previewTab === 'chapter1' ? 'bg-emerald-500 text-black' : 'bg-card text-primary border border-theme hover:bg-white/5'}`}>
-                    <lucide.BookOpen className="w-3.5 h-3.5" /> Chapter One
-                  </button>
-                  <button onClick={() => setPreviewTab('references')} className={`px-4 py-2.5 rounded-xl text-xs font-bold text-left whitespace-nowrap transition flex items-center gap-2 ${previewTab === 'references' ? 'bg-emerald-500 text-black' : 'bg-card text-primary border border-theme hover:bg-white/5'}`}>
-                    <lucide.Link2 className="w-3.5 h-3.5" /> References (APA)
-                  </button>
+      {preview && (() => {
+        const previewData = generateProjectPreview(preview.title, preview.department, preview.level);
+        const cleanTitle = getCleanTitle(preview.title);
+        
+        return (
+          <div className="fixed inset-0 z-[200] bg-black/85 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setPreview(null)}>
+            <div className="bg-card border border-theme rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+              {/* Header */}
+              <div className="p-4 border-b border-theme/50 flex justify-between items-center gap-4 bg-secondary/20">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">{preview.department}</span>
+                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(preview.level)}`}>{preview.level}</span>
+                  <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1.5 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10">
+                    <lucide.Lock className="w-3.5 h-3.5" /> SECURE DOCUMENT VIEWER (PREVIEW: 7 PAGES OPEN, 43 PAGES LOCKED)
+                  </span>
                 </div>
+                
+                <div className="flex items-center gap-3">
+                  {/* Zoom Controls */}
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 border border-theme rounded-lg text-[10px] font-mono">
+                    <button onClick={() => setPreviewZoom(z => Math.max(80, z - 10))} className="w-5 h-5 rounded hover:bg-white/10 font-black text-primary">-</button>
+                    <span className="text-primary min-w-[28px] text-center">{previewZoom}%</span>
+                    <button onClick={() => setPreviewZoom(z => Math.min(130, z + 10))} className="w-5 h-5 rounded hover:bg-white/10 font-black text-primary">+</button>
+                  </div>
+                  <button onClick={() => setPreview(null)} className="text-secondary hover:text-primary p-1 bg-white/5 hover:bg-white/10 rounded-lg transition"><lucide.X className="w-5 h-5" /></button>
+                </div>
+              </div>
 
-                {/* Page Canvas (Papersheet View) */}
-                <div 
-                  className="flex-1 min-w-0 bg-white text-zinc-950 border border-zinc-200 p-6 md:p-12 shadow-inner relative rounded-xl select-none overflow-y-auto max-h-[50vh] lg:max-h-[60vh] min-h-[45vh]" 
-                  style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}
-                  onContextMenu={e => e.preventDefault()}
-                >
-                  {/* Dynamic Watermark Overlay */}
-                  <div className="absolute inset-0 pointer-events-none select-none overflow-hidden opacity-[0.03] z-10 flex flex-wrap gap-x-12 gap-y-16 rotate-[-25deg] scale-125 justify-center items-center">
-                    {Array.from({ length: 30 }).map((_, i) => (
-                      <span key={i} className="text-[10px] font-black tracking-widest text-black font-mono uppercase whitespace-nowrap">
-                        {userEmail || 'GUEST_UNAUTHORIZED'} • DO NOT COPY • {new Date().toLocaleDateString()}
-                      </span>
+              {/* Scrollable Document Container */}
+              <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-zinc-900/50 flex flex-col gap-6 select-none"
+                   style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}
+                   onContextMenu={e => e.preventDefault()}
+              >
+                {/* Focus Lost Lock Shield */}
+                {isWindowBlurred && (
+                  <div className="fixed inset-0 z-[250] bg-black/90 backdrop-blur-[8px] flex flex-col items-center justify-center p-6 text-center select-none cursor-pointer" onClick={() => setIsWindowBlurred(false)}>
+                    <lucide.Lock className="w-12 h-12 text-emerald-500 mb-3 animate-bounce" />
+                    <h3 className="text-white font-black text-base uppercase tracking-wider">Preview Hidden for Security</h3>
+                    <p className="text-zinc-400 text-xs mt-1 max-w-sm">Window focus lost. Hovering screen record/screenshot utility detected or tab switched. Click here to resume.</p>
+                  </div>
+                )}
+
+                {/* Cover Page (Page 1) */}
+                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between items-center text-center select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
+                  {/* Confidential watermark background */}
+                  <div className="absolute inset-0 pointer-events-none opacity-[0.02] flex flex-wrap gap-12 rotate-[-25deg] justify-center items-center scale-110 z-0">
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <span key={i} className="text-sm font-black text-black uppercase tracking-widest font-mono">SECURE PREVIEW • DO NOT COPY</span>
                     ))}
                   </div>
 
-                  {/* Window Focus Blur Shield */}
-                  {isWindowBlurred && (
-                    <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-[6px] flex flex-col items-center justify-center p-6 text-center select-none cursor-pointer" onClick={() => setIsWindowBlurred(false)}>
-                      <lucide.Lock className="w-12 h-12 text-emerald-600 mb-3 animate-bounce" />
-                      <h3 className="text-zinc-950 font-black text-sm uppercase tracking-wider">Preview Hidden for Security</h3>
-                      <p className="text-zinc-600 text-xs mt-1 max-w-xs">Window lost focus (anti-screenshot active). Click here to restore the preview.</p>
+                  <div className="z-10 w-full space-y-12">
+                    <div className="text-xs font-black tracking-wider text-zinc-400 uppercase">RESEARCH WORK ARCHIVE</div>
+                    <div className="text-sm md:text-base font-black tracking-wide leading-relaxed font-serif uppercase max-w-lg mx-auto border-y border-zinc-200 py-6">
+                      {cleanTitle}
                     </div>
-                  )}
+                  </div>
 
-                  {/* Document Pages */}
-                  {previewTab === 'title' && (
-                    <div className="text-center space-y-10 py-6 text-zinc-900">
-                      <div className="text-sm font-black tracking-wide leading-relaxed font-serif uppercase">
-                        {getCleanTitle(preview.title)}
-                      </div>
-                      <div className="text-xs uppercase font-serif">
-                        BY
-                        <br /><br />
-                        <span className="font-bold underline text-xs">CONFIDENTIAL STUDENT</span>
-                        <br />
-                        (MATRIC NO: RW/2022/NIG-042)
-                      </div>
-                      <div className="text-xs leading-relaxed max-w-md mx-auto font-serif">
-                        A RESEARCH PROJECT SUBMITTED TO THE DEPARTMENT OF {preview.department.toUpperCase()}, 
-                        FACULTY OF {getFaculty(preview.department).toUpperCase()}, IN PARTIAL FULFILLMENT OF THE REQUIREMENTS 
-                        FOR THE AWARD OF THE DEGREE OF {preview.level === 'PhD' ? 'DOCTOR OF PHILOSOPHY (Ph.D)' : preview.level === 'MSc' ? 'MASTER OF SCIENCE (M.Sc)' : 'BACHELOR OF SCIENCE (B.Sc)'} IN {preview.department.toUpperCase()}.
-                      </div>
-                      <div className="text-xs uppercase tracking-wider font-serif">
-                        NIGERIAN UNIVERSITY ACADEMIC DEPOSIT SYSTEM
-                        <br /><br />
-                        YEAR: {preview.year || new Date().getFullYear()}
-                      </div>
-                    </div>
-                  )}
+                  <div className="z-10 space-y-2 uppercase font-serif text-xs my-8">
+                    <span>BY</span>
+                    <br /><br />
+                    <span className="font-bold underline text-xs">CONFIDENTIAL STUDENT</span>
+                    <br />
+                    <span className="text-[10px] text-zinc-500 font-mono">(MATRIC NO: RW/2022/NIG-042)</span>
+                  </div>
 
-                  {previewTab === 'abstract' && (
-                    <div className="text-zinc-900 text-justify font-serif space-y-4">
-                      <h3 className="text-center font-bold text-sm uppercase underline mb-4">ABSTRACT</h3>
-                      <p className="text-xs leading-relaxed text-indent-8 font-serif" style={{ textIndent: '2rem' }}>
-                        {generateProjectPreview(preview.title, preview.department, preview.level).abstract}
-                      </p>
-                      <p className="text-xs font-bold mt-4 font-serif">
-                        Keywords: <span className="font-normal italic">{preview.department}, Nigerian Development, Implementation, Performance Evaluation, {preview.level} Research.</span>
-                      </p>
-                    </div>
-                  )}
+                  <div className="z-10 text-[10px] md:text-xs leading-relaxed max-w-md mx-auto font-serif text-zinc-600 space-y-4">
+                    <p>
+                      A RESEARCH PROJECT SUBMITTED TO THE DEPARTMENT OF {preview.department.toUpperCase()}, 
+                      FACULTY OF {getFaculty(preview.department).toUpperCase()}, IN PARTIAL FULFILLMENT OF THE REQUIREMENTS 
+                      FOR THE AWARD OF THE DEGREE OF {preview.level === 'PhD' ? 'DOCTOR OF PHILOSOPHY (Ph.D)' : preview.level === 'MSc' ? 'MASTER OF SCIENCE (M.Sc)' : 'BACHELOR OF SCIENCE (B.Sc)'} IN {preview.department.toUpperCase()}.
+                    </p>
+                  </div>
 
-                  {previewTab === 'contents' && (
-                    <div className="text-zinc-900 font-serif space-y-3 text-xs">
-                      <h3 className="text-center font-bold text-sm uppercase underline mb-4">TABLE OF CONTENTS</h3>
-                      <div className="space-y-1">
-                        <div className="flex justify-between font-bold"><span>Title Page</span><span>i</span></div>
-                        <div className="flex justify-between font-bold"><span>Certification / Approval Page</span><span>ii</span></div>
-                        <div className="flex justify-between font-bold"><span>Dedication</span><span>iii</span></div>
-                        <div className="flex justify-between font-bold"><span>Acknowledgements</span><span>iv</span></div>
-                        <div className="flex justify-between font-bold"><span>Abstract</span><span>v</span></div>
-                        <div className="flex justify-between font-bold"><span>Table of Contents</span><span>vi</span></div>
-                        
-                        <div className="flex justify-between font-bold mt-2"><span>CHAPTER ONE: INTRODUCTION</span><span>1</span></div>
-                        <div className="flex justify-between pl-4"><span>1.1 Background of the Study</span><span>1</span></div>
-                        <div className="flex justify-between pl-4"><span>1.2 Statement of the Problem</span><span>4</span></div>
-                        <div className="flex justify-between pl-4"><span>1.3 Objectives of the Study</span><span>5</span></div>
-                        <div className="flex justify-between pl-4"><span>1.4 Research Questions</span><span>6</span></div>
-                        <div className="flex justify-between pl-4"><span>1.5 Research Hypotheses</span><span>7</span></div>
-                        <div className="flex justify-between pl-4"><span>1.6 Significance of the Study</span><span>8</span></div>
-                        <div className="flex justify-between pl-4"><span>1.7 Scope and Delimitation of the Study</span><span>9</span></div>
-                        <div className="flex justify-between pl-4"><span>1.8 Operational Definition of Terms</span><span>10</span></div>
-
-                        <div className="flex justify-between font-bold mt-2"><span>CHAPTER TWO: LITERATURE REVIEW</span><span>12</span></div>
-                        <div className="flex justify-between pl-4"><span>2.1 Conceptual Framework</span><span>12</span></div>
-                        <div className="flex justify-between pl-4"><span>2.2 Theoretical Framework</span><span>22</span></div>
-                        <div className="flex justify-between pl-4"><span>2.3 Empirical Literature Review</span><span>28</span></div>
-
-                        <div className="flex justify-between font-bold mt-2"><span>CHAPTER THREE: RESEARCH METHODOLOGY</span><span>35</span></div>
-                        <div className="flex justify-between pl-4"><span>3.1 Research Design</span><span>35</span></div>
-                        <div className="flex justify-between pl-4"><span>3.2 Population of the Study</span><span>36</span></div>
-                        <div className="flex justify-between pl-4"><span>3.3 Sample Size and Sampling Techniques</span><span>37</span></div>
-                        <div className="flex justify-between pl-4"><span>3.4 Instrument for Data Collection</span><span>38</span></div>
-                        <div className="flex justify-between pl-4"><span>3.5 Method of Data Analysis</span><span>40</span></div>
-
-                        <div className="flex justify-between font-bold mt-2"><span>CHAPTER FOUR: DATA ANALYSIS & DISCUSSION</span><span>42</span></div>
-                        <div className="flex justify-between font-bold mt-2"><span>CHAPTER FIVE: SUMMARY, CONCLUSION & RECOMM.</span><span>48</span></div>
-                        <div className="flex justify-between font-bold"><span>REFERENCES (APA Format)</span><span>50</span></div>
-                      </div>
-                    </div>
-                  )}
-
-                  {previewTab === 'chapter1' && (
-                    <div className="text-zinc-900 font-serif space-y-6 text-xs text-justify">
-                      <div className="text-center font-bold">
-                        <h3>CHAPTER ONE</h3>
-                        <h3>INTRODUCTION</h3>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <h4 className="font-bold">1.1 Background of the Study</h4>
-                        <p style={{ textIndent: '2rem' }} className="leading-relaxed">{generateProjectPreview(preview.title, preview.department, preview.level).background}</p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h4 className="font-bold">1.2 Statement of the Problem</h4>
-                        <p style={{ textIndent: '2rem' }} className="leading-relaxed">{generateProjectPreview(preview.title, preview.department, preview.level).problem}</p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h4 className="font-bold">1.3 Objectives of the Study</h4>
-                        <p>The main objective of this study is to examine the implications and impact of {getCleanTitle(preview.title)} in Nigeria. Specifically, the study aims to:</p>
-                        <ul className="list-decimal pl-6 space-y-1">
-                          <li>Assess the current level of implementation and awareness of the subject in Nigeria.</li>
-                          <li>Evaluate the main socio-economic challenges hindering optimal performance.</li>
-                          <li>Determine the statistical relationship between these variables and institutional development metrics.</li>
-                          <li>Offer strategic recommendations to policy makers and academic researchers.</li>
-                        </ul>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h4 className="font-bold">1.4 Research Questions</h4>
-                        <p>To guide this investigation, the following research questions have been formulated:</p>
-                        <ul className="list-disc pl-6 space-y-1">
-                          <li>What is the current level of implementation and awareness of {getCleanTitle(preview.title)} in Nigeria?</li>
-                          <li>What are the primary challenges affecting the optimal integration of these concepts?</li>
-                          <li>Is there any significant relationship between these variables and national development goals?</li>
-                        </ul>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h4 className="font-bold">1.5 Research Hypotheses</h4>
-                        <p className="italic">Hypothesis One:</p>
-                        <p className="pl-4"><strong>H0:</strong> There is no significant relationship between the implementation of {getCleanTitle(preview.title)} and institutional development in Nigeria.</p>
-                        <p className="pl-4"><strong>H1:</strong> There is a significant relationship between the implementation of {getCleanTitle(preview.title)} and institutional development in Nigeria.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {previewTab === 'references' && (
-                    <div className="text-zinc-900 font-serif space-y-4 text-xs">
-                      <h3 className="text-center font-bold text-sm uppercase underline mb-4">REFERENCES</h3>
-                      <div className="space-y-3">
-                        <p className="pl-6 -indent-6 leading-relaxed" style={{ paddingLeft: '1.5rem', textIndent: '-1.5rem' }}>
-                          Adeyemi, A. O. (2024). <em>Modern Perspectives in {preview.department}: A Case Study of Nigeria.</em> Nigerian Academic Press. 12(3), 45-58.
-                        </p>
-                        <p className="pl-6 -indent-6 leading-relaxed" style={{ paddingLeft: '1.5rem', textIndent: '-1.5rem' }}>
-                          Chukwu, E. C., & Bello, M. (2023). <em>Evaluating the Socio-Economic Nuances of {getCleanTitle(preview.title)} in Developing Nations.</em> West African Research Journal of {preview.department}, 8(1), 112-125.
-                        </p>
-                        <p className="pl-6 -indent-6 leading-relaxed" style={{ paddingLeft: '1.5rem', textIndent: '-1.5rem' }}>
-                          Musa, I. D., Alao, F. K., & Johnson, P. S. (2022). <em>Strategic Implementation Frameworks: Bridging the Policy Gap in Nigeria.</em> Journal of Economic & Administrative Studies, 15(4), 89-102.
-                        </p>
-                        <p className="pl-6 -indent-6 leading-relaxed" style={{ paddingLeft: '1.5rem', textIndent: '-1.5rem' }}>
-                          Okonkwo, P. U. (2021). <em>National Development and Academic Standards: A 21st Century Appraisal of Nigerian Research Projects.</em> African University Press. 34(2), 201-215.
-                        </p>
-                        <p className="pl-6 -indent-6 leading-relaxed" style={{ paddingLeft: '1.5rem', textIndent: '-1.5rem' }}>
-                          Williams, R. A., & Babalola, O. (2024). <em>Socio-Technological Challenges of Systemic Frameworks in Sub-Saharan Africa.</em> International Journal of Applied Science & Management, 19(1), 312-327.
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                  <div className="z-10 text-[10px] font-sans text-zinc-400 uppercase tracking-widest border-t border-zinc-100 pt-4 w-full">
+                    YEAR: {preview.year || new Date().getFullYear()}
+                    <div className="text-[9px] text-emerald-600 font-bold mt-1">NIGERIAN UNIVERSITY ACADEMIC DEPOSIT SYSTEM</div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Footer Actions */}
-            <div className="p-4 border-t border-theme/50 flex flex-col md:flex-row justify-between items-center gap-4 bg-secondary/20">
-              <div className="text-left">
-                <span className="block text-[11px] font-bold text-secondary uppercase">Project Scope details</span>
-                <span className="text-xs text-primary font-bold">{preview.pages || 50} pages • Chapters 1-5 complete (MS Word & PDF format)</span>
+                {/* Page 2: Certification Page */}
+                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
+                  <div className="font-serif space-y-6 text-xs text-justify">
+                    <h3 className="text-center font-bold text-sm uppercase underline tracking-wider">CERTIFICATION / APPROVAL</h3>
+                    <p style={{ textIndent: '2rem' }} className="leading-relaxed">
+                      This is to certify that this research project titled <span className="font-bold">"{cleanTitle}"</span> was carried out by <span className="underline">CONFIDENTIAL STUDENT</span> with Matriculation Number <span className="font-mono">RW/2022/NIG-042</span> under our direct supervision in the Department of {preview.department}, Faculty of {getFaculty(preview.department)}.
+                    </p>
+                    <p className="leading-relaxed">
+                      The study has been examined and approved as meeting the requirements for partial fulfillment of the award of the degree of {preview.level === 'PhD' ? 'Doctor of Philosophy (Ph.D)' : preview.level === 'MSc' ? 'Master of Science (M.Sc)' : 'Bachelor of Science (B.Sc)'} in {preview.department}.
+                    </p>
+                    <div className="pt-20 space-y-12">
+                      <div className="flex justify-between items-end">
+                        <div className="border-t border-zinc-400 w-56 text-center pt-2">
+                          <p className="font-bold">Supervisor Signature</p>
+                          <p className="text-[10px] text-zinc-500">Date: ________________</p>
+                        </div>
+                        <div className="border-t border-zinc-400 w-56 text-center pt-2">
+                          <p className="font-bold">Head of Department</p>
+                          <p className="text-[10px] text-zinc-500">Date: ________________</p>
+                        </div>
+                      </div>
+                      <div className="flex justify-center pt-6">
+                        <div className="border-t border-zinc-400 w-56 text-center pt-2">
+                          <p className="font-bold">External Examiner</p>
+                          <p className="text-[10px] text-zinc-500">Date: ________________</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right text-[9px] text-zinc-400 font-mono">Page 2 of 50</div>
+                </div>
+
+                {/* Page 3: Dedication */}
+                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
+                  <div className="font-serif space-y-8 text-xs text-center py-20">
+                    <h3 className="font-bold text-sm uppercase underline tracking-wider">DEDICATION</h3>
+                    <p className="italic leading-loose max-w-md mx-auto">
+                      "This research work is dedicated to Almighty God for His infinite grace, wisdom, protection and strength throughout the period of this study."
+                    </p>
+                    <p className="italic leading-loose max-w-md mx-auto">
+                      "It is also dedicated to my beloved parents, for their relentless financial sacrifices, spiritual prayers, and moral guideposts which laid the foundational pillar of my educational achievements."
+                    </p>
+                  </div>
+                  <div className="text-right text-[9px] text-zinc-400 font-mono">Page 3 of 50</div>
+                </div>
+
+                {/* Page 4: Acknowledgements */}
+                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
+                  <div className="font-serif space-y-6 text-xs text-justify">
+                    <h3 className="text-center font-bold text-sm uppercase underline tracking-wider">ACKNOWLEDGEMENTS</h3>
+                    <p style={{ textIndent: '2rem' }} className="leading-relaxed">
+                      I wish to express my deepest and sincere appreciation to my project supervisor, for devoting their precious time to review, criticize, and guide this research from conceptualization to completion. Their intellectual mentoring will always be cherished.
+                    </p>
+                    <p style={{ textIndent: '2rem' }} className="leading-relaxed">
+                      My gratitude also goes to the Head of Department and all academic lecturers in the Department of {preview.department} for their qualitative lecturing and academic insights throughout my study period.
+                    </p>
+                    <p style={{ textIndent: '2rem' }} className="leading-relaxed">
+                      Finally, I am eternally grateful to my parents and siblings for their unwavering confidence, prayers, financial sponsorships, and emotional support which made this dream a reality. May God bless you all.
+                    </p>
+                  </div>
+                  <div className="text-right text-[9px] text-zinc-400 font-mono">Page 4 of 50</div>
+                </div>
+
+                {/* Page 5: Abstract */}
+                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
+                  <div className="font-serif space-y-6 text-xs text-justify">
+                    <h3 className="text-center font-bold text-sm uppercase underline tracking-wider">ABSTRACT</h3>
+                    <p style={{ textIndent: '2rem' }} className="leading-loose font-serif">
+                      {previewData.abstract}
+                    </p>
+                    <p className="font-bold mt-4 font-serif">
+                      Keywords: <span className="font-normal italic">{preview.department}, Nigerian Development, {previewData.varA}, {previewData.varB}, {preview.level} Research.</span>
+                    </p>
+                  </div>
+                  <div className="text-right text-[9px] text-zinc-400 font-mono">Page 5 of 50</div>
+                </div>
+
+                {/* Page 6: Table of Contents - Blurred & Locked */}
+                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl select-none aspect-[1/1.414] overflow-hidden" style={{ fontSize: `${previewZoom / 100}em` }}>
+                  <div className="font-serif space-y-4 text-xs blur-[6px] select-none pointer-events-none opacity-40">
+                    <h3 className="text-center font-bold text-sm uppercase underline tracking-wider mb-4">TABLE OF CONTENTS</h3>
+                    <div className="space-y-1">
+                      <div className="flex justify-between font-bold"><span>Title Page</span><span>i</span></div>
+                      <div className="flex justify-between font-bold"><span>Certification / Approval Page</span><span>ii</span></div>
+                      <div className="flex justify-between font-bold"><span>Dedication</span><span>iii</span></div>
+                      <div className="flex justify-between font-bold"><span>Acknowledgements</span><span>iv</span></div>
+                      <div className="flex justify-between font-bold"><span>Abstract</span><span>v</span></div>
+                      <div className="flex justify-between font-bold"><span>Table of Contents</span><span>vi</span></div>
+                      
+                      <div className="flex justify-between font-bold mt-2 text-emerald-700"><span>CHAPTER ONE: INTRODUCTION</span><span>1</span></div>
+                      <div className="flex justify-between pl-4 text-zinc-600"><span>1.1 Background of the Study</span><span>1</span></div>
+                      <div className="flex justify-between pl-4 text-zinc-600"><span>1.2 Statement of the Problem</span><span>4</span></div>
+                      <div className="flex justify-between pl-4 text-zinc-600"><span>1.3 Objectives of the Study</span><span>5</span></div>
+                      <div className="flex justify-between pl-4 text-zinc-600"><span>1.4 Research Questions</span><span>6</span></div>
+                      <div className="flex justify-between pl-4 text-zinc-600"><span>1.5 Research Hypotheses</span><span>7</span></div>
+                      
+                      <div className="flex justify-between font-bold mt-2 text-zinc-400"><span>CHAPTER TWO: LITERATURE REVIEW (Locked)</span><span>12</span></div>
+                      <div className="flex justify-between font-bold mt-1 text-zinc-400"><span>CHAPTER THREE: RESEARCH METHODOLOGY (Locked)</span><span>35</span></div>
+                      <div className="flex justify-between font-bold mt-1 text-zinc-400"><span>CHAPTER FOUR: DATA ANALYSIS & DISCUSSION (Locked)</span><span>42</span></div>
+                      <div className="flex justify-between font-bold mt-1 text-zinc-400"><span>CHAPTER FIVE: SUMMARY, CONCLUSION & RECOMM. (Locked)</span><span>48</span></div>
+                    </div>
+                  </div>
+                  
+                  {/* Secure lock banner overlay */}
+                  <div className="absolute inset-0 bg-zinc-950/15 backdrop-blur-[5px] flex flex-col items-center justify-center p-6 text-center z-20">
+                    <div className="bg-white/95 border border-zinc-200 rounded-2xl p-6 shadow-2xl max-w-sm flex flex-col items-center gap-3">
+                      <lucide.Lock className="w-8 h-8 text-amber-500 animate-pulse" />
+                      <h4 className="text-zinc-950 font-black text-xs uppercase tracking-wider">Table of Contents is Locked</h4>
+                      <p className="text-zinc-600 text-[10px] leading-relaxed">
+                        The table of contents and full thesis structure are locked in this preview. Complete purchase to unlock.
+                      </p>
+                      <button 
+                        onClick={() => {
+                          setPreview(null);
+                          openCart({
+                            topicId: preview.id,
+                            department: preview.department,
+                            level: preview.level,
+                            title: preview.title,
+                            basePrice: getTopicPrice(preview.level, preview.department || 'General', Number(preview.price))
+                          });
+                        }} 
+                        className="mt-1 w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-lg tracking-wider transition"
+                      >
+                        Unlock All Content
+                      </button>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-4 right-12 text-[9px] text-zinc-400 font-mono">Page 6 of 50</div>
+                </div>
+
+                {/* Page 7: Chapter One - Introduction (Part 1) */}
+                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
+                  <div className="font-serif space-y-6 text-xs text-justify">
+                    <div className="text-center font-bold text-zinc-900 leading-snug">
+                      <h3>CHAPTER ONE</h3>
+                      <h3>INTRODUCTION</h3>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-zinc-900">1.1 Background of the Study</h4>
+                      <p style={{ textIndent: '2rem' }} className="leading-loose">{previewData.background}</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-zinc-900">1.2 Statement of the Problem</h4>
+                      <p style={{ textIndent: '2rem' }} className="leading-loose">{previewData.problem}</p>
+                    </div>
+                  </div>
+                  <div className="text-right text-[9px] text-zinc-400 font-mono">Page 7 of 50</div>
+                </div>
+
+                {/* Page 8: Chapter One - Introduction (Part 2) */}
+                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
+                  <div className="font-serif space-y-6 text-xs text-justify">
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-zinc-900">1.3 Objectives of the Study</h4>
+                      <p>The main objective of this study is to examine the implications and impact of {cleanTitle} in Nigeria. Specifically, the study aims to:</p>
+                      <ul className="list-decimal pl-6 space-y-1 leading-relaxed">
+                        <li>Assess the current level of implementation and awareness of {previewData.varA} in {previewData.caseStudy}.</li>
+                        <li>Evaluate the main socio-economic challenges hindering optimal performance of these parameters in Nigeria.</li>
+                        <li>Determine the statistical relationship between {previewData.varA} and {previewData.varB} in the target sector.</li>
+                        <li>Offer strategic recommendations to policy makers and academic researchers.</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-zinc-900">1.4 Research Questions</h4>
+                      <p>To guide this investigation, the following research questions have been formulated:</p>
+                      <ul className="list-disc pl-6 space-y-1 leading-relaxed">
+                        <li>What is the current level of implementation and awareness of {previewData.varA} in {previewData.caseStudy}?</li>
+                        <li>What are the primary challenges affecting the optimal integration of {previewData.varA} in the target region?</li>
+                        <li>Is there any significant relationship between {previewData.varA} and {previewData.varB} within the contemporary Nigerian environment?</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-zinc-900">1.5 Research Hypotheses</h4>
+                      <p className="italic">Hypothesis One:</p>
+                      <p className="pl-4 leading-relaxed"><strong>H0:</strong> There is no significant relationship between the implementation of {previewData.varA} and the performance of {previewData.varB} in {previewData.caseStudy}.</p>
+                      <p className="pl-4 leading-relaxed"><strong>H1:</strong> There is a significant relationship between the implementation of {previewData.varA} and the performance of {previewData.varB} in {previewData.caseStudy}.</p>
+                    </div>
+                  </div>
+                  <div className="text-right text-[9px] text-zinc-400 font-mono">Page 8 of 50</div>
+                </div>
+
+                {/* Page 9: Chapter One - Introduction (Part 3) - Blurred Page to trigger purchase */}
+                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl select-none aspect-[1/1.414] overflow-hidden" style={{ fontSize: `${previewZoom / 100}em` }}>
+                  <div className="font-serif space-y-6 text-xs text-justify blur-[6px] select-none pointer-events-none opacity-40">
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-zinc-900">1.6 Significance of the Study</h4>
+                      <p style={{ textIndent: '2rem' }} className="leading-loose">
+                        The findings of this study will be of immense benefit to policy makers, public administrators, and private sector practitioners who are committed to optimizing {previewData.varA} to drive {previewData.varB}. By providing empirical data, this work will serve as a guidepost for designing interventions that address local bottlenecks. Furthermore, it will contribute to the sparse literature on this topic in developing countries and serve as reference for future researchers.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-zinc-900">1.7 Scope and Delimitation</h4>
+                      <p style={{ textIndent: '2rem' }} className="leading-loose">
+                        This study is delimited to {previewData.caseStudy} with particular focus on the operations of administrative systems. The time scope of the research covers active datasets from recent quarters, ensuring that the findings reflect modern realities.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Secure lock banner overlay */}
+                  <div className="absolute inset-0 bg-zinc-950/15 backdrop-blur-[5px] flex flex-col items-center justify-center p-6 text-center z-20">
+                    <div className="bg-white/95 border border-zinc-200 rounded-2xl p-6 shadow-2xl max-w-sm flex flex-col items-center gap-3">
+                      <lucide.Lock className="w-8 h-8 text-amber-500 animate-pulse" />
+                      <h4 className="text-zinc-950 font-black text-xs uppercase tracking-wider">Page 9 of 50 is Locked</h4>
+                      <p className="text-zinc-600 text-[10px] leading-relaxed">
+                        To protect intellectual property, pages 9 to 50 are locked in this preview. Purchase this project to download the complete file.
+                      </p>
+                      <button 
+                        onClick={() => {
+                          setPreview(null);
+                          openCart({
+                            topicId: preview.id,
+                            department: preview.department,
+                            level: preview.level,
+                            title: preview.title,
+                            basePrice: getTopicPrice(preview.level, preview.department || 'General', Number(preview.price))
+                          });
+                        }} 
+                        className="mt-1 w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-lg tracking-wider transition"
+                      >
+                        Get Material & Unlock (50 Pages)
+                      </button>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-4 right-12 text-[9px] text-zinc-400 font-mono">Page 9 of 50</div>
+                </div>
+
+                {/* Remaining Pages 10-50 rendered as blurred locks */}
+                {Array.from({ length: 41 }, (_, idx) => {
+                  const pageNum = idx + 10;
+                  return (
+                    <div key={pageNum} className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl select-none aspect-[1/1.414] overflow-hidden" style={{ fontSize: `${previewZoom / 100}em` }}>
+                      <div className="font-serif space-y-6 text-xs text-justify blur-[6px] select-none pointer-events-none opacity-20">
+                        <div className="flex justify-between items-center text-[9px] text-zinc-400 border-b pb-1 mb-4 font-sans">
+                          <span>CHAPTER {pageNum < 25 ? 'TWO: LITERATURE REVIEW' : pageNum < 38 ? 'THREE: METHODOLOGY' : pageNum < 46 ? 'FOUR: DATA ANALYSIS' : 'FIVE: SUMMARY & CONCLUSION'}</span>
+                          <span>Page {pageNum}</span>
+                        </div>
+                        <p style={{ textIndent: '2rem' }} className="leading-loose">
+                          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut feugiat lectus id interdum aliquet. Proin vitae felis nec libero ultrices tempor. Mauris feugiat dictum nibh, ac convallis purus congue non. Integer cursus leo a scelerisque viverra. Praesent gravida arcu eget congue congue.
+                        </p>
+                        <p style={{ textIndent: '2rem' }} className="leading-loose">
+                          In the context of the Nigerian educational and professional space, variables associated with {previewData.varA} have shown a direct correlation with {previewData.varB}. Under empirical conditions, regression modeling outputs show significant positive indicators.
+                        </p>
+                        <p style={{ textIndent: '2rem' }} className="leading-loose">
+                          Therefore, the standard evaluation mechanisms for {previewData.caseStudy} require absolute optimization to support sustainable practices.
+                        </p>
+                      </div>
+
+                      {/* Locked watermark overlay */}
+                      <div className="absolute inset-0 bg-zinc-950/15 backdrop-blur-[6px] flex flex-col items-center justify-center p-6 text-center z-20">
+                        <div className="bg-white/95 border border-zinc-200 rounded-2xl p-6 shadow-2xl max-w-sm flex flex-col items-center gap-3">
+                          <lucide.Lock className="w-8 h-8 text-amber-500 animate-pulse" />
+                          <h4 className="text-zinc-950 font-black text-xs uppercase tracking-wider">Page {pageNum} of 50 is Locked</h4>
+                          <p className="text-zinc-600 text-[10px] leading-relaxed">
+                            Complete the purchase to unlock all chapters (1–5) written in standard Nigerian university style (50 pages).
+                          </p>
+                          <button 
+                            onClick={() => {
+                              setPreview(null);
+                              openCart({
+                                topicId: preview.id,
+                                department: preview.department,
+                                level: preview.level,
+                                title: preview.title,
+                                basePrice: getTopicPrice(preview.level, preview.department || 'General', Number(preview.price))
+                              });
+                            }} 
+                            className="mt-1 w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-lg tracking-wider transition"
+                          >
+                            Get Complete Material
+                          </button>
+                        </div>
+                      </div>
+                      <div className="absolute bottom-4 right-12 text-[9px] text-zinc-400 font-mono">Page {pageNum} of 50</div>
+                    </div>
+                  );
+                })}
               </div>
-              <button 
-                onClick={() => openCart({ topicId: preview.id, department: preview.department, level: preview.level, title: preview.title, basePrice: getTopicPrice(preview.level, preview.department || 'General', Number(preview.price)) })} 
-                className="bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2"
-              >
-                💳 Get Complete Material — {naira(getTopicPrice(preview.level, preview.department || 'General', Number(preview.price)))}
-              </button>
+
+              {/* Footer Actions */}
+              <div className="p-4 border-t border-theme/50 flex flex-col md:flex-row justify-between items-center gap-4 bg-secondary/20">
+                <div className="text-left">
+                  <span className="block text-[11px] font-bold text-secondary uppercase">Project Scope details</span>
+                  <span className="text-xs text-primary font-bold">{preview.pages || 50} pages • Chapters 1-5 complete (MS Word & PDF format)</span>
+                </div>
+                <button 
+                  onClick={() => {
+                    setPreview(null);
+                    openCart({
+                      topicId: preview.id,
+                      department: preview.department,
+                      level: preview.level,
+                      title: preview.title,
+                      basePrice: getTopicPrice(preview.level, preview.department || 'General', Number(preview.price))
+                    });
+                  }} 
+                  className="bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2"
+                >
+                  💳 Get Complete Material — {naira(getTopicPrice(preview.level, preview.department || 'General', Number(preview.price)))}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* CHECKOUT MODAL (add-ons + terms) */}
       {cart && (

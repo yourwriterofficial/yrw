@@ -9,6 +9,7 @@ import ThemeToggle from '@/app/components/ThemeToggle';
 import WalletPage from './wallet/page';
 import { DashboardSkeleton } from '@/app/components/ui/Skeleton';
 import { showToast } from '@/app/components/ui/Toast';
+import { isCurrentlyImpersonating } from '@/lib/impersonate';
 import StatusBadge from '@/app/components/ui/StatusBadge';
 import StatCard from '@/app/components/ui/StatCard';
 import Card from '@/app/components/ui/Card';
@@ -369,7 +370,7 @@ function DashboardContent() {
       const impId = typeof window !== 'undefined' ? localStorage.getItem('impersonate_user_id') : null;
       const impEmail = typeof window !== 'undefined' ? localStorage.getItem('impersonate_user_email') : null;
       
-      if (userProfile?.is_admin && impId) {
+      if (userProfile?.is_admin && impId && isCurrentlyImpersonating()) {
         setIsImpersonating(true);
         const [{ data: impProfile }, { data: impWallet }] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', impId).single(),
@@ -678,26 +679,7 @@ function DashboardContent() {
 
   return (
     <div className="p-6 md:p-10">
-      {/* Impersonation Banner */}
-      {isImpersonating && (
-        <div className="bg-amber-500 text-black py-3 px-6 flex items-center justify-between gap-4 font-black text-xs uppercase tracking-widest mb-6 rounded-xl shadow-md">
-          <div className="flex items-center gap-2">
-            <lucide.ShieldAlert className="w-5 h-5 shrink-0" />
-            <span>Viewing dashboard as: {typeof window !== 'undefined' ? localStorage.getItem('impersonate_user_name') : ''} ({typeof window !== 'undefined' ? localStorage.getItem('impersonate_user_email') : ''})</span>
-          </div>
-          <button 
-            onClick={() => {
-              localStorage.removeItem('impersonate_user_id');
-              localStorage.removeItem('impersonate_user_email');
-              localStorage.removeItem('impersonate_user_name');
-              window.location.reload();
-            }}
-            className="px-4 py-2 bg-black text-white hover:bg-zinc-800 transition font-bold rounded-lg uppercase tracking-wider text-[10px] cursor-pointer"
-          >
-            Stop Impersonation
-          </button>
-        </div>
-      )}
+      {/* Impersonation is handled globally by ImpersonationBanner in Header */}
 
       {/* Admin Preview Banner */}
       {isAdminPreview && (

@@ -13,6 +13,7 @@ import {
   Bell,
 } from 'lucide-react';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
+import { startImpersonation } from '@/lib/impersonate';
 import { showToast } from '@/app/components/ui/Toast';
 import PageHeader from '@/app/components/ui/PageHeader';
 
@@ -596,9 +597,7 @@ export default function AdminUsersPage() {
                   <button
                     onClick={() => {
                       if (confirm(`Impersonate ${user.full_name || user.email}?`)) {
-                        localStorage.setItem('impersonate_user_id', user.id);
-                        localStorage.setItem('impersonate_user_email', user.email);
-                        localStorage.setItem('impersonate_user_name', user.full_name || user.email);
+                        startImpersonation(user.id, user.email, user.full_name || user.email);
                         window.open('/dashboard/client', '_blank');
                       }
                     }}

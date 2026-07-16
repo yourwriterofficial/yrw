@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import * as lucide from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { clearImpersonation } from '@/lib/impersonate';
 import { useState, useEffect } from 'react';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import NotificationBell from '@/app/components/ui/NotificationBell';
@@ -86,8 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('impersonate_user_id');
-      localStorage.removeItem('impersonate_user_email');
+      clearImpersonation();
       sessionStorage.removeItem('yrw_user');
       sessionStorage.removeItem('yrw_profile');
       sessionStorage.removeItem('yrw_wallet');
