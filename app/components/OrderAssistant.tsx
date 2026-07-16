@@ -1107,7 +1107,14 @@ export default function OrderAssistant() {
   };
 
   // Admin pages get no assistant; /projects has its own page-scoped assistant.
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/projects')) return null;
+  // /dashboard is excluded for the same reason as /admin: it has a fixed left
+  // sidebar, and this bottom-left FAB lands squarely on top of Sign Out, making
+  // it unclickable. The portal has its own Helpdesk chat and a New Order nav item.
+  if (
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/projects') ||
+    pathname?.startsWith('/dashboard')
+  ) return null;
 
   return (
     <>

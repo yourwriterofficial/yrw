@@ -1334,119 +1334,164 @@ Furthermore, there is a lack of localized research that addresses the specific c
       {preview && (() => {
         const previewData = generateProjectPreview(preview.title, preview.department, preview.level);
         const cleanTitle = getCleanTitle(preview.title);
+
+        /* Reusable lock overlay for locked pages */
+        const LockOverlay = ({ label, cta }: { label: string; cta?: string }) => (
+          <div className="absolute inset-0 bg-zinc-950/15 backdrop-blur-[5px] flex flex-col items-center justify-center p-4 sm:p-6 text-center z-20">
+            <div className="bg-white/95 border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-2xl max-w-xs sm:max-w-sm w-full flex flex-col items-center gap-2 sm:gap-3">
+              <lucide.Lock className="w-6 h-6 sm:w-8 sm:h-8 text-amber-500 animate-pulse" />
+              <h4 className="text-zinc-950 font-black text-[10px] sm:text-xs uppercase tracking-wider leading-tight">{label}</h4>
+              <p className="text-zinc-600 text-[9px] sm:text-[10px] leading-relaxed">
+                Purchase this project to unlock all 50 pages (Chapters 1–5, MS Word & PDF).
+              </p>
+              <button 
+                onClick={() => {
+                  setPreview(null);
+                  openCart({
+                    topicId: preview.id,
+                    department: preview.department,
+                    level: preview.level,
+                    title: preview.title,
+                    basePrice: getTopicPrice(preview.level, preview.department || 'General', Number(preview.price))
+                  });
+                }} 
+                className="mt-1 w-full py-2 sm:py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[10px] sm:text-xs uppercase rounded-lg tracking-wider transition"
+              >
+                {cta || 'Get Complete Material'}
+              </button>
+            </div>
+          </div>
+        );
+
+        /* Quieter lock for the bulk chapter pages — repeating the full CTA card on all
+           42 of them reads as spam, so those get a single centred badge instead. */
+        const SubtleLock = ({ label }: { label: string }) => (
+          <div className="absolute inset-0 bg-zinc-950/15 backdrop-blur-[5px] flex items-center justify-center p-4 z-20">
+            <div className="flex items-center gap-2 bg-white/90 border border-zinc-200 rounded-full px-3 py-1.5 shadow-lg">
+              <lucide.Lock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500" />
+              <span className="text-zinc-700 font-black text-[8px] sm:text-[9px] uppercase tracking-wider">{label}</span>
+            </div>
+          </div>
+        );
+
+        /* Reusable A4 page wrapper — responsive padding & sizing */
+        const A4Page = ({ children, locked, pageNum, className: extra }: { children: React.ReactNode; locked?: boolean; pageNum: number; className?: string }) => (
+          <div className={`relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 shadow-2xl select-none overflow-hidden ${locked ? '' : 'flex flex-col justify-between'} ${extra || ''}`}
+               style={{ fontSize: `${previewZoom / 100}em`, aspectRatio: '1/1.414', padding: 'clamp(1.5rem, 4vw, 5rem)' }}>
+            {children}
+            <div className={`${locked ? 'absolute bottom-2 right-3 sm:bottom-4 sm:right-8' : 'text-right mt-auto pt-2'} text-[8px] sm:text-[9px] text-zinc-400 font-mono`}>
+              Page {pageNum} of 50
+            </div>
+          </div>
+        );
         
         return (
-          <div className="fixed inset-0 z-[200] bg-black/85 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setPreview(null)}>
-            <div className="bg-card border border-theme rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-              {/* Header */}
-              <div className="p-4 border-b border-theme/50 flex justify-between items-center gap-4 bg-secondary/20">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">{preview.department}</span>
-                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(preview.level)}`}>{preview.level}</span>
-                  <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1.5 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10">
-                    <lucide.Lock className="w-3.5 h-3.5" /> SECURE DOCUMENT VIEWER (PREVIEW: 7 PAGES OPEN, 43 PAGES LOCKED)
+          <div className="fixed inset-0 z-[200] bg-black/85 flex items-center justify-center p-2 sm:p-4 backdrop-blur-sm" onClick={() => setPreview(null)}>
+            <div className="bg-card border border-theme rounded-xl sm:rounded-2xl w-full max-w-5xl max-h-[95vh] sm:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+              {/* Header — responsive */}
+              <div className="p-2.5 sm:p-4 border-b border-theme/50 flex justify-between items-center gap-2 sm:gap-4 bg-secondary/20">
+                <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap min-w-0">
+                  <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full truncate">{preview.department}</span>
+                  <span className={`text-[8px] sm:text-[9px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded border ${levelBadge(preview.level)}`}>{preview.level}</span>
+                  <span className="hidden sm:flex text-[10px] font-bold text-emerald-500 items-center gap-1.5 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10">
+                    <lucide.Lock className="w-3.5 h-3.5" /> SECURE PREVIEW (TITLE PAGE VISIBLE, 49 LOCKED)
+                  </span>
+                  <span className="flex sm:hidden text-[8px] font-bold text-emerald-500 items-center gap-1 bg-emerald-500/5 px-1.5 py-0.5 rounded border border-emerald-500/10">
+                    <lucide.Lock className="w-3 h-3" /> 1 OPEN / 49 LOCKED
                   </span>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                  {/* Zoom Controls */}
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 border border-theme rounded-lg text-[10px] font-mono">
+                <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                  <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-white/5 border border-theme rounded-lg text-[10px] font-mono">
                     <button onClick={() => setPreviewZoom(z => Math.max(80, z - 10))} className="w-5 h-5 rounded hover:bg-white/10 font-black text-primary">-</button>
                     <span className="text-primary min-w-[28px] text-center">{previewZoom}%</span>
                     <button onClick={() => setPreviewZoom(z => Math.min(130, z + 10))} className="w-5 h-5 rounded hover:bg-white/10 font-black text-primary">+</button>
                   </div>
-                  <button onClick={() => setPreview(null)} className="text-secondary hover:text-primary p-1 bg-white/5 hover:bg-white/10 rounded-lg transition"><lucide.X className="w-5 h-5" /></button>
+                  <button onClick={() => setPreview(null)} className="text-secondary hover:text-primary p-1 bg-white/5 hover:bg-white/10 rounded-lg transition"><lucide.X className="w-4 h-4 sm:w-5 sm:h-5" /></button>
                 </div>
               </div>
 
-              {/* Scrollable Document Container */}
-              <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-zinc-900/50 flex flex-col gap-6 select-none"
-                   style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}
+              {/* Scrollable Document Container — responsive */}
+              <div className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-8 bg-zinc-900/50 flex flex-col gap-4 sm:gap-6 select-none"
+                   style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' } as React.CSSProperties}
                    onContextMenu={e => e.preventDefault()}
               >
                 {/* Focus Lost Lock Shield */}
                 {isWindowBlurred && (
                   <div className="fixed inset-0 z-[250] bg-black/90 backdrop-blur-[8px] flex flex-col items-center justify-center p-6 text-center select-none cursor-pointer" onClick={() => setIsWindowBlurred(false)}>
-                    <lucide.Lock className="w-12 h-12 text-emerald-500 mb-3 animate-bounce" />
-                    <h3 className="text-white font-black text-base uppercase tracking-wider">Preview Hidden for Security</h3>
-                    <p className="text-zinc-400 text-xs mt-1 max-w-sm">Window focus lost. Hovering screen record/screenshot utility detected or tab switched. Click here to resume.</p>
+                    <lucide.Lock className="w-10 h-10 sm:w-12 sm:h-12 text-emerald-500 mb-3 animate-bounce" />
+                    <h3 className="text-white font-black text-sm sm:text-base uppercase tracking-wider">Preview Hidden</h3>
+                    <p className="text-zinc-400 text-[10px] sm:text-xs mt-1 max-w-sm">Window focus lost. Click to resume.</p>
                   </div>
                 )}
 
-                {/* Cover Page (Page 1) */}
-                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between items-center text-center select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
-                  {/* Confidential watermark background */}
-                  <div className="absolute inset-0 pointer-events-none opacity-[0.02] flex flex-wrap gap-12 rotate-[-25deg] justify-center items-center scale-110 z-0">
+                {/* Page 1: Cover Page — VISIBLE */}
+                <A4Page pageNum={1}>
+                  <div className="absolute inset-0 pointer-events-none opacity-[0.02] flex flex-wrap gap-8 sm:gap-12 rotate-[-25deg] justify-center items-center scale-110 z-0">
                     {Array.from({ length: 12 }).map((_, i) => (
-                      <span key={i} className="text-sm font-black text-black uppercase tracking-widest font-mono">SECURE PREVIEW • DO NOT COPY</span>
+                      <span key={i} className="text-[10px] sm:text-sm font-black text-black uppercase tracking-widest font-mono">SECURE PREVIEW • DO NOT COPY</span>
                     ))}
                   </div>
-
-                  <div className="z-10 w-full space-y-12">
-                    <div className="text-xs font-black tracking-wider text-zinc-400 uppercase">RESEARCH WORK ARCHIVE</div>
-                    <div className="text-sm md:text-base font-black tracking-wide leading-relaxed font-serif uppercase max-w-lg mx-auto border-y border-zinc-200 py-6">
+                  <div className="z-10 w-full space-y-6 sm:space-y-12 text-center">
+                    <div className="text-[9px] sm:text-xs font-black tracking-wider text-zinc-400 uppercase">RESEARCH WORK ARCHIVE</div>
+                    <div className="text-[11px] sm:text-sm md:text-base font-black tracking-wide leading-relaxed font-serif uppercase max-w-lg mx-auto border-y border-zinc-200 py-4 sm:py-6">
                       {cleanTitle}
                     </div>
                   </div>
-
-                  <div className="z-10 space-y-2 uppercase font-serif text-xs my-8">
-                    <span>BY</span>
-                    <br /><br />
-                    <span className="font-bold underline text-xs">CONFIDENTIAL STUDENT</span>
-                    <br />
-                    <span className="text-[10px] text-zinc-500 font-mono">(MATRIC NO: RW/2022/NIG-042)</span>
+                  <div className="z-10 space-y-2 uppercase font-serif text-[10px] sm:text-xs my-4 sm:my-8 text-center">
+                    <span>BY</span><br /><br />
+                    <span className="font-bold underline">CONFIDENTIAL STUDENT</span><br />
+                    <span className="text-[9px] sm:text-[10px] text-zinc-500 font-mono">(MATRIC NO: RW/2022/NIG-042)</span>
                   </div>
-
-                  <div className="z-10 text-[10px] md:text-xs leading-relaxed max-w-md mx-auto font-serif text-zinc-600 space-y-4">
+                  <div className="z-10 text-[9px] sm:text-[10px] md:text-xs leading-relaxed max-w-md mx-auto font-serif text-zinc-600 text-center">
                     <p>
                       A RESEARCH PROJECT SUBMITTED TO THE DEPARTMENT OF {preview.department.toUpperCase()}, 
                       FACULTY OF {getFaculty(preview.department).toUpperCase()}, IN PARTIAL FULFILLMENT OF THE REQUIREMENTS 
                       FOR THE AWARD OF THE DEGREE OF {preview.level === 'PhD' ? 'DOCTOR OF PHILOSOPHY (Ph.D)' : preview.level === 'MSc' ? 'MASTER OF SCIENCE (M.Sc)' : 'BACHELOR OF SCIENCE (B.Sc)'} IN {preview.department.toUpperCase()}.
                     </p>
                   </div>
-
-                  <div className="z-10 text-[10px] font-sans text-zinc-400 uppercase tracking-widest border-t border-zinc-100 pt-4 w-full">
+                  <div className="z-10 text-[9px] sm:text-[10px] font-sans text-zinc-400 uppercase tracking-widest border-t border-zinc-100 pt-3 sm:pt-4 w-full text-center">
                     YEAR: {preview.year || new Date().getFullYear()}
-                    <div className="text-[9px] text-emerald-600 font-bold mt-1">NIGERIAN UNIVERSITY ACADEMIC DEPOSIT SYSTEM</div>
+                    <div className="text-[8px] sm:text-[9px] text-emerald-600 font-bold mt-1">NIGERIAN UNIVERSITY ACADEMIC DEPOSIT SYSTEM</div>
                   </div>
-                </div>
+                </A4Page>
 
-                {/* Page 2: Certification Page */}
-                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
-                  <div className="font-serif space-y-6 text-xs text-justify">
-                    <h3 className="text-center font-bold text-sm uppercase underline tracking-wider">CERTIFICATION / APPROVAL</h3>
+                {/* Page 2: Certification — LOCKED */}
+                <A4Page pageNum={2} locked className="overflow-hidden">
+                  <div className="font-serif space-y-4 sm:space-y-6 text-[10px] sm:text-xs text-justify blur-[6px] select-none pointer-events-none opacity-40">
+                    <h3 className="text-center font-bold text-[11px] sm:text-sm uppercase underline tracking-wider">CERTIFICATION / APPROVAL</h3>
                     <p style={{ textIndent: '2rem' }} className="leading-relaxed">
                       This is to certify that this research project titled <span className="font-bold">"{cleanTitle}"</span> was carried out by <span className="underline">CONFIDENTIAL STUDENT</span> with Matriculation Number <span className="font-mono">RW/2022/NIG-042</span> under our direct supervision in the Department of {preview.department}, Faculty of {getFaculty(preview.department)}.
                     </p>
                     <p className="leading-relaxed">
                       The study has been examined and approved as meeting the requirements for partial fulfillment of the award of the degree of {preview.level === 'PhD' ? 'Doctor of Philosophy (Ph.D)' : preview.level === 'MSc' ? 'Master of Science (M.Sc)' : 'Bachelor of Science (B.Sc)'} in {preview.department}.
                     </p>
-                    <div className="pt-20 space-y-12">
-                      <div className="flex justify-between items-end">
-                        <div className="border-t border-zinc-400 w-56 text-center pt-2">
-                          <p className="font-bold">Supervisor Signature</p>
-                          <p className="text-[10px] text-zinc-500">Date: ________________</p>
+                    <div className="pt-8 sm:pt-20 space-y-8 sm:space-y-12">
+                      <div className="flex justify-between items-end gap-4">
+                        <div className="border-t border-zinc-400 w-32 sm:w-56 text-center pt-2">
+                          <p className="font-bold text-[9px] sm:text-xs">Supervisor</p>
+                          <p className="text-[8px] sm:text-[10px] text-zinc-500">Date: __________</p>
                         </div>
-                        <div className="border-t border-zinc-400 w-56 text-center pt-2">
-                          <p className="font-bold">Head of Department</p>
-                          <p className="text-[10px] text-zinc-500">Date: ________________</p>
+                        <div className="border-t border-zinc-400 w-32 sm:w-56 text-center pt-2">
+                          <p className="font-bold text-[9px] sm:text-xs">HOD</p>
+                          <p className="text-[8px] sm:text-[10px] text-zinc-500">Date: __________</p>
                         </div>
                       </div>
-                      <div className="flex justify-center pt-6">
-                        <div className="border-t border-zinc-400 w-56 text-center pt-2">
-                          <p className="font-bold">External Examiner</p>
-                          <p className="text-[10px] text-zinc-500">Date: ________________</p>
+                      <div className="flex justify-center">
+                        <div className="border-t border-zinc-400 w-32 sm:w-56 text-center pt-2">
+                          <p className="font-bold text-[9px] sm:text-xs">External Examiner</p>
+                          <p className="text-[8px] sm:text-[10px] text-zinc-500">Date: __________</p>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right text-[9px] text-zinc-400 font-mono">Page 2 of 50</div>
-                </div>
+                  <LockOverlay label="Certification is Locked" cta="Unlock All 50 Pages" />
+                </A4Page>
 
-                {/* Page 3: Dedication */}
-                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
-                  <div className="font-serif space-y-8 text-xs text-center py-20">
-                    <h3 className="font-bold text-sm uppercase underline tracking-wider">DEDICATION</h3>
+                {/* Page 3: Dedication — LOCKED */}
+                <A4Page pageNum={3} locked className="overflow-hidden">
+                  <div className="font-serif space-y-6 sm:space-y-8 text-[10px] sm:text-xs text-center py-8 sm:py-20 blur-[6px] select-none pointer-events-none opacity-40">
+                    <h3 className="font-bold text-[11px] sm:text-sm uppercase underline tracking-wider">DEDICATION</h3>
                     <p className="italic leading-loose max-w-md mx-auto">
                       "This research work is dedicated to Almighty God for His infinite grace, wisdom, protection and strength throughout the period of this study."
                     </p>
@@ -1454,13 +1499,13 @@ Furthermore, there is a lack of localized research that addresses the specific c
                       "It is also dedicated to my beloved parents, for their relentless financial sacrifices, spiritual prayers, and moral guideposts which laid the foundational pillar of my educational achievements."
                     </p>
                   </div>
-                  <div className="text-right text-[9px] text-zinc-400 font-mono">Page 3 of 50</div>
-                </div>
+                  <LockOverlay label="Dedication is Locked" />
+                </A4Page>
 
-                {/* Page 4: Acknowledgements */}
-                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
-                  <div className="font-serif space-y-6 text-xs text-justify">
-                    <h3 className="text-center font-bold text-sm uppercase underline tracking-wider">ACKNOWLEDGEMENTS</h3>
+                {/* Page 4: Acknowledgements — LOCKED */}
+                <A4Page pageNum={4} locked className="overflow-hidden">
+                  <div className="font-serif space-y-4 sm:space-y-6 text-[10px] sm:text-xs text-justify blur-[6px] select-none pointer-events-none opacity-40">
+                    <h3 className="text-center font-bold text-[11px] sm:text-sm uppercase underline tracking-wider">ACKNOWLEDGEMENTS</h3>
                     <p style={{ textIndent: '2rem' }} className="leading-relaxed">
                       I wish to express my deepest and sincere appreciation to my project supervisor, for devoting their precious time to review, criticize, and guide this research from conceptualization to completion. Their intellectual mentoring will always be cherished.
                     </p>
@@ -1471,13 +1516,13 @@ Furthermore, there is a lack of localized research that addresses the specific c
                       Finally, I am eternally grateful to my parents and siblings for their unwavering confidence, prayers, financial sponsorships, and emotional support which made this dream a reality. May God bless you all.
                     </p>
                   </div>
-                  <div className="text-right text-[9px] text-zinc-400 font-mono">Page 4 of 50</div>
-                </div>
+                  <LockOverlay label="Acknowledgements is Locked" />
+                </A4Page>
 
-                {/* Page 5: Abstract */}
-                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
-                  <div className="font-serif space-y-6 text-xs text-justify">
-                    <h3 className="text-center font-bold text-sm uppercase underline tracking-wider">ABSTRACT</h3>
+                {/* Page 5: Abstract — LOCKED */}
+                <A4Page pageNum={5} locked className="overflow-hidden">
+                  <div className="font-serif space-y-4 sm:space-y-6 text-[10px] sm:text-xs text-justify blur-[6px] select-none pointer-events-none opacity-40">
+                    <h3 className="text-center font-bold text-[11px] sm:text-sm uppercase underline tracking-wider">ABSTRACT</h3>
                     <p style={{ textIndent: '2rem' }} className="leading-loose font-serif">
                       {previewData.abstract}
                     </p>
@@ -1485,220 +1530,117 @@ Furthermore, there is a lack of localized research that addresses the specific c
                       Keywords: <span className="font-normal italic">{preview.department}, Nigerian Development, {previewData.varA}, {previewData.varB}, {preview.level} Research.</span>
                     </p>
                   </div>
-                  <div className="text-right text-[9px] text-zinc-400 font-mono">Page 5 of 50</div>
-                </div>
+                  <LockOverlay label="Abstract is Locked" cta="Unlock Abstract & All 50 Pages" />
+                </A4Page>
 
-                {/* Page 6: Table of Contents - Blurred & Locked */}
-                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl select-none aspect-[1/1.414] overflow-hidden" style={{ fontSize: `${previewZoom / 100}em` }}>
-                  <div className="font-serif space-y-4 text-xs blur-[6px] select-none pointer-events-none opacity-40">
-                    <h3 className="text-center font-bold text-sm uppercase underline tracking-wider mb-4">TABLE OF CONTENTS</h3>
+                {/* Page 6: Table of Contents — LOCKED */}
+                <A4Page pageNum={6} locked className="overflow-hidden">
+                  <div className="font-serif space-y-3 sm:space-y-4 text-[10px] sm:text-xs blur-[6px] select-none pointer-events-none opacity-40">
+                    <h3 className="text-center font-bold text-[11px] sm:text-sm uppercase underline tracking-wider mb-3 sm:mb-4">TABLE OF CONTENTS</h3>
                     <div className="space-y-1">
                       <div className="flex justify-between font-bold"><span>Title Page</span><span>i</span></div>
-                      <div className="flex justify-between font-bold"><span>Certification / Approval Page</span><span>ii</span></div>
+                      <div className="flex justify-between font-bold"><span>Certification</span><span>ii</span></div>
                       <div className="flex justify-between font-bold"><span>Dedication</span><span>iii</span></div>
                       <div className="flex justify-between font-bold"><span>Acknowledgements</span><span>iv</span></div>
                       <div className="flex justify-between font-bold"><span>Abstract</span><span>v</span></div>
                       <div className="flex justify-between font-bold"><span>Table of Contents</span><span>vi</span></div>
-                      
                       <div className="flex justify-between font-bold mt-2 text-emerald-700"><span>CHAPTER ONE: INTRODUCTION</span><span>1</span></div>
                       <div className="flex justify-between pl-4 text-zinc-600"><span>1.1 Background of the Study</span><span>1</span></div>
                       <div className="flex justify-between pl-4 text-zinc-600"><span>1.2 Statement of the Problem</span><span>4</span></div>
                       <div className="flex justify-between pl-4 text-zinc-600"><span>1.3 Objectives of the Study</span><span>5</span></div>
-                      <div className="flex justify-between pl-4 text-zinc-600"><span>1.4 Research Questions</span><span>6</span></div>
-                      <div className="flex justify-between pl-4 text-zinc-600"><span>1.5 Research Hypotheses</span><span>7</span></div>
-                      
-                      <div className="flex justify-between font-bold mt-2 text-zinc-400"><span>CHAPTER TWO: LITERATURE REVIEW (Locked)</span><span>12</span></div>
-                      <div className="flex justify-between font-bold mt-1 text-zinc-400"><span>CHAPTER THREE: RESEARCH METHODOLOGY (Locked)</span><span>35</span></div>
-                      <div className="flex justify-between font-bold mt-1 text-zinc-400"><span>CHAPTER FOUR: DATA ANALYSIS & DISCUSSION (Locked)</span><span>42</span></div>
-                      <div className="flex justify-between font-bold mt-1 text-zinc-400"><span>CHAPTER FIVE: SUMMARY, CONCLUSION & RECOMM. (Locked)</span><span>48</span></div>
+                      <div className="flex justify-between font-bold mt-2 text-zinc-400"><span>CHAPTER TWO: LITERATURE REVIEW</span><span>12</span></div>
+                      <div className="flex justify-between font-bold mt-1 text-zinc-400"><span>CHAPTER THREE: METHODOLOGY</span><span>35</span></div>
+                      <div className="flex justify-between font-bold mt-1 text-zinc-400"><span>CHAPTER FOUR: DATA ANALYSIS</span><span>42</span></div>
+                      <div className="flex justify-between font-bold mt-1 text-zinc-400"><span>CHAPTER FIVE: CONCLUSION</span><span>48</span></div>
                     </div>
                   </div>
-                  
-                  {/* Secure lock banner overlay */}
-                  <div className="absolute inset-0 bg-zinc-950/15 backdrop-blur-[5px] flex flex-col items-center justify-center p-6 text-center z-20">
-                    <div className="bg-white/95 border border-zinc-200 rounded-2xl p-6 shadow-2xl max-w-sm flex flex-col items-center gap-3">
-                      <lucide.Lock className="w-8 h-8 text-amber-500 animate-pulse" />
-                      <h4 className="text-zinc-950 font-black text-xs uppercase tracking-wider">Table of Contents is Locked</h4>
-                      <p className="text-zinc-600 text-[10px] leading-relaxed">
-                        The table of contents and full thesis structure are locked in this preview. Complete purchase to unlock.
-                      </p>
-                      <button 
-                        onClick={() => {
-                          setPreview(null);
-                          openCart({
-                            topicId: preview.id,
-                            department: preview.department,
-                            level: preview.level,
-                            title: preview.title,
-                            basePrice: getTopicPrice(preview.level, preview.department || 'General', Number(preview.price))
-                          });
-                        }} 
-                        className="mt-1 w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-lg tracking-wider transition"
-                      >
-                        Unlock All Content
-                      </button>
-                    </div>
-                  </div>
-                  <div className="absolute bottom-4 right-12 text-[9px] text-zinc-400 font-mono">Page 6 of 50</div>
-                </div>
+                  <LockOverlay label="Table of Contents is Locked" />
+                </A4Page>
 
-                {/* Page 7: Chapter One - Introduction (Part 1) */}
-                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
-                  <div className="font-serif space-y-6 text-xs text-justify">
+                {/* Page 7: Chapter One Part 1 — LOCKED */}
+                <A4Page pageNum={7} locked className="overflow-hidden">
+                  <div className="font-serif space-y-4 sm:space-y-6 text-[10px] sm:text-xs text-justify blur-[6px] select-none pointer-events-none opacity-40">
                     <div className="text-center font-bold text-zinc-900 leading-snug">
                       <h3>CHAPTER ONE</h3>
                       <h3>INTRODUCTION</h3>
                     </div>
-                    
                     <div className="space-y-2">
                       <h4 className="font-bold text-zinc-900">1.1 Background of the Study</h4>
                       <p style={{ textIndent: '2rem' }} className="leading-loose">{previewData.background}</p>
                     </div>
-
                     <div className="space-y-2">
                       <h4 className="font-bold text-zinc-900">1.2 Statement of the Problem</h4>
                       <p style={{ textIndent: '2rem' }} className="leading-loose">{previewData.problem}</p>
                     </div>
                   </div>
-                  <div className="text-right text-[9px] text-zinc-400 font-mono">Page 7 of 50</div>
-                </div>
+                  <LockOverlay label="Chapter One is Locked" cta="Unlock All Chapters (50 Pages)" />
+                </A4Page>
 
-                {/* Page 8: Chapter One - Introduction (Part 2) */}
-                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl flex flex-col justify-between select-none aspect-[1/1.414]" style={{ fontSize: `${previewZoom / 100}em` }}>
-                  <div className="font-serif space-y-6 text-xs text-justify">
+                {/* Page 8: Chapter One Part 2 — LOCKED */}
+                <A4Page pageNum={8} locked className="overflow-hidden">
+                  <div className="font-serif space-y-4 sm:space-y-6 text-[10px] sm:text-xs text-justify blur-[6px] select-none pointer-events-none opacity-40">
                     <div className="space-y-2">
                       <h4 className="font-bold text-zinc-900">1.3 Objectives of the Study</h4>
-                      <p>The main objective of this study is to examine the implications and impact of {cleanTitle} in Nigeria. Specifically, the study aims to:</p>
+                      <p>The main objective of this study is to examine the implications and impact of {cleanTitle} in Nigeria.</p>
                       <ul className="list-decimal pl-6 space-y-1 leading-relaxed">
                         <li>Assess the current level of implementation and awareness of {previewData.varA} in {previewData.caseStudy}.</li>
-                        <li>Evaluate the main socio-economic challenges hindering optimal performance of these parameters in Nigeria.</li>
-                        <li>Determine the statistical relationship between {previewData.varA} and {previewData.varB} in the target sector.</li>
-                        <li>Offer strategic recommendations to policy makers and academic researchers.</li>
+                        <li>Evaluate the main socio-economic challenges hindering optimal performance.</li>
+                        <li>Determine the statistical relationship between {previewData.varA} and {previewData.varB}.</li>
+                        <li>Offer strategic recommendations to policy makers.</li>
                       </ul>
                     </div>
-
                     <div className="space-y-2">
                       <h4 className="font-bold text-zinc-900">1.4 Research Questions</h4>
-                      <p>To guide this investigation, the following research questions have been formulated:</p>
                       <ul className="list-disc pl-6 space-y-1 leading-relaxed">
-                        <li>What is the current level of implementation and awareness of {previewData.varA} in {previewData.caseStudy}?</li>
-                        <li>What are the primary challenges affecting the optimal integration of {previewData.varA} in the target region?</li>
-                        <li>Is there any significant relationship between {previewData.varA} and {previewData.varB} within the contemporary Nigerian environment?</li>
+                        <li>What is the current level of {previewData.varA} in {previewData.caseStudy}?</li>
+                        <li>What are the primary challenges affecting {previewData.varA}?</li>
+                        <li>Is there a significant relationship between {previewData.varA} and {previewData.varB}?</li>
                       </ul>
                     </div>
-
                     <div className="space-y-2">
                       <h4 className="font-bold text-zinc-900">1.5 Research Hypotheses</h4>
                       <p className="italic">Hypothesis One:</p>
-                      <p className="pl-4 leading-relaxed"><strong>H0:</strong> There is no significant relationship between the implementation of {previewData.varA} and the performance of {previewData.varB} in {previewData.caseStudy}.</p>
-                      <p className="pl-4 leading-relaxed"><strong>H1:</strong> There is a significant relationship between the implementation of {previewData.varA} and the performance of {previewData.varB} in {previewData.caseStudy}.</p>
+                      <p className="pl-4 leading-relaxed"><strong>H0:</strong> No significant relationship between {previewData.varA} and {previewData.varB}.</p>
+                      <p className="pl-4 leading-relaxed"><strong>H1:</strong> Significant relationship between {previewData.varA} and {previewData.varB}.</p>
                     </div>
                   </div>
-                  <div className="text-right text-[9px] text-zinc-400 font-mono">Page 8 of 50</div>
-                </div>
+                  <LockOverlay label="Page 8 of 50 is Locked" />
+                </A4Page>
 
-                {/* Page 9: Chapter One - Introduction (Part 3) - Blurred Page to trigger purchase */}
-                <div className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl select-none aspect-[1/1.414] overflow-hidden" style={{ fontSize: `${previewZoom / 100}em` }}>
-                  <div className="font-serif space-y-6 text-xs text-justify blur-[6px] select-none pointer-events-none opacity-40">
-                    <div className="space-y-2">
-                      <h4 className="font-bold text-zinc-900">1.6 Significance of the Study</h4>
-                      <p style={{ textIndent: '2rem' }} className="leading-loose">
-                        The findings of this study will be of immense benefit to policy makers, public administrators, and private sector practitioners who are committed to optimizing {previewData.varA} to drive {previewData.varB}. By providing empirical data, this work will serve as a guidepost for designing interventions that address local bottlenecks. Furthermore, it will contribute to the sparse literature on this topic in developing countries and serve as reference for future researchers.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-bold text-zinc-900">1.7 Scope and Delimitation</h4>
-                      <p style={{ textIndent: '2rem' }} className="leading-loose">
-                        This study is delimited to {previewData.caseStudy} with particular focus on the operations of administrative systems. The time scope of the research covers active datasets from recent quarters, ensuring that the findings reflect modern realities.
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Secure lock banner overlay */}
-                  <div className="absolute inset-0 bg-zinc-950/15 backdrop-blur-[5px] flex flex-col items-center justify-center p-6 text-center z-20">
-                    <div className="bg-white/95 border border-zinc-200 rounded-2xl p-6 shadow-2xl max-w-sm flex flex-col items-center gap-3">
-                      <lucide.Lock className="w-8 h-8 text-amber-500 animate-pulse" />
-                      <h4 className="text-zinc-950 font-black text-xs uppercase tracking-wider">Page 9 of 50 is Locked</h4>
-                      <p className="text-zinc-600 text-[10px] leading-relaxed">
-                        To protect intellectual property, pages 9 to 50 are locked in this preview. Purchase this project to download the complete file.
-                      </p>
-                      <button 
-                        onClick={() => {
-                          setPreview(null);
-                          openCart({
-                            topicId: preview.id,
-                            department: preview.department,
-                            level: preview.level,
-                            title: preview.title,
-                            basePrice: getTopicPrice(preview.level, preview.department || 'General', Number(preview.price))
-                          });
-                        }} 
-                        className="mt-1 w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-lg tracking-wider transition"
-                      >
-                        Get Material & Unlock (50 Pages)
-                      </button>
-                    </div>
-                  </div>
-                  <div className="absolute bottom-4 right-12 text-[9px] text-zinc-400 font-mono">Page 9 of 50</div>
-                </div>
-
-                {/* Remaining Pages 10-50 rendered as blurred locks */}
-                {Array.from({ length: 41 }, (_, idx) => {
-                  const pageNum = idx + 10;
+                {/* Pages 9-50: All remaining pages — LOCKED with generated text */}
+                {Array.from({ length: 42 }, (_, idx) => {
+                  const pageNum = idx + 9;
                   return (
-                    <div key={pageNum} className="relative mx-auto w-full max-w-[210mm] bg-white text-zinc-950 border border-zinc-300 p-12 md:p-20 shadow-2xl select-none aspect-[1/1.414] overflow-hidden" style={{ fontSize: `${previewZoom / 100}em` }}>
-                      <div className="font-serif space-y-6 text-xs text-justify blur-[6px] select-none pointer-events-none opacity-20">
-                        <div className="flex justify-between items-center text-[9px] text-zinc-400 border-b pb-1 mb-4 font-sans">
-                          <span>CHAPTER {pageNum < 25 ? 'TWO: LITERATURE REVIEW' : pageNum < 38 ? 'THREE: METHODOLOGY' : pageNum < 46 ? 'FOUR: DATA ANALYSIS' : 'FIVE: SUMMARY & CONCLUSION'}</span>
+                    <A4Page key={pageNum} pageNum={pageNum} locked className="overflow-hidden">
+                      <div className="font-serif space-y-4 sm:space-y-6 text-[10px] sm:text-xs text-justify blur-[6px] select-none pointer-events-none opacity-20">
+                        <div className="flex justify-between items-center text-[8px] sm:text-[9px] text-zinc-400 border-b pb-1 mb-3 sm:mb-4 font-sans">
+                          <span>CHAPTER {pageNum < 20 ? 'ONE: INTRODUCTION' : pageNum < 30 ? 'TWO: LITERATURE REVIEW' : pageNum < 40 ? 'THREE: METHODOLOGY' : pageNum < 47 ? 'FOUR: DATA ANALYSIS' : 'FIVE: CONCLUSION'}</span>
                           <span>Page {pageNum}</span>
                         </div>
                         <p style={{ textIndent: '2rem' }} className="leading-loose">
-                          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut feugiat lectus id interdum aliquet. Proin vitae felis nec libero ultrices tempor. Mauris feugiat dictum nibh, ac convallis purus congue non. Integer cursus leo a scelerisque viverra. Praesent gravida arcu eget congue congue.
+                          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut feugiat lectus id interdum aliquet. Proin vitae felis nec libero ultrices tempor. Mauris feugiat dictum nibh.
                         </p>
                         <p style={{ textIndent: '2rem' }} className="leading-loose">
-                          In the context of the Nigerian educational and professional space, variables associated with {previewData.varA} have shown a direct correlation with {previewData.varB}. Under empirical conditions, regression modeling outputs show significant positive indicators.
+                          In the context of the Nigerian educational space, variables associated with {previewData.varA} have shown a direct correlation with {previewData.varB}. Regression modeling outputs show significant positive indicators.
                         </p>
                         <p style={{ textIndent: '2rem' }} className="leading-loose">
-                          Therefore, the standard evaluation mechanisms for {previewData.caseStudy} require absolute optimization to support sustainable practices.
+                          The standard evaluation mechanisms for {previewData.caseStudy} require absolute optimization to support sustainable practices across the entire operational framework.
                         </p>
                       </div>
-
-                      {/* Locked watermark overlay */}
-                      <div className="absolute inset-0 bg-zinc-950/15 backdrop-blur-[6px] flex flex-col items-center justify-center p-6 text-center z-20">
-                        <div className="bg-white/95 border border-zinc-200 rounded-2xl p-6 shadow-2xl max-w-sm flex flex-col items-center gap-3">
-                          <lucide.Lock className="w-8 h-8 text-amber-500 animate-pulse" />
-                          <h4 className="text-zinc-950 font-black text-xs uppercase tracking-wider">Page {pageNum} of 50 is Locked</h4>
-                          <p className="text-zinc-600 text-[10px] leading-relaxed">
-                            Complete the purchase to unlock all chapters (1–5) written in standard Nigerian university style (50 pages).
-                          </p>
-                          <button 
-                            onClick={() => {
-                              setPreview(null);
-                              openCart({
-                                topicId: preview.id,
-                                department: preview.department,
-                                level: preview.level,
-                                title: preview.title,
-                                basePrice: getTopicPrice(preview.level, preview.department || 'General', Number(preview.price))
-                              });
-                            }} 
-                            className="mt-1 w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-lg tracking-wider transition"
-                          >
-                            Get Complete Material
-                          </button>
-                        </div>
-                      </div>
-                      <div className="absolute bottom-4 right-12 text-[9px] text-zinc-400 font-mono">Page {pageNum} of 50</div>
-                    </div>
+                      {/* Full CTA every 10th page; a quiet badge on the rest. */}
+                      {pageNum % 10 === 0
+                        ? <LockOverlay label={`Page ${pageNum} of 50 is Locked`} cta="Unlock All 50 Pages" />
+                        : <SubtleLock label={`Page ${pageNum} of 50 — Locked`} />}
+                    </A4Page>
                   );
                 })}
               </div>
 
-              {/* Footer Actions */}
-              <div className="p-4 border-t border-theme/50 flex flex-col md:flex-row justify-between items-center gap-4 bg-secondary/20">
-                <div className="text-left">
-                  <span className="block text-[11px] font-bold text-secondary uppercase">Project Scope details</span>
-                  <span className="text-xs text-primary font-bold">{preview.pages || 50} pages • Chapters 1-5 complete (MS Word & PDF format)</span>
+              {/* Footer — responsive */}
+              <div className="p-2.5 sm:p-4 border-t border-theme/50 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-secondary/20">
+                <div className="text-center sm:text-left">
+                  <span className="block text-[9px] sm:text-[11px] font-bold text-secondary uppercase">Project Scope</span>
+                  <span className="text-[10px] sm:text-xs text-primary font-bold">{preview.pages || 50} pages • Chapters 1-5 (Word & PDF)</span>
                 </div>
                 <button 
                   onClick={() => {
@@ -1711,9 +1653,9 @@ Furthermore, there is a lack of localized research that addresses the specific c
                       basePrice: getTopicPrice(preview.level, preview.department || 'General', Number(preview.price))
                     });
                   }} 
-                  className="bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2"
+                  className="bg-emerald-500 hover:bg-emerald-400 text-black px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition flex items-center gap-2 w-full sm:w-auto justify-center"
                 >
-                  💳 Get Complete Material — {naira(getTopicPrice(preview.level, preview.department || 'General', Number(preview.price)))}
+                  💳 Get Material — {naira(getTopicPrice(preview.level, preview.department || 'General', Number(preview.price)))}
                 </button>
               </div>
             </div>

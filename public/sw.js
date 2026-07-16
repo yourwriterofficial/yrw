@@ -2,7 +2,23 @@
 const APP_ORIGIN = self.location.origin;
 
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+
+// Take over immediately and drop every Cache Storage entry the previous build
+// left behind, so a newly activated worker never serves stale assets.
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      const names = await caches.keys();
+      await Promise.all(names.map((name) => caches.delete(name)));
+      await self.clients.claim();
+    })()
+  );
+});
+
+// Lets the page tell a waiting worker to activate without prompting the user.
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
+});
 
 // ── Push: server-sent notification ──────────────────────────────────────────
 self.addEventListener('push', (event) => {

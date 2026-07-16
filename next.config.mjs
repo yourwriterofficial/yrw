@@ -3,6 +3,15 @@ const nextConfig = {
   experimental: {},
   allowedDevOrigins: ['192.168.1.137', 'localhost'],
 
+  // Inlined at build time and read by PWAUpdater to detect that a new deployment
+  // is live. Vercel's own NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA only exists when
+  // "Automatically expose System Environment Variables" is enabled, so derive it
+  // here instead — the Date.now() fallback still changes on every build.
+  env: {
+    NEXT_PUBLIC_BUILD_ID:
+      process.env.VERCEL_GIT_COMMIT_SHA || `local_${Date.now()}`,
+  },
+
   // Perf: gzip/brotli compression + modern image formats via sharp (already a dep).
   compress: true,
   poweredByHeader: false,
@@ -26,6 +35,15 @@ const nextConfig = {
   // Security headers to prevent clickjacking, MIME sniffing, XSS, etc.
   async headers() {
     return [
+      {
+        // The service worker and manifest are the bootstrap for every other
+        // asset — if either is served from cache, a new deployment can never
+        // announce itself and the app keeps booting the old build.
+        source: '/:file(sw.js|manifest.json)',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+        ],
+      },
       {
         source: '/(.*)',
         headers: [

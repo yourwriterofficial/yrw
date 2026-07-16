@@ -717,7 +717,10 @@ function DashboardContent() {
       {/* === TAB: DASHBOARD === */}
       {activeTab === 'dashboard' && (
         <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
-          <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-theme pb-8">
+          {/* Row layout only from lg: at md the sidebar leaves ~480px, which can't
+              fit the heading plus this shrink-0 date pill — the pill overflowed
+              the viewport and got clipped. Stay stacked until there's real room. */}
+          <header className="mb-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-theme pb-8">
             <div>
               <h2 className="text-3xl font-black text-primary tracking-tight">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
               <p className="text-secondary mt-1.5 text-xs font-semibold uppercase tracking-wider">Here is the current status of your research pipeline.</p>
