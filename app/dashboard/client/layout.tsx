@@ -253,6 +253,12 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="border-t border-theme pt-6 mt-6">
+          <Link
+            href="/advertise"
+            className="flex items-center justify-center gap-2 w-full p-2.5 mb-4 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-black text-xs uppercase tracking-wider border border-amber-500/25 transition cursor-pointer shrink-0"
+          >
+            <lucide.Megaphone className="w-4 h-4" /> Advertise With Us
+          </Link>
           <div className="mb-4">
             <ThemeToggle />
           </div>
@@ -300,7 +306,16 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               {group.items.map(item => renderNavItem(item, gi === 0, () => setMobileMenuOpen(false)))}
             </div>
           ))}
-          <div className="p-2 border-t border-theme mt-1">
+          <div className="border-t border-theme mt-1 pt-2">
+            <Link
+              href="/advertise"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl bg-amber-500/10 text-amber-400 font-black text-xs uppercase tracking-wider border border-amber-500/25 transition cursor-pointer"
+            >
+              <lucide.Megaphone className="w-4 h-4" /> Advertise With Us
+            </Link>
+          </div>
+          <div className="p-2">
             <ThemeToggle />
           </div>
           <button onClick={handleLogout} className="mt-2 p-3 text-red-400 font-bold text-left flex items-center gap-2 rounded-xl hover:bg-red-500/10 transition"><lucide.LogOut className="w-4 h-4"/> Sign Out</button>
@@ -327,12 +342,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
             <NotificationBell isAdmin={false} userEmail={user?.email || ''} userId={user?.id} />
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-6 pt-4">
-            <PromoBanner position="inline" />
-          </div>
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto">{children}</div>
       </main>
     </div>
   );
