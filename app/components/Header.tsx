@@ -125,6 +125,9 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
           <Link href={user ? (isAdmin ? "/projects" : "/dashboard/client?tab=projects") : "/projects"} className="hover:text-primary transition-colors whitespace-nowrap">
             Ready-made projects
           </Link>
+          <Link href="/advertise" className="hover:text-primary transition-colors whitespace-nowrap">
+            Advertise
+          </Link>
           <Link href={processHref} className="hover:text-primary transition-colors whitespace-nowrap">
             How it works
           </Link>
@@ -212,20 +215,27 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
               </div>
 
               {/* Core Navigation Links */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Link
                   href="/"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 p-3 rounded-xl bg-card border border-theme text-sm font-medium text-primary transition-colors active:scale-[0.98]"
+                  className="flex items-center justify-center gap-1 p-2.5 rounded-xl bg-card border border-theme text-xs font-medium text-primary transition-colors active:scale-[0.98] text-center"
                 >
                   Home
                 </Link>
                 <Link
                   href={user ? (isAdmin ? "/projects" : "/dashboard/client?tab=projects") : "/projects"}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 p-3 rounded-xl bg-card border border-theme text-sm font-medium text-primary transition-colors active:scale-[0.98]"
+                  className="flex items-center justify-center gap-1 p-2.5 rounded-xl bg-card border border-theme text-xs font-medium text-primary transition-colors active:scale-[0.98] text-center"
                 >
-                  Ready-made projects
+                  Projects
+                </Link>
+                <Link
+                  href="/advertise"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-1 p-2.5 rounded-xl bg-card border border-theme text-xs font-medium text-primary transition-colors active:scale-[0.98] text-center"
+                >
+                  Advertise
                 </Link>
               </div>
 

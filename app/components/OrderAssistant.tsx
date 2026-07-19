@@ -8,8 +8,8 @@ import { compileMilestones } from './OrderMilestonesPayment';
 import type { CreateOrderServerActionResponse } from '@/lib/types';
 import { fetchPricingTiers } from '@/lib/pricingTiers';
 import {
-  Sparkles, X, ArrowLeft, GraduationCap, PenTool, Terminal, Briefcase, Settings,
-  CheckCircle2, Loader2, Bot, User as UserIcon, MessageCircle, Compass, Wallet,
+  HelpCircle, X, ArrowLeft, GraduationCap, PenTool, Terminal, Briefcase, Settings,
+  CheckCircle2, Loader2, Headphones, User as UserIcon, MessageCircle, Compass, Wallet,
 } from 'lucide-react';
 
 type CategoryId = 'academic' | 'content' | 'dev' | 'resume' | 'custom';
@@ -1120,7 +1120,7 @@ export default function OrderAssistant() {
     <>
       {!open && !tourActive && (
         <button onClick={openAssistant} className="fixed fab-bottom-safe left-6 z-50 flex items-center gap-2 pl-3 pr-4 py-3 rounded-full shadow-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:brightness-110 transition" aria-label="Open order assistant">
-          <Sparkles className="w-5 h-5" />
+          <HelpCircle className="w-5 h-5" />
           <span className="text-xs font-black uppercase tracking-wide hidden sm:inline">Need Help Ordering?</span>
         </button>
       )}
@@ -1129,7 +1129,7 @@ export default function OrderAssistant() {
         <div className="fixed fab-bottom-safe left-6 z-50 w-[92vw] max-w-sm bg-card border border-theme rounded-[24px] shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '82vh' }}>
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shrink-0">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
+              <HelpCircle className="w-4 h-4" />
               <span className="text-xs font-black uppercase tracking-wide">Order Assistant</span>
             </div>
             <div className="flex items-center gap-1">
@@ -1147,7 +1147,7 @@ export default function OrderAssistant() {
                 const link = m.text.replace('__PAY_LINK__', '');
                 return (
                   <div key={i} className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 bg-violet-500/20 text-violet-400"><Bot className="w-3.5 h-3.5" /></div>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 bg-violet-500/20 text-violet-400"><Headphones className="w-3.5 h-3.5" /></div>
                     <a href={link} className="px-3 py-2 rounded-2xl text-xs font-black uppercase bg-emerald-500 text-black rounded-tl-sm">Pay Now →</a>
                   </div>
                 );
@@ -1155,7 +1155,7 @@ export default function OrderAssistant() {
               return (
                 <div key={i} className={`flex items-start gap-2 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${m.role === 'bot' ? 'bg-violet-500/20 text-violet-400' : 'bg-secondary text-secondary'}`}>
-                    {m.role === 'bot' ? <Bot className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
+                    {m.role === 'bot' ? <Headphones className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
                   </div>
                   <div className={`px-3 py-2 rounded-2xl text-xs leading-relaxed max-w-[80%] whitespace-pre-line ${m.role === 'bot' ? 'bg-secondary text-primary rounded-tl-sm' : 'bg-emerald-500/10 text-primary rounded-tr-sm'}`}>
                     {m.text}
@@ -1165,7 +1165,7 @@ export default function OrderAssistant() {
             })}
             {thinking && (
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center bg-violet-500/20 text-violet-400"><Bot className="w-3.5 h-3.5" /></div>
+                <div className="w-6 h-6 rounded-full flex items-center justify-center bg-violet-500/20 text-violet-400"><Headphones className="w-3.5 h-3.5" /></div>
                 <div className="px-3 py-2 rounded-2xl bg-secondary text-secondary text-xs">•••</div>
               </div>
             )}

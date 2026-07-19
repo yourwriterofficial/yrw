@@ -13,30 +13,28 @@ export type OrderEmailData = {
   word_count?: number;
   reference_style?: string;
   font_specification?: string;
-  /** Optional — when present, payment-breakdown copy reflects these actual
-   * milestones instead of assuming a fixed 60/40 split. */
   payment_milestones?: Array<{ name: string; percentage: number; amount?: number }> | null;
   sixty_percent_paid?: boolean | null;
   forty_percent_paid?: boolean | null;
 };
 
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://yourresearchwriter.com.ng';
+
 const formatNaira = (amount: number) =>
   `₦${amount.toLocaleString('en-NG')}`;
 
-/** Renders the "pay X now, Y later" breakdown block from an order's actual
- * milestones (falling back to 60/40 only when the order has none). */
 const milestoneBreakdownHtml = (order: OrderEmailData) => {
   const milestones = milestonesFromOrder(order);
   return milestones
     .map((m: { name: string; percentage: number; amount: number }, i: number) => `
-        <div style="margin-top: ${i === 0 ? 0 : 12}px;">
-          <span class="label">${i === 0 ? `To begin work, pay ${m.name}` : m.name}${i === milestones.length - 1 && milestones.length > 1 ? ' (final)' : ''}</span><br>
-          <span class="amount">${formatNaira(m.amount)} (${m.percentage}%)</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; ${i < milestones.length - 1 ? 'border-bottom: 1px solid #27272a;' : ''}">
+          <span style="font-size: 11px; text-transform: uppercase; tracking-wider: 1px; color: #a1a1aa; font-weight: 700;">${i === 0 ? `Initial Deposit (${m.name})` : m.name}</span>
+          <span style="font-size: 14px; color: #10b981; font-weight: 800;">${formatNaira(m.amount)} (${m.percentage}%)</span>
         </div>`)
     .join('');
 };
 
-// Base HTML template with responsive design
+// High-End Professional Base HTML Template
 const baseLayout = (content: string) => `
 <!DOCTYPE html>
 <html>
@@ -47,146 +45,157 @@ const baseLayout = (content: string) => `
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background-color: #050505;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.5;
-      padding: 20px;
+      background-color: #09090b;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #f4f4f5;
+      padding: 30px 12px;
     }
-    .container {
-      max-width: 560px;
+    .wrapper {
+      max-width: 580px;
       margin: 0 auto;
-      background: #0a0a0a;
-      border-radius: 32px;
-      border: 1px solid #1DB954;
+      background: #121215;
+      border-radius: 24px;
+      border: 1px solid #27272a;
       overflow: hidden;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
     }
     .header {
-      background: linear-gradient(135deg, #0a2e1a, #050505);
-      padding: 32px 28px;
+      background: linear-gradient(135deg, #064e3b 0%, #022c22 100%);
+      padding: 36px 32px;
       text-align: center;
-      border-bottom: 1px solid #1DB954;
+      border-bottom: 1px solid #059669;
+    }
+    .brand-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 100px;
+      color: #34d399;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
     }
     .logo {
-      font-size: 28px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #1DB954, #10b981);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffffff;
       letter-spacing: -0.5px;
+      text-decoration: none;
     }
-    .tagline {
-      font-size: 10px;
-      color: #1DB954;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-top: 8px;
+    .logo span {
+      color: #34d399;
     }
-    .content {
-      padding: 32px 28px;
-      color: #e5e5e5;
+    .body-content {
+      padding: 36px 32px;
     }
-    h1, h2 {
+    h1 {
+      font-size: 22px;
       font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 14px;
+      letter-spacing: -0.3px;
+    }
+    h2 {
+      font-size: 16px;
+      font-weight: 800;
+      color: #34d399;
+      margin-bottom: 12px;
+    }
+    p {
+      font-size: 14px;
+      color: #a1a1aa;
       margin-bottom: 16px;
     }
-    h1 { font-size: 24px; color: white; }
-    h2 { font-size: 18px; color: #1DB954; }
-    .order-card {
-      background: #050505;
-      border: 1px solid #1DB954;
-      border-radius: 20px;
-      padding: 20px;
+    .card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 18px;
+      padding: 24px;
       margin: 24px 0;
-      text-align: center;
     }
-    .order-id {
-      font-size: 20px;
-      font-weight: 800;
-      color: white;
-      letter-spacing: 1px;
-      font-family: monospace;
-    }
-    .label {
+    .card-label {
       font-size: 10px;
-      color: #1DB954;
+      color: #71717a;
       text-transform: uppercase;
       font-weight: 700;
       letter-spacing: 1px;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
-    .price {
-      font-size: 36px;
+    .order-id {
+      font-size: 18px;
       font-weight: 800;
-      color: #1DB954;
-      margin: 16px 0;
+      color: #ffffff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
-    .amount {
-      font-size: 28px;
-      font-weight: 800;
-      color: #1DB954;
+    .price-tag {
+      font-size: 32px;
+      font-weight: 900;
+      color: #34d399;
+      margin: 12px 0;
     }
-    .button {
+    .cta-button {
       display: inline-block;
-      background: #1DB954;
-      color: #000 !important;
+      width: 100%;
+      text-align: center;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #000000 !important;
       text-decoration: none;
-      padding: 14px 28px;
-      border-radius: 40px;
-      font-weight: 800;
+      padding: 15px 30px;
+      border-radius: 100px;
+      font-weight: 900;
       font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin-top: 20px;
-      transition: background 0.2s;
-    }
-    .button:hover {
-      background: #17a44b;
+      margin-top: 24px;
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.25);
     }
     .divider {
       height: 1px;
-      background: #222;
-      margin: 24px 0;
+      background: #27272a;
+      margin: 20px 0;
+    }
+    .badge-status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
     }
     .footer {
-      padding: 20px 28px;
+      padding: 24px 32px;
       text-align: center;
       font-size: 11px;
-      color: #555;
-      border-top: 1px solid #222;
-      background: #050505;
+      color: #71717a;
+      border-top: 1px solid #27272a;
+      background: #09090b;
     }
-    .status-badge {
-      display: inline-block;
-      background: #1DB95420;
-      border: 1px solid #1DB954;
-      border-radius: 50px;
-      padding: 4px 12px;
-      font-size: 10px;
-      font-weight: 800;
-      color: #1DB954;
-      text-transform: uppercase;
-    }
-    @media (max-width: 600px) {
-      .content, .header, .footer { padding-left: 20px; padding-right: 20px; }
-      .price { font-size: 28px; }
-      .amount { font-size: 22px; }
+    .footer a {
+      color: #34d399;
+      text-decoration: none;
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="wrapper">
     <div class="header">
-      <div class="logo">YourResearchWriter</div>
-      <div class="tagline">Academic & Professional Excellence</div>
+      <div class="brand-badge">Official Service Notification</div>
+      <div><a href="${SITE_URL}" class="logo">YourResearch<span>Writer</span></a></div>
     </div>
-    <div class="content">
+    <div class="body-content">
       ${content}
     </div>
     <div class="footer">
-      © ${new Date().getFullYear()} YourResearchWriter – All documents encrypted. <br>
-      Need help? <a href="https://wa.me/2348121443666" style="color: #1DB954; text-decoration: none;">Contact Support</a>
+      © ${new Date().getFullYear()} YourResearchWriter. Plagiarism-Free Academic & Professional Writing.<br>
+      Direct Support: <a href="https://wa.me/2348121443666">WhatsApp Customer Desk</a>
     </div>
   </div>
 </body>
@@ -198,20 +207,21 @@ export const emailTemplates = {
   clientOrderConfirmation: (order: OrderEmailData) => ({
     subject: `✅ Order Received: ${order.order_id}`,
     html: baseLayout(`
-      <h1>Thank you, ${order.legal_name}!</h1>
-      <p>We have securely received your request. Our team will review your brief and send a formal quote within 24 hours.</p>
-      <div class="order-card">
-        <div class="label">Order ID</div>
+      <h1>Order Confirmation</h1>
+      <p>Hello <strong>${order.legal_name}</strong>,</p>
+      <p>We have securely logged your research project submission. Our academic specialists are reviewing your requirements and preparing your brief.</p>
+      <div class="card">
+        <div class="card-label">Order Reference</div>
         <div class="order-id">${order.order_id}</div>
         <div class="divider"></div>
-        <div class="label">Project Topic</div>
-        <div style="margin: 8px 0 16px;">${order.topic}</div>
-        <div class="label">Estimated Quote</div>
-        <div class="price">${formatNaira(order.financial_quote)}</div>
-        <div style="font-size: 12px;">${milestoneBreakdownHtml(order)}</div>
+        <div class="card-label">Project Title</div>
+        <p style="color: #ffffff; font-weight: 700; margin-top: 4px; margin-bottom: 12px;">${order.topic}</p>
+        <div class="card-label">Project Quote</div>
+        <div class="price-tag">${formatNaira(order.financial_quote)}</div>
+        <div class="divider"></div>
+        ${milestoneBreakdownHtml(order)}
       </div>
-      <p>You can track progress and make payments from your dashboard.</p>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" class="button">Go to Dashboard</a>
+      <a href="${SITE_URL}/dashboard/client" class="cta-button">Access Client Vault & Track</a>
     `),
   }),
 
@@ -219,15 +229,19 @@ export const emailTemplates = {
   adminNewOrder: (order: OrderEmailData) => ({
     subject: `🔔 NEW ORDER: ${order.order_id}`,
     html: baseLayout(`
-      <h2>New Order Alert</h2>
-      <div class="order-card">
-        <div><span class="label">Order ID</span><br><strong>${order.order_id}</strong></div>
-        <div style="margin-top: 12px;"><span class="label">Client</span><br>${order.legal_name} (${order.email})</div>
-        <div style="margin-top: 12px;"><span class="label">Topic</span><br>${order.topic}</div>
-        <div style="margin-top: 12px;"><span class="label">Quote</span><br>${formatNaira(order.financial_quote)}</div>
-        <div style="margin-top: 12px;"><span class="label">Deadline</span><br>${order.deadline || 'Not set'}</div>
+      <h2>New Client Order Submitted</h2>
+      <div class="card">
+        <div class="card-label">Order ID</div>
+        <div class="order-id">${order.order_id}</div>
+        <div class="divider"></div>
+        <div class="card-label">Client</div>
+        <p style="color: #ffffff; font-weight: 700; margin-bottom: 8px;">${order.legal_name} (${order.email})</p>
+        <div class="card-label">Topic</div>
+        <p style="color: #ffffff; font-weight: 700; margin-bottom: 8px;">${order.topic}</p>
+        <div class="card-label">Total Value</div>
+        <div class="price-tag">${formatNaira(order.financial_quote)}</div>
       </div>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin" class="button">Review in Admin</a>
+      <a href="${SITE_URL}/admin" class="cta-button">Open Admin Control Panel</a>
     `),
   }),
 
@@ -237,15 +251,14 @@ export const emailTemplates = {
     html: baseLayout(`
       <h1>Your Quote is Ready</h1>
       <p>Dear ${order.legal_name},</p>
-      <p>We have reviewed your project brief and finalized the quote. Please find the details below:</p>
-      <div class="order-card">
-        <div class="label">Total Project Cost</div>
-        <div class="price">${formatNaira(order.financial_quote)}</div>
+      <p>We have reviewed your project brief and finalized the quote. Details are provided below:</p>
+      <div class="card">
+        <div class="card-label">Total Project Cost</div>
+        <div class="price-tag">${formatNaira(order.financial_quote)}</div>
         <div class="divider"></div>
         ${milestoneBreakdownHtml(order)}
       </div>
-      <p>Click the button below to log in and make the deposit. Your project will start immediately after confirmation.</p>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" class="button">Pay Deposit</a>
+      <a href="${SITE_URL}/dashboard/client" class="cta-button">Pay Deposit & Unlock</a>
     `),
   }),
 
@@ -253,18 +266,16 @@ export const emailTemplates = {
   depositPaid: (order: OrderEmailData) => ({
     subject: `💳 Deposit Confirmed – Work Started (${order.order_id})`,
     html: baseLayout(`
-      <h1>Payment Received!</h1>
+      <h1>Payment Confirmed!</h1>
       <p>Dear ${order.legal_name},</p>
-      <p>Your 60% deposit of <strong>${formatNaira(order.financial_quote * 0.6)}</strong> has been cleared. The research phase is now active.</p>
-      <div class="order-card">
-        <div class="label">Order ID</div>
+      <p>Your deposit has cleared successfully. Our academic specialists have initiated research and drafting for <strong>${order.topic}</strong>.</p>
+      <div class="card">
+        <div class="card-label">Order ID</div>
         <div class="order-id">${order.order_id}</div>
         <div class="divider"></div>
-        <div class="status-badge">Synthesis in progress</div>
-        <p style="margin-top: 16px;">Our experts have begun working on your topic: <strong>${order.topic}</strong></p>
+        <div class="badge-status">Synthesis in progress</div>
       </div>
-      <p>You can track progress in your dashboard. We will notify you when the draft is ready for review.</p>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" class="button">Track Progress</a>
+      <a href="${SITE_URL}/dashboard/client" class="cta-button">Track Live Progress</a>
     `),
   }),
 
@@ -274,14 +285,13 @@ export const emailTemplates = {
     html: baseLayout(`
       <h1>Your Draft is Ready</h1>
       <p>Hello ${order.legal_name},</p>
-      <p>The first draft of your project has been completed and uploaded to the secure vault. Please log in to review it.</p>
-      <div class="order-card">
-        <div class="label">To download the file, pay the remaining 40% balance</div>
-        <div class="price">${formatNaira(order.financial_quote * 0.4)}</div>
-        <div class="status-badge">Awaiting final payment</div>
+      <p>The draft for your project has been uploaded to your secure client vault. Pay the remaining balance to download the full manuscript.</p>
+      <div class="card">
+        <div class="card-label">Remaining Balance</div>
+        <div class="price-tag">${formatNaira(order.financial_quote * 0.4)}</div>
+        <div class="badge-status">Awaiting Final Balance</div>
       </div>
-      <p>Once the balance is cleared, you will be able to download the complete document instantly.</p>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" class="button">Pay Balance & Download</a>
+      <a href="${SITE_URL}/dashboard/client" class="cta-button">Pay Balance & Download</a>
     `),
   }),
 
@@ -289,17 +299,16 @@ export const emailTemplates = {
   balancePaid: (order: OrderEmailData) => ({
     subject: `🔓 Final Payment Cleared – Download Files (${order.order_id})`,
     html: baseLayout(`
-      <h1>Order Completed!</h1>
+      <h1>Order Unlocked!</h1>
       <p>Dear ${order.legal_name},</p>
-      <p>Thank you for the final payment of <strong>${formatNaira(order.financial_quote * 0.4)}</strong>. Your complete document is now unlocked.</p>
-      <div class="order-card">
-        <div class="label">Order ID</div>
+      <p>Thank you for clearing your balance. Your final documents are unlocked in your client vault.</p>
+      <div class="card">
+        <div class="card-label">Order Reference</div>
         <div class="order-id">${order.order_id}</div>
         <div class="divider"></div>
-        <div class="status-badge">Contract fulfilled</div>
-        <p style="margin-top: 16px;">You have <strong>3 days</strong> to request any revisions (comments in Word document). After that, the contract is finalized.</p>
+        <div class="badge-status">Fully Unlocked</div>
       </div>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" class="button">Download Files</a>
+      <a href="${SITE_URL}/dashboard/client" class="cta-button">Download Full Files</a>
     `),
   }),
 
@@ -307,15 +316,13 @@ export const emailTemplates = {
   orderCompleted: (order: OrderEmailData) => ({
     subject: `🎉 Order ${order.order_id} Completed`,
     html: baseLayout(`
-      <h1>Project Successfully Completed</h1>
+      <h1>Project Completed</h1>
       <p>Dear ${order.legal_name},</p>
-      <p>We have marked your order as complete. Thank you for choosing YourResearchWriter.</p>
-      <div class="order-card">
-        <div class="label">Your final files remain in the secure vault for 30 days.</div>
-        <div class="status-badge" style="background: #10b98120; border-color: #10b981;">Completed</div>
+      <p>We have finalized and completed order <strong>${order.order_id}</strong>. Thank you for choosing YourResearchWriter!</p>
+      <div class="card">
+        <div class="badge-status">Contract Fulfilled</div>
       </div>
-      <p>If you need any further assistance, please contact support.</p>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client" class="button">View Order</a>
+      <a href="${SITE_URL}/dashboard/client" class="cta-button">View Final Deliverables</a>
     `),
   }),
 
@@ -324,162 +331,151 @@ export const emailTemplates = {
     subject: `💳 ADMIN ALERT: Deposit Paid – ${order.order_id}`,
     html: baseLayout(`
       <h2>Deposit Confirmed</h2>
-      <p>A deposit of <strong>${formatNaira(order.financial_quote * 0.6)}</strong> (60%) has been cleared for order <strong>${order.order_id}</strong>.</p>
-      <div class="order-card">
-        <div><span class="label">Order ID</span><br><strong>${order.order_id}</strong></div>
-        <div style="margin-top: 12px;"><span class="label">Client</span><br>${order.legal_name} (${order.email})</div>
-        <div style="margin-top: 12px;"><span class="label">Topic</span><br>${order.topic}</div>
-        <div style="margin-top: 12px;"><span class="label">Total Cost</span><br>${formatNaira(order.financial_quote)}</div>
+      <p>Deposit cleared for order <strong>${order.order_id}</strong>.</p>
+      <div class="card">
+        <div class="card-label">Client</div>
+        <p style="color: #ffffff; font-weight: 700;">${order.legal_name} (${order.email})</p>
       </div>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin" class="button">Go to Admin Dashboard</a>
+      <a href="${SITE_URL}/admin" class="cta-button">Open Admin Dashboard</a>
     `),
   }),
 
   adminBalancePaid: (order: OrderEmailData) => ({
     subject: `🔓 ADMIN ALERT: Balance Paid – ${order.order_id}`,
     html: baseLayout(`
-      <h2>Final Balance Paid</h2>
-      <p>The final balance of <strong>${formatNaira(order.financial_quote * 0.4)}</strong> (40%) has been cleared for order <strong>${order.order_id}</strong>.</p>
-      <div class="order-card">
-        <div><span class="label">Order ID</span><br><strong>${order.order_id}</strong></div>
-        <div style="margin-top: 12px;"><span class="label">Client</span><br>${order.legal_name} (${order.email})</div>
-        <div style="margin-top: 12px;"><span class="label">Topic</span><br>${order.topic}</div>
-      </div>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin" class="button">Go to Admin Dashboard</a>
+      <h2>Final Balance Cleared</h2>
+      <p>Final payment cleared for order <strong>${order.order_id}</strong>.</p>
+      <a href="${SITE_URL}/admin" class="cta-button">Open Admin Dashboard</a>
     `),
   }),
 
   adminWalletTopup: (data: { email: string; full_name: string; amount: number; reference: string }) => ({
     subject: `💰 ADMIN ALERT: Wallet Funded – ₦${data.amount.toLocaleString('en-NG')}`,
     html: baseLayout(`
-      <h2>Wallet Deposit Completed</h2>
-      <p>A client has topped up their wallet balance.</p>
-      <div class="order-card">
-        <div><span class="label">Client</span><br><strong>${data.full_name} (${data.email})</strong></div>
-        <div style="margin-top: 12px;"><span class="label">Amount</span><br>₦${data.amount.toLocaleString('en-NG')}</div>
-        <div style="margin-top: 12px;"><span class="label">Reference</span><br>${data.reference}</div>
-      </div>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin" class="button">Go to Admin Dashboard</a>
+      <h2>Client Wallet Top-Up</h2>
+      <p>Client <strong>${data.full_name} (${data.email})</strong> added <strong>${formatNaira(data.amount)}</strong> to wallet (Ref: ${data.reference}).</p>
     `),
   }),
 
-  // Client: wallet top-up confirmation
   clientWalletTopup: (data: { full_name: string; amount: number; balance?: number; reference: string }) => ({
     subject: `💰 Wallet Funded – ₦${data.amount.toLocaleString('en-NG')}`,
     html: baseLayout(`
-      <h1>Wallet Top-Up Successful</h1>
+      <h1>Wallet Funded Successfully</h1>
       <p>Dear ${data.full_name},</p>
-      <p>Your wallet has been credited successfully. You can now use it to pay deposits and milestone balances instantly.</p>
-      <div class="order-card">
-        <div class="label">Amount Added</div>
-        <div class="price">${formatNaira(data.amount)}</div>
-        ${typeof data.balance === 'number' ? `<div class="divider"></div><div class="label">New Balance</div><div class="amount">${formatNaira(data.balance)}</div>` : ''}
-        <div style="margin-top: 12px; font-size: 11px; color: #777;">Ref: ${data.reference}</div>
-      </div>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?tab=wallet" class="button">View Wallet</a>
+      <p>Your wallet has been credited with <strong>${formatNaira(data.amount)}</strong>.</p>
+      <a href="${SITE_URL}/dashboard/client?tab=wallet" class="cta-button">View Wallet Balance</a>
     `),
   }),
 
-  // Client: a specific milestone was paid (custom milestone orders)
   milestonePaid: (order: OrderEmailData, milestone: { name: string; amount: number; percentage: number }, allPaid: boolean) => ({
     subject: `💳 Payment Confirmed: ${milestone.name} – ${order.order_id}`,
     html: baseLayout(`
-      <h1>Payment Received!</h1>
-      <p>Dear ${order.legal_name},</p>
-      <p>We've confirmed your payment for the <strong>${milestone.name}</strong> milestone on order <strong>${order.order_id}</strong>.</p>
-      <div class="order-card">
-        <div class="label">${milestone.name} (${milestone.percentage}%)</div>
-        <div class="price">${formatNaira(milestone.amount)}</div>
-        <div class="divider"></div>
-        <div class="status-badge">${allPaid ? 'Fully Paid — files unlocked' : 'Milestone cleared'}</div>
-      </div>
-      <p>${allPaid ? 'All milestones are now paid — your final files are available for download.' : 'The next milestone will unlock when its trigger is reached.'}</p>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?preview=${order.order_id}" class="button">View Order</a>
+      <h1>Milestone Payment Received</h1>
+      <p>Dear ${order.legal_name}, payment for <strong>${milestone.name}</strong> (${formatNaira(milestone.amount)}) has cleared.</p>
+      <a href="${SITE_URL}/dashboard/client" class="cta-button">View Order</a>
     `),
   }),
 
-  // Client: a milestone's work was marked delivered by the team (progress signal only)
   milestoneDelivered: (order: OrderEmailData, milestone: { name: string; percentage: number }) => ({
     subject: `📦 Milestone Delivered: ${milestone.name} – ${order.order_id}`,
     html: baseLayout(`
-      <h1>Milestone Completed</h1>
-      <p>Dear ${order.legal_name},</p>
-      <p>Our team has completed the <strong>${milestone.name}</strong> milestone for your project <strong>${order.topic}</strong>.</p>
-      <div class="order-card">
-        <div class="label">${milestone.name} (${milestone.percentage}%)</div>
-        <div class="status-badge">Work Delivered</div>
-        <p style="margin-top: 16px; font-size: 12px;">Final files are released once <strong>all</strong> milestones are fully paid.</p>
-      </div>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?preview=${order.order_id}" class="button">View Progress</a>
+      <h1>Milestone Delivered</h1>
+      <p>Dear ${order.legal_name}, the team delivered <strong>${milestone.name}</strong> for ${order.topic}.</p>
+      <a href="${SITE_URL}/dashboard/client" class="cta-button">Review Progress</a>
     `),
   }),
 
-  // Client: new file added to the secure vault
   vaultFileAdded: (order: OrderEmailData, fileName?: string) => ({
     subject: `🔐 New File in Your Vault – ${order.order_id}`,
     html: baseLayout(`
-      <h1>A New File Awaits You</h1>
-      <p>Dear ${order.legal_name},</p>
-      <p>We've added a new deliverable to your secure vault for order <strong>${order.order_id}</strong>.</p>
-      <div class="order-card">
-        ${fileName ? `<div class="label">File</div><div style="margin: 6px 0 14px; word-break: break-all;">${fileName}</div>` : ''}
-        <div class="status-badge">Secured in Vault</div>
-        <p style="margin-top: 16px; font-size: 12px;">Files unlock for download once your balance is fully cleared.</p>
-      </div>
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?tab=vault" class="button">Open Vault</a>
+      <h1>New Vault File Added</h1>
+      <p>A new deliverable ${fileName ? `(<strong>${fileName}</strong>)` : ''} has been added to your vault.</p>
+      <a href="${SITE_URL}/dashboard/client?tab=vault" class="cta-button">Open Vault</a>
     `),
   }),
 
-  // Client: an invoice was issued / sent
   invoiceIssued: (data: { legal_name: string; invoice_number: string; total_amount: number; invoice_url: string; project_title?: string }) => ({
     subject: `🧾 Invoice ${data.invoice_number} from YourResearchWriter`,
     html: baseLayout(`
-      <h1>Your Invoice is Ready</h1>
-      <p>Dear ${data.legal_name},</p>
-      <p>Please find your invoice for ${data.project_title ? `<strong>${data.project_title}</strong>` : 'your project'} below. You can view the full breakdown and pay each milestone securely online.</p>
-      <div class="order-card">
-        <div class="label">Invoice</div>
-        <div class="order-id">#${data.invoice_number}</div>
-        <div class="divider"></div>
-        <div class="label">Total</div>
-        <div class="price">${formatNaira(data.total_amount)}</div>
-      </div>
-      <a href="${data.invoice_url}" class="button">View & Pay Invoice</a>
+      <h1>Invoice Ready</h1>
+      <p>Dear ${data.legal_name}, invoice <strong>#${data.invoice_number}</strong> (${formatNaira(data.total_amount)}) is ready.</p>
+      <a href="${data.invoice_url}" class="cta-button">Pay Invoice Online</a>
     `),
   }),
 
-  // One-click auth link (guest checkout login, admin-issued recovery, etc.)
   magicLinkLogin: (data: { name: string; actionLink: string; title?: string; introHtml?: string; ctaText?: string }) => ({
     subject: data.title || 'Your login link — YourResearchWriter',
     html: baseLayout(`
       <h1>${data.title || 'Access Your Dashboard'}</h1>
       <p>Hi ${data.name},</p>
       ${data.introHtml || '<p>Click the button below to securely log in — no password needed.</p>'}
-      <a href="${data.actionLink}" class="button">${data.ctaText || 'Log In Now'}</a>
-      <p style="margin-top:20px; font-size:11px; color:#777;">This link is single-use and expires shortly. If you didn't request this, you can ignore this email.</p>
+      <a href="${data.actionLink}" class="cta-button">${data.ctaText || 'Log In Now'}</a>
     `),
   }),
 
-  // Generic branded message (admin direct messages, flexible one-offs)
+  adSubmittedUser: (data: { title: string; position: string; amount: number }) => ({
+    subject: `📢 Ad Campaign Submitted – Pending Review`,
+    html: baseLayout(`
+      <h1>Ad Campaign Submitted</h1>
+      <p>Your advertisement campaign has been received and queued for review.</p>
+      <div class="card">
+        <div class="card-label">Campaign Title</div>
+        <p style="color: #ffffff; font-weight: 700; margin-bottom: 8px;">${data.title}</p>
+        <div class="card-label">Placement Slot</div>
+        <p style="color: #34d399; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">${data.position}</p>
+        <div class="card-label">Total Amount</div>
+        <div class="price-tag">${formatNaira(data.amount)}</div>
+        <div class="badge-status">Awaiting Admin Verification</div>
+      </div>
+      <a href="${SITE_URL}/advertise" class="cta-button">Manage Your Campaigns</a>
+    `),
+  }),
+
+  adApprovedUser: (data: { title: string; position: string }) => ({
+    subject: `🚀 Ad Campaign Approved & Live!`,
+    html: baseLayout(`
+      <h1>Your Ad is Now Live!</h1>
+      <p>Great news! Your advertisement campaign has passed review and is now rendering live sitewide.</p>
+      <div class="card">
+        <div class="card-label">Campaign Title</div>
+        <p style="color: #ffffff; font-weight: 700; margin-bottom: 8px;">${data.title}</p>
+        <div class="card-label">Placement Slot</div>
+        <p style="color: #34d399; font-weight: 700; text-transform: uppercase; margin-bottom: 12px;">${data.position}</p>
+        <div class="badge-status">Active & Live</div>
+      </div>
+      <a href="${SITE_URL}/advertise" class="cta-button">View Live Campaign Stats</a>
+    `),
+  }),
+
+  adRejectedUser: (data: { title: string; reason: string }) => ({
+    subject: `❌ Update Regarding Your Ad Campaign`,
+    html: baseLayout(`
+      <h1>Ad Campaign Review Status</h1>
+      <p>Your advertisement submission was declined during our quality review.</p>
+      <div class="card">
+        <div class="card-label">Campaign Title</div>
+        <p style="color: #ffffff; font-weight: 700; margin-bottom: 8px;">${data.title}</p>
+        <div class="card-label">Rejection Reason</div>
+        <p style="color: #f87171; font-weight: 700; margin-top: 4px;">${data.reason}</p>
+      </div>
+      <a href="${SITE_URL}/advertise" class="cta-button">Return to Ad Portal</a>
+    `),
+  }),
+
   genericMessage: (data: { name?: string; title: string; body: string; ctaText?: string; ctaUrl?: string }) => ({
     subject: data.title,
     html: baseLayout(`
       <h1>${data.title}</h1>
-      ${data.name ? `<p>Dear ${data.name},</p>` : ''}
-      <div style="margin: 12px 0;">${data.body}</div>
-      ${data.ctaText && data.ctaUrl ? `<a href="${data.ctaUrl}" class="button">${data.ctaText}</a>` : ''}
+      ${data.name ? `<p>Hello <strong>${data.name}</strong>,</p>` : ''}
+      <div style="margin: 16px 0;">${data.body}</div>
+      ${data.ctaText && data.ctaUrl ? `<a href="${data.ctaUrl}" class="cta-button">${data.ctaText}</a>` : ''}
     `),
   }),
 };
 
-/**
- * Reusable branded email shell — wraps arbitrary body HTML in the same
- * header/footer/styling every template uses. Handy for ad-hoc emails that
- * don't warrant a dedicated template.
- */
 export function emailShell(bodyHtml: string, ctaText?: string, ctaUrl?: string): string {
   return baseLayout(`
     ${bodyHtml}
-    ${ctaText && ctaUrl ? `<a href="${ctaUrl}" class="button">${ctaText}</a>` : ''}
+    ${ctaText && ctaUrl ? `<a href="${ctaUrl}" class="cta-button">${ctaText}</a>` : ''}
   `);
 }

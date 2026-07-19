@@ -10,8 +10,7 @@ import {
   BookOpen, LineChart, PenTool, Briefcase, Terminal, ArrowRight,
   FileEdit, Users, PackageCheck, Wallet,
   Library, ShoppingBag, ChevronDown, ArrowUpRight, CheckCircle2,
-  Lock, Unlock, Eye, Download, ShieldCheck, Sparkles, HelpCircle,
-  FileText, ArrowDown
+  ShieldCheck,
 } from 'lucide-react';
 import { fetchPageSettings } from '@/lib/pageSettings';
 import { HOME_PAGE_DEFAULTS, type HomePageContent } from '@/lib/pageContentDefaults';
@@ -118,7 +117,7 @@ export default function LandingPage() {
 
         <div className="max-w-4xl mx-auto space-y-8 relative z-10">
           <div className="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full border border-theme bg-secondary text-secondary text-xs font-semibold tracking-wide mx-auto">
-            <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
+            <ShieldCheck className="w-3.5 h-3.5 text-accent" />
             <span>{hero.badge}</span>
           </div>
           
