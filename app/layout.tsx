@@ -7,6 +7,7 @@ import OrderAssistant from "./components/OrderAssistant";
 import PushAutoSubscriber from "./components/PushAutoSubscriber";
 import { ToastContainer } from "./components/ui/Toast";
 import ReferralCapture from "./components/ReferralCapture";
+import PromoPopup from "./components/PromoPopup";
 import { siteUrl } from "@/lib/siteUrl";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -94,6 +95,7 @@ export default function RootLayout({
           <ReferralCapture />
           {children}
           <OrderAssistant />
+          <PromoPopup />
           {/* Floating WhatsApp Support Button */}
           <a
             href="https://wa.me/2348121443666"

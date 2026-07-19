@@ -80,6 +80,9 @@ CREATE TABLE IF NOT EXISTS public.marketplace_settings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- 5. Ad credits balance on profiles (used by advertise page as a fallback to wallet)
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS ad_credits_balance NUMERIC NOT NULL DEFAULT 0;
+
 -- Seed initial default pricing tiers if not exists
 INSERT INTO public.ad_pricing (position, label, price_per_day, boost_price_per_day, min_days, max_days, description, slot_cap)
 VALUES 
@@ -138,7 +141,7 @@ BEGIN
     UPDATE public.user_ad_purchases SET impressions = impressions + 1 WHERE id = p_ad_id;
   END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 2. Atomic Click Increment
 CREATE OR REPLACE FUNCTION public.increment_ad_click(p_source TEXT, p_ad_id UUID)
@@ -150,7 +153,7 @@ BEGIN
     UPDATE public.user_ad_purchases SET clicks = clicks + 1 WHERE id = p_ad_id;
   END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 3. Get Slot Occupancy
 CREATE OR REPLACE FUNCTION public.get_slot_occupancy(p_position TEXT)
@@ -180,7 +183,7 @@ BEGIN
 
   RETURN QUERY SELECT v_occ, v_cap, v_next;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 4. Purchase Ad Placements RPC
 CREATE OR REPLACE FUNCTION public.purchase_ad_placements(p_user_id UUID, p_rows JSONB)
@@ -212,7 +215,7 @@ BEGIN
     );
   END LOOP;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 5. Pause User Ad
 CREATE OR REPLACE FUNCTION public.pause_user_ad(p_id UUID)
@@ -222,7 +225,7 @@ BEGIN
   SET paused_at = now()
   WHERE id = p_id AND (user_id = auth.uid() OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true));
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 6. Resume User Ad
 CREATE OR REPLACE FUNCTION public.resume_user_ad(p_id UUID)
@@ -242,7 +245,7 @@ BEGIN
     UPDATE public.user_ad_purchases SET paused_at = NULL WHERE id = p_id;
   END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 7. Approve User Ad
 CREATE OR REPLACE FUNCTION public.approve_user_ad(p_id UUID)
@@ -258,7 +261,7 @@ BEGIN
       rejection_reason = NULL
   WHERE id = p_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 8. Reject User Ad
 CREATE OR REPLACE FUNCTION public.reject_user_ad(p_id UUID, p_reason TEXT)
@@ -268,4 +271,4 @@ BEGIN
   SET status = 'rejected', rejection_reason = p_reason
   WHERE id = p_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;

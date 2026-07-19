@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import HomeStats from './components/HomeStats';
+import PromoBanner from './components/PromoBanner';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as lucide from 'lucide-react';
@@ -107,8 +108,12 @@ export default function LandingPage() {
     <div className="min-h-screen bg-primary text-primary font-['Inter'] selection:bg-accent/30 overflow-x-hidden">
       <Header />
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-header-32 pb-2">
+        <PromoBanner position="header" />
+      </div>
+
       {/* Hero Section */}
-      <section className="relative pt-header-32 pb-24 md:pb-32 px-4 sm:px-6 md:px-8 border-b border-theme overflow-hidden text-center">
+      <section className="relative pt-8 pb-24 md:pb-32 px-4 sm:px-6 md:px-8 border-b border-theme overflow-hidden text-center">
         {/* Dynamic Glowing Aura Background */}
         <div
           className="absolute left-1/2 top-0 -translate-x-1/2 w-[48rem] h-[48rem] rounded-full opacity-[0.08] blur-3xl pointer-events-none transition-all duration-1000 ease-in-out animate-blob"
@@ -536,6 +541,10 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-10">
+        <PromoBanner position="footer" />
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-theme py-16 px-4 sm:px-6 md:px-8 pb-safe bg-card">

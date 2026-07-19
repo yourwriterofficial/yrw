@@ -7,6 +7,7 @@ import Link from 'next/link';
 import * as lucide from 'lucide-react';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import NotificationBell from '@/app/components/ui/NotificationBell';
+import PromoBanner from '@/app/components/PromoBanner';
 import { getEffectiveUser, clearImpersonation } from '@/lib/impersonate';
 
 interface NavItem {
@@ -247,6 +248,10 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
+        <div className="mt-5">
+          <PromoBanner position="sidebar" limit={1} />
+        </div>
+
         <div className="border-t border-theme pt-6 mt-6">
           <div className="mb-4">
             <ThemeToggle />
@@ -322,7 +327,12 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
             <NotificationBell isAdmin={false} userEmail={user?.email || ''} userId={user?.id} />
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto">{children}</div>
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-6 pt-4">
+            <PromoBanner position="inline" />
+          </div>
+          {children}
+        </div>
       </main>
     </div>
   );
