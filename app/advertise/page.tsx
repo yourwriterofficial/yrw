@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Header from '@/app/components/Header';
 import { supabase } from '@/lib/supabaseClient';
 import { AD_POSITIONS, normalizeAdPages } from '@/lib/adPages';
+import ImageUploadField from '@/app/components/ImageUploadField';
 import {
   Megaphone, Clock, CheckCircle, BarChart2, MousePointerClick, Eye, Loader2,
   AlertTriangle, Wallet,
@@ -456,16 +457,16 @@ export default function AdvertisePage() {
                       className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-theme text-sm outline-none focus:border-emerald-500"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-secondary mb-1 uppercase tracking-wider">Desktop Banner Image URL</label>
-                    <input
-                      type="url"
-                      value={form.image_url}
-                      onChange={e => setForm({ ...form, image_url: e.target.value })}
-                      placeholder="https://..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-theme text-sm outline-none focus:border-emerald-500"
-                    />
-                  </div>
+                  <ImageUploadField
+                    label="Desktop Banner Image"
+                    value={form.image_url}
+                    onChange={url => setForm({ ...form, image_url: url })}
+                  />
+                  <ImageUploadField
+                    label="Mobile Banner Image"
+                    value={form.image_mobile_url}
+                    onChange={url => setForm({ ...form, image_mobile_url: url })}
+                  />
                 </div>
 
                 <div>

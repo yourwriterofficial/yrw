@@ -5,6 +5,7 @@ import Header from '@/app/components/Header';
 import { supabase } from '@/lib/supabaseClient';
 import { useAdminAds, useUserAdPurchases, useAdPricing, type Ad, type UserAdPurchase, type AdPricing } from '@/app/hooks/admin/useAds';
 import { AD_POSITIONS } from '@/lib/adPages';
+import ImageUploadField from '@/app/components/ImageUploadField';
 import {
   Megaphone, Plus, Pencil, Trash2, X, Eye, EyeOff, Loader2, CheckCircle2, RefreshCw,
 } from 'lucide-react';
@@ -399,15 +400,16 @@ export default function AdminAdsPage() {
                     className="w-full px-3 py-2 rounded-xl bg-secondary border border-theme text-xs font-bold outline-none focus:border-emerald-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-secondary mb-1">Desktop Image URL</label>
-                  <input
-                    type="url"
-                    value={form.image_url || ''}
-                    onChange={e => setForm({ ...form, image_url: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-secondary border border-theme text-xs font-bold outline-none focus:border-emerald-500"
-                  />
-                </div>
+                <ImageUploadField
+                  label="Desktop Image"
+                  value={form.image_url}
+                  onChange={url => setForm({ ...form, image_url: url })}
+                />
+                <ImageUploadField
+                  label="Mobile Image"
+                  value={form.image_mobile_url}
+                  onChange={url => setForm({ ...form, image_mobile_url: url })}
+                />
                 <div>
                   <label className="block text-xs font-bold text-secondary mb-1">Destination URL</label>
                   <input
