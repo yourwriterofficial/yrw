@@ -13,8 +13,8 @@ export async function GET() {
   try {
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, full_name, is_admin, whatsapp')
-      .order('full_name');
+      .select('id, full_name, is_admin, whatsapp, created_at')
+      .order('created_at', { ascending: false });
     if (profilesError) throw profilesError;
 
     const authUsers = await listAllAuthUsers(supabase);

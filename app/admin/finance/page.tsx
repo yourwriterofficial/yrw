@@ -68,7 +68,7 @@ export default function FinancePage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: usersData } = await supabase.from('profiles').select('id, full_name, email, is_admin').order('full_name');
+    const { data: usersData } = await supabase.from('profiles').select('id, full_name, email, is_admin, created_at').order('created_at', { ascending: false });
     if (usersData) setUsers(usersData);
 
     const { data: walletsData } = await supabase.from('wallets').select('user_id, balance');
