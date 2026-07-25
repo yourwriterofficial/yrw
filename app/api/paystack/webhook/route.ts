@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { notifyAdmins } from '@/lib/notify';
 import { creditReferralCommission } from '@/lib/affiliate';
+import { applyMilestonePayment, markMilestonePaid, allMilestonesPaid } from '@/lib/milestones';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -400,17 +401,36 @@ export async function POST(request: Request) {
         throw new Error(`Custom invoice ${invoiceNumber} not found.`);
       }
 
-      const milestones = invoiceData.milestones || [];
-      if (milestones[milestoneIndex]) {
-        milestones[milestoneIndex].paid = true;
-        milestones[milestoneIndex].paid_at = new Date().toISOString();
-        milestones[milestoneIndex].tx_ref = reference;
+      // Same validation as order milestones — an empty `milestones` array made
+      // `every()` vacuously true here too, flipping the invoice straight to PAID.
+      const invCheck = applyMilestonePayment(invoiceData.milestones, milestoneIndex, {
+        amountPaid: rawAmountPaid,
+      });
+      if (!invCheck.ok) {
+        console.error(`❌ Invoice milestone payment rejected for ${invoiceNumber}: [${invCheck.code}] ${invCheck.reason}`);
+        await supabase.from('transactions').insert({
+          user_id: null,
+          amount: rawAmountPaid,
+          type: 'payment',
+          reference,
+          status: 'needs_review',
+          notes: `UNAPPLIED (${invCheck.code}): ${invCheck.reason} — Invoice ${invoiceNumber}`,
+        });
+        await notifyAdmins({
+          title: `⚠️ Invoice payment needs manual review: ${invoiceNumber}`,
+          message: `₦${rawAmountPaid.toLocaleString()} was captured for invoice ${invoiceNumber} but could not be applied: ${invCheck.reason}`,
+          type: 'payment',
+          link: '/admin/invoices',
+        }).catch(e => console.warn('Admin review alert failed', e));
+        return NextResponse.json({ received: true, applied: false, reason: invCheck.code });
       }
-      
-      const allPaid = milestones.every((m: any) => m.paid);
+
+      const invStamped = markMilestonePaid(invCheck.milestones, milestoneIndex, reference);
+      const milestones = invStamped.milestones;
+      const allPaid = invStamped.allPaid;
       const anyPaid = milestones.some((m: any) => m.paid);
       const newStatus = allPaid ? 'PAID' : (anyPaid ? 'PARTIALLY_PAID' : 'PENDING');
-      
+
       await supabase
         .from('custom_invoices')
         .update({
@@ -666,26 +686,68 @@ export async function POST(request: Request) {
         .select('payment_milestones, client_id')
         .eq('order_id', orderStringId)
         .single();
-        
+
       if (fetchError || !orderData) {
         throw new Error(`Order ${orderStringId} not found for milestone update.`);
       }
-      
-      const milestones = orderData.payment_milestones || [];
-      if (milestones[milestoneIndex]) {
-        milestones[milestoneIndex].paid = true;
-        milestones[milestoneIndex].paid_at = new Date().toISOString();
-        milestones[milestoneIndex].tx_ref = tx_ref;
+
+      // Validate before applying. Previously this branch trusted the reference
+      // completely: an out-of-range index silently applied nothing while the
+      // order was still updated, an empty milestones array made `every()`
+      // vacuously true (marking the order fully paid), and the amount actually
+      // charged was never compared against what the milestone was worth.
+      const check = applyMilestonePayment(orderData.payment_milestones, milestoneIndex, {
+        amountPaid: rawAmountPaid,
+        reference: tx_ref,
+      });
+
+      if (!check.ok) {
+        // A retry of an already-applied payment is expected traffic, not an
+        // incident — ack it quietly. The tx_ref lives on the milestone itself,
+        // so this guard also covers guest orders, which never get a
+        // `transactions` row to key off.
+        if (check.code === 'duplicate_reference') {
+          console.log(`↩️  Milestone payment ${tx_ref} already applied to ${orderStringId}, ignoring retry.`);
+          return NextResponse.json({ received: true, applied: false, reason: 'duplicate' });
+        }
+
+        // The money is real and already captured, so never 500 here — that would
+        // make Paystack retry forever. Alert an admin to reconcile by hand.
+        console.error(`❌ Milestone payment rejected for ${orderStringId}: [${check.code}] ${check.reason}`);
+        // `transactions.user_id` is NOT NULL, so guests get no row — the admin
+        // alert below is the durable record in that case.
+        if (orderData.client_id) {
+          const { error: logErr } = await supabase.from('transactions').insert({
+            user_id: orderData.client_id,
+            amount: rawAmountPaid,
+            type: 'payment',
+            reference: tx_ref,
+            status: 'failed',
+            notes: `UNAPPLIED (${check.code}): ${check.reason} — Order #${orderStringId}`,
+          });
+          if (logErr) console.error('Failed to log unapplied payment:', logErr.message);
+        }
+        await notifyAdmins({
+          title: `⚠️ Payment needs manual review: ${orderStringId}`,
+          message: `₦${rawAmountPaid.toLocaleString()} was captured for order ${orderStringId} but could not be applied automatically: ${check.reason}`,
+          type: 'payment',
+          link: `/admin/orders?open=${orderStringId}`,
+          orderDbId: orderInfo.id,
+        }).catch(e => console.warn('Admin review alert failed', e));
+        return NextResponse.json({ received: true, applied: false, reason: check.code });
       }
-      
-      const allPaid = milestones.every((m: any) => m.paid);
-      const firstPaid = milestones[0]?.paid;
-      
+
+      const stamped = markMilestonePaid(check.milestones, milestoneIndex, tx_ref);
+      const { milestones, allPaid, firstPaid } = stamped;
+
       updates = {
         payment_milestones: milestones,
-        sixty_percent_paid: firstPaid || false,
-        forty_percent_paid: allPaid || false,
-        workflow_status: allPaid ? 'Completed' : (firstPaid ? 'Synthesis Active' : 'Briefing Received')
+        sixty_percent_paid: firstPaid,
+        forty_percent_paid: allPaid,
+        // Paying is not delivering. Clearing the final milestone unlocks the
+        // files but leaves completion to the admin, who marks it once the work
+        // is actually handed over.
+        workflow_status: firstPaid ? 'Synthesis Active' : 'Briefing Received',
       };
 
       // Every milestone gets its own confirmation — not just the first/last —
@@ -693,31 +755,33 @@ export async function POST(request: Request) {
       // instead of assuming a fixed 60/40 split. Mirrors the same template
       // already used by the wallet-milestone and admin-milestone routes.
       const paidMilestone = milestones[milestoneIndex];
-      if (paidMilestone) {
-        const { emailTemplates } = await import('@/lib/emailTemplates');
-        template = emailTemplates.milestonePaid(
-          orderEmailData,
-          { name: paidMilestone.name, amount: paidMilestone.amount, percentage: paidMilestone.percentage },
-          allPaid
-        );
-        adminTemplate = {
-          html: template.html,
-          subject: `[PAID] Milestone: ${paidMilestone.name} - Order #${orderStringId}`,
-        };
-      }
-      
-      // Log to transactions table
-      if (orderData.client_id && milestones[milestoneIndex]) {
-        await supabase.from('transactions').insert({
+      const { emailTemplates } = await import('@/lib/emailTemplates');
+      template = emailTemplates.milestonePaid(
+        orderEmailData,
+        { name: paidMilestone.name, amount: paidMilestone.amount, percentage: paidMilestone.percentage ?? 0 },
+        allPaid
+      );
+      adminTemplate = {
+        html: template.html,
+        subject: `[PAID] Milestone: ${paidMilestone.name} - Order #${orderStringId}`,
+      };
+
+      // `transactions.user_id` is NOT NULL, so guest orders cannot be logged
+      // here. That is precisely why the retry guard above reads the milestone's
+      // own tx_ref rather than this table.
+      if (orderData.client_id) {
+        const { error: logErr } = await supabase.from('transactions').insert({
           user_id: orderData.client_id,
-          amount: milestones[milestoneIndex].amount,
+          amount: paidMilestone.amount,
           type: 'payment',
           reference: tx_ref,
           status: 'completed',
+          notes: `Milestone: ${paidMilestone.name} — Order #${orderStringId}`,
         });
+        if (logErr) console.error('Failed to log milestone transaction:', logErr.message);
         await creditReferralCommission(supabase, {
           buyerId: orderData.client_id,
-          amount: milestones[milestoneIndex].amount,
+          amount: paidMilestone.amount,
           reference: tx_ref,
           note: `Milestone: ${orderStringId}`,
         });
@@ -735,7 +799,9 @@ export async function POST(request: Request) {
         await creditReferralCommission(supabase, { buyerId: orderInfo.client_id, amount: rawAmountPaid, reference: tx_ref, note: `Deposit: ${orderStringId}` });
       }
     } else if (paymentType === 'BALANCE') {
-      updates = { forty_percent_paid: true, workflow_status: 'Completed' };
+      // Balance cleared unlocks the files, but completion stays an admin call —
+      // the panel already has an explicit "Mark as Completed" action for it.
+      updates = { forty_percent_paid: true };
       const { emailTemplates } = await import('@/lib/emailTemplates');
       template = emailTemplates.balancePaid(orderEmailData);
       adminTemplate = emailTemplates.adminBalancePaid(orderEmailData);

@@ -4,6 +4,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { notifyUser, notifyAdmins } from '@/lib/notify';
 import { emailTemplates } from '@/lib/emailTemplates';
 import { isOrderFullyPaid } from '@/lib/orderPayment';
+import { applyMilestonePayment, markMilestonePaid } from '@/lib/milestones';
 import { creditReferralCommission } from '@/lib/affiliate';
 
 const admin = createServiceClient(
@@ -40,19 +41,13 @@ export async function POST(request: Request) {
     const isOwner = order.client_id === user.id || order.email?.toLowerCase() === user.email?.toLowerCase();
     if (!isOwner) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const milestones = Array.isArray(order.payment_milestones) ? [...order.payment_milestones] : [];
-    if (milestoneIndex < 0 || milestoneIndex >= milestones.length) {
-      return NextResponse.json({ error: 'Milestone index out of range' }, { status: 400 });
+    // Shared with the Paystack webhook so both payment paths validate identically.
+    const check = applyMilestonePayment(order.payment_milestones, milestoneIndex);
+    if (!check.ok) {
+      const status = check.code === 'no_milestones' || check.code === 'out_of_range' ? 400 : 400;
+      return NextResponse.json({ error: check.reason }, { status });
     }
-
-    const m = { ...milestones[milestoneIndex] };
-    if (m.paid) return NextResponse.json({ error: 'This milestone is already paid' }, { status: 400 });
-
-    // Enforce sequential payment — the next unpaid milestone must be this one
-    const nextUnpaid = milestones.findIndex((x: any) => !x.paid);
-    if (nextUnpaid !== milestoneIndex) {
-      return NextResponse.json({ error: 'Please pay milestones in order.' }, { status: 400 });
-    }
+    const m = { ...check.applied };
 
     const price = Number(m.amount);
     if (isNaN(price) || price <= 0) {
@@ -84,20 +79,17 @@ export async function POST(request: Request) {
     await creditReferralCommission(admin, { buyerId: user.id, amount: price, reference: txRef, note: `Milestone: ${orderId}` });
 
     // Mark milestone paid + sync legacy booleans (same shape as the webhook)
-    m.paid = true;
-    m.paid_at = new Date().toISOString();
-    m.tx_ref = txRef;
-    milestones[milestoneIndex] = m;
+    const { milestones, allPaid, firstPaid } = markMilestonePaid(check.milestones, milestoneIndex, txRef);
+    Object.assign(m, milestones[milestoneIndex]);
 
-    const allPaid = milestones.length > 0 && milestones.every((x: any) => x.paid);
-    const firstPaid = !!milestones[0]?.paid;
     const updates: any = {
       payment_milestones: milestones,
       sixty_percent_paid: firstPaid,
       forty_percent_paid: allPaid,
     };
-    if (allPaid) updates.workflow_status = 'Completed';
-    else if (firstPaid) updates.workflow_status = 'Synthesis Active';
+    // Clearing the last milestone unlocks the files but does not complete the
+    // order — completion is an admin action once the work is actually delivered.
+    if (firstPaid) updates.workflow_status = 'Synthesis Active';
 
     const { error: updErr } = await admin.from('orders').update(updates).eq('order_id', orderId);
     if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
@@ -107,7 +99,7 @@ export async function POST(request: Request) {
       const fullyPaid = isOrderFullyPaid({ ...order, payment_milestones: milestones });
       const tpl = emailTemplates.milestonePaid(
         { order_id: order.order_id, legal_name: order.legal_name, email: order.email, topic: order.topic, financial_quote: order.financial_quote },
-        { name: m.name, amount: m.amount, percentage: m.percentage },
+        { name: m.name, amount: m.amount, percentage: m.percentage ?? 0 },
         fullyPaid
       );
       await notifyUser({
