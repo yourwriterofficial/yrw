@@ -44,6 +44,10 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  // Broadcasts and admin DMs carry no link or order, so there is nowhere to
+  // navigate — those expand in place instead, otherwise the body was
+  // unreadable beyond the two-line clamp.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = useCallback(async () => {
@@ -94,8 +98,10 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
   }, [fetchNotifications, userId]);
 
   const handleNotificationClick = async (notif: Notification) => {
-    setIsOpen(false);
-    
+    const hasDestination = !!(notif.link || notif.order_id);
+    if (hasDestination) setIsOpen(false);
+    else setExpandedId(prev => (prev === notif.id ? null : notif.id));
+
     // 1. Mark as read on backend
     if (notif.status !== 'read') {
       try {
@@ -113,19 +119,13 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
       }
     }
 
-    // 2. Route to the linked page, fall back to the order, then to the dashboard home —
-    // every notification must go somewhere, even generic broadcast messages that have
-    // neither a link nor an order_id (e.g. admin mass-notify, individual admin DMs).
+    // 2. Route to the linked page, or to the order it belongs to. Messages with
+    // neither (admin broadcasts / DMs) stay put and expand above instead of
+    // dumping the user on the dashboard home with no way to read them.
     if (notif.link) {
       router.push(notif.link);
     } else if (notif.order_id) {
-      if (isAdmin) {
-        router.push(`/admin/orders?open=${notif.order_id}`);
-      } else {
-        router.push(`/dashboard/client?preview=${notif.order_id}`);
-      }
-    } else {
-      router.push(isAdmin ? '/admin' : '/dashboard/client');
+      router.push(isAdmin ? `/admin/orders?open=${notif.order_id}` : `/dashboard/client?preview=${notif.order_id}`);
     }
   };
 
@@ -217,6 +217,8 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
                 const unread = n.status !== 'read';
                 const IconComp = lucide[TYPE_ICON[n.type || 'system'] || 'Info'] as lucide.LucideIcon;
                 const typeColor = TYPE_COLOR[n.type || 'system'] || TYPE_COLOR.system;
+                const hasDestination = !!(n.link || n.order_id);
+                const expanded = expandedId === n.id;
                 return (
                   <button
                     key={n.id}
@@ -238,12 +240,18 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
                         {unread && <span className="w-2 h-2 rounded-full bg-purple-500 mt-1 shrink-0" />}
                       </div>
                       {n.message && (
-                        <p className="text-secondary leading-snug line-clamp-2 font-medium">
+                        <p className={`text-secondary leading-snug font-medium whitespace-pre-line ${expanded ? '' : 'line-clamp-2'}`}>
                           {n.message}
                         </p>
                       )}
                       <div className="flex justify-between items-center text-[10px] text-secondary font-bold pt-1">
-                        <span>{n.order_id ? `#${n.order_id}` : 'System'}</span>
+                        <span>
+                          {n.order_id
+                            ? `#${n.order_id}`
+                            : hasDestination
+                              ? 'Tap to open'
+                              : expanded ? 'Tap to collapse' : 'Tap to read'}
+                        </span>
                         <span>{formatDate(n.sent_at)}</span>
                       </div>
                     </div>

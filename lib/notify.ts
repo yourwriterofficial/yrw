@@ -8,6 +8,32 @@ const supabase = createClient(
 
 export type NotificationType = 'order_update' | 'payment' | 'vault_delivery' | 'admin_message' | 'promotion' | 'system';
 
+/**
+ * Turns an HTML email body into a short plain-text snippet for the in-app
+ * notification bell. Admin-composed messages used to store a fixed
+ * "You have a new message — tap to view" string, which made every alert in the
+ * bell look identical and told the user nothing.
+ */
+export function htmlToPreview(html: string, maxLength = 300): string {
+  const text = String(html || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<\/(p|div|h[1-6]|li|tr|br)>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!text) return 'Open to view this message.';
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1).trimEnd()}…` : text;
+}
+
 const EMAIL_PREF_COLUMN: Record<NotificationType, string> = {
   order_update: 'email_order_updates',
   payment: 'email_payments',
@@ -48,16 +74,30 @@ interface NotifyParams {
   emailAttachments?: { filename: string; content: Buffer | string }[];
   isAdminSent?: boolean;
   batchId?: string;
+  /**
+   * Bypass the recipient's category preference for email. Use only for direct,
+   * admin-initiated one-to-one sends where the admin explicitly chose the
+   * recipient — never for broadcasts, which must honour opt-outs.
+   */
+  forceEmail?: boolean;
 }
+
+export type NotifyResult = {
+  /** True only if the email actually reached Resend without throwing. */
+  emailed: boolean;
+  /** Why no email went out — surfaced to admins so "sent" is never a lie. */
+  emailSkipReason?: 'no_html' | 'opted_out' | 'no_address' | 'send_failed';
+};
 
 /**
  * Single entry point for notifying a user: writes the in-app notification,
  * sends the email (if the user allows that category and emailHtml is provided),
  * and pushes a Web Push notification (if the user allows it and has a subscription).
  * Never throws — a failure in one channel must not block the others or the caller.
+ * Returns whether the email leg actually succeeded, so callers can report honestly.
  */
-export async function notifyUser(params: NotifyParams): Promise<void> {
-  const { userId, title, message, type, link, orderDbId, emailHtml, emailSubject, emailAttachments, isAdminSent, batchId } = params;
+export async function notifyUser(params: NotifyParams): Promise<NotifyResult> {
+  const { userId, title, message, type, link, orderDbId, emailHtml, emailSubject, emailAttachments, isAdminSent, batchId, forceEmail } = params;
 
   let prefs: Record<string, boolean> | null = null;
   try {
@@ -71,10 +111,14 @@ export async function notifyUser(params: NotifyParams): Promise<void> {
     console.warn('[notify] failed to load preferences, defaulting to enabled:', e);
   }
 
-  const emailAllowed = prefs ? prefs[EMAIL_PREF_COLUMN[type]] !== false : type !== 'promotion';
+  const emailAllowed = forceEmail || (prefs ? prefs[EMAIL_PREF_COLUMN[type]] !== false : type !== 'promotion');
   const pushAllowed = prefs ? prefs[PUSH_PREF_COLUMN[type]] !== false : type !== 'promotion';
 
   const willEmail = emailAllowed && !!emailHtml;
+  const result: NotifyResult = {
+    emailed: false,
+    emailSkipReason: !emailHtml ? 'no_html' : !emailAllowed ? 'opted_out' : undefined,
+  };
 
   try {
     await supabase.from('notifications').insert({
@@ -95,20 +139,28 @@ export async function notifyUser(params: NotifyParams): Promise<void> {
 
   if (willEmail) {
     try {
-      const { data: profile } = await supabase.from('profiles').select('id').eq('id', userId).single();
+      // Resolve the address from auth (the source of truth). The old code also
+      // required a matching `profiles` row and silently sent nothing when it
+      // was missing — a profile is not a prerequisite for having an inbox.
       const { data: userRes } = await supabase.auth.admin.getUserById(userId);
       const to = userRes?.user?.email;
-      if (to && profile) {
-        await sendSystemEmail({ 
-          to, 
-          subject: emailSubject || title, 
-          html: emailHtml!, 
+      if (to) {
+        await sendSystemEmail({
+          to,
+          subject: emailSubject || title,
+          html: emailHtml!,
           attachments: emailAttachments,
           orderId: orderDbId ? String(orderDbId) : undefined,
           batchId: batchId || undefined
         });
+        result.emailed = true;
+        result.emailSkipReason = undefined;
+      } else {
+        result.emailSkipReason = 'no_address';
+        console.warn(`[notify] no email address on file for user ${userId}`);
       }
     } catch (e) {
+      result.emailSkipReason = 'send_failed';
       console.warn('[notify] email send failed (non-fatal):', e);
     }
   }
@@ -133,12 +185,29 @@ export async function notifyUser(params: NotifyParams): Promise<void> {
       console.warn('[notify] push send failed (non-fatal):', e);
     }
   }
+
+  return result;
 }
 
-/** Same as notifyUser but for a batch of recipients (admin mass-notify). */
-export async function notifyUsers(userIds: string[], params: Omit<NotifyParams, 'userId'>): Promise<void> {
+/**
+ * Same as notifyUser but for a batch of recipients (admin mass-notify).
+ * Returns per-channel counts so the caller can report what really went out
+ * instead of assuming every recipient was emailed.
+ */
+export async function notifyUsers(
+  userIds: string[],
+  params: Omit<NotifyParams, 'userId'>
+): Promise<{ total: number; emailed: number; optedOut: number; failed: number }> {
   const batchId = params.batchId || `batch_${Date.now()}`;
-  await Promise.all(userIds.map(userId => notifyUser({ ...params, userId, batchId })));
+  const results = await Promise.all(
+    userIds.map(userId => notifyUser({ ...params, userId, batchId }))
+  );
+  return {
+    total: userIds.length,
+    emailed: results.filter(r => r.emailed).length,
+    optedOut: results.filter(r => r.emailSkipReason === 'opted_out').length,
+    failed: results.filter(r => r.emailSkipReason === 'send_failed' || r.emailSkipReason === 'no_address').length,
+  };
 }
 
 /** Notifies all platform admins (in-app, email, and push notifications). */

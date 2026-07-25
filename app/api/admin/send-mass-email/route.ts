@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin, listAllAuthUsers } from '@/lib/adminAuth'
-import { notifyUsers } from '@/lib/notify'
+import { notifyUsers, htmlToPreview } from '@/lib/notify'
 import { emailShell } from '@/lib/emailTemplates'
 
 export async function POST(req: Request) {
@@ -27,9 +27,11 @@ export async function POST(req: Request) {
 
     // Sends email + in-app + push (per-user preference) through the unified pipeline.
     // Wrap the admin's body in the branded shell for a consistent look.
-    await notifyUsers(recipientIds, {
+    // Broadcasts honour per-user email opt-outs (unlike one-to-one admin
+    // messages), so report what actually went out rather than the headcount.
+    const outcome = await notifyUsers(recipientIds, {
       title: subject,
-      message: 'You have a new message from YourResearchWriter — tap to view.',
+      message: htmlToPreview(html),
       type: 'admin_message',
       isAdminSent: true,
       emailHtml: emailShell(html),
@@ -43,7 +45,13 @@ export async function POST(req: Request) {
       all_users: !!allUsers,
     })
 
-    return NextResponse.json({ success: true, sentCount: recipientIds.length })
+    return NextResponse.json({
+      success: true,
+      sentCount: recipientIds.length,
+      emailed: outcome.emailed,
+      optedOut: outcome.optedOut,
+      failed: outcome.failed,
+    })
   } catch (err: any) {
     console.error('Mass email error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })

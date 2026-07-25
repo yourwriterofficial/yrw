@@ -5,6 +5,9 @@ import * as lucide from 'lucide-react';
 import { showToast } from '@/app/components/ui/Toast';
 import PageHeader from '@/app/components/ui/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
+// Preview through the exact shell the server sends with — a second local copy
+// of the template drifted and showed admins something they never actually sent.
+import { emailShell } from '@/lib/emailTemplates';
 
 type AdminUser = { id: string; full_name: string; email: string };
 type MassLog = { id: number; subject: string; recipient_count: number; all_users: boolean; sent_at: string };
@@ -36,110 +39,6 @@ export default function EmailNotificationsPage() {
 
   // Prune
   const [pruning, setPruning] = useState(false);
-
-  const clientEmailShell = (bodyHtml: string) => {
-    const currentYear = new Date().getFullYear();
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YourResearchWriter</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background-color: #050505;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.5;
-      padding: 20px;
-    }
-    .container {
-      max-width: 560px;
-      margin: 0 auto;
-      background: #0a0a0a;
-      border-radius: 32px;
-      border: 1px solid #1DB954;
-      overflow: hidden;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-    .header {
-      background: linear-gradient(135deg, #0a2e1a, #050505);
-      padding: 32px 28px;
-      text-align: center;
-      border-bottom: 1px solid #1DB954;
-    }
-    .logo {
-      font-size: 28px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #1DB954, #10b981);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      letter-spacing: -0.5px;
-    }
-    .tagline {
-      font-size: 10px;
-      color: #1DB954;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-top: 8px;
-    }
-    .content {
-      padding: 32px 28px;
-      color: #e5e5e5;
-    }
-    h1, h2 {
-      font-weight: 800;
-      margin-bottom: 16px;
-    }
-    h1 { font-size: 24px; color: white; }
-    h2 { font-size: 18px; color: #1DB954; }
-    .button {
-      display: inline-block;
-      background: #1DB954;
-      color: #000 !important;
-      text-decoration: none;
-      padding: 14px 28px;
-      border-radius: 40px;
-      font-weight: 800;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-top: 20px;
-      transition: background 0.2s;
-    }
-    .button:hover {
-      background: #17a44b;
-    }
-    .footer {
-      padding: 20px 28px;
-      text-align: center;
-      font-size: 11px;
-      color: #555;
-      border-top: 1px solid #222;
-      background: #050505;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">YourResearchWriter</div>
-      <div class="tagline">Academic & Professional Excellence</div>
-    </div>
-    <div class="content">
-      ${bodyHtml}
-    </div>
-    <div class="footer">
-      © ${currentYear} YourResearchWriter – All documents encrypted. <br>
-      Need help? <a href="https://wa.me/2348121443666" style="color: #1DB954; text-decoration: none;">Contact Support</a>
-    </div>
-  </div>
-</body>
-</html>
-    `;
-  };
 
   // Mass-send audit log
   const [massLogs, setMassLogs] = useState<MassLog[]>([]);
@@ -223,7 +122,14 @@ export default function EmailNotificationsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        showToast(`Email sent to ${data.sentCount ?? recipientCount} users`, 'success');
+        const emailed = data.emailed ?? data.sentCount ?? recipientCount;
+        const skipped = (data.optedOut ?? 0) + (data.failed ?? 0);
+        showToast(
+          skipped > 0
+            ? `Emailed ${emailed} of ${data.sentCount} — ${skipped} skipped (opted out or undeliverable). All got the in-app alert.`
+            : `Email sent to ${emailed} ${emailed === 1 ? 'user' : 'users'}`,
+          skipped > 0 ? 'info' : 'success'
+        );
         setSubject('');
         setHtml('');
         setSelectedIds([]);
@@ -475,7 +381,7 @@ export default function EmailNotificationsPage() {
             </div>
             <div className="border border-theme/30 rounded-2xl overflow-hidden flex-1 bg-white">
               <iframe
-                srcDoc={clientEmailShell(previewHtml)}
+                srcDoc={emailShell(previewHtml)}
                 className="w-full h-full bg-white border-0"
                 title="Branded Email Broadcast Preview"
               />

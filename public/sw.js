@@ -28,8 +28,13 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'YourResearchWriter';
   const options = {
     body: data.body || 'You have a new notification',
+    // `icon` is the full-colour artwork shown in the notification body.
     icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-192x192.png',
+    // `badge` is the small status-bar mark on Android. Android paints it from
+    // the ALPHA CHANNEL ONLY — every opaque pixel becomes a flat white. Passing
+    // the full-colour square icon here rendered as a featureless white square,
+    // so this must stay a transparent-background monochrome glyph.
+    badge: '/icons/badge-96x96.png',
     tag: data.tag || 'yrw',
     renotify: true,
     vibrate: [100, 50, 100],

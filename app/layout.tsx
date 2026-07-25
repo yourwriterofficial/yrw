@@ -35,6 +35,16 @@ export const metadata: Metadata = {
     "content writing", "resume writing", "software development", "Nigeria",
   ],
   manifest: "/manifest.json",
+  // iOS uses the Home Screen icon as the artwork for web-push notifications and
+  // prefers apple-touch-icon over the manifest entries — without it, pushes on
+  // iPhone rendered as a blank tile.
+  icons: {
+    icon: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",

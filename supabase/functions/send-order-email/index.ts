@@ -4,7 +4,28 @@ import { Resend } from 'resend';
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
+/**
+ * DISABLED — superseded by app/api/admin/update-order/route.ts.
+ *
+ * This function duplicated the order-status emails that the Next.js route
+ * already sends through lib/emailTemplates.ts, with three defects:
+ *   1. Bare `<p>` bodies with no branded template at all.
+ *   2. `from: noreply@yourresearchwriter.com` — the verified Resend domain is
+ *      `yourresearchwriter.com.ng`, so Resend rejected every send and it fell
+ *      through to the Apps Script fallback, delivering the unstyled version.
+ *   3. It logged `email_logs.order_id = String(record.id)` (the bigint PK)
+ *      when that column is an FK to `orders.order_id` (the "RW-…" string),
+ *      so the log insert always violated the constraint.
+ *
+ * Left in place rather than deleted so the deployed endpoint keeps returning
+ * 200 to any still-attached database webhook instead of erroring. Detach the
+ * webhook in the Supabase dashboard, then this file can be removed entirely.
+ */
+const DISABLED = true;
+
 Deno.serve(async (req) => {
+  if (DISABLED) return new Response('disabled: handled by /api/admin/update-order', { status: 200 });
+
   const payload = await req.json();
   const { old_record, record, type } = payload;
 
