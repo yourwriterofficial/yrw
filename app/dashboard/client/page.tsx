@@ -17,6 +17,7 @@ import Button from '@/app/components/ui/Button';
 import NotificationPreferencesPanel from '@/app/components/ui/NotificationPreferencesPanel';
 import MilestoneTimeline from '@/app/components/ui/MilestoneTimeline';
 import { isOrderFullyPaid, isCustomPayment } from '@/lib/orderPayment';
+import { deriveOrderStatus, amountPaid, displayMilestones } from '@/lib/orderStatus';
 import SupportChat from './SupportChat';
 import ProjectsTab from './ProjectsTab';
 import ScriptsTab from './ScriptsTab';
@@ -1446,190 +1447,162 @@ function TimelineItem({ title, desc, date, done }: any) {
   );
 }
 
+// Tone drives every colour on the card. It answers "whose turn is it?", which is
+// the only question a client actually has — so service colour is demoted to a
+// small text label and never competes with it.
+const TONE = {
+  act:  { bar: 'bg-amber-500',   ring: 'border-l-amber-500',   chip: 'bg-amber-500/10 text-amber-500 border-amber-500/30',   icon: 'bg-amber-500 text-black' },
+  prog: { bar: 'bg-blue-500',    ring: 'border-l-blue-500',    chip: 'bg-blue-500/10 text-blue-400 border-blue-500/30',      icon: 'bg-blue-500 text-white' },
+  done: { bar: 'bg-emerald-500', ring: 'border-l-emerald-500', chip: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30', icon: 'bg-emerald-500 text-black' },
+  wait: { bar: 'bg-slate-500',   ring: 'border-l-slate-600',   chip: 'bg-slate-500/10 text-slate-400 border-slate-500/30',   icon: 'bg-slate-600 text-white' },
+} as const;
+
+function ToneIcon({ tone }: { tone: 'act' | 'prog' | 'done' | 'wait' }) {
+  const cls = 'w-5 h-5';
+  if (tone === 'act') return <lucide.Wallet className={cls} />;
+  if (tone === 'prog') return <lucide.PenTool className={cls} />;
+  if (tone === 'done') return <lucide.CheckCircle2 className={cls} />;
+  return <lucide.Clock className={cls} />;
+}
+
+function MilestoneChips({ milestones, activeIndex }: { milestones: any[]; activeIndex: number }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {milestones.map((m: any, i: number) => {
+        const isNext = i === activeIndex;
+        const cls = m.paid
+          ? 'border-emerald-500/30 bg-emerald-500/5'
+          : isNext
+            ? 'border-amber-500/40 bg-amber-500/10'
+            : 'border-theme bg-secondary/40 opacity-70';
+        const dot = m.paid ? 'bg-emerald-500' : isNext ? 'bg-amber-500' : 'bg-slate-500';
+        const pill = m.paid
+          ? 'bg-emerald-500/15 text-emerald-400'
+          : isNext
+            ? 'bg-amber-500 text-black'
+            : 'bg-slate-500/15 text-secondary';
+        return (
+          <div key={i} className={`flex items-center gap-2 border rounded-xl px-3 py-2 text-xs min-w-0 ${cls}`}>
+            <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+            <span className="font-bold text-primary truncate">{m.name}</span>
+            <span className="text-secondary tabular-nums shrink-0">{formatNaira(m.amount)}</span>
+            <span className={`text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded shrink-0 ${pill}`}>
+              {m.paid ? 'Paid' : isNext ? 'Pay now' : m.trigger || 'Upcoming'}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function OrderCard({ order, handlePayment, processingPayment, openDetails }: any) {
   const total = parsePriceStr(order['Financial Quote']);
-  const milestones = order.payment_milestones || [];
-  const isCustomPayment = order.payment_structure_type === 'CUSTOM';
-  
-  const paid60 = isCustomPayment
-    ? (milestones[0]?.paid || false)
-    : renderBool(order['60% Paid']);
-  const paid40 = isCustomPayment
-    ? (milestones.length > 0 && milestones.every((m: any) => m.paid))
-    : renderBool(order['40% Paid']);
-    
-  const workSubmitted = renderBool(order['Work Submitted']);
-  const awaitingAdminApproval = order['Workflow Status'] === 'Briefing Received' || total <= 0;
+  const rawMilestones = order.payment_milestones || [];
+  const isCustom = order.payment_structure_type === 'CUSTOM';
 
-  const depositAmount = total * 0.6;
-  const balanceAmount = total * 0.4;
+  const paid60 = isCustom ? (rawMilestones[0]?.paid || false) : renderBool(order['60% Paid']);
+  const paid40 = isCustom
+    ? (rawMilestones.length > 0 && rawMilestones.every((m: any) => m.paid))
+    : renderBool(order['40% Paid']);
+  const workSubmitted = renderBool(order['Work Submitted']);
 
   const details = getPipelineDetails(order);
+  const status = deriveOrderStatus({
+    workflowStatus: order['Workflow Status'],
+    total, isCustom, milestones: rawMilestones, paid60, paid40, workSubmitted,
+  });
+  const collected = amountPaid({ isCustom, milestones: rawMilestones, total, paid60, paid40 });
+  const chips = displayMilestones({ isCustom, milestones: rawMilestones, total, paid60, paid40, workSubmitted });
+  const nextIdx = chips.findIndex((m: any) => !m.paid);
+  const pct = total > 0 ? Math.min(100, Math.round((collected / total) * 100)) : 0;
+  const tone = TONE[status.tone];
+  const awaitingQuote = total <= 0 || order['Workflow Status'] === 'Briefing Received';
 
-  const renderPipelineIcon = (iconName: string) => {
-    switch (iconName) {
-      case 'Terminal': return <lucide.Terminal className="w-4 h-4 text-cyan-400" />;
-      case 'PenTool': return <lucide.PenTool className="w-4 h-4 text-amber-400" />;
-      case 'LineChart': return <lucide.LineChart className="w-4 h-4 text-purple-400" />;
-      case 'Briefcase': return <lucide.Briefcase className="w-4 h-4 text-blue-400" />;
-      default: return <lucide.BookOpen className="w-4 h-4 text-emerald-400" />;
-    }
-  };
-
-  const borderAccent = 
-    details.category === 'Project Material' ? 'border-l-emerald-500' :
-    details.category === 'Software Dev' ? 'border-l-cyan-500' :
-    details.category === 'Content Writing' ? 'border-l-amber-500' :
-    details.category === 'Bespoke Fieldwork' ? 'border-l-purple-500' :
-    details.category === 'Resume & CV' ? 'border-l-blue-500' :
-    'border-l-emerald-500';
-
-  const paidCount = milestones.filter((m: any) => m.paid).length;
-  const totalCount = milestones.length;
-  const progressPercentage = totalCount > 0 ? (paidCount / totalCount) * 100 : 0;
+  const assignedWriter = (() => {
+    if (!String(order?.['Order ID'] || '').startsWith('PRJ-')) return null;
+    return String(order?.['Additional Info'] || '').match(/Assigned Writer:\s*(.+)/)?.[1]?.trim() || null;
+  })();
 
   return (
-    <div className={`bg-card border-y border-r border-theme border-l-4 ${borderAccent} hover:bg-secondary/10 transition-all duration-300 rounded-2xl p-5 md:p-6 relative overflow-hidden group select-none`}>
-      
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
-        <div className="space-y-1.5 min-w-0">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <div className={`w-7 h-7 rounded-lg ${details.bgClass} flex items-center justify-center border ${details.borderClass} shrink-0`}>
-              {renderPipelineIcon(details.icon)}
-            </div>
-            <h3 className="text-lg font-black tracking-tight text-primary truncate">{order['Order ID']}</h3>
-            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${details.bgClass} ${details.colorClass} border ${details.borderClass} shrink-0`}>
-              {details.category}
-            </span>
-            <StatusBadge status={awaitingAdminApproval ? 'Awaiting Quote' : order['Workflow Status']} size="md" />
-          </div>
-          <p className="text-secondary text-sm font-semibold leading-snug truncate max-w-3xl">{order['Research Topic']}</p>
-          {/* Show assigned writer for project material orders */}
-          {(() => {
-            const oid = order?.['Order ID'] || '';
-            if (!oid.startsWith('PRJ-')) return null;
-            const info: string = order?.['Additional Info'] || '';
-            const match = info.match(/Assigned Writer:\s*(.+)/);
-            if (!match) return null;
-            return (
-              <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold">
-                <lucide.Pencil className="w-3.5 h-3.5 shrink-0" />
-                <span>Writer: <span className="underline decoration-emerald-500/30 decoration-dotted">{match[1].trim()}</span></span>
-              </div>
-            );
-          })()}
-        </div>
+    <div className={`bg-card border-y border-r border-theme border-l-4 ${tone.ring} rounded-2xl overflow-hidden`}>
 
-        <div className="text-left md:text-right shrink-0">
-          <div className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-0.5">Financial Quote</div>
-          <div className="text-2xl font-black text-primary">
-            {awaitingAdminApproval ? 'Pending...' : formatNaira(total)}
-          </div>
+      {/* ── Status banner: what is happening + the one thing to do ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 border-b border-theme/50">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tone.icon}`}>
+          <ToneIcon tone={status.tone} />
         </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="mb-6 bg-secondary/30 p-4 rounded-xl border border-theme/40">
-        <div className="flex justify-between text-[9px] font-bold uppercase tracking-widest text-secondary mb-2.5">
-          {isCustomPayment ? (
-            <>
-              <span className={paid60 ? 'text-emerald-400 font-black' : ''}>1. Deposit ({milestones[0]?.percentage || 0}%)</span>
-              <span className={workSubmitted ? 'text-emerald-400 font-black' : ''}>2. Working Phase</span>
-              <span className={paid40 ? 'text-emerald-400 font-black' : ''}>3. Release ({milestones[milestones.length-1]?.percentage || 0}%)</span>
-            </>
-          ) : (
-            <>
-              <span className={paid60 ? 'text-emerald-400 font-black' : ''}>1. Deposit</span>
-              <span className={workSubmitted ? 'text-emerald-400 font-black' : ''}>2. Working Phase</span>
-              <span className={paid40 ? 'text-emerald-400 font-black' : ''}>3. Delivery</span>
-            </>
-          )}
+        <div className="min-w-0 flex-1">
+          <h3 className="font-black text-primary text-base leading-tight">{status.title}</h3>
+          <p className="text-secondary text-xs sm:text-sm mt-0.5 leading-snug">{status.subtitle}</p>
         </div>
-        <div className="w-full bg-secondary border border-theme/40 rounded-full h-1.5 overflow-hidden">
-          <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-out relative" 
-            style={{ width: isCustomPayment ? `${progressPercentage}%` : (paid40 && workSubmitted ? '100%' : paid60 && workSubmitted ? '75%' : paid60 ? '33%' : '0%') }}>
-            <div className="absolute inset-0 bg-white/10 w-full h-full animate-[shimmer_2s_infinite]" />
-          </div>
-        </div>
-      </div>
-
-      {/* Footer Actions */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-theme/40">
-        <div className="flex items-center gap-6 text-xs w-full md:w-auto">
-          <div><span className="text-secondary block text-[10px] font-bold mb-0.5">Deadline</span> <span className="font-bold text-primary">{formatDate(order['Deadline'])}</span></div>
-          <div><span className="text-secondary block text-[10px] font-bold mb-0.5">Payment</span> <span className={paid60 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>{paid40 ? 'Fully Cleared' : paid60 ? 'Deposit Paid' : 'Pending'}</span></div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-          <button 
-            onClick={() => {
-              const text = `Hello, I need support for my ${details.label} order #${order['Order ID']}: "${order['Research Topic']}"`;
-              window.open(`https://wa.me/2348121443666?text=${encodeURIComponent(text)}`, '_blank');
-            }} 
-            className="px-4 py-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] text-xs font-bold rounded-xl transition-all duration-200 flex items-center gap-2 border border-[#25D366]/20 cursor-pointer"
+        {status.action && (
+          <button
+            onClick={() => handlePayment(order['Order ID'], status.action!.amount, order['Email'], order['Legal Name'], status.action!.paymentType)}
+            disabled={processingPayment}
+            className="w-full sm:w-auto shrink-0 px-5 py-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-black text-sm font-black rounded-xl transition disabled:opacity-50 cursor-pointer min-h-[44px]"
           >
-            <lucide.MessageCircle className="w-3.5 h-3.5" /> Support Chat
+            {processingPayment ? 'Connecting…' : status.action.label}
           </button>
+        )}
+      </div>
 
-          <button onClick={openDetails} className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition-all duration-200 flex items-center gap-2 cursor-pointer">
-            <lucide.Activity className="w-3.5 h-3.5 text-secondary" /> Details
-          </button>
-
-          {awaitingAdminApproval ? (
-            <div className="px-4 py-2 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-xl text-xs font-bold flex items-center gap-2">
-              <lucide.Clock className="w-3.5 h-3.5" /> Under Review
+      {/* ── Money: one line, one bar ── */}
+      <div className="p-4 sm:p-5 space-y-3">
+        <div className="flex items-end justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <div className="text-[10px] font-bold text-secondary uppercase tracking-widest">Paid so far</div>
+            <div className="text-2xl font-black text-primary tabular-nums leading-tight">
+              {awaitingQuote ? 'Pending quote' : (
+                <>
+                  {formatNaira(collected)}
+                  <span className="text-secondary text-sm font-bold"> of {formatNaira(total)}</span>
+                </>
+              )}
             </div>
-          ) : (
-            <>
-              {isCustomPayment ? (
-                <>
-                  {!paid40 && (() => {
-                    const nextIdx = milestones.findIndex((m: any) => !m.paid);
-                    const nextUnpaid = milestones[nextIdx];
-                    if (nextUnpaid) {
-                      return (
-                        <button
-                          onClick={() => handlePayment(order['Order ID'], nextUnpaid.amount, order['Email'], order['Legal Name'], ('INDEX-' + nextIdx) as any)}
-                          disabled={processingPayment}
-                          className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer"
-                        >
-                          {processingPayment ? 'Connecting...' : `Pay ${nextUnpaid.name} (${formatNaira(nextUnpaid.amount)})`}
-                        </button>
-                      );
-                    }
-                    return null;
-                  })()}
-                </>
-              ) : (
-                <>
-                  {!paid60 && (
-                    <button
-                      onClick={() => handlePayment(order['Order ID'], depositAmount, order['Email'], order['Legal Name'], 'DEPOSIT')}
-                      disabled={processingPayment}
-                      className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer"
-                    >
-                      {processingPayment ? 'Connecting...' : `Pay Deposit (${formatNaira(depositAmount)})`}
-                    </button>
-                  )}
-                  {paid60 && !paid40 && workSubmitted && (
-                    <button
-                      onClick={() => handlePayment(order['Order ID'], balanceAmount, order['Email'], order['Legal Name'], 'BALANCE')}
-                      disabled={processingPayment}
-                      className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
-                    >
-                      <lucide.Unlock className="w-4 h-4 text-black" /> {processingPayment ? 'Connecting...' : `Clear Balance & Unlock`}
-                    </button>
-                  )}
-                </>
-              )}
-              {paid60 && paid40 && (
-                <div className="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold flex items-center gap-1.5 select-none">
-                  <lucide.CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Completed
-                </div>
-              )}
-            </>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="text-[10px] font-bold text-secondary uppercase tracking-widest">Order</div>
+            <div className="font-mono font-black text-primary text-sm">{order['Order ID']}</div>
+          </div>
+        </div>
+
+        {!awaitingQuote && (
+          <>
+            <div className="w-full bg-secondary border border-theme/40 rounded-full h-2 overflow-hidden">
+              <div className={`h-full rounded-full transition-all duration-700 ${tone.bar}`} style={{ width: `${pct}%` }} />
+            </div>
+            <MilestoneChips milestones={chips} activeIndex={nextIdx} />
+          </>
+        )}
+
+        {/* ── Meta + secondary actions ── */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-3 border-t border-theme/40 text-xs">
+          <span className="text-secondary">
+            {details.category} · Due <span className="text-primary font-bold">{formatDate(order['Deadline'])}</span>
+          </span>
+          {assignedWriter && (
+            <span className="text-secondary flex items-center gap-1.5">
+              <lucide.Pencil className="w-3.5 h-3.5 shrink-0" /> Writer <span className="text-primary font-bold">{assignedWriter}</span>
+            </span>
           )}
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={openDetails}
+              className="px-3 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer min-h-[38px]"
+            >
+              <lucide.Activity className="w-3.5 h-3.5" /> Details
+            </button>
+            <button
+              onClick={() => {
+                const text = `Hello, I need support for my ${details.label} order #${order['Order ID']}: "${order['Research Topic']}"`;
+                window.open(`https://wa.me/2348121443666?text=${encodeURIComponent(text)}`, '_blank');
+              }}
+              className="px-3 py-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] text-xs font-bold rounded-lg transition flex items-center gap-1.5 border border-[#25D366]/20 cursor-pointer min-h-[38px]"
+            >
+              <lucide.MessageCircle className="w-3.5 h-3.5" /> Support
+            </button>
+          </div>
         </div>
       </div>
     </div>
