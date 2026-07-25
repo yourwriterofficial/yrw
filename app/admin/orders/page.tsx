@@ -128,6 +128,36 @@ const sendStatusEmail = async (order: {
 };
 
 // ==========================================
+// 1b. WORK QUEUE
+// ==========================================
+// Buckets every order by who is blocking it, so the default view is a to-do
+// list rather than an undifferentiated dump of every order ever placed.
+type QueueKey = 'needs_you' | 'awaiting_payment' | 'in_progress' | 'done';
+
+const QUEUES: { key: QueueKey; label: string; dot: string }[] = [
+  { key: 'needs_you',        label: 'Needs action',     dot: 'bg-amber-500' },
+  { key: 'awaiting_payment', label: 'Awaiting payment', dot: 'bg-purple-500' },
+  { key: 'in_progress',      label: 'In progress',      dot: 'bg-blue-500' },
+  { key: 'done',             label: 'Delivered',        dot: 'bg-emerald-500' },
+];
+
+function orderQueue(o: any): QueueKey {
+  const status = o['Workflow Status'];
+  if (status === 'Completed' || status === 'Cancelled') return 'done';
+
+  const total = parsePriceStr(o['Financial Quote']);
+  // No quote yet, or work is drafted and waiting to be sent out: our move.
+  if (total <= 0 || status === 'Briefing Received') return 'needs_you';
+  if (renderBool(o['Work Submitted']) && renderBool(o['40% Paid'])) return 'needs_you';
+
+  // Quoted or drafted but the money has not landed: the client's move.
+  if (!renderBool(o['60% Paid'])) return 'awaiting_payment';
+  if (renderBool(o['Work Submitted']) && !renderBool(o['40% Paid'])) return 'awaiting_payment';
+
+  return 'in_progress';
+}
+
+// ==========================================
 // 2. MAIN COMPONENT
 // ==========================================
 export default function OrdersPage() {
@@ -148,6 +178,7 @@ function OrdersPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<WorkflowStatus | ''>('');
   const [paymentFilter, setPaymentFilter] = useState('');
+  const [queue, setQueue] = useState<QueueKey | ''>('');
   const [sortField, setSortField] = useState<keyof AdminOrderView>('Timestamp');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [editingOrder, setEditingOrder] = useState<AdminOrderView | null>(null);
@@ -380,6 +411,7 @@ function OrdersPageContent() {
 
   const applyFilters = useCallback(() => {
     let filtered = [...orders];
+    if (queue) filtered = filtered.filter(o => orderQueue(o) === queue);
     if (statusFilter) filtered = filtered.filter(o => o['Workflow Status'] === statusFilter);
     if (paymentFilter) {
       if (paymentFilter === 'deposit_pending') filtered = filtered.filter(o => !renderBool(o['60% Paid']));
@@ -407,7 +439,7 @@ function OrdersPageContent() {
     });
     setFilteredOrders(filtered);
     setCurrentPage(1);
-  }, [orders, statusFilter, paymentFilter, searchTerm, sortField, sortDirection]);
+  }, [orders, queue, statusFilter, paymentFilter, searchTerm, sortField, sortDirection]);
 
   useEffect(() => { applyFilters(); }, [applyFilters]);
 
@@ -854,24 +886,101 @@ function OrdersPageContent() {
           <StatCard label="Completed" value={filteredOrders.filter(o => o['Workflow Status'] === 'Completed').length} color="text-emerald-400" />
         </div>
 
-        {/* Filter Bar */}
-        <div className="bg-secondary border border-theme rounded-2xl p-4 mb-6 flex flex-wrap gap-4 items-center">
-          <div className="flex-1 min-w-[200px] relative">
-            <lucide.Search className="w-4 h-4 text-secondary absolute left-3 top-1/2 -translate-y-1/2" />
-            <input type="text" placeholder="Search ID, email, topic..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-primary border border-theme rounded-xl pl-10 pr-4 py-2 text-xs focus:border-purple-500 outline-none text-primary" />
+        {/* Work queue + filters */}
+        <div className="bg-secondary border border-theme rounded-2xl p-4 mb-6 space-y-3">
+          {/* Queue chips carry live counts, so "Needs action 6" is the whole job */}
+          <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+            {QUEUES.map(q => {
+              const count = orders.filter(o => orderQueue(o) === q.key).length;
+              const on = queue === q.key;
+              return (
+                <button
+                  key={q.key}
+                  onClick={() => setQueue(on ? '' : q.key)}
+                  className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition cursor-pointer min-h-[38px] ${
+                    on ? 'bg-primary text-primary border-purple-500' : 'bg-primary/50 text-secondary border-theme hover:text-primary'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${q.dot}`} />
+                  {q.label}
+                  <span className={`tabular-nums ${on ? 'text-primary' : 'text-secondary'}`}>{count}</span>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setQueue('')}
+              className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold border transition cursor-pointer min-h-[38px] ${
+                queue === '' ? 'bg-primary text-primary border-purple-500' : 'bg-primary/50 text-secondary border-theme hover:text-primary'
+              }`}
+            >
+              All <span className="tabular-nums">{orders.length}</span>
+            </button>
           </div>
-          <select className="bg-primary border border-theme rounded-xl px-4 py-2 text-xs outline-none focus:border-purple-500 text-primary" value={statusFilter} onChange={e => setStatusFilter(e.target.value as WorkflowStatus | '')}>
-            <option value="">All Statuses</option><option>Briefing Received</option><option>Quote Sent</option><option>Synthesis Active</option><option>Completed</option><option>Cancelled</option>
-          </select>
-          <select className="bg-primary border border-theme rounded-xl px-4 py-2 text-xs outline-none focus:border-purple-500 text-primary" value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}>
-            <option value="">All Payments</option><option value="deposit_pending">Deposit Pending</option><option value="deposit_paid">Deposit Paid</option><option value="balance_pending">Balance Pending</option><option value="fully_paid">Fully Paid</option>
-          </select>
-          <button onClick={() => { setStatusFilter(''); setPaymentFilter(''); setSearchTerm(''); }} className="text-xs font-bold text-secondary hover:text-primary transition px-2">Clear</button>
+
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex-1 min-w-[180px] relative">
+              <lucide.Search className="w-4 h-4 text-secondary absolute left-3 top-1/2 -translate-y-1/2" />
+              <input type="text" placeholder="Search ID, email, topic..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-primary border border-theme rounded-xl pl-10 pr-4 py-2.5 text-xs focus:border-purple-500 outline-none text-primary" />
+            </div>
+            <select className="bg-primary border border-theme rounded-xl px-3 py-2.5 text-xs outline-none focus:border-purple-500 text-primary" value={statusFilter} onChange={e => setStatusFilter(e.target.value as WorkflowStatus | '')}>
+              <option value="">All Statuses</option><option>Briefing Received</option><option>Quote Sent</option><option>Synthesis Active</option><option>Completed</option><option>Cancelled</option>
+            </select>
+            <select className="bg-primary border border-theme rounded-xl px-3 py-2.5 text-xs outline-none focus:border-purple-500 text-primary" value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}>
+              <option value="">All Payments</option><option value="deposit_pending">Deposit Pending</option><option value="deposit_paid">Deposit Paid</option><option value="balance_pending">Balance Pending</option><option value="fully_paid">Fully Paid</option>
+            </select>
+            <button onClick={() => { setQueue(''); setStatusFilter(''); setPaymentFilter(''); setSearchTerm(''); }} className="text-xs font-bold text-secondary hover:text-primary transition px-2 min-h-[38px]">Clear</button>
+          </div>
         </div>
 
         {/* Data Grid */}
         <div className="bg-secondary border border-theme rounded-3xl overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile: cards. A six-column nowrap table forced horizontal scrolling
+              on a phone, which made the panel effectively unusable there. */}
+          <div className="md:hidden divide-y divide-theme">
+            {paginatedOrders.map(order => {
+              const total = parsePriceStr(order['Financial Quote']);
+              const needsQuote = total <= 0 || order['Workflow Status'] === 'Briefing Received';
+              const paid = renderBool(order['40% Paid']) ? total : renderBool(order['60% Paid']) ? total * 0.6 : 0;
+              const pct = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+              const q = QUEUES.find(x => x.key === orderQueue(order));
+              return (
+                <div key={order['Order ID']} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-mono text-xs font-bold text-primary">{order['Order ID']}</div>
+                      <div className="text-xs text-primary font-bold truncate mt-0.5">{order['Legal Name']}</div>
+                      <div className="text-[10px] text-secondary truncate">{order['Email']}</div>
+                    </div>
+                    <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-secondary shrink-0">
+                      <span className={`w-2 h-2 rounded-full ${q?.dot}`} />{q?.label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-secondary line-clamp-2">{order['Research Topic']}</p>
+                  <div>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className={needsQuote ? 'text-secondary font-bold' : 'text-primary font-black tabular-nums'}>
+                        {needsQuote ? 'Awaiting quote' : `${formatNaira(paid)} of ${formatNaira(total)}`}
+                      </span>
+                      {!needsQuote && <span className="text-secondary tabular-nums">{pct}%</span>}
+                    </div>
+                    <div className="w-full bg-primary border border-theme/40 rounded-full h-1.5 overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setEditingOrder(order)} className="flex-1 px-4 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-xs font-bold rounded-lg transition min-h-[42px]">Manage</button>
+                    <button onClick={() => openDeliveryModal(order)} className="px-3 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition min-h-[42px]" aria-label="Upload to vault"><lucide.UploadCloud className="w-4 h-4" /></button>
+                    <button onClick={() => window.open(`/dashboard/client?preview=${order['Order ID']}`, '_blank')} className="px-3 py-2.5 bg-white/5 hover:bg-white/10 rounded-lg text-secondary transition min-h-[42px]" aria-label="Preview as client"><lucide.Eye className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              );
+            })}
+            {paginatedOrders.length === 0 && (
+              <div className="px-6 py-12 text-center text-secondary text-sm">No orders match your filters.</div>
+            )}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap table-row-hover">
               <thead className="bg-primary border-b border-theme text-[10px] uppercase tracking-widest text-secondary">
                 <tr>
@@ -914,11 +1023,26 @@ function OrdersPageContent() {
                       <td className="px-6 py-4">
                         <StatusBadge status={order['Workflow Status']} />
                       </td>
+                      {/* Collected vs quoted, so an underpaid order is visible
+                          without opening it. The old ✅/❌ pair showed which
+                          flags were set but never how much money had landed. */}
                       <td className="px-6 py-4">
-                        <div className={`font-black text-xs ${needsQuote ? 'text-secondary' : 'text-emerald-400'}`}>{needsQuote ? 'Awaiting Quote' : formatNaira(total)}</div>
-                        <div className="text-[9px] text-secondary mt-1">
-                          60%: {renderBool(order['60% Paid']) ? '✅' : '❌'} | 40%: {renderBool(order['40% Paid']) ? '✅' : '❌'}
-                        </div>
+                        {needsQuote ? (
+                          <div className="font-black text-xs text-secondary">Awaiting Quote</div>
+                        ) : (() => {
+                          const paid = renderBool(order['40% Paid']) ? total : renderBool(order['60% Paid']) ? total * 0.6 : 0;
+                          const pct = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+                          return (
+                            <>
+                              <div className="font-black text-xs text-primary tabular-nums">
+                                {formatNaira(paid)} <span className="text-secondary font-bold">/ {formatNaira(total)}</span>
+                              </div>
+                              <div className="w-20 bg-primary border border-theme/40 rounded-full h-1.5 overflow-hidden mt-1.5">
+                                <div className={`h-full rounded-full ${pct === 100 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${pct}%` }} />
+                              </div>
+                            </>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
                         <button onClick={() => window.open(`/dashboard/client?preview=${order['Order ID']}`, '_blank')} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-secondary transition" title="Preview as Client"><lucide.Eye className="w-4 h-4" /></button>
