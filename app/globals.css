@@ -99,6 +99,11 @@ body {
   --shadow-elevation-1: var(--elevation-1);
   --shadow-elevation-2: var(--elevation-2);
   --shadow-elevation-3: var(--elevation-3);
+  /* Registers --border as a real Tailwind color token ("theme") so opacity
+     modifiers (border-theme/60, bg-theme/40, ...) actually generate a rule
+     instead of silently compiling to nothing and falling back to currentColor
+     — the same class of bug --color-accent above was added to fix. */
+  --color-theme: var(--border);
 }
 
 /* Radius convention (Material redesign, Phase 2) — Tailwind's default radius scale

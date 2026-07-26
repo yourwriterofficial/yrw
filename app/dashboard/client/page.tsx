@@ -1060,7 +1060,7 @@ function DashboardContent() {
 
               <div>
                 <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Change Email Address</label>
-                <div className="flex gap-3 mt-2">
+                <div className="flex flex-col sm:flex-row gap-3 mt-2">
                   <input
                     type="email"
                     id="newEmail"
@@ -1072,7 +1072,7 @@ function DashboardContent() {
                       const newEmail = (document.getElementById('newEmail') as HTMLInputElement).value;
                       await handleUpdateEmail(newEmail);
                     }}
-                    className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-xl text-xs cursor-pointer"
+                    className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-xl text-xs cursor-pointer whitespace-nowrap shrink-0"
                   >
                     Update Email
                   </button>

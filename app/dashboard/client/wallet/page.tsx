@@ -118,9 +118,13 @@ export default function WalletPage({ embedded = false }: WalletPageProps) {
         </header>
       )}
 
-      <div className="bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 rounded-2xl p-6 md:p-8 text-black mb-8 shadow-lg shadow-emerald-500/10">
-        <p className="text-sm font-bold opacity-80 uppercase tracking-widest">Available Balance</p>
-        <p className="text-4xl md:text-5xl font-black mt-1">₦{balance.toLocaleString('en-NG')}</p>
+      <div className="relative overflow-hidden glass-panel rounded-2xl border border-theme p-6 md:p-8 mb-8">
+        <div
+          className="absolute -right-10 -top-10 w-48 h-48 rounded-full opacity-[0.08] blur-3xl pointer-events-none"
+          style={{ background: 'radial-gradient(circle, #10b981, transparent 70%)' }}
+        />
+        <p className="text-sm font-bold text-secondary uppercase tracking-widest relative z-10">Available Balance</p>
+        <p className="text-4xl md:text-5xl font-bold mt-1 text-primary relative z-10">₦{balance.toLocaleString('en-NG')}</p>
       </div>
 
       <Card padding="lg" className="mb-8">

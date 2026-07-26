@@ -401,20 +401,22 @@ export default function ProjectsTab({ user }: { user: any }) {
   return (
     <div className="space-y-6">
       {/* HERO BANNER IN THE CLIENT TAB */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-600 to-emerald-800 text-white rounded-3xl shadow-lg border border-emerald-600/30">
-        <div className="absolute -top-16 -right-20 w-72 h-72 rounded-full bg-white/5" />
-        <div className="absolute -bottom-24 -left-16 w-96 h-96 rounded-full bg-white/[0.03]" />
+      <section className="relative overflow-hidden glass-panel rounded-3xl border border-theme">
+        <div
+          className="absolute left-1/2 top-0 -translate-x-1/2 w-[36rem] h-[36rem] rounded-full opacity-[0.08] blur-3xl pointer-events-none"
+          style={{ background: 'radial-gradient(circle, #10b981, transparent 70%)' }}
+        />
         <div className="relative z-10 text-center px-6 py-12">
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-2">Buy Already-Made Projects</h2>
-          <p className="text-xs md:text-sm opacity-90 max-w-2xl mx-auto leading-relaxed">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-2 text-primary">Buy Already-Made Projects</h2>
+          <p className="text-xs md:text-sm text-secondary max-w-2xl mx-auto leading-relaxed">
             Browse, search, and instantly buy completed research projects covering Chapters 1–5.
           </p>
-          <div className="flex gap-2 justify-center flex-wrap mt-4 text-[10px] font-bold">
-            <span className="bg-white/15 px-3 py-1 rounded-full">📖 Chapters 1–5</span>
-            <span className="bg-white/15 px-3 py-1 rounded-full">🕗 Working hours 8am–7pm</span>
-            <span className="bg-white/15 px-3 py-1 rounded-full">🇳🇬 Nigerian University Standard</span>
-            <span className="bg-white/15 px-3 py-1 rounded-full">⚡ Less than 7 Hours Delivery</span>
-            <span className="bg-white/15 px-3 py-1 rounded-full">
+          <div className="flex gap-2 justify-center flex-wrap mt-4 text-[10px] font-semibold">
+            <span className="border border-theme bg-secondary/60 text-secondary px-3 py-1 rounded-full">📖 Chapters 1–5</span>
+            <span className="border border-theme bg-secondary/60 text-secondary px-3 py-1 rounded-full">🕗 Working hours 8am–7pm</span>
+            <span className="border border-theme bg-secondary/60 text-secondary px-3 py-1 rounded-full">🇳🇬 Nigerian University Standard</span>
+            <span className="border border-theme bg-secondary/60 text-secondary px-3 py-1 rounded-full">⚡ Less than 7 Hours Delivery</span>
+            <span className="border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full">
               BSc ₦3,999 · MSc ₦4,999 · PhD ₦5,999
             </span>
           </div>

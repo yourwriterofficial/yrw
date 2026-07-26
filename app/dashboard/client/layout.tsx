@@ -190,15 +190,20 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         href={item.href}
         title={item.label}
         onClick={onNavigate}
-        className={`relative w-full flex items-center justify-between gap-2.5 pl-4 pr-3 py-2.5 rounded-xl transition font-bold ${top ? 'text-sm' : 'text-xs'} ${
+        className={`group relative w-full flex items-center justify-between gap-2.5 pl-2 pr-3 py-1.5 rounded-xl transition font-bold ${top ? 'text-sm' : 'text-xs'} ${
           active
-            ? 'bg-emerald-500/10 text-emerald-500'
-            : 'text-secondary hover:bg-white/5 hover:text-primary'
+            ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+            : 'border border-transparent text-secondary hover:bg-white/5 hover:text-primary'
         }`}
       >
-        {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-emerald-500" />}
-        <div className="flex items-center gap-3 min-w-0">
-          <Icon className={`w-5 h-5 shrink-0 ${item.iconColor || ''}`} />
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div
+            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+              active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/5 text-secondary group-hover:text-primary'
+            }`}
+          >
+            <Icon className={`w-4 h-4 ${item.iconColor || ''}`} />
+          </div>
           <span className="truncate">{item.label}</span>
         </div>
         {item.key === 'vault' && unviewedVaultCount > 0 && (
@@ -220,60 +225,72 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row font-['Inter'] selection:bg-emerald-500/30">
 
       {/* ================= SIDEBAR ================= */}
-      <aside className="hidden md:flex flex-col w-72 bg-secondary border-r border-theme h-screen sticky top-0 p-6 z-40">
-        <div className="flex items-center gap-3 mb-12">
-          <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-black font-black text-xl">Y</div>
+      <aside className="hidden md:flex flex-col w-72 bg-secondary border-r border-theme h-screen sticky top-0 p-5 z-40 relative overflow-hidden">
+        <div
+          className="absolute left-1/2 -top-24 -translate-x-1/2 w-72 h-72 rounded-full opacity-[0.07] blur-3xl pointer-events-none"
+          style={{ background: 'radial-gradient(circle, #10b981, transparent 70%)' }}
+        />
+
+        <div className="flex items-center gap-3 mb-5 shrink-0 relative z-10">
+          <div className="w-9 h-9 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-black font-black text-lg shadow-lg shadow-emerald-500/20">Y</div>
           <div>
-            <h1 className="font-black tracking-tight leading-none text-lg">YRW</h1>
+            <h1 className="font-black tracking-tight leading-none text-base">YRW</h1>
             <p className="text-[10px] text-emerald-500 uppercase tracking-widest font-bold">Client Portal</p>
           </div>
         </div>
 
-        <nav className="flex flex-col gap-1 flex-1 overflow-y-auto pr-1">
-          {(profile?.is_admin || profile?._original_is_admin) && (
-            <button
-              onClick={() => router.push('/admin')}
-              className="flex items-center justify-center gap-2 w-full p-2.5 mb-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 font-black text-xs uppercase tracking-wider border border-purple-500/25 transition cursor-pointer shrink-0"
-            >
-              <lucide.Shield className="w-4 h-4" /> Admin Control Panel
-            </button>
-          )}
+        {(profile?.is_admin || profile?._original_is_admin) && (
+          <button
+            onClick={() => router.push('/admin')}
+            className="flex items-center gap-2.5 w-full p-2 mb-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 transition cursor-pointer shrink-0 relative z-10"
+          >
+            <div className="w-7 h-7 rounded-lg bg-purple-500/15 flex items-center justify-center text-purple-400 shrink-0">
+              <lucide.Shield className="w-4 h-4" />
+            </div>
+            <span className="text-purple-400 font-black text-xs uppercase tracking-wider">Admin Control Panel</span>
+          </button>
+        )}
+
+        <nav className="flex flex-col gap-0.5 flex-1 min-h-0 overflow-y-auto pr-1 relative z-10">
           {NAV_GROUPS.map((group, gi) => (
-            <div key={group.title || `group-${gi}`} className={gi === 0 ? 'flex flex-col gap-1' : 'mt-5 flex flex-col gap-1'}>
+            <div key={group.title || `group-${gi}`} className={gi === 0 ? 'flex flex-col gap-0.5' : 'mt-3 flex flex-col gap-0.5'}>
               {group.title && (
-                <p className="text-[10px] uppercase tracking-widest text-secondary font-black pl-4 mb-1.5">{group.title}</p>
+                <p className="text-[10px] uppercase tracking-widest text-secondary font-black pl-2 mb-1">{group.title}</p>
               )}
               {group.items.map(item => renderNavItem(item, gi === 0))}
             </div>
           ))}
         </nav>
 
-        <div className="mt-5">
+        <div className="shrink-0 relative z-10">
           <PromoBanner position="sidebar" limit={1} />
         </div>
 
-        <div className="border-t border-theme pt-6 mt-6">
+        <div className="mt-3 shrink-0 relative z-10">
           <Link
             href="/advertise"
-            className="flex items-center justify-center gap-2 w-full p-2.5 mb-4 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-black text-xs uppercase tracking-wider border border-amber-500/25 transition cursor-pointer shrink-0"
+            className="flex items-center justify-center gap-1.5 w-full py-1.5 mb-3 rounded-full border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400 font-semibold text-[11px] transition cursor-pointer"
           >
-            <lucide.Megaphone className="w-4 h-4" /> Advertise With Us
+            <lucide.Megaphone className="w-3.5 h-3.5" /> Advertise With Us
           </Link>
-          <div className="mb-4">
-            <ThemeToggle />
-          </div>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30">
-              <lucide.User className="w-5 h-5 text-emerald-400" />
+
+          <div className="glass-panel rounded-2xl border border-theme p-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30 shrink-0">
+                  <lucide.User className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="overflow-hidden">
+                  <p className="text-xs font-bold truncate">{profile?.full_name || 'Client'}</p>
+                  <p className="text-[10px] text-secondary truncate">{user?.email}</p>
+                </div>
+              </div>
+              <ThemeToggle compact />
             </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-bold truncate">{profile?.full_name || 'Client'}</p>
-              <p className="text-xs text-secondary truncate">{user?.email}</p>
-            </div>
+            <button onClick={handleLogout} className="w-full flex items-center gap-2.5 text-red-400 hover:text-red-300 transition text-xs font-bold p-2 mt-1.5 rounded-lg hover:bg-red-500/10 border-t border-theme/60 pt-2.5">
+              <lucide.LogOut className="w-3.5 h-3.5" /> Sign Out
+            </button>
           </div>
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 text-red-400 hover:text-red-300 transition text-sm font-bold p-2 rounded-lg hover:bg-red-500/10">
-            <lucide.LogOut className="w-4 h-4" /> Sign Out
-          </button>
         </div>
       </aside>
 
