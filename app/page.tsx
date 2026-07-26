@@ -6,7 +6,6 @@ import HomeStats from './components/HomeStats';
 import PromoBanner from './components/PromoBanner';
 import Footer from './components/Footer';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import * as lucide from 'lucide-react';
 import {
   BookOpen, LineChart, PenTool, Briefcase, Terminal, ArrowRight,
@@ -24,11 +23,9 @@ const SERVICE_CARDS = [
     title: 'Academic Writing & Research',
     badge: 'Research Pipeline',
     description: 'Essays, theses, dissertations, and course papers — formatted to APA/MLA/Harvard guidelines. Includes plagiarism & AI scanner checks.',
-    color: '#10b981', // emerald
-    hoverBorder: 'hover:border-emerald-500/30',
-    hoverBg: 'hover:bg-emerald-500/[0.02]',
-    iconColor: 'group-hover:text-emerald-500 group-hover:border-emerald-500',
     accentClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    iconClass: 'text-emerald-500',
+    bulletClass: 'text-emerald-500',
     bullets: ['Instant dynamic word-count quotes', 'APA, MLA, Harvard, Chicago styles', 'Plagiarism & AI reports included'],
   },
   {
@@ -37,11 +34,9 @@ const SERVICE_CARDS = [
     title: 'Statistics & Fieldwork',
     badge: 'Quantitative analysis',
     description: 'SPSS dataset analysis, financial forecasting, mathematical modelling, fieldwork, and presentation slide decks.',
-    color: '#a855f7', // purple
-    hoverBorder: 'hover:border-purple-500/30',
-    hoverBg: 'hover:bg-purple-500/[0.02]',
-    iconColor: 'group-hover:text-purple-500 group-hover:border-purple-500',
     accentClass: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
+    iconClass: 'text-purple-500',
+    bulletClass: 'text-purple-500',
     bullets: ['Dataset cleaning & coding', 'SPSS & R-Studio modelling', 'Defense-ready summary decks'],
   },
   {
@@ -50,11 +45,9 @@ const SERVICE_CARDS = [
     title: 'Content & Creative Writing',
     badge: 'SaaS & Marketing Copy',
     description: 'SEO articles, long-form eBooks, web landing page copy, and creative narrative ghostwriting with full copyright transfer.',
-    color: '#f59e0b', // amber
-    hoverBorder: 'hover:border-amber-500/30',
-    hoverBg: 'hover:bg-amber-500/[0.02]',
-    iconColor: 'group-hover:text-amber-500 group-hover:border-amber-500',
     accentClass: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    iconClass: 'text-amber-500',
+    bulletClass: 'text-amber-500',
     bullets: ['SEO-optimized word counts', 'Tailored tone & voice matching', '100% Commercial rights transfer'],
   },
   {
@@ -63,11 +56,9 @@ const SERVICE_CARDS = [
     title: 'Executive CVs & Resumes',
     badge: 'Career acceleration',
     description: 'ATS-compatible resumes, targeted cover letters, and LinkedIn profile overhauls built to pass automated HR filters.',
-    color: '#3b82f6', // blue
-    hoverBorder: 'hover:border-blue-500/30',
-    hoverBg: 'hover:bg-blue-500/[0.02]',
-    iconColor: 'group-hover:text-blue-500 group-hover:border-blue-500',
     accentClass: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+    iconClass: 'text-blue-500',
+    bulletClass: 'text-blue-500',
     bullets: ['ATS keyword matching', 'Industry-specific tailoring', 'Recruiter visibility boost'],
   },
   {
@@ -76,32 +67,19 @@ const SERVICE_CARDS = [
     title: 'Full Stack Development',
     badge: 'Engineering',
     description: 'SaaS platforms, customized microservices, schema architecture, database migration, and source code delivery.',
-    color: '#06b6d4', // cyan
-    hoverBorder: 'hover:border-cyan-500/30',
-    hoverBg: 'hover:bg-cyan-500/[0.02]',
-    iconColor: 'group-hover:text-cyan-500 group-hover:border-cyan-500',
     accentClass: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
+    iconClass: 'text-cyan-500',
+    bulletClass: 'text-cyan-500',
     bullets: ['MVP prototype builds', 'Complete source code ownership', 'Milestone-based staging'],
   },
 ] as const;
 
 export default function LandingPage() {
   const [content, setContent] = useState<HomePageContent>(HOME_PAGE_DEFAULTS);
-  const [hoveredColor, setHoveredColor] = useState<string | null>(null);
-  const [clickedColor, setClickedColor] = useState<string | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
     fetchPageSettings('home', HOME_PAGE_DEFAULTS).then(setContent);
   }, []);
-
-  const handleCardClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string, color: string) => {
-    e.preventDefault();
-    setClickedColor(color);
-    setTimeout(() => {
-      router.push(href);
-    }, 450);
-  };
 
   const { hero, trust_bar, why_us, faqs } = content;
 
@@ -115,10 +93,9 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative pt-8 pb-24 md:pb-32 px-4 sm:px-6 md:px-8 border-b border-theme overflow-hidden text-center">
-        {/* Dynamic Glowing Aura Background */}
         <div
-          className="absolute left-1/2 top-0 -translate-x-1/2 w-[48rem] h-[48rem] rounded-full opacity-[0.08] blur-3xl pointer-events-none transition-all duration-1000 ease-in-out animate-blob"
-          style={{ background: `radial-gradient(circle, ${hoveredColor || 'var(--accent)'}, transparent 70%)` }}
+          className="absolute left-1/2 top-0 -translate-x-1/2 w-[48rem] h-[48rem] rounded-full opacity-[0.07] blur-3xl pointer-events-none animate-blob"
+          style={{ background: 'radial-gradient(circle, var(--accent), transparent 70%)' }}
         />
 
         <div className="max-w-4xl mx-auto space-y-8 relative z-10">
@@ -126,17 +103,10 @@ export default function LandingPage() {
             <ShieldCheck className="w-3.5 h-3.5 text-accent" />
             <span>{hero.badge}</span>
           </div>
-          
+
           <h1 className="text-[2.75rem] leading-[1.08] sm:text-6xl md:text-[4rem] font-bold tracking-tight text-primary max-w-3xl mx-auto">
             {hero.title_prefix}{' '}
-            <span
-              className="bg-gradient-to-r from-accent to-emerald-400 bg-clip-text text-transparent transition-all duration-700 font-extrabold"
-              style={{
-                backgroundImage: hoveredColor 
-                  ? `linear-gradient(to right, ${hoveredColor}, #a855f7)` 
-                  : undefined
-              }}
-            >
+            <span className="bg-gradient-to-r from-accent to-emerald-400 bg-clip-text text-transparent font-extrabold">
               {hero.title_highlight_1}
             </span>{' '}
             {hero.title_mid} <span className="block mt-2 text-secondary">{hero.title_highlight_2}</span>
@@ -173,21 +143,21 @@ export default function LandingPage() {
             <div>
               <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
                 <span>100k+</span>
-                <span className="text-xs text-purple-400">Topics</span>
+                <span className="text-xs text-accent">Topics</span>
               </div>
               <div className="text-xs text-secondary mt-1"><HomeStats compact={true} /> in stock</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
                 <span>100%</span>
-                <span className="text-xs text-cyan-400">Escrow</span>
+                <span className="text-xs text-accent">Escrow</span>
               </div>
               <div className="text-xs text-secondary mt-1">Milestone delivery</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
                 <span>24/7</span>
-                <span className="text-xs text-blue-400">Support</span>
+                <span className="text-xs text-accent">Support</span>
               </div>
               <div className="text-xs text-secondary mt-1">WhatsApp documented</div>
             </div>
@@ -214,9 +184,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Services Section (Redesigned Bento Grid) */}
+      {/* Services Section (Bento Grid) */}
       <section id="services" className="py-24 md:py-32 px-4 sm:px-6 md:px-8 relative">
-        {/* Subtle glow background */}
         <div className="absolute right-0 top-1/3 w-[30rem] h-[30rem] rounded-full bg-accent/5 blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto space-y-16">
@@ -234,9 +203,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             {SERVICE_CARDS.map((card, index) => {
               const Icon = card.icon;
-              const isHovered = hoveredColor === card.color;
-              
-              // Define spanning widths for Bento look
+
               const spanClass = index === 0 || index === 3
                 ? 'md:col-span-7'
                 : index === 1 || index === 2
@@ -247,43 +214,20 @@ export default function LandingPage() {
                 <Link
                   key={card.href}
                   href={card.href}
-                  onMouseEnter={() => setHoveredColor(card.color)}
-                  onMouseLeave={() => setHoveredColor(null)}
-                  onClick={(e) => handleCardClick(e, card.href, card.color)}
-                  className={`group ${spanClass} relative rounded-[28px] border border-theme bg-card hover:bg-secondary/40 p-6 md:p-8 flex flex-col justify-between transition-all duration-300 ${card.hoverBorder} overflow-hidden select-none cursor-pointer`}
-                  style={{
-                    boxShadow: isHovered ? `0 0 30px ${card.color}0a` : undefined
-                  }}
+                  className={`group ${spanClass} relative rounded-[28px] border border-theme bg-card hover:border-accent/30 hover:shadow-xl hover:shadow-accent/[0.03] p-6 md:p-8 flex flex-col justify-between transition-all duration-300 overflow-hidden select-none`}
                 >
-                  {/* Floating card background glow */}
-                  <div
-                    className="absolute -right-16 -top-16 w-32 h-32 rounded-full opacity-0 group-hover:opacity-[0.15] blur-2xl transition-opacity duration-500 pointer-events-none"
-                    style={{ backgroundColor: card.color }}
-                  />
-
                   <div className="space-y-6">
-                    {/* Badge & Icon header */}
                     <div className="flex justify-between items-start">
                       <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${card.accentClass}`}>
                         {card.badge}
                       </div>
-                      <div
-                        className={`w-10 h-10 rounded-xl border border-theme flex items-center justify-center text-secondary transition-all duration-300 group-hover:shadow-md ${card.iconColor}`}
-                        style={{
-                          borderColor: isHovered ? card.color : undefined,
-                          boxShadow: isHovered ? `0 0 10px ${card.color}15` : undefined
-                        }}
-                      >
+                      <div className={`w-10 h-10 rounded-xl border border-theme flex items-center justify-center transition-all duration-300 group-hover:border-accent/30 ${card.iconClass}`}>
                         <Icon className="w-5 h-5" />
                       </div>
                     </div>
 
-                    {/* Copy */}
                     <div className="space-y-2">
-                      <h3
-                        className="text-lg md:text-xl font-bold text-primary group-hover:text-primary transition-colors duration-300"
-                        style={{ color: isHovered ? card.color : undefined }}
-                      >
+                      <h3 className="text-lg md:text-xl font-bold text-primary transition-colors duration-300 group-hover:text-accent">
                         {card.title}
                       </h3>
                       <p className="text-xs md:text-sm text-secondary leading-relaxed">
@@ -291,24 +235,19 @@ export default function LandingPage() {
                       </p>
                     </div>
 
-                    {/* Bullets */}
                     <ul className="space-y-2 border-t border-theme/60 pt-4">
                       {card.bullets.map((bullet, i) => (
                         <li key={i} className="flex items-center gap-2 text-xs text-secondary font-medium">
-                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: card.color }} />
+                          <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${card.bulletClass}`} />
                           <span>{bullet}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
-                  {/* Arrow element */}
                   <div className="mt-8 pt-4 border-t border-theme/30 flex items-center justify-between text-xs text-secondary font-semibold group-hover:text-primary transition-colors">
                     <span>Configure Service Pipeline</span>
-                    <ArrowUpRight
-                      className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1"
-                      style={{ color: isHovered ? card.color : undefined }}
-                    />
+                    <ArrowUpRight className="w-4 h-4 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-accent" />
                   </div>
                 </Link>
               );
@@ -329,7 +268,6 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
-            {/* Horizontal line for desktop */}
             <div className="hidden md:block absolute top-[22px] left-12 right-12 h-[1px] bg-theme" />
 
             {[
@@ -370,37 +308,18 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Projects Card */}
             <Link
               href="/projects"
-              onMouseEnter={() => setHoveredColor('#10b981')}
-              onMouseLeave={() => setHoveredColor(null)}
-              onClick={(e) => handleCardClick(e, '/projects', '#10b981')}
-              className="group block relative rounded-[28px] bg-card border border-theme hover:border-emerald-500/30 p-6 sm:p-8 transition-all duration-500 hover:bg-emerald-500/[0.01]"
-              style={{
-                boxShadow: hoveredColor === '#10b981' ? '0 0 30px rgba(16,185,129,0.05)' : undefined
-              }}
+              className="group block relative rounded-[28px] bg-card border border-theme hover:border-accent/30 hover:shadow-xl hover:shadow-accent/[0.03] p-6 sm:p-8 transition-all duration-300"
             >
               <div className="flex justify-between items-start mb-6">
-                <div
-                  className="w-12 h-12 rounded-xl bg-primary border border-theme flex items-center justify-center text-secondary transition-all duration-300"
-                  style={{
-                    borderColor: hoveredColor === '#10b981' ? '#10b981' : undefined,
-                    color: hoveredColor === '#10b981' ? '#10b981' : undefined
-                  }}
-                >
+                <div className="w-12 h-12 rounded-xl bg-primary border border-theme flex items-center justify-center text-secondary transition-all duration-300 group-hover:border-accent/30 group-hover:text-accent">
                   <Library className="w-5 h-5" />
                 </div>
-                <ArrowUpRight
-                  className="w-5 h-5 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1"
-                  style={{ color: hoveredColor === '#10b981' ? '#10b981' : undefined }}
-                />
+                <ArrowUpRight className="w-5 h-5 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-accent" />
               </div>
 
-              <h3
-                className="text-xl font-bold mb-3 transition-colors duration-300"
-                style={{ color: hoveredColor === '#10b981' ? '#10b981' : undefined }}
-              >
+              <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-accent">
                 Ready-Made Projects
               </h3>
               <p className="text-sm text-secondary mb-6 leading-relaxed">
@@ -409,41 +328,22 @@ export default function LandingPage() {
 
               <div className="border-t border-theme/60 pt-4 mt-6 flex items-center justify-between text-xs text-secondary font-medium">
                 <HomeStats />
-                <span className="text-emerald-400 font-semibold group-hover:underline">Browse Repository</span>
+                <span className="text-accent font-semibold group-hover:underline">Browse Repository</span>
               </div>
             </Link>
 
-            {/* Script marketplace Card */}
             <Link
               href="/developer/shop"
-              onMouseEnter={() => setHoveredColor('#06b6d4')}
-              onMouseLeave={() => setHoveredColor(null)}
-              onClick={(e) => handleCardClick(e, '/developer/shop', '#06b6d4')}
-              className="group block relative rounded-[28px] bg-card border border-theme hover:border-cyan-500/30 p-6 sm:p-8 transition-all duration-500 hover:bg-cyan-500/[0.01]"
-              style={{
-                boxShadow: hoveredColor === '#06b6d4' ? '0 0 30px rgba(6,182,212,0.05)' : undefined
-              }}
+              className="group block relative rounded-[28px] bg-card border border-theme hover:border-accent/30 hover:shadow-xl hover:shadow-accent/[0.03] p-6 sm:p-8 transition-all duration-300"
             >
               <div className="flex justify-between items-start mb-6">
-                <div
-                  className="w-12 h-12 rounded-xl bg-primary border border-theme flex items-center justify-center text-secondary transition-all duration-300"
-                  style={{
-                    borderColor: hoveredColor === '#06b6d4' ? '#06b6d4' : undefined,
-                    color: hoveredColor === '#06b6d4' ? '#06b6d4' : undefined
-                  }}
-                >
+                <div className="w-12 h-12 rounded-xl bg-primary border border-theme flex items-center justify-center text-secondary transition-all duration-300 group-hover:border-accent/30 group-hover:text-accent">
                   <ShoppingBag className="w-5 h-5" />
                 </div>
-                <ArrowUpRight
-                  className="w-5 h-5 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1"
-                  style={{ color: hoveredColor === '#06b6d4' ? '#06b6d4' : undefined }}
-                />
+                <ArrowUpRight className="w-5 h-5 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-accent" />
               </div>
 
-              <h3
-                className="text-xl font-bold mb-3 transition-colors duration-300"
-                style={{ color: hoveredColor === '#06b6d4' ? '#06b6d4' : undefined }}
-              >
+              <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-accent">
                 Script Marketplace
               </h3>
               <p className="text-sm text-secondary mb-6 leading-relaxed">
@@ -452,7 +352,7 @@ export default function LandingPage() {
 
               <div className="border-t border-theme/60 pt-4 mt-6 flex items-center justify-between text-xs text-secondary font-medium">
                 <span>Complete source code ownership</span>
-                <span className="text-cyan-400 font-semibold group-hover:underline">Browse Scripts</span>
+                <span className="text-accent font-semibold group-hover:underline">Browse Scripts</span>
               </div>
             </Link>
           </div>
@@ -512,10 +412,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Final CTA Redesigned Banner */}
+      {/* Final CTA Banner */}
       <section className="py-24 md:py-32 px-4 sm:px-6 md:px-8 border-t border-theme relative bg-secondary/30">
         <div className="max-w-4xl mx-auto rounded-[36px] bg-gradient-to-b from-card to-primary border border-theme p-8 md:p-12 text-center relative overflow-hidden shadow-2xl">
-          {/* Subtle gradient blob behind content */}
           <div className="absolute inset-0 bg-accent/[0.02] blur-xl pointer-events-none" />
 
           <div className="relative z-10 space-y-6 max-w-2xl mx-auto">
@@ -548,17 +447,6 @@ export default function LandingPage() {
       </div>
 
       <Footer />
-
-      {/* Full-screen transition overlay when a service page is clicked */}
-      <div
-        className={`fixed inset-0 z-[999] pointer-events-none transition-all duration-500 ease-in-out ${clickedColor ? 'opacity-100' : 'opacity-0'}`}
-        style={{
-          background: clickedColor
-            ? `radial-gradient(circle at center, ${clickedColor}33 0%, var(--bg-primary, #050505) 80%)`
-            : 'transparent',
-          backdropFilter: clickedColor ? 'blur(4px)' : 'none',
-        }}
-      />
     </div>
   );
 }
