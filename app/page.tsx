@@ -25,6 +25,7 @@ const SERVICE_CARDS = [
     description: 'Essays, theses, dissertations, and course papers — formatted to APA/MLA/Harvard guidelines. Includes plagiarism & AI scanner checks.',
     accentClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
     iconClass: 'text-emerald-500',
+    iconBgClass: 'bg-emerald-500/10',
     bulletClass: 'text-emerald-500',
     bullets: ['Instant dynamic word-count quotes', 'APA, MLA, Harvard, Chicago styles', 'Plagiarism & AI reports included'],
   },
@@ -36,6 +37,7 @@ const SERVICE_CARDS = [
     description: 'SPSS dataset analysis, financial forecasting, mathematical modelling, fieldwork, and presentation slide decks.',
     accentClass: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
     iconClass: 'text-purple-500',
+    iconBgClass: 'bg-purple-500/10',
     bulletClass: 'text-purple-500',
     bullets: ['Dataset cleaning & coding', 'SPSS & R-Studio modelling', 'Defense-ready summary decks'],
   },
@@ -47,6 +49,7 @@ const SERVICE_CARDS = [
     description: 'SEO articles, long-form eBooks, web landing page copy, and creative narrative ghostwriting with full copyright transfer.',
     accentClass: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
     iconClass: 'text-amber-500',
+    iconBgClass: 'bg-amber-500/10',
     bulletClass: 'text-amber-500',
     bullets: ['SEO-optimized word counts', 'Tailored tone & voice matching', '100% Commercial rights transfer'],
   },
@@ -58,6 +61,7 @@ const SERVICE_CARDS = [
     description: 'ATS-compatible resumes, targeted cover letters, and LinkedIn profile overhauls built to pass automated HR filters.',
     accentClass: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
     iconClass: 'text-blue-500',
+    iconBgClass: 'bg-blue-500/10',
     bulletClass: 'text-blue-500',
     bullets: ['ATS keyword matching', 'Industry-specific tailoring', 'Recruiter visibility boost'],
   },
@@ -69,6 +73,7 @@ const SERVICE_CARDS = [
     description: 'SaaS platforms, customized microservices, schema architecture, database migration, and source code delivery.',
     accentClass: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
     iconClass: 'text-cyan-500',
+    iconBgClass: 'bg-cyan-500/10',
     bulletClass: 'text-cyan-500',
     bullets: ['MVP prototype builds', 'Complete source code ownership', 'Milestone-based staging'],
   },
@@ -203,6 +208,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             {SERVICE_CARDS.map((card, index) => {
               const Icon = card.icon;
+              const isWide = index === 4;
 
               const spanClass = index === 0 || index === 3
                 ? 'md:col-span-7'
@@ -210,45 +216,71 @@ export default function LandingPage() {
                   ? 'md:col-span-5'
                   : 'md:col-span-12';
 
+              const cardHeader = (
+                <div className="flex justify-between items-start">
+                  <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${card.accentClass}`}>
+                    {card.badge}
+                  </div>
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-105 ${card.iconClass} ${card.iconBgClass}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                </div>
+              );
+
+              const cardCopy = (
+                <div className="space-y-2">
+                  <h3 className="text-lg md:text-xl font-bold text-primary transition-colors duration-300 group-hover:text-accent">
+                    {card.title}
+                  </h3>
+                  <p className="text-xs md:text-sm text-secondary leading-relaxed">
+                    {card.description}
+                  </p>
+                </div>
+              );
+
+              const cardBullets = (
+                <ul className={`space-y-2 ${isWide ? 'md:border-l md:border-theme/60 md:pl-8' : 'border-t border-theme/60 pt-4'}`}>
+                  {card.bullets.map((bullet, i) => (
+                    <li key={i} className="flex items-center gap-2 text-xs text-secondary font-medium">
+                      <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${card.bulletClass}`} />
+                      <span>{bullet}</span>
+                    </li>
+                  ))}
+                </ul>
+              );
+
+              const cardFooter = (
+                <div className={`flex items-center justify-between text-xs text-secondary font-semibold group-hover:text-primary transition-colors ${isWide ? 'md:flex-col md:items-end md:gap-2' : 'mt-8 pt-4 border-t border-theme/30'}`}>
+                  <span>Configure Service Pipeline</span>
+                  <ArrowUpRight className="w-4 h-4 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-accent" />
+                </div>
+              );
+
               return (
                 <Link
                   key={card.href}
                   href={card.href}
-                  className={`group ${spanClass} relative rounded-[28px] border border-theme bg-card hover:border-accent/30 hover:shadow-xl hover:shadow-accent/[0.03] p-6 md:p-8 flex flex-col justify-between transition-all duration-300 overflow-hidden select-none`}
+                  className={`group ${spanClass} relative rounded-[28px] border border-theme bg-card hover:border-accent/30 hover:shadow-xl hover:shadow-accent/[0.03] hover:-translate-y-0.5 p-6 md:p-8 transition-all duration-300 overflow-hidden select-none ${isWide ? 'flex flex-col md:flex-row md:items-center md:justify-between gap-8' : 'flex flex-col justify-between'}`}
                 >
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-start">
-                      <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${card.accentClass}`}>
-                        {card.badge}
+                  {isWide ? (
+                    <>
+                      <div className="space-y-4 md:max-w-xs">
+                        {cardHeader}
+                        {cardCopy}
                       </div>
-                      <div className={`w-10 h-10 rounded-xl border border-theme flex items-center justify-center transition-all duration-300 group-hover:border-accent/30 ${card.iconClass}`}>
-                        <Icon className="w-5 h-5" />
+                      <div className="flex-1 md:max-w-xs">{cardBullets}</div>
+                      <div className="md:shrink-0 md:w-48">{cardFooter}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-6">
+                        {cardHeader}
+                        {cardCopy}
+                        {cardBullets}
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h3 className="text-lg md:text-xl font-bold text-primary transition-colors duration-300 group-hover:text-accent">
-                        {card.title}
-                      </h3>
-                      <p className="text-xs md:text-sm text-secondary leading-relaxed">
-                        {card.description}
-                      </p>
-                    </div>
-
-                    <ul className="space-y-2 border-t border-theme/60 pt-4">
-                      {card.bullets.map((bullet, i) => (
-                        <li key={i} className="flex items-center gap-2 text-xs text-secondary font-medium">
-                          <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${card.bulletClass}`} />
-                          <span>{bullet}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="mt-8 pt-4 border-t border-theme/30 flex items-center justify-between text-xs text-secondary font-semibold group-hover:text-primary transition-colors">
-                    <span>Configure Service Pipeline</span>
-                    <ArrowUpRight className="w-4 h-4 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-accent" />
-                  </div>
+                      {cardFooter}
+                    </>
+                  )}
                 </Link>
               );
             })}
