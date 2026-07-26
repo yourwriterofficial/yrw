@@ -15,6 +15,26 @@ export async function GET(request: NextRequest) {
   const next = requestUrl.searchParams.get('next');
   const refCode = requestUrl.searchParams.get('ref');
 
+  // Supabase redirects here with ?error=/?error_description= and NO code when a
+  // link has expired or was already used. That case previously fell through to
+  // the bare /login redirect at the bottom of this file with no message at all,
+  // so the user was bounced to an empty login form with no explanation.
+  const errorParam =
+    requestUrl.searchParams.get('error_description') ||
+    requestUrl.searchParams.get('error');
+
+  if (errorParam) {
+    const readable = decodeURIComponent(errorParam).replace(/\+/g, ' ');
+    const message = /expired|invalid/i.test(readable)
+      ? 'That link has expired or was already used. Please request a new one.'
+      : readable;
+    const response = NextResponse.redirect(
+      `${requestUrl.origin}/login?message=${encodeURIComponent(message)}`
+    );
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+    return response;
+  }
+
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -56,7 +76,14 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const fallbackResponse = NextResponse.redirect(`${requestUrl.origin}/login`);
+  // Reached when there is no code and no error param — e.g. the link was
+  // opened twice and the code was already consumed. Say so rather than
+  // silently rendering an empty login form.
+  const fallbackResponse = NextResponse.redirect(
+    `${requestUrl.origin}/login?message=${encodeURIComponent(
+      'That sign-in link could not be completed. Please request a new one.'
+    )}`
+  );
   fallbackResponse.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
   return fallbackResponse;
 }

@@ -20,7 +20,11 @@ function LoginInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  // Seeded from ?message= so an expired or already-used email link explains
+  // itself. /auth/callback and /auth/confirm both redirect here with that
+  // param on failure, but nothing read it — the user just landed on a blank
+  // login form with no idea why their link hadn't worked.
+  const [error, setError] = useState(searchParams.get('message') ?? '');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
