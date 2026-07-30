@@ -4,8 +4,23 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
+import {
+  BookOpen, Clock, Loader2, Lock, Search, ShieldCheck,
+  Puzzle, Share2, Eye, CheckCircle2, Users, X, FileText,
+  Calendar, ScrollText, Zap, AlertTriangle, CreditCard,
+  ChevronLeft, ChevronRight,
+} from 'lucide-react';
 import ProjectsAssistant from '@/app/components/ProjectsAssistant';
 import Header from '@/app/components/Header';
+import Button from '@/app/components/ui/Button';
+import Card from '@/app/components/ui/Card';
+import { Badge } from '@/app/components/ui/Badge';
+import { Input } from '@/app/components/ui/Input';
+import { Checkbox } from '@/app/components/ui/Checkbox';
+import { EmptyState } from '@/app/components/ui/EmptyState';
+import { Shell } from '@/app/components/ui/Shell';
+import { Select } from '@/app/components/ui/Select';
+import { Textarea } from '@/app/components/ui/Textarea';
 
 type Topic = {
   id: number;
@@ -448,10 +463,13 @@ const pickWriter = (): string => {
 };
 
 
-const levelBadge = (lvl: string) =>
-  lvl === 'PhD' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-    : lvl === 'MSc' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+const LEVEL_BADGE: Record<string, string> = {
+  PhD: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  MSc: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  BSc: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+};
+
+const levelBadgeClass = (lvl: string) => LEVEL_BADGE[lvl] || LEVEL_BADGE.BSc;
 
 export default function ProjectsPage() {
   const [topics, setTopics] = useState<Topic[]>([]);
@@ -632,10 +650,10 @@ Furthermore, there is a lack of localized research that addresses the specific c
   const [pageSettings, setPageSettings] = useState<any>({
     hero_title: "Project Topics & Research Materials",
     hero_description: "Thousands of ready-made materials across every Nigerian department — full Chapters 1–5, in MS Word, delivered to your secure vault.",
-    features: ["📖 Chapters 1–5", "🕗 Working hours 8am–7pm", "⚡ 4-hour delivery"],
+    features: ["Chapters 1–5", "Working hours 8am–7pm", "4-hour delivery"],
     disclaimer_text: "Please note: these are ready-made materials — we do not check or guarantee plagiarism/similarity or AI-detection levels on them. Purchasing simply means the project will be delivered as-is. Need a plagiarism-free, AI-free custom write-up? Use our main writing service →",
     checkout_terms: "I understand this is a ready-made material — similarity/plagiarism and AI-detection levels are not checked or guaranteed. My purchase means the project will be delivered (Chapters 1–5, MS Word) to my vault. Working hours are 8am–7pm; delivery is within 4 hours.",
-    delivery_text: "⚡ Delivered within 4 hours",
+    delivery_text: "Delivered within 4 hours",
     show_random: true
   });
 
@@ -907,212 +925,197 @@ Furthermore, there is a lack of localized research that addresses the specific c
     return title;
   };
 
+  const deptOptions = [{ value: 'all', label: 'All Departments' }, ...mergedDepts.map(d => ({ value: d, label: d }))];
+  const levelOptions = [
+    { value: 'all', label: 'All Levels' },
+    { value: 'BSc', label: 'BSc / HND' },
+    { value: 'MSc', label: 'MSc / PGD' },
+    { value: 'PhD', label: 'PhD' },
+  ];
+
   return (
-    <div className="min-h-screen bg-primary text-primary font-['Inter']">
+    <div className="min-h-screen bg-primary text-primary overflow-x-hidden">
       <Header projectsContext />
       {/* HERO */}
       <section className="relative overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-600 to-emerald-800 text-white">
         <div className="absolute -top-16 -right-20 w-72 h-72 rounded-full bg-white/5 animate-blob" />
         <div className="absolute -bottom-24 -left-16 w-96 h-96 rounded-full bg-white/[0.03] animate-blob animation-delay-2000" />
-        <div className="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 pt-header-24 sm:pt-header-28 pb-12">
-          <div className="text-5xl mb-2">📚</div>
-          <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-3">
+        <Shell size="md" className="text-center pt-header-24 sm:pt-header-28 pb-12 relative z-10 space-y-6">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-2">
+            <BookOpen className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="font-display italic font-medium text-3xl md:text-4xl lg:text-5xl">
             {pageSettings.hero_title}
           </h1>
           <p className="text-sm md:text-base opacity-90 max-w-2xl mx-auto">
             {pageSettings.hero_description}
           </p>
-          <div className="flex gap-2 justify-center flex-wrap mt-5 text-xs font-bold">
+          <div className="flex gap-2 justify-center flex-wrap text-xs font-bold">
             {Array.isArray(pageSettings.features) && pageSettings.features.map((f: string, i: number) => (
-              <span key={i} className="bg-white/15 px-4 py-1.5 rounded-full">{f}</span>
+              <Badge key={i} variant="default" className="bg-white/15 border-white/20 text-white">{f}</Badge>
             ))}
-            <span className="bg-white/15 px-4 py-1.5 rounded-full">
+            <Badge variant="default" className="bg-white/15 border-white/20 text-white">
               BSc {naira(levelPrices.BSc)} · MSc {naira(levelPrices.MSc)} · PhD {naira(levelPrices.PhD)}
-            </span>
+            </Badge>
           </div>
 
           {/* DATABASE SEARCH CARD MOVED HERE */}
           {!hasSearched && !isSearching ? (
             <div className="max-w-2xl mx-auto mt-6 text-left">
-              <div className="rounded-[28px] sm:rounded-3xl p-5 sm:p-8 shadow-2xl space-y-6 text-center bg-white/10 backdrop-blur-xl border border-white/15 text-primary">
-                <div>
-                  <h2 className="text-xl font-black text-primary">Database Search & Availability</h2>
+              <Card padding="lg" elevation={3} className="text-primary">
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-bold text-primary">Database Search & Availability</h2>
                   <p className="text-xs text-secondary mt-1.5 leading-relaxed font-semibold">
                     Place your full project topic below to search our database of 100,000+ completed projects and check instant availability.
                   </p>
                 </div>
 
                 <div className="space-y-4 text-left">
-                  <div>
-                    <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Your Full Project Topic *</label>
-                    <textarea
-                      value={search}
-                      onChange={e => setSearch(e.target.value)}
-                      placeholder="e.g. Challenges and prospects of financial autonomy to local government administration..."
-                      rows={3}
-                      className="w-full bg-secondary border border-theme rounded-xl p-4 text-sm text-primary focus:border-emerald-500 outline-none transition font-bold"
+                  <Textarea
+                    label="Your Full Project Topic *"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="e.g. Challenges and prospects of financial autonomy to local government administration..."
+                    rows={3}
+                    fullWidth
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Select
+                      label="Department"
+                      value={selectedSearchDept}
+                      onChange={e => setSelectedSearchDept(e.target.value)}
+                      options={deptOptions}
+                    />
+                    <Select
+                      label="Academic Level"
+                      value={selectedSearchLevel}
+                      onChange={e => setSelectedSearchLevel(e.target.value)}
+                      options={levelOptions}
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Department</label>
-                      <select
-                        value={selectedSearchDept}
-                        onChange={e => setSelectedSearchDept(e.target.value)}
-                        className="w-full bg-secondary border border-theme rounded-xl p-3.5 text-sm text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
-                      >
-                        <option value="all">📂 All Departments</option>
-                        {mergedDepts.map(d => <option key={d} value={d}>{d}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Academic Level</label>
-                      <select
-                        value={selectedSearchLevel}
-                        onChange={e => setSelectedSearchLevel(e.target.value)}
-                        className="w-full bg-secondary border border-theme rounded-xl p-3.5 text-sm text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
-                      >
-                        <option value="all">🎓 All Levels</option>
-                        <option value="BSc">BSc / HND</option>
-                        <option value="MSc">MSc / PGD</option>
-                        <option value="PhD">PhD</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <button
+                  <Button
                     onClick={executeAvailabilitySearch}
                     disabled={!search.trim() || isSearching}
-                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase text-xs tracking-widest rounded-xl transition shadow-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+                    fullWidth
+                    size="lg"
                   >
                     Check Availability & Retrieve Material
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </Card>
             </div>
           ) : hasSearched && !isSearching ? (
             loading ? (
-              <div className="max-w-md mx-auto mt-6 py-10 text-center space-y-6 bg-card border border-theme rounded-3xl p-8 shadow-2xl">
-                <div className="relative w-16 h-16 mx-auto">
-                  <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                  <div className="absolute inset-2 rounded-full border-4 border-indigo-500/20 border-b-indigo-500 animate-spin [animation-direction:reverse]" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-primary">Loading matching topics...</h3>
-                </div>
-              </div>
+              <Card padding="lg" elevation={3} className="max-w-md mx-auto mt-6 text-center">
+                <Loader2 className="w-10 h-10 animate-spin mx-auto text-accent mb-4" />
+                <h3 className="text-sm font-bold text-primary">Loading matching topics...</h3>
+              </Card>
             ) : topics.length === 0 ? (
               /* NO DIRECT RESULTS - SHOW CUSTOM WRITEUP CARD HERE IN HERO */
-              <div className="max-w-2xl mx-auto mt-6 rounded-3xl p-4 sm:p-8 space-y-6 text-center shadow-2xl bg-card border border-theme text-primary">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-theme/25 pb-4 text-left">
+              <Card padding="lg" elevation={3} className="max-w-2xl mx-auto mt-6 text-center">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-theme pb-4 text-left mb-6">
                   <div>
                     <h3 className="text-sm font-bold text-primary">Search Results</h3>
                     <p className="text-xs text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
                   </div>
-                  <button 
-                    onClick={() => { setHasSearched(false); setIsSearching(false); setTopics([]); setCustomCard(null); }}
-                    className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-2 self-start sm:self-auto"
-                  >
-                    <lucide.Search className="w-3.5 h-3.5" /> Search Another Topic
-                  </button>
+                  <Button variant="secondary" size="sm" onClick={() => { setHasSearched(false); setIsSearching(false); setTopics([]); setCustomCard(null); }}>
+                    <Search className="w-3.5 h-3.5" /> Search Another Topic
+                  </Button>
                 </div>
 
-                <div className="w-14 h-14 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
-                  <lucide.CheckCircle className="w-7 h-7 text-emerald-500" />
+                <div className="w-14 h-14 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="w-7 h-7" />
                 </div>
-                <div>
-                  <h4 className="text-lg font-black text-primary">Custom Write-up Available!</h4>
-                  <p className="text-xs text-secondary mt-1.5 leading-relaxed max-w-md mx-auto font-semibold">
-                    Our writers can prepare your custom topic as an original project with complete Chapters 1–5, structured layout, and full references.
-                  </p>
-                </div>
+                <h4 className="text-lg font-bold text-primary mb-2">Custom Write-up Available!</h4>
+                <p className="text-xs text-secondary mb-6 leading-relaxed max-w-md mx-auto font-semibold">
+                  Our writers can prepare your custom topic as an original project with complete Chapters 1–5, structured layout, and full references.
+                </p>
 
-                <div className="bg-secondary/40 border border-theme p-4 sm:p-6 rounded-2xl text-left space-y-4 max-w-lg mx-auto">
+                <Card padding="md" className="text-left space-y-4 max-w-lg mx-auto mb-6">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500 text-black">✓ Available</span>
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-theme text-primary">{selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel}</span>
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-white/5 text-purple-400">{selectedSearchDept === 'all' ? 'General' : selectedSearchDept}</span>
+                    <Badge variant="success">Available</Badge>
+                    <Badge variant="default">{selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel}</Badge>
+                    <Badge variant="default">{selectedSearchDept === 'all' ? 'General' : selectedSearchDept}</Badge>
                   </div>
                   <p className="text-xs font-bold text-primary leading-normal break-words">{search}</p>
-                  <div className="border-t border-theme/40 pt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                  <div className="border-t border-theme pt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <div>
-                      <span className="text-[10px] text-secondary uppercase font-black block">Standard Cost</span>
-                      <span className="text-sm font-mono font-bold text-emerald-500">{naira(getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept))}</span>
+                      <span className="text-[10px] text-secondary uppercase font-bold block">Standard Cost</span>
+                      <span className="text-sm font-mono font-bold text-success">{naira(getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept))}</span>
                     </div>
-                    <button 
-                      onClick={() => openCart({ 
-                        customTitle: search.trim(), 
-                        level: selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, 
-                        department: selectedSearchDept === 'all' ? 'General' : selectedSearchDept, 
-                        title: search.trim(), 
-                        basePrice: getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept) 
-                      })} 
-                      className="w-full sm:w-auto bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition cursor-pointer"
+                    <Button
+                      size="sm"
+                      onClick={() => openCart({
+                        customTitle: search.trim(),
+                        level: selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel,
+                        department: selectedSearchDept === 'all' ? 'General' : selectedSearchDept,
+                        title: search.trim(),
+                        basePrice: getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept)
+                      })}
                     >
                       Order Custom Write-up
-                    </button>
+                    </Button>
                   </div>
-                </div>
-              </div>
+                </Card>
+              </Card>
             ) : (
               /* DIRECT MATCHES FOUND - SHOW THE COMPACT SEARCH RESULTS BANNER */
-              <div className="max-w-2xl mx-auto mt-6 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 text-left text-primary bg-card border border-theme">
+              <Card padding="md" elevation={2} className="max-w-2xl mx-auto mt-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 text-left">
                 <div>
                   <h3 className="text-sm font-bold text-primary">Search Results</h3>
                   <p className="text-xs text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
                 </div>
-                <button
-                  onClick={() => { setHasSearched(false); setIsSearching(false); setTopics([]); setCustomCard(null); }}
-                  className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-2 self-start sm:self-auto"
-                >
-                  <lucide.Search className="w-3.5 h-3.5" /> Search Another Topic
-                </button>
-              </div>
+                <Button variant="secondary" size="sm" onClick={() => { setHasSearched(false); setIsSearching(false); setTopics([]); setCustomCard(null); }}>
+                  <Search className="w-3.5 h-3.5" /> Search Another Topic
+                </Button>
+              </Card>
             )
           ) : isSearching ? (
-            <div className="max-w-md mx-auto mt-10 py-10 text-center space-y-6 bg-card border border-theme rounded-3xl p-8 shadow-2xl">
-              <div className="relative w-16 h-16 mx-auto">
-                <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                <div className="absolute inset-2 rounded-full border-4 border-indigo-500/20 border-b-indigo-500 animate-spin [animation-direction:reverse]" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-primary">Scanning Project Database...</h3>
-                <p className="text-xs text-secondary mt-1">Checking chapters, tables, and references availability for your topic.</p>
-              </div>
-            </div>
+            <Card padding="lg" elevation={3} className="max-w-md mx-auto mt-10 text-center">
+              <Loader2 className="w-10 h-10 animate-spin mx-auto text-accent mb-4" />
+              <h3 className="text-sm font-bold text-primary">Scanning Project Database...</h3>
+              <p className="text-xs text-secondary mt-1">Checking chapters, tables, and references availability for your topic.</p>
+            </Card>
           ) : null}
-        </div>
+        </Shell>
       </section>
 
       {/* SERVICES (project-topics specific) */}
       <section id="services" className="px-4 md:px-6 py-10 border-b border-theme">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-lg md:text-xl font-black text-primary text-center mb-6">What's Included With Every Topic</h2>
+        <Shell size="lg">
+          <h2 className="text-lg md:text-xl font-bold text-primary text-center mb-6">What's Included With Every Topic</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="glass-panel rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform duration-300">
-              <div className="text-2xl mb-2">📚</div>
+            <Card padding="lg" className="text-center">
+              <div className="w-10 h-10 rounded-xl bg-secondary border border-theme flex items-center justify-center mx-auto mb-3 text-accent">
+                <ScrollText className="w-5 h-5" />
+              </div>
               <h3 className="text-sm font-bold text-primary mb-1">Ready-made Chapters 1–5</h3>
               <p className="text-xs text-secondary">Full academic material in MS Word, matched to your department and level.</p>
-            </div>
-            <div className="glass-panel rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform duration-300">
-              <div className="text-2xl mb-2">🧩</div>
+            </Card>
+            <Card padding="lg" className="text-center">
+              <div className="w-10 h-10 rounded-xl bg-secondary border border-theme flex items-center justify-center mx-auto mb-3 text-warning">
+                <Puzzle className="w-5 h-5" />
+              </div>
               <h3 className="text-sm font-bold text-primary mb-1">Optional Add-ons</h3>
               <p className="text-xs text-secondary">Extend any topic with extras like SPSS analysis, PowerPoint slides, or a location/case-study change.</p>
-            </div>
-            <div className="glass-panel rounded-2xl p-5 text-center hover:-translate-y-1 transition-transform duration-300">
-              <div className="text-2xl mb-2">🔒</div>
+            </Card>
+            <Card padding="lg" className="text-center">
+              <div className="w-10 h-10 rounded-xl bg-secondary border border-theme flex items-center justify-center mx-auto mb-3 text-info">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
               <h3 className="text-sm font-bold text-primary mb-1">Secure Vault Delivery</h3>
               <p className="text-xs text-secondary">Your material lands in your dashboard's Secure Vault, ready to download.</p>
-            </div>
+            </Card>
           </div>
-        </div>
+        </Shell>
       </section>
 
       {/* HOW IT WORKS (project-topics specific) */}
-      <section id="how-it-works" className="px-4 md:px-6 py-10 border-b border-theme bg-secondary/20">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-lg md:text-xl font-black text-primary text-center mb-6">How It Works</h2>
+      <section id="how-it-works" className="px-4 md:px-6 py-10 border-b border-theme bg-card/30">
+        <Shell size="lg">
+          <h2 className="text-lg md:text-xl font-bold text-primary text-center mb-6">How It Works</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { n: '1', label: 'Pick a Topic', desc: 'Browse or search 100,000+ ready-made topics.' },
@@ -1120,20 +1123,20 @@ Furthermore, there is a lack of localized research that addresses the specific c
               { n: '3', label: 'Pay Securely', desc: 'Checkout with card — no account required upfront.' },
               { n: '4', label: 'Get Delivered', desc: 'Material lands in your Secure Vault within hours.' },
             ].map(step => (
-              <div key={step.n} className="text-center">
-                <div className="w-9 h-9 mx-auto mb-2 rounded-full bg-emerald-500 text-black font-black flex items-center justify-center text-sm">{step.n}</div>
+              <Card key={step.n} padding="md" className="text-center">
+                <div className="w-9 h-9 mx-auto mb-2 rounded-full bg-accent text-[var(--accent-foreground)] font-black flex items-center justify-center text-sm">{step.n}</div>
                 <h4 className="text-xs font-bold text-primary mb-1">{step.label}</h4>
                 <p className="text-[11px] text-secondary leading-relaxed">{step.desc}</p>
-              </div>
+              </Card>
             ))}
           </div>
-        </div>
+        </Shell>
       </section>
 
       {/* DISCLAIMER */}
-      <div className="bg-amber-400/10 border-b border-amber-400/30 px-4 md:px-6 py-3">
-        <div className="max-w-5xl mx-auto text-xs md:text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2">
-          <lucide.AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+      <div className="bg-[var(--warning-bg)] border-b border-warning/20 px-4 md:px-6 py-3">
+        <Shell size="lg" className="flex items-start gap-2 text-xs md:text-sm text-warning">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
           <p>
             {pageSettings.disclaimer_text.includes("Use our main writing service") ? (
               <>
@@ -1142,168 +1145,183 @@ Furthermore, there is a lack of localized research that addresses the specific c
               </>
             ) : pageSettings.disclaimer_text}
           </p>
-        </div>
+        </Shell>
       </div>
 
+      const browseFilterOptions = {
+        dept: [{ value: 'all', label: 'All Departments' }, ...mergedDepts.map(d => ({ value: d, label: d }))],
+        level: [
+          { value: 'all', label: 'All Levels' },
+          { value: 'BSc', label: 'BSc / HND' },
+          { value: 'MSc', label: 'MSc / PGD' },
+          { value: 'PhD', label: 'PhD' },
+        ],
+      };
+
+      return (
       {/* DATABASE SEARCH & AVAILABILITY RESULTS CONTAINER */}
       {hasSearched && !isSearching && !loading && topics.length > 0 && (
-        <div className="max-w-[1320px] mx-auto px-4 py-8">
-          <div className="flex justify-between items-center gap-4 border-b border-theme pb-4">
+        <Shell size="full" className="max-w-[1320px] py-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-theme pb-4">
             <div>
               <h3 className="text-lg font-bold text-primary">Matching Database Topics</h3>
               <p className="text-xs text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
             </div>
-            <button 
-              onClick={() => { setHasSearched(false); setIsSearching(false); setTopics([]); setCustomCard(null); }}
-              className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer"
-            >
-              🔎 Search Another Topic
-            </button>
+            <Button variant="secondary" size="sm" onClick={() => { setHasSearched(false); setIsSearching(false); setTopics([]); setCustomCard(null); }}>
+              <Search className="w-3.5 h-3.5" /> Search Another Topic
+            </Button>
           </div>
 
-          {msg && !cart && <div className="mb-4 text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl p-3">{msg}</div>}
+          {msg && !cart && <div className="mb-4 text-xs font-bold text-danger bg-[var(--danger-bg)] border border-danger/20 rounded-xl p-3">{msg}</div>}
 
           <div id="topics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
             {topics.map(t => (
-              <div key={t.id} className="glass-panel rounded-[24px] p-5 flex flex-col gap-3 hover:border-emerald-500/40 hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+              <Card key={t.id} padding="md" interactive className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">{t.department}</span>
-                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(t.level)}`}>{t.level}</span>
+                  <Badge variant="success">{t.department}</Badge>
+                  <Badge variant="default" className={levelBadgeClass(t.level)}>{t.level}</Badge>
                 </div>
                 <h3 className="text-sm font-bold leading-relaxed text-primary line-clamp-3">
                   {renderTitleWithDifferences(t.title)}
                 </h3>
                 <div className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-secondary font-mono">
-                  <span>📄 {t.pages || '—'} pages</span><span>📖 Ch. {t.chapters}</span><span>📅 {t.year}</span><span>📝 {t.format}</span>
+                  <span className="inline-flex items-center gap-1"><FileText className="w-3 h-3" /> {t.pages || '—'} pages</span>
+                  <span className="inline-flex items-center gap-1"><ScrollText className="w-3 h-3" /> Ch. {t.chapters}</span>
+                  <span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3" /> {t.year}</span>
+                  <span className="inline-flex items-center gap-1"><Zap className="w-3 h-3" /> {t.format}</span>
                 </div>
-                <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1 w-fit">{pageSettings.delivery_text}</span>
+                <Badge variant="warning" className="w-fit">{pageSettings.delivery_text}</Badge>
                 <div className="flex gap-2 mt-auto pt-1 flex-wrap">
-                  <button onClick={() => setPreview(t)} className="flex-1 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition min-w-[70px]">👁 Preview</button>
-                  <button onClick={() => copyPermalink(t.id, t.title)} className="px-3 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition whitespace-nowrap">
-                    {copiedId === t.id ? '✓ Copied' : '🔗 Share'}
-                  </button>
-                  <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) })} className="flex-1 py-2.5 rounded-lg text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 transition min-w-[90px]">Get · {naira(t.price)}</button>
+                  <Button variant="secondary" size="sm" className="flex-1 min-w-[70px]" onClick={() => setPreview(t)}><Eye className="w-3.5 h-3.5" /> Preview</Button>
+                  <Button variant="secondary" size="sm" className="whitespace-nowrap" onClick={() => copyPermalink(t.id, t.title)}>
+                    {copiedId === t.id ? <><CheckCircle2 className="w-3.5 h-3.5" /> Copied</> : <><Share2 className="w-3.5 h-3.5" /> Share</>}
+                  </Button>
+                  <Button size="sm" className="flex-1 min-w-[90px]" onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) })}>Get · {naira(t.price)}</Button>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
 
           {/* PAGINATION BAR */}
           {Math.ceil(total / PAGE_SIZE) > 1 && (
             <div className="flex justify-center items-center gap-2 mt-8 flex-wrap">
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={page === 1 || loading}
                 onClick={() => handlePageChange(page - 1)}
-                className="px-4 py-2 rounded-xl bg-secondary border border-theme text-primary text-xs font-bold hover:bg-white/5 disabled:opacity-40 transition"
               >
-                ◀ Prev
-              </button>
-              
+                Prev
+              </Button>
+
               {Array.from({ length: Math.min(5, Math.ceil(total / PAGE_SIZE)) }, (_, i) => {
                 const totalPages = Math.ceil(total / PAGE_SIZE);
                 let pageNum = page - 2 + i;
                 if (page <= 2) pageNum = i + 1;
                 if (page >= totalPages - 1) pageNum = totalPages - 4 + i;
                 pageNum = Math.max(1, Math.min(pageNum, totalPages));
-                
+
                 if (pageNum < 1 || pageNum > totalPages) return null;
-                
+
                 return (
                   <button
                     key={pageNum}
                     onClick={() => handlePageChange(pageNum)}
-                    className={`w-9 h-9 rounded-xl text-xs font-bold transition ${page === pageNum ? 'bg-emerald-500 text-black' : 'bg-secondary border border-theme text-primary hover:bg-white/5'}`}
+                    className={`w-9 h-9 rounded-xl text-xs font-bold transition ${page === pageNum ? 'bg-accent text-[var(--accent-foreground)]' : 'bg-secondary border border-theme text-primary hover:bg-hover'}`}
                   >
                     {pageNum}
                   </button>
                 );
               })}
-              
-              <button
+
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={page === Math.ceil(total / PAGE_SIZE) || loading}
                 onClick={() => handlePageChange(page + 1)}
-                className="px-4 py-2 rounded-xl bg-secondary border border-theme text-primary text-xs font-bold hover:bg-white/5 disabled:opacity-40 transition"
               >
-                Next ▶
-              </button>
+                Next
+              </Button>
             </div>
           )}
-        </div>
+        </Shell>
       )}
 
       {/* BROWSE ALL PROJECT TOPICS (below search section) */}
       {!hasSearched && !isSearching && (
-        <div className="max-w-[1320px] mx-auto px-4 pb-16">
+        <Shell size="full" className="max-w-[1320px] pb-16">
           {/* Filter Row */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
             <div>
-              <h2 className="text-lg font-black text-primary">Browse Available Topics</h2>
+              <h2 className="text-lg font-bold text-primary">Browse Available Topics</h2>
               <p className="text-xs text-secondary mt-0.5">
                 {total > 0 ? `${total.toLocaleString()} topics in our database` : 'Loading topics…'}
               </p>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <select
+              <Select
                 value={dept}
                 onChange={e => { setDept(e.target.value); setPage(1); }}
-                className="bg-secondary border border-theme rounded-xl px-3 py-2 text-xs text-primary font-bold outline-none focus:border-emerald-500 cursor-pointer"
-              >
-                <option value="all">📂 All Departments</option>
-                {mergedDepts.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-              <select
+                options={browseFilterOptions.dept}
+                className="w-44 text-xs"
+              />
+              <Select
                 value={level}
                 onChange={e => { setLevel(e.target.value); setPage(1); }}
-                className="bg-secondary border border-theme rounded-xl px-3 py-2 text-xs text-primary font-bold outline-none focus:border-emerald-500 cursor-pointer"
-              >
-                <option value="all">🎓 All Levels</option>
-                <option value="BSc">BSc / HND</option>
-                <option value="MSc">MSc / PGD</option>
-                <option value="PhD">PhD</option>
-              </select>
+                options={browseFilterOptions.level}
+                className="w-36 text-xs"
+              />
             </div>
           </div>
 
           {loading ? (
             <div className="py-20 text-center text-secondary text-sm flex items-center justify-center gap-2">
-              <lucide.Loader2 className="w-4 h-4 animate-spin" /> Loading topics…
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading topics…
             </div>
           ) : topics.length === 0 ? (
-            <div className="py-20 text-center text-secondary text-sm">No topics found for this filter. Try a different department or level.</div>
+            <EmptyState
+              icon={<Search className="w-5 h-5" />}
+              title="No topics found"
+              description="Try a different department or level."
+            />
           ) : (
             <>
               <div id="topics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {topics.map(t => (
-                  <div key={t.id} className="glass-panel rounded-[24px] p-5 flex flex-col gap-3 hover:border-emerald-500/40 hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+                  <Card key={t.id} padding="md" interactive className="flex flex-col gap-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">{t.department}</span>
-                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(t.level)}`}>{t.level}</span>
+                      <Badge variant="success">{t.department}</Badge>
+                      <Badge variant="default" className={levelBadgeClass(t.level)}>{t.level}</Badge>
                     </div>
                     <h3 className="text-sm font-bold leading-relaxed text-primary line-clamp-3">
                       {renderTitleWithDifferences(t.title)}
                     </h3>
                     <div className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-secondary font-mono">
-                      <span>📄 {t.pages || '—'} pages</span><span>📖 Ch. {t.chapters}</span><span>📅 {t.year}</span><span>📝 {t.format}</span>
+                      <span className="inline-flex items-center gap-1"><FileText className="w-3 h-3" /> {t.pages || '—'} pages</span>
+                      <span className="inline-flex items-center gap-1"><ScrollText className="w-3 h-3" /> Ch. {t.chapters}</span>
+                      <span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3" /> {t.year}</span>
+                      <span className="inline-flex items-center gap-1"><Zap className="w-3 h-3" /> {t.format}</span>
                     </div>
-                    <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1 w-fit">{pageSettings.delivery_text}</span>
+                    <Badge variant="warning" className="w-fit">{pageSettings.delivery_text}</Badge>
                     <div className="flex gap-2 mt-auto pt-1 flex-wrap">
-                      <button onClick={() => setPreview(t)} className="flex-1 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition min-w-[70px]">👁 Preview</button>
-                      <button onClick={() => copyPermalink(t.id, t.title)} className="px-3 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition whitespace-nowrap">
-                        {copiedId === t.id ? '✓ Copied' : '🔗 Share'}
-                      </button>
-                      <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) })} className="flex-1 py-2.5 rounded-lg text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 transition min-w-[90px]">Get · {naira(t.price)}</button>
+                      <Button variant="secondary" size="sm" className="flex-1 min-w-[70px]" onClick={() => setPreview(t)}><Eye className="w-3.5 h-3.5" /> Preview</Button>
+                      <Button variant="secondary" size="sm" className="whitespace-nowrap" onClick={() => copyPermalink(t.id, t.title)}>
+                        {copiedId === t.id ? <><CheckCircle2 className="w-3.5 h-3.5" /> Copied</> : <><Share2 className="w-3.5 h-3.5" /> Share</>}
+                      </Button>
+                      <Button size="sm" className="flex-1 min-w-[90px]" onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) })}>Get · {naira(t.price)}</Button>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
 
               {Math.ceil(total / PAGE_SIZE) > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-8 flex-wrap">
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     disabled={page === 1 || loading}
                     onClick={() => handlePageChange(page - 1)}
-                    className="px-4 py-2 rounded-xl bg-secondary border border-theme text-primary text-xs font-bold hover:bg-white/5 disabled:opacity-40 transition"
-                  >◀ Prev</button>
+                  >Prev</Button>
                   {Array.from({ length: Math.min(5, Math.ceil(total / PAGE_SIZE)) }, (_, i) => {
                     const totalPages = Math.ceil(total / PAGE_SIZE);
                     let p: number;
@@ -1313,20 +1331,21 @@ Furthermore, there is a lack of localized research that addresses the specific c
                     else { p = page - 2 + i; }
                     return (
                       <button key={p} onClick={() => handlePageChange(p)}
-                        className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${p === page ? 'bg-emerald-500 text-black border-emerald-500' : 'bg-secondary border-theme text-primary hover:bg-white/5'}`}
+                        className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${p === page ? 'bg-accent text-[var(--accent-foreground)] border-accent' : 'bg-secondary border-theme text-primary hover:bg-hover'}`}
                       >{p}</button>
                     );
                   })}
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     disabled={page === Math.ceil(total / PAGE_SIZE) || loading}
                     onClick={() => handlePageChange(page + 1)}
-                    className="px-4 py-2 rounded-xl bg-secondary border border-theme text-primary text-xs font-bold hover:bg-white/5 disabled:opacity-40 transition"
-                  >Next ▶</button>
+                  >Next</Button>
                 </div>
               )}
             </>
           )}
-        </div>
+        </Shell>
       )}
 
       {/* PREVIEW MODAL */}

@@ -1,29 +1,31 @@
 type StatusBadgeProps = {
   status: string;
   size?: 'sm' | 'md';
+  dot?: boolean;
+  pulse?: boolean;
 };
 
 function getStatusStyle(status: string): string {
   const normalized = status.toLowerCase();
-  if (normalized === 'completed') {
-    return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+  if (['completed', 'delivered', 'paid', 'active', 'success', 'approved'].includes(normalized)) {
+    return 'bg-[var(--success-bg)] text-success border-success/20';
   }
-  if (normalized === 'cancelled') {
-    return 'bg-red-500/10 text-red-400 border-red-500/20';
+  if (['cancelled', 'failed', 'rejected', 'refunded', 'inactive', 'banned'].includes(normalized)) {
+    return 'bg-[var(--danger-bg)] text-danger border-danger/20';
   }
-  if (normalized === 'briefing received' || normalized === 'awaiting quote') {
+  if (['briefing received', 'awaiting quote', 'pending', 'in review', 'on hold'].includes(normalized)) {
     return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
   }
-  if (normalized === 'quote sent') {
-    return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+  if (['quote sent', 'in progress', 'processing', 'shipped', 'in transit'].includes(normalized)) {
+    return 'bg-[var(--info-bg)] text-info border-info/20';
   }
-  if (normalized === 'synthesis active') {
-    return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+  if (['synthesis active', 'awaiting payment', 'needs action', 'escalated'].includes(normalized)) {
+    return 'bg-[var(--warning-bg)] text-warning border-warning/20';
   }
-  return 'bg-white/5 text-secondary border-theme';
+  return 'bg-secondary text-secondary border-theme';
 }
 
-export default function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
+export default function StatusBadge({ status, size = 'sm', dot, pulse }: StatusBadgeProps) {
   const sizeClass =
     size === 'md'
       ? 'px-3 py-1 text-[10px]'
@@ -33,6 +35,15 @@ export default function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
     <span
       className={`inline-flex items-center rounded-md font-black uppercase tracking-widest border ${sizeClass} ${getStatusStyle(status)}`}
     >
+      {dot && (
+        <span
+          className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+            status.toLowerCase().includes('active') || status.toLowerCase().includes('progress')
+              ? pulse ? 'bg-info animate-pulse' : 'bg-info'
+              : 'bg-current'
+          }`}
+        />
+      )}
       {status}
     </span>
   );

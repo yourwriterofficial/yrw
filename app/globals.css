@@ -7,62 +7,119 @@
 @custom-variant dark (&:not([data-theme="light"], [data-theme="light"] *));
 
 :root {
-  --bg-primary: #050505;
-  --bg-secondary: #0a0a0a;
-  --bg-card: #0f0f0f;
-  --bg-elevated: #161616;
-  --border: #262626;
-  --border-strong: #3a3a3a;
-  --text-primary: #ededed;
-  --text-secondary: #a1a1aa;
-  --accent: #1DB954;
-  --accent-hover: #17a44b;
-  /* Elevation */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.55);
-  /* Skeleton */
-  --skeleton-base: #1a1a1a;
-  --skeleton-shine: #262626;
+  /* Brand palette — editorial indigo base, emerald waypoint */
+  --brand-50: #eef4ff;
+  --brand-100: #d9e6ff;
+  --brand-200: #bcd6ff;
+  --brand-300: #8fbaff;
+  --brand-400: #5a95ff;
+  --brand-500: #3171f5;
+  --brand-600: #2053e3;
+  --brand-700: #1840c8;
+  --brand-800: #1b36a2;
+  --brand-900: #1c327f;
 
-  /* Material-style tonal surface scale (Phase 2 of the client/admin redesign).
-     surface-4/5 give dropdown/modal content a real resting tier beyond the
-     existing bg-primary/secondary/card/elevated — additive, nothing above is redefined. */
-  --surface-4: #1c1c1c;
-  --surface-5: #212121;
-  /* Numbered elevation tiers: dark surfaces are near-black, so shadow alone barely
-     reads — pair with a hairline border (applied by consumers, e.g. Card.tsx) rather
-     than relying on shadow alone like Material's light-mode convention. */
+  /* Semantic surfaces (dark default) */
+  --bg-primary: #050505;
+  --bg-secondary: #09090b;
+  --bg-card: #0c0c0f;
+  --bg-elevated: #13131a;
+  --bg-input: #0a0a0c;
+  --bg-hover: rgba(255, 255, 255, 0.04);
+
+  /* Neutral scale for text and borders */
+  --border: #1f1f28;
+  --border-strong: #2e2e3d;
+  --text-primary: #f3f3f5;
+  --text-secondary: #8f8fa3;
+  --text-tertiary: #555567;
+  --text-muted: #404053;
+
+  /* Status / accent */
+  --accent: #22c55e;
+  --accent-hover: #16a34a;
+  --accent-foreground: #000000;
+
+  /* Feedback colors */
+  --success: #22c55e;
+  --success-bg: rgba(34, 197, 94, 0.12);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.12);
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.12);
+  --info: #3b82f6;
+  --info-bg: rgba(59, 130, 246, 0.12);
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.50);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.60);
+  --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.70);
+
   --elevation-0: none;
-  --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
-  --elevation-2: 0 3px 8px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
-  --elevation-3: 0 8px 24px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.45);
+  --elevation-2: 0 3px 8px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.45);
+  --elevation-3: 0 8px 24px rgba(0, 0, 0, 0.60), 0 2px 6px rgba(0, 0, 0, 0.45);
+
+  /* Skeleton */
+  --skeleton-base: #12121a;
+  --skeleton-shine: #1d1d29;
+
+  /* Tonal surfaces */
+  --surface-4: #161621;
+  --surface-5: #1b1b28;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
 }
 
 [data-theme="light"] {
-  --bg-primary: #f4f5f7;
+  --bg-primary: #f7f7f9;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
   --bg-elevated: #ffffff;
-  --border: #e6e8ec;
-  --border-strong: #d1d5db;
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --accent: #10b981;
-  --accent-hover: #059669;
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 4px 16px rgba(16, 24, 40, 0.08);
-  --shadow-lg: 0 12px 40px rgba(16, 24, 40, 0.12);
-  --skeleton-base: #e9ebef;
-  --skeleton-shine: #f4f5f7;
+  --bg-input: #f8f8fb;
+  --bg-hover: rgba(0, 0, 0, 0.03);
+
+  --border: #e5e5ed;
+  --border-strong: #d4d4e0;
+  --text-primary: #111118;
+  --text-secondary: #5c5c6e;
+  --text-tertiary: #8a8a9c;
+  --text-muted: #b8b8c8;
+
+  --accent: #16a34a;
+  --accent-hover: #15803d;
+  --accent-foreground: #ffffff;
+
+  --success: #16a34a;
+  --success-bg: rgba(22, 163, 74, 0.10);
+  --warning: #d97706;
+  --warning-bg: rgba(217, 119, 6, 0.10);
+  --danger: #dc2626;
+  --danger-bg: rgba(220, 38, 38, 0.10);
+  --info: #2563eb;
+  --info-bg: rgba(37, 99, 235, 0.10);
+
+  --shadow-sm: 0 1px 2px rgba(17, 17, 24, 0.08);
+  --shadow-md: 0 4px 16px rgba(17, 17, 24, 0.10);
+  --shadow-lg: 0 12px 40px rgba(17, 17, 24, 0.14);
+  --shadow-xl: 0 24px 60px rgba(17, 17, 24, 0.18);
+
+  --elevation-1: 0 1px 3px rgba(17, 17, 24, 0.10), 0 1px 2px rgba(17, 17, 24, 0.06);
+  --elevation-2: 0 3px 8px rgba(17, 17, 24, 0.12), 0 1px 3px rgba(17, 17, 24, 0.08);
+  --elevation-3: 0 8px 24px rgba(17, 17, 24, 0.14), 0 2px 6px rgba(17, 17, 24, 0.08);
+
+  --skeleton-base: #e7e7ef;
+  --skeleton-shine: #f2f2f7;
 
   --surface-4: #ffffff;
   --surface-5: #ffffff;
-  /* Light theme differentiates elevation by shadow depth, not tone — Material convention. */
-  --elevation-0: none;
-  --elevation-1: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
-  --elevation-2: 0 3px 8px rgba(16, 24, 40, 0.10), 0 1px 3px rgba(16, 24, 40, 0.06);
-  --elevation-3: 0 8px 24px rgba(16, 24, 40, 0.14), 0 2px 6px rgba(16, 24, 40, 0.06);
 }
 
 html {
@@ -74,46 +131,37 @@ html {
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   transition: background 0.2s ease, color 0.2s ease;
-  /* A single wide child (table, long unbroken title) must not widen the page and
-     hand every screen a horizontal scrollbar. No page currently overflows — this
-     is a guard, not a fix. Deliberately no `max-width: 100vw`: 100vw includes the
-     classic scrollbar width, so it would make body wider than the visible area
-     and clip real content on Windows. */
   overflow-x: clip;
   min-height: 100svh;
 }
 
-/* Registers --accent/--accent-hover as real Tailwind theme colors so
-   bg-accent/text-accent/border-accent/hover:bg-accent-hover (etc.) are
-   generated for every variant, instead of only the hand-authored
-   .accent/.accent-bg classes below. Without this, those utilities were
-   literal no-ops — e.g. the login page's submit button had no background
-   and black-on-black text. */
+/* Theme registration */
 @theme inline {
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
   --color-surface-4: var(--surface-4);
   --color-surface-5: var(--surface-5);
+  --color-theme: var(--border);
+  --color-brand-500: var(--brand-500);
   --shadow-elevation-1: var(--elevation-1);
   --shadow-elevation-2: var(--elevation-2);
   --shadow-elevation-3: var(--elevation-3);
-  /* Registers --border as a real Tailwind color token ("theme") so opacity
-     modifiers (border-theme/60, bg-theme/40, ...) actually generate a rule
-     instead of silently compiling to nothing and falling back to currentColor
-     — the same class of bug --color-accent above was added to fix. */
-  --color-theme: var(--border);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --font-display: var(--font-display);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
 }
 
-/* Radius convention (Material redesign, Phase 2) — Tailwind's default radius scale
-   already covers this, this is a documented convention, not new tokens:
-     rounded-xl   (12px) — controls, buttons, inputs
-     rounded-2xl  (16-20px) — cards, panels, modals
-     rounded-full — pills, avatars, icon buttons
-   New code should follow this instead of mixing rounded-lg/xl/2xl/3xl arbitrarily. */
-
-/* Utility classes – use these in your components */
+/* Legacy utility classes — keep for old call sites during migration */
 .bg-primary { background: var(--bg-primary); }
 .bg-secondary { background: var(--bg-secondary); }
 .bg-card { background: var(--bg-card); }
@@ -128,24 +176,46 @@ body {
 .accent { color: var(--accent); }
 .accent-bg { background: var(--accent); }
 
+/* New surface utilities */
+.surface {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.surface-elevated {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-2);
+}
+
+/* Focus ring utilities */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--accent);
+}
+.focus-ring-inset:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: var(--bg-secondary);
   border-radius: 4px;
-}
-[data-theme="light"] ::-webkit-scrollbar-track {
-  background: #e2e8f0;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--accent);
+  background: var(--border-strong);
   border-radius: 4px;
 }
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
 
-/* Input styles */
 input[type="date"] {
   color-scheme: dark;
 }
@@ -153,59 +223,122 @@ input[type="date"] {
   color-scheme: light;
 }
 
+/* Input helpers */
 .input-box {
   width: 100%;
-  background: var(--bg-card);
+  background: var(--bg-input);
   border: 1px solid var(--border);
-  padding: 18px;
-  border-radius: 20px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
   color: var(--text-primary);
-  margin-bottom: 12px;
   outline: none;
-  font-size: 14px;
-  transition: all 0.3s ease;
+  font-size: 16px;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.input-box::placeholder {
+  color: var(--text-muted);
+}
+.input-box:hover {
+  border-color: var(--border-strong);
 }
 .input-box:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15);
-  background: var(--bg-secondary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+  background: var(--bg-card);
 }
-.spotify-green {
-  background: var(--accent);
-  color: #000;
-  font-weight: 800;
-  border-radius: 50px;
-  padding: 16px 32px;
-  border: none;
-  cursor: pointer;
-  text-transform: uppercase;
-  font-size: 11px;
-  letter-spacing: 1.5px;
-  transition: 0.3s;
+.input-box:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
-.spotify-green:hover {
-  background: var(--accent-hover);
+.input-box[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.input-box[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 15%, transparent);
 }
 
-/* Prose styles for terms */
-.prose {
-  max-width: none;
-  color: var(--text-secondary);
+/* Legacy primary/secondary buttons — deprecated, kept for old call sites */
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 800;
+  border-radius: var(--radius-md);
+  padding: 12px 24px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: background 0.2s ease, opacity 0.2s ease;
 }
-.prose ul, .prose ol {
-  padding-left: 1.5rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  padding: 10px 20px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
-.prose li {
-  margin-bottom: 0.25rem;
+.btn-secondary:hover:not(:disabled) { background: var(--bg-hover); }
+
+/* Glass panels */
+.glass-panel {
+  background: color-mix(in srgb, var(--bg-card) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
 }
-.prose h3 {
-  font-weight: bold;
-  font-size: 0.9rem;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-  color: var(--accent);
+.glass-panel-strong {
+  background: color-mix(in srgb, var(--bg-card) 75%, transparent);
+  border: 1px solid var(--border);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+
+/* Aurora background mesh */
+@keyframes aurora-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.aurora-bg {
+  position: relative;
+  overflow: hidden;
+}
+.aurora-bg::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background:
+    radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--brand-500) 16%, transparent), transparent 50%),
+    radial-gradient(circle at 70% 60%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 50%),
+    radial-gradient(circle at 50% 80%, color-mix(in srgb, var(--info) 10%, transparent), transparent 50%);
+  filter: blur(60px);
+  opacity: 0.7;
+  animation: aurora-shift 18s ease-in-out infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurora-bg::before { animation: none; }
+}
+
+/* Grain texture overlay */
+.grain-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+[data-theme="light"] .grain-overlay::after {
+  opacity: 0.025;
 }
 
 /* Animations */
@@ -213,8 +346,6 @@ input[type="date"] {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-
-/* Skeleton loading — perceived-performance placeholder */
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -230,48 +361,39 @@ input[type="date"] {
   .skeleton { animation: none; }
 }
 
-/* Elevation utilities */
+@keyframes blob-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.15); }
+  66% { transform: translate(-25px, 25px) scale(0.9); }
+}
+.animate-blob {
+  animation: blob-float 12s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob { animation: none; }
+}
+
+/* Shadows */
 .shadow-card { box-shadow: var(--shadow-md); }
 .shadow-pop { box-shadow: var(--shadow-lg); }
 
-/* Buttons
-   @deprecated for new code — use <Button variant="primary|secondary"> from
-   app/components/ui/Button.tsx, which matches these exactly (see Card.tsx/Button.tsx
-   for the Phase 2 Material-redesign foundation). Left live for existing call sites. */
-.btn-primary {
-  background: var(--accent);
-  color: #000;
-  font-weight: 800;
-  border-radius: 12px;
-  padding: 12px 24px;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  transition: background 0.2s ease, opacity 0.2s ease;
+/* Prose */
+.prose {
+  max-width: none;
+  color: var(--text-secondary);
 }
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover);
+.prose ul, .prose ol {
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
 }
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
+.prose li { margin-bottom: 0.25rem; }
+.prose h3 {
   font-weight: 700;
-  border-radius: 12px;
-  padding: 10px 20px;
-  border: 1px solid var(--border);
-  cursor: pointer;
-  font-size: 12px;
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-.btn-secondary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--text-primary) 5%, var(--bg-secondary));
+  font-size: 0.95rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--accent);
 }
 
 /* Focus accessibility */
@@ -279,7 +401,6 @@ input[type="date"] {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -294,69 +415,24 @@ textarea:focus-visible {
   transition: background 0.15s ease;
 }
 .table-row-hover tbody tr:hover {
-  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  background: var(--bg-hover);
 }
 
 /* Empty state */
 .empty-state {
-  border: 1px dashed var(--border);
-  border-radius: 24px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-xl);
   padding: 3rem 1.5rem;
   text-align: center;
   background: var(--bg-card);
 }
 
-/* ============================================================
-   Bold SaaS Gradient design primitives — public marketing pages
-   (homepage, service landing pages, order forms). Theme-aware via
-   the existing --bg-card / --border custom properties, so these
-   work in both dark and light mode without separate dark: rules.
-   ============================================================ */
-
-.glass-panel {
-  background: color-mix(in srgb, var(--bg-card) 55%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-}
-
-.glass-panel-strong {
-  background: color-mix(in srgb, var(--bg-card) 75%, transparent);
-  border: 1px solid var(--border);
-}
-
-.glass-panel, .glass-panel-strong {
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-}
-
-.glass-panel-strong {
-  -webkit-backdrop-filter: blur(24px);
-  backdrop-filter: blur(24px);
-}
-
-/* Floating gradient blobs used behind hero sections */
-@keyframes blob-float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.15); }
-  66% { transform: translate(-25px, 25px) scale(0.9); }
-}
-.animate-blob {
-  animation: blob-float 12s ease-in-out infinite;
-}
-.animation-delay-2000 { animation-delay: 2s; }
-.animation-delay-4000 { animation-delay: 4s; }
-@media (prefers-reduced-motion: reduce) {
-  .animate-blob { animation: none; }
-}
-
-/* iOS safe-area padding (notch / home indicator) */
+/* iOS safe-area */
 .pt-safe { padding-top: max(env(safe-area-inset-top), 0px); }
 .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 1rem); }
 .pl-safe { padding-left: max(env(safe-area-inset-left), 0px); }
 .pr-safe { padding-right: max(env(safe-area-inset-right), 0px); }
 
-/* Header clearance: Header is `fixed` + adds pt-safe internally, so its real height
-   grows on notched devices. Page content must add the SAME safe-area inset on top of
-   its base clearance or it gets covered on iOS. Use these instead of raw pt-* after <Header/>. */
 :root { --safe-t: env(safe-area-inset-top, 0px); }
 .pt-header-20 { padding-top: calc(5rem + var(--safe-t)); }
 .pt-header-24 { padding-top: calc(6rem + var(--safe-t)); }
@@ -369,17 +445,23 @@ textarea:focus-visible {
   .sm\:pt-header-32 { padding-top: calc(8rem + var(--safe-t)); }
   .sm\:pt-header-40 { padding-top: calc(10rem + var(--safe-t)); }
 }
-/* Sticky mobile topbars (admin/client dashboards) also need safe-area on top */
 .topbar-safe { padding-top: calc(1rem + var(--safe-t)); }
-/* Dropdown panels anchored below those topbars via a hardcoded px offset */
 .dropdown-top-safe { top: calc(73px + var(--safe-t)); }
-
-/* Floating action buttons (WhatsApp, order/projects assistants) pinned at a raw
-   `bottom-6` sit too close to the iOS home-indicator gesture area on notched
-   devices. Use instead of bottom-6 on any `fixed` floating button/panel. */
 .fab-bottom-safe { bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); }
 
-/* Prevent iOS Safari from auto-zooming on input focus (requires >=16px) */
+/* PWA standalone scroll discipline */
+@supports (-webkit-touch-callout: none) {
+  .pwa-shell { overscroll-behavior-y: none; }
+}
+
 @supports (-webkit-touch-callout: none) {
   input, select, textarea { font-size: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

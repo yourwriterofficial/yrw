@@ -1,83 +1,42 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Header from './components/Header';
 import HomeStats from './components/HomeStats';
 import PromoBanner from './components/PromoBanner';
 import Footer from './components/Footer';
-import Link from 'next/link';
 import * as lucide from 'lucide-react';
 import {
   BookOpen, LineChart, PenTool, Briefcase, Terminal, ArrowRight,
-  FileEdit, Users, PackageCheck, Wallet,
-  Library, ShoppingBag, ChevronDown, ArrowUpRight, CheckCircle2,
-  ShieldCheck,
+  FileEdit, Users, PackageCheck, Wallet, ArrowUpRight, CheckCircle2, Sparkles,
+  ShieldCheck, Quote, Zap, Globe2, Library, ShoppingBag, ChevronDown,
 } from 'lucide-react';
+import Button from './components/ui/Button';
+import { Badge } from './components/ui/Badge';
+import Card from './components/ui/Card';
 import { fetchPageSettings } from '@/lib/pageSettings';
 import { HOME_PAGE_DEFAULTS, type HomePageContent } from '@/lib/pageContentDefaults';
+import { SERVICE_ACCENTS } from '@/lib/serviceAccents';
 
-const SERVICE_CARDS = [
-  {
-    href: '/academic-writing',
-    icon: BookOpen,
-    title: 'Academic Writing & Research',
-    badge: 'Research Pipeline',
-    description: 'Essays, theses, dissertations, and course papers — formatted to APA/MLA/Harvard guidelines. Includes plagiarism & AI scanner checks.',
-    accentClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    iconClass: 'text-emerald-500',
-    iconBgClass: 'bg-emerald-500/10',
-    bulletClass: 'text-emerald-500',
-    bullets: ['Instant dynamic word-count quotes', 'APA, MLA, Harvard, Chicago styles', 'Plagiarism & AI reports included'],
-  },
-  {
-    href: '/statistics-fieldwork',
-    icon: LineChart,
-    title: 'Statistics & Fieldwork',
-    badge: 'Quantitative analysis',
-    description: 'SPSS dataset analysis, financial forecasting, mathematical modelling, fieldwork, and presentation slide decks.',
-    accentClass: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
-    iconClass: 'text-purple-500',
-    iconBgClass: 'bg-purple-500/10',
-    bulletClass: 'text-purple-500',
-    bullets: ['Dataset cleaning & coding', 'SPSS & R-Studio modelling', 'Defense-ready summary decks'],
-  },
-  {
-    href: '/content-writing',
-    icon: PenTool,
-    title: 'Content & Creative Writing',
-    badge: 'SaaS & Marketing Copy',
-    description: 'SEO articles, long-form eBooks, web landing page copy, and creative narrative ghostwriting with full copyright transfer.',
-    accentClass: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    iconClass: 'text-amber-500',
-    iconBgClass: 'bg-amber-500/10',
-    bulletClass: 'text-amber-500',
-    bullets: ['SEO-optimized word counts', 'Tailored tone & voice matching', '100% Commercial rights transfer'],
-  },
-  {
-    href: '/resume-cv',
-    icon: Briefcase,
-    title: 'Executive CVs & Resumes',
-    badge: 'Career acceleration',
-    description: 'ATS-compatible resumes, targeted cover letters, and LinkedIn profile overhauls built to pass automated HR filters.',
-    accentClass: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-    iconClass: 'text-blue-500',
-    iconBgClass: 'bg-blue-500/10',
-    bulletClass: 'text-blue-500',
-    bullets: ['ATS keyword matching', 'Industry-specific tailoring', 'Recruiter visibility boost'],
-  },
-  {
-    href: '/developer',
-    icon: Terminal,
-    title: 'Full Stack Development',
-    badge: 'Engineering',
-    description: 'SaaS platforms, customized microservices, schema architecture, database migration, and source code delivery.',
-    accentClass: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
-    iconClass: 'text-cyan-500',
-    iconBgClass: 'bg-cyan-500/10',
-    bulletClass: 'text-cyan-500',
-    bullets: ['MVP prototype builds', 'Complete source code ownership', 'Milestone-based staging'],
-  },
-] as const;
+const SERVICE_CARDS = SERVICE_ACCENTS.map((s) => ({
+  ...s,
+  Icon: ({ BookOpen, LineChart, PenTool, Briefcase, Terminal } as any)[s.iconName],
+  description: {
+    academic: 'Essays, theses, dissertations, and course papers — formatted to APA, MLA, Harvard, Chicago guidelines. Includes plagiarism & AI scanner checks.',
+    statistics: 'SPSS dataset analysis, financial forecasting, mathematical modelling, fieldwork, and presentation slide decks.',
+    content: 'SEO articles, long-form eBooks, web landing page copy, and creative narrative ghostwriting with full copyright transfer.',
+    resume: 'ATS-compatible resumes, targeted cover letters, and LinkedIn profile overhauls built to pass automated HR filters.',
+    dev: 'SaaS platforms, customized microservices, schema architecture, database migration, and source code delivery.',
+  }[s.slug],
+  bullets: {
+    academic: ['Instant dynamic word-count quotes', 'APA, MLA, Harvard, Chicago styles', 'Plagiarism & AI reports included'],
+    statistics: ['Dataset cleaning & coding', 'SPSS & R-Studio modelling', 'Defense-ready summary decks'],
+    content: ['SEO-optimized word counts', 'Tailored tone & voice matching', '100% commercial rights transfer'],
+    resume: ['ATS keyword matching', 'Industry-specific tailoring', 'Recruiter visibility boost'],
+    dev: ['MVP prototype builds', 'Complete source code ownership', 'Milestone-based staging'],
+  }[s.slug],
+}));
 
 export default function LandingPage() {
   const [content, setContent] = useState<HomePageContent>(HOME_PAGE_DEFAULTS);
@@ -89,32 +48,30 @@ export default function LandingPage() {
   const { hero, trust_bar, why_us, faqs } = content;
 
   return (
-    <div className="min-h-screen bg-primary text-primary font-['Inter'] selection:bg-accent/30 overflow-x-hidden">
+    <div className="min-h-screen bg-primary text-primary selection:bg-accent/30 overflow-x-hidden">
       <Header />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-header-32 pb-2">
         <PromoBanner position="header" />
       </div>
 
-      {/* Hero Section */}
-      <section className="relative pt-8 pb-24 md:pb-32 px-4 sm:px-6 md:px-8 border-b border-theme overflow-hidden text-center">
-        <div
-          className="absolute left-1/2 top-0 -translate-x-1/2 w-[48rem] h-[48rem] rounded-full opacity-[0.07] blur-3xl pointer-events-none animate-blob"
-          style={{ background: 'radial-gradient(circle, var(--accent), transparent 70%)' }}
-        />
+      {/* Hero with aurora + grain */}
+      <section className="relative pt-12 pb-24 md:pb-32 px-4 sm:px-6 md:px-8 overflow-hidden text-center">
+        <div className="aurora-bg absolute inset-0 pointer-events-none" />
+        <div className="grain-overlay absolute inset-0 pointer-events-none" />
 
         <div className="max-w-4xl mx-auto space-y-8 relative z-10">
-          <div className="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full border border-theme bg-secondary text-secondary text-xs font-semibold tracking-wide mx-auto">
-            <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-            <span>{hero.badge}</span>
-          </div>
+          <Badge variant="default" className="mx-auto">
+            <ShieldCheck className="w-3.5 h-3.5 text-accent mr-1.5" /> {hero.badge}
+          </Badge>
 
-          <h1 className="text-[2.75rem] leading-[1.08] sm:text-6xl md:text-[4rem] font-bold tracking-tight text-primary max-w-3xl mx-auto">
-            {hero.title_prefix}{' '}
-            <span className="bg-gradient-to-r from-accent to-emerald-400 bg-clip-text text-transparent font-extrabold">
+          <h1 className="font-bold tracking-tight text-primary text-[2.75rem] leading-[1.04] sm:text-6xl md:text-[4.5rem] md:leading-[1.04] max-w-4xl mx-auto">
+            <span className="font-display italic font-medium">{hero.title_prefix}</span>{' '}
+            <span className="bg-gradient-to-r from-accent via-emerald-400 to-teal-400 bg-clip-text text-transparent">
               {hero.title_highlight_1}
-            </span>{' '}
-            {hero.title_mid} <span className="block mt-2 text-secondary">{hero.title_highlight_2}</span>
+            </span>
+            <br className="hidden sm:block" />
+            <span className="text-secondary">{hero.title_highlight_2}</span>
           </h1>
 
           <p className="text-base sm:text-lg md:text-xl text-secondary max-w-2xl mx-auto leading-relaxed">
@@ -122,47 +79,41 @@ export default function LandingPage() {
           </p>
 
           <div className="flex gap-4 justify-center flex-wrap items-center pt-2">
-            <a
-              href="#services"
-              className="bg-accent hover:bg-accent-hover text-black px-8 py-4 rounded-xl text-sm font-bold active:scale-[0.98] transition-all flex items-center gap-2 shadow-lg shadow-accent/10"
-            >
+            <Button href="#services" size="lg">
               Explore Services <ArrowRight className="w-4 h-4" />
-            </a>
-            <a
-              href="#process"
-              className="border border-theme hover:border-strong bg-secondary/50 px-8 py-4 rounded-xl text-sm font-semibold transition-all hover:bg-secondary flex items-center gap-2 text-primary"
-            >
-              See How It Works
-            </a>
+            </Button>
+            <Button href="#process" variant="outline" size="lg">
+              See how it works
+            </Button>
           </div>
 
           {/* Quick trust metrics */}
-          <div className="pt-8 border-t border-theme grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
+          <div className="pt-10 border-t border-theme/60 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
             <div>
-              <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
+              <div className="text-2xl md:text-3xl font-bold text-primary flex items-center justify-center gap-1">
                 <span>0%</span>
-                <span className="text-xs text-accent">Plagiarism</span>
+                <span className="text-xs font-bold text-accent">Plagiarism</span>
               </div>
               <div className="text-xs text-secondary mt-1">Guaranteed & verified</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
+              <div className="text-2xl md:text-3xl font-bold text-primary flex items-center justify-center gap-1">
                 <span>100k+</span>
-                <span className="text-xs text-accent">Topics</span>
+                <span className="text-xs font-bold text-accent">Topics</span>
               </div>
               <div className="text-xs text-secondary mt-1"><HomeStats compact={true} /> in stock</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
+              <div className="text-2xl md:text-3xl font-bold text-primary flex items-center justify-center gap-1">
                 <span>100%</span>
-                <span className="text-xs text-accent">Escrow</span>
+                <span className="text-xs font-bold text-accent">Escrow</span>
               </div>
               <div className="text-xs text-secondary mt-1">Milestone delivery</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
+              <div className="text-2xl md:text-3xl font-bold text-primary flex items-center justify-center gap-1">
                 <span>24/7</span>
-                <span className="text-xs text-accent">Support</span>
+                <span className="text-xs font-bold text-accent">Support</span>
               </div>
               <div className="text-xs text-secondary mt-1">WhatsApp documented</div>
             </div>
@@ -171,116 +122,80 @@ export default function LandingPage() {
       </section>
 
       {/* Trust Strip */}
-      <section className="bg-secondary/40 py-8 border-b border-theme relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-          <p className="text-center text-[10px] font-black uppercase text-secondary tracking-wider mb-6">
-            Guaranteed protection metrics on every order
+      <section className="border-y border-theme bg-card/40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-10">
+          <p className="text-center text-[10px] font-bold uppercase text-secondary tracking-widest mb-6">
+            Guaranteed protection on every order
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {trust_bar.map((item, i) => (
-              <div key={i} className="glass-panel p-4 rounded-xl border border-theme flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary border border-theme flex items-center justify-center text-accent shrink-0">
+              <div key={i} className="flex items-center gap-3 px-4 py-3 surface text-xs font-semibold text-primary">
+                <div className="w-8 h-8 rounded-lg bg-secondary border border-theme flex items-center justify-center text-accent shrink-0">
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
-                <span className="text-xs font-semibold text-primary">{item}</span>
+                <span>{item}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Services Section (Bento Grid) */}
-      <section id="services" className="py-24 md:py-32 px-4 sm:px-6 md:px-8 relative">
-        <div className="absolute right-0 top-1/3 w-[30rem] h-[30rem] rounded-full bg-accent/5 blur-3xl pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto space-y-16">
+      {/* Services Bento */}
+      <section id="services" className="py-20 sm:py-28 px-4 sm:px-6 md:px-8 relative">
+        <div className="max-w-7xl mx-auto space-y-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="space-y-3">
-              <span className="text-xs font-black uppercase text-accent tracking-wider">Services Matrix</span>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary">Every order, customized to your brief</h2>
+              <span className="text-[10px] font-bold uppercase text-accent tracking-widest">Services</span>
+              <h2 className="font-bold tracking-tight text-primary text-3xl sm:text-4xl md:text-5xl">
+                Every order, customised to your brief
+              </h2>
             </div>
             <p className="text-secondary text-sm max-w-md">
-              Each pipeline has a dedicated specialist team and a customizable quote module. Select a pipeline to start configuration.
+              Each pipeline has a dedicated specialist team and a customisable quote module. Pick a pipeline to start configuration.
             </p>
           </div>
 
-          {/* Bento Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
             {SERVICE_CARDS.map((card, index) => {
-              const Icon = card.icon;
-              const isWide = index === 4;
-
-              const spanClass = index === 0 || index === 3
-                ? 'md:col-span-7'
-                : index === 1 || index === 2
-                  ? 'md:col-span-5'
-                  : 'md:col-span-12';
-
-              const cardHeader = (
-                <div className="flex justify-between items-start">
-                  <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${card.accentClass}`}>
-                    {card.badge}
-                  </div>
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-105 ${card.iconClass} ${card.iconBgClass}`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                </div>
-              );
-
-              const cardCopy = (
-                <div className="space-y-2">
-                  <h3 className="text-lg md:text-xl font-bold text-primary transition-colors duration-300 group-hover:text-accent">
-                    {card.title}
-                  </h3>
-                  <p className="text-xs md:text-sm text-secondary leading-relaxed">
-                    {card.description}
-                  </p>
-                </div>
-              );
-
-              const cardBullets = (
-                <ul className={`space-y-2 ${isWide ? 'md:border-l md:border-theme/60 md:pl-8' : 'border-t border-theme/60 pt-4'}`}>
-                  {card.bullets.map((bullet, i) => (
-                    <li key={i} className="flex items-center gap-2 text-xs text-secondary font-medium">
-                      <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${card.bulletClass}`} />
-                      <span>{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
-              );
-
-              const cardFooter = (
-                <div className={`flex items-center justify-between text-xs text-secondary font-semibold group-hover:text-primary transition-colors ${isWide ? 'md:flex-col md:items-end md:gap-2' : 'mt-8 pt-4 border-t border-theme/30'}`}>
-                  <span>Configure Service Pipeline</span>
-                  <ArrowUpRight className="w-4 h-4 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-accent" />
-                </div>
-              );
+              const Icon = card.Icon;
+              const isWide = index === 0;
+              const isCompact = index === 2 || index === 4;
+              const spanClass = isWide ? 'md:col-span-7' : isCompact ? 'md:col-span-5' : 'md:col-span-6';
 
               return (
                 <Link
                   key={card.href}
                   href={card.href}
-                  className={`group ${spanClass} relative rounded-[28px] border border-theme bg-card hover:border-accent/30 hover:shadow-xl hover:shadow-accent/[0.03] hover:-translate-y-0.5 p-6 md:p-8 transition-all duration-300 overflow-hidden select-none ${isWide ? 'flex flex-col md:flex-row md:items-center md:justify-between gap-8' : 'flex flex-col justify-between'}`}
+                  className={`group relative rounded-2xl border border-theme bg-card hover:border-strong transition-all duration-300 overflow-hidden select-none ${spanClass} ${isWide ? 'p-7 md:p-9' : 'p-6 md:p-7'} ${isWide ? 'flex flex-col md:flex-row md:items-center md:gap-8' : 'flex flex-col justify-between'}`}
                 >
-                  {isWide ? (
-                    <>
-                      <div className="space-y-4 md:max-w-xs">
-                        {cardHeader}
-                        {cardCopy}
+                  <div className="space-y-4 flex-1">
+                    <div className="flex justify-between items-start">
+                      <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border ${card.color} ${card.bg} ${card.border}`}>
+                        {card.badge}
+                      </span>
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${card.color} ${card.bg}`}>
+                        <Icon className="w-5 h-5" />
                       </div>
-                      <div className="flex-1 md:max-w-xs">{cardBullets}</div>
-                      <div className="md:shrink-0 md:w-48">{cardFooter}</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="space-y-6">
-                        {cardHeader}
-                        {cardCopy}
-                        {cardBullets}
-                      </div>
-                      {cardFooter}
-                    </>
-                  )}
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className={`font-bold text-primary transition-colors duration-300 group-hover:text-accent ${isWide ? 'text-2xl md:text-3xl' : 'text-xl'}`}>
+                        {card.label}
+                      </h3>
+                      <p className="text-secondary text-sm leading-relaxed">{card.description}</p>
+                    </div>
+                    <ul className={`space-y-2 pt-2 ${isWide ? 'border-l border-theme/60 pl-6' : 'border-t border-theme/60 pt-4'}`}>
+                      {card.bullets.map((bullet, i) => (
+                        <li key={i} className="flex items-center gap-2 text-xs text-secondary">
+                          <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${card.color}`} />
+                          <span>{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className={`flex items-center justify-between text-xs text-secondary font-bold group-hover:text-primary transition-colors ${isWide ? 'mt-6 md:mt-0 md:flex-col md:items-start md:gap-3 md:w-40 shrink-0' : 'mt-6 pt-4 border-t border-theme/30'}`}>
+                    <span>Configure pipeline</span>
+                    <ArrowUpRight className="w-4 h-4 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-accent" />
+                  </div>
                 </Link>
               );
             })}
@@ -288,152 +203,151 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Process Flow timeline */}
-      <section id="process" className="py-24 md:py-32 px-4 sm:px-6 md:px-8 border-t border-theme relative bg-secondary/20">
-        <div className="max-w-7xl mx-auto space-y-16">
+      {/* Process */}
+      <section id="process" className="py-20 sm:py-28 px-4 sm:px-6 md:px-8 border-t border-theme bg-card/30 relative">
+        <div className="max-w-7xl mx-auto space-y-12">
           <div className="text-center space-y-3">
-            <span className="text-xs font-black uppercase text-accent tracking-wider font-semibold">Accountability Protocol</span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary">How the escrow works</h2>
+            <span className="text-[10px] font-bold uppercase text-accent tracking-widest">Accountability Protocol</span>
+            <h2 className="font-bold tracking-tight text-primary text-3xl sm:text-4xl md:text-5xl">
+              How the escrow works
+            </h2>
             <p className="text-secondary text-sm max-w-md mx-auto">
-              Our structured milestones remove project risk, ensuring the writer is compensated only after original proof reports are uploaded.
+              Our structured milestones remove project risk. The writer is paid only after original proof reports are uploaded.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
-            <div className="hidden md:block absolute top-[22px] left-12 right-12 h-[1px] bg-theme" />
-
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
             {[
-              { icon: FileEdit, title: '1. Configure & Submit Brief', description: 'Select a custom service pipeline, specify requirements (page/word counts, deadlines), and get an instant quote.' },
-              { icon: Wallet, title: '2. Fund Escrow (Milestone 1)', description: 'Pay the deposit (60% standard or customized installments) securely via Paystack card gateway or your wallet balance.' },
-              { icon: Users, title: '3. Track Writer Drafts', description: 'Monitor logs and timelines in your client dashboard. Revisions can be submitted directly into the Word document review system.' },
-              { icon: PackageCheck, title: '4. Unlock Secure Vault', description: 'Confirm plagiarism reports and original AI scans, clear the remaining balance, and download the fully unlocked docx files.' },
+              { icon: FileEdit, title: '1. Configure & submit', description: 'Select a custom service pipeline, specify requirements (page/word counts, deadlines), and get an instant quote.' },
+              { icon: Wallet, title: '2. Fund escrow', description: 'Pay the deposit (60% standard or customised installments) securely via Paystack or wallet balance.' },
+              { icon: Users, title: '3. Track drafts', description: 'Monitor logs and timelines in your client dashboard. Submit revisions directly to the document.' },
+              { icon: PackageCheck, title: '4. Unlock vault', description: 'Confirm plagiarism and AI scans, clear the remaining balance, and download the unlocked docx files.' },
             ].map((step, i) => {
               const Icon = step.icon;
               return (
-                <div key={i} className="space-y-4 relative glass-panel p-6 rounded-2xl border border-theme hover:border-strong transition-all duration-300">
-                  <div className="flex items-center justify-between">
-                    <div className="w-11 h-11 rounded-xl bg-primary border border-theme flex items-center justify-center text-accent shadow-sm z-10">
-                      <Icon className="w-5 h-5 text-accent" />
-                    </div>
-                    <span className="text-xs font-black text-secondary">0{i + 1}</span>
+                <Card key={i} padding="lg" className="relative">
+                  <div className="w-11 h-11 rounded-xl bg-secondary border border-theme flex items-center justify-center text-accent mb-4">
+                    <Icon className="w-5 h-5" />
                   </div>
-                  <h4 className="font-bold text-primary text-sm">{step.title}</h4>
+                  <h4 className="font-bold text-primary text-sm mb-2">{step.title}</h4>
                   <p className="text-xs text-secondary leading-relaxed">{step.description}</p>
-                </div>
+                </Card>
               );
             })}
           </div>
         </div>
       </section>
 
-      {/* Instantly Buy Section (Teaser for Projects and Dev shop) */}
-      <section className="py-24 md:py-32 px-4 sm:px-6 md:px-8 border-t border-theme relative">
-        <div className="max-w-5xl mx-auto space-y-16">
+      {/* Quick Buy */}
+      <section className="py-20 sm:py-28 px-4 sm:px-6 md:px-8 border-t border-theme">
+        <div className="max-w-6xl mx-auto space-y-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="space-y-3">
-              <span className="text-xs font-black uppercase text-accent tracking-wider font-semibold">Immediate Dispatch</span>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary">No brief, no waiting time</h2>
+              <span className="text-[10px] font-bold uppercase text-accent tracking-widest">Immediate dispatch</span>
+              <h2 className="font-bold tracking-tight text-primary text-3xl sm:text-4xl md:text-5xl">
+                No brief, no waiting time
+              </h2>
             </div>
             <p className="text-secondary text-sm max-w-sm">
-              Need a verified reference document or ready-made code solution immediately? Skip custom bidding.
+              Need a verified reference document or a ready-made code solution immediately? Skip custom bidding.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Link
-              href="/projects"
-              className="group block relative rounded-[28px] bg-card border border-theme hover:border-accent/30 hover:shadow-xl hover:shadow-accent/[0.03] p-6 sm:p-8 transition-all duration-300"
-            >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <Link href="/projects" className="group relative rounded-2xl bg-card border border-theme hover:border-strong transition-all duration-300 p-7 md:p-8">
               <div className="flex justify-between items-start mb-6">
-                <div className="w-12 h-12 rounded-xl bg-primary border border-theme flex items-center justify-center text-secondary transition-all duration-300 group-hover:border-accent/30 group-hover:text-accent">
+                <div className="w-12 h-12 rounded-xl bg-secondary border border-theme flex items-center justify-center text-secondary transition-all duration-300 group-hover:border-accent/30 group-hover:text-accent">
                   <Library className="w-5 h-5" />
                 </div>
                 <ArrowUpRight className="w-5 h-5 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-accent" />
               </div>
-
-              <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-accent">
-                Ready-Made Projects
-              </h3>
+              <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-accent">Ready-made projects</h3>
               <p className="text-sm text-secondary mb-6 leading-relaxed">
-                Browse our indexed repository of 100,000+ pre-defended thesis briefs and reference papers across various academic departments. Download instantly from the dashboard vault.
+                Browse our indexed repository of 100,000+ pre-defended thesis briefs and reference papers across various academic departments.
               </p>
-
-              <div className="border-t border-theme/60 pt-4 mt-6 flex items-center justify-between text-xs text-secondary font-medium">
+              <div className="border-t border-theme/60 pt-4 flex items-center justify-between text-xs text-secondary">
                 <HomeStats />
-                <span className="text-accent font-semibold group-hover:underline">Browse Repository</span>
+                <span className="text-accent font-bold group-hover:underline">Browse repository</span>
               </div>
             </Link>
 
-            <Link
-              href="/developer/shop"
-              className="group block relative rounded-[28px] bg-card border border-theme hover:border-accent/30 hover:shadow-xl hover:shadow-accent/[0.03] p-6 sm:p-8 transition-all duration-300"
-            >
+            <Link href="/developer/shop" className="group relative rounded-2xl bg-card border border-theme hover:border-strong transition-all duration-300 p-7 md:p-8">
               <div className="flex justify-between items-start mb-6">
-                <div className="w-12 h-12 rounded-xl bg-primary border border-theme flex items-center justify-center text-secondary transition-all duration-300 group-hover:border-accent/30 group-hover:text-accent">
+                <div className="w-12 h-12 rounded-xl bg-secondary border border-theme flex items-center justify-center text-secondary transition-all duration-300 group-hover:border-accent/30 group-hover:text-accent">
                   <ShoppingBag className="w-5 h-5" />
                 </div>
                 <ArrowUpRight className="w-5 h-5 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-accent" />
               </div>
-
-              <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-accent">
-                Script Marketplace
-              </h3>
+              <h3 className="text-xl font-bold mb-3 transition-colors duration-300 group-hover:text-accent">Script marketplace</h3>
               <p className="text-sm text-secondary mb-6 leading-relaxed">
-                Purchase pre-packaged, functional script utilities, landing page templates, and database schemas. Shipped with full documentation, clean source code, and lifetime updates.
+                Purchase pre-packaged, functional script utilities, landing page templates, and database schemas. Shipped with full documentation and clean source code.
               </p>
-
-              <div className="border-t border-theme/60 pt-4 mt-6 flex items-center justify-between text-xs text-secondary font-medium">
+              <div className="border-t border-theme/60 pt-4 flex items-center justify-between text-xs text-secondary">
                 <span>Complete source code ownership</span>
-                <span className="text-accent font-semibold group-hover:underline">Browse Scripts</span>
+                <span className="text-accent font-bold group-hover:underline">Browse scripts</span>
               </div>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Why Us / Integrity Section */}
-      <section className="py-24 md:py-32 px-4 sm:px-6 md:px-8 bg-secondary/30 border-t border-theme relative">
-        <div className="max-w-7xl mx-auto space-y-16">
+      {/* Why us */}
+      <section className="py-20 sm:py-28 px-4 sm:px-6 md:px-8 border-t border-theme bg-card/30">
+        <div className="max-w-7xl mx-auto space-y-12">
           <div className="text-center space-y-3">
-            <span className="text-xs font-black uppercase text-accent tracking-wider font-semibold">Integrity Protocol</span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary">High-standard project accountability</h2>
+            <span className="text-[10px] font-bold uppercase text-accent tracking-widest">Integrity Protocol</span>
+            <h2 className="font-bold tracking-tight text-primary text-3xl sm:text-4xl md:text-5xl">
+              High-standard project accountability
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-theme rounded-2xl overflow-hidden border border-theme">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {why_us.map((item, i) => {
               const Icon = (lucide as any)[item.icon] || CheckCircle2;
               return (
-                <div key={i} className="bg-primary p-8 hover:bg-secondary/20 transition duration-300 flex flex-col justify-between">
+                <Card key={i} padding="lg" className="flex flex-col justify-between">
                   <div>
-                    <div className="w-10 h-10 rounded-xl bg-secondary border border-theme flex items-center justify-center text-accent mb-6">
-                      <Icon className="w-5 h-5 text-accent" />
+                    <div className="w-10 h-10 rounded-xl bg-secondary border border-theme flex items-center justify-center text-accent mb-5">
+                      <Icon className="w-5 h-5" />
                     </div>
                     <h4 className="font-bold text-primary mb-2 text-sm">{item.title}</h4>
                     <p className="text-xs text-secondary leading-relaxed">{item.text}</p>
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
         </div>
       </section>
 
-      {/* FAQ Accordion Section */}
-      <section id="faq" className="py-24 md:py-32 px-4 sm:px-6 md:px-8 border-t border-theme relative">
-        <div className="max-w-3xl mx-auto space-y-12">
+      {/* Testimonial pull-quote */}
+      <section className="py-20 sm:py-28 px-4 sm:px-6 md:px-8 border-t border-theme relative">
+        <div className="aurora-bg absolute inset-0 opacity-50 pointer-events-none" />
+        <div className="max-w-3xl mx-auto text-center relative z-10">
+          <Quote className="w-10 h-10 text-accent mx-auto mb-6" />
+          <p className="font-display italic text-2xl md:text-3xl text-primary leading-snug">
+            The escrow kept both sides honest. I got my dissertation defended before the deadline, with original reports attached. Nothing else in Nigeria comes close.
+          </p>
+          <p className="text-xs font-bold uppercase tracking-widest text-secondary mt-6">Adaeze O. — UNILAG MSc Public Health</p>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="py-20 sm:py-28 px-4 sm:px-6 md:px-8 border-t border-theme">
+        <div className="max-w-3xl mx-auto space-y-10">
           <div className="text-center space-y-3">
-            <span className="text-xs font-black uppercase text-accent tracking-wider font-semibold">Help Center</span>
-            <h2 className="text-3xl font-bold tracking-tight text-primary">Frequently asked questions</h2>
+            <span className="text-[10px] font-bold uppercase text-accent tracking-widest">Help Centre</span>
+            <h2 className="font-bold tracking-tight text-primary text-3xl sm:text-4xl">Frequently asked questions</h2>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {faqs.map((faq, i) => (
               <details key={i} className="group border border-theme bg-card hover:bg-secondary/40 rounded-2xl p-5 [&_summary::-webkit-details-marker]:hidden transition-all">
                 <summary className="flex items-center justify-between cursor-pointer list-none font-bold text-sm text-primary gap-4">
                   <span>{faq.q}</span>
-                  <div className="w-6 h-6 rounded-lg bg-secondary border border-theme flex items-center justify-center text-secondary transition-transform duration-300 group-open:rotate-180 shrink-0">
-                    <ChevronDown className="w-4 h-4 text-secondary" />
-                  </div>
+                  <span className="w-7 h-7 rounded-lg bg-secondary border border-theme flex items-center justify-center text-secondary transition-transform duration-300 group-open:rotate-180 shrink-0">
+                    <ChevronDown className="w-4 h-4" />
+                  </span>
                 </summary>
                 <div className="border-t border-theme/60 mt-4 pt-4 text-xs text-secondary leading-relaxed whitespace-pre-line">
                   {faq.a}
@@ -444,32 +358,21 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Final CTA Banner */}
-      <section className="py-24 md:py-32 px-4 sm:px-6 md:px-8 border-t border-theme relative bg-secondary/30">
-        <div className="max-w-4xl mx-auto rounded-[36px] bg-gradient-to-b from-card to-primary border border-theme p-8 md:p-12 text-center relative overflow-hidden shadow-2xl">
-          <div className="absolute inset-0 bg-accent/[0.02] blur-xl pointer-events-none" />
-
-          <div className="relative z-10 space-y-6 max-w-2xl mx-auto">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Ready to get your project done properly?</h2>
-            <p className="text-secondary text-sm md:text-base leading-relaxed">
-              Submit your detailed requirements now for an instant pipeline quote, or chat with our operations lead on WhatsApp for a custom invoice schedule.
-            </p>
-            <div className="flex gap-4 justify-center flex-wrap pt-4">
-              <a
-                href="#services"
-                className="bg-accent hover:bg-accent-hover text-black px-8 py-4 rounded-xl text-sm font-bold active:scale-[0.98] transition-all flex items-center gap-2 shadow-lg shadow-accent/10"
-              >
-                Configure Pipeline <ArrowRight className="w-4 h-4" />
-              </a>
-              <a
-                href="https://wa.me/2348121443666"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="border border-theme hover:border-strong bg-secondary/50 px-8 py-4 rounded-xl text-sm font-semibold transition-all hover:bg-secondary flex items-center gap-2 text-primary"
-              >
-                Chat on WhatsApp
-              </a>
-            </div>
+      {/* Final CTA */}
+      <section className="py-20 sm:py-28 px-4 sm:px-6 md:px-8 border-t border-theme">
+        <div className="max-w-4xl mx-auto rounded-2xl bg-card border border-theme p-8 md:p-12 text-center relative overflow-hidden shadow-elevation-3">
+          <Sparkles className="w-8 h-8 text-accent mx-auto mb-4" />
+          <h2 className="font-bold tracking-tight text-2xl md:text-4xl text-primary">Ready to get your project done properly?</h2>
+          <p className="text-secondary text-sm md:text-base leading-relaxed max-w-xl mx-auto mt-4">
+            Submit your detailed requirements now for an instant pipeline quote, or chat with our operations lead on WhatsApp for a custom invoice schedule.
+          </p>
+          <div className="flex gap-4 justify-center flex-wrap pt-6">
+            <Button href="#services" size="lg">
+              Configure pipeline <ArrowRight className="w-4 h-4" />
+            </Button>
+            <Button href="https://wa.me/2348121443666" variant="outline" size="lg">
+              Chat on WhatsApp
+            </Button>
           </div>
         </div>
       </section>

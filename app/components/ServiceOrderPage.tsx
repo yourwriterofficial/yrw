@@ -1,7 +1,7 @@
 'use client';
 
 import { BillingDetailsFields, PaymentStructureFields, compileMilestones } from '@/app/components/OrderMilestonesPayment';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { createSecureOrder } from '@/app/actions/createOrder';
@@ -13,6 +13,12 @@ import { fetchPageSettings } from '@/lib/pageSettings';
 import { ORDER_PAGE_DEFAULTS, type OrderPageContent } from '@/lib/pageContentDefaults';
 import { showToast } from '@/app/components/ui/Toast';
 import { getEffectiveUser } from '@/lib/impersonate';
+import { Input } from '@/app/components/ui/Input';
+import { Select } from '@/app/components/ui/Select';
+import { Textarea } from '@/app/components/ui/Textarea';
+import Button from '@/app/components/ui/Button';
+import Card from '@/app/components/ui/Card';
+
 
 type OrderAddon = {
   id: string;
@@ -84,8 +90,8 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
   const [submitting, setSubmitting] = useState(false);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loggedInUser, setLoggedInUser] = useState<any>(null);
-  const [loggedInProfile, setLoggedInProfile] = useState<any>(null);
+  const [loggedInUser, setLoggedInUser] = useState<{ id: string; email?: string | null } | null>(null);
+  const [loggedInProfile, setLoggedInProfile] = useState<{ full_name?: string | null; whatsapp?: string | null } | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'wallet'>('card');
 
@@ -231,7 +237,7 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
     `.trim();
 
     const finalQuote = calculateTotal();
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       order_id: orderStringId,
       legal_name: name,
       email: email,
@@ -256,7 +262,7 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
       vault_status: vaultStatusDefault,
     };
 
-    if (isLoggedIn) {
+    if (isLoggedIn && loggedInUser) {
       payload.client_id = loggedInUser.id;
     } else {
       payload.guest_name = name;
@@ -332,7 +338,7 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
           <p className="text-secondary text-sm px-2 max-w-xl mx-auto">{pageContent.hero.subtitle}</p>
         </div>
 
-        <div className="space-y-8 bg-card border border-theme p-5 sm:p-8 rounded-2xl">
+        <Card className="space-y-8">
 
           {/* PACKAGE TIERS */}
           <div className="space-y-3">
@@ -376,20 +382,21 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
 
             {/* WORD COUNT — shown when the selected package prices per word */}
             {isPerWord && (
-              <div className={`p-5 rounded-2xl border ${accent.border} ${accent.bg} space-y-3`}>
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-medium text-secondary">Word count</label>
-                  <span className={`text-xs font-bold ${accent.text}`}>{words.toLocaleString()} words · {Math.ceil(words / 275)} pages</span>
+              <Card elevation={0} className={`${accent.border} ${accent.bg}`}>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-secondary">Word count</label>
+                    <span className={`text-xs font-bold ${accent.text}`}>{words.toLocaleString()} words · {Math.ceil(words / 275)} pages</span>
+                  </div>
+                  <input type="range" max="30000" min="50" step="50" value={words} onChange={e => setWords(parseInt(e.target.value) || 0)} className="w-full cursor-pointer" />
+                  <Input
+                    type="number"
+                    value={words || ''}
+                    onChange={e => setWords(parseInt(e.target.value) || 0)}
+                    placeholder="Enter exact word count"
+                  />
                 </div>
-                <input type="range" max="30000" min="50" step="50" value={words} onChange={e => setWords(parseInt(e.target.value) || 0)} className="w-full cursor-pointer" />
-                <input
-                  type="number"
-                  value={words || ''}
-                  onChange={e => setWords(parseInt(e.target.value) || 0)}
-                  placeholder="Enter exact word count"
-                  className="w-full bg-primary border border-theme p-3 rounded-xl text-sm outline-none font-bold text-primary"
-                />
-              </div>
+              </Card>
             )}
 
             {/* PROPOSE YOUR OWN BUDGET */}
@@ -407,14 +414,14 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
                 <span>{pageContent.budget_note.text}</span>
               </div>
               {isProposing && (
-                <input
-                  type="number"
-                  className="w-full bg-primary border border-theme p-4 rounded-xl font-bold text-lg outline-none focus:border-current transition"
-                  value={proposedBudget || ''}
-                  onClick={e => e.stopPropagation()}
-                  onChange={e => setProposedBudget(parseInt(e.target.value) || 0)}
-                  placeholder={`Minimum ₦${minProposedBudget.toLocaleString()}`}
-                />
+                <div onClick={e => e.stopPropagation()}>
+                  <Input
+                    type="number"
+                    value={proposedBudget || ''}
+                    onChange={e => setProposedBudget(parseInt(e.target.value) || 0)}
+                    placeholder={`Minimum ₦${minProposedBudget.toLocaleString()}`}
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -454,76 +461,90 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
             {isLoggedIn ? (
               <p className={`text-xs font-bold ${accent.text}`}>Ordering as: {loggedInProfile?.full_name || loggedInUser?.email}</p>
             ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-secondary font-bold ml-1 uppercase">Full Name</label>
-                    <input type="text" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} className={`w-full bg-card border border-theme p-4 rounded-xl text-sm ${accent.focusBorder} outline-none text-primary font-bold hover:border-theme`} required />
-                    <p className="text-[9px] text-secondary ml-1">Please enter your legal name as it appears on official records.</p>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-secondary font-bold ml-1 uppercase">Email Address</label>
-                    <input type="email" placeholder="john.doe@example.com" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-xl text-sm outline-none text-primary font-bold hover:border-theme" required />
-                    <p className="text-[9px] text-secondary ml-1">Your credentials and secure work deliverables will be sent here.</p>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Full Name"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  required
+                  helper="Please enter your legal name as it appears on official records."
+                />
+                <Input
+                  label="Email Address"
+                  type="email"
+                  placeholder="john.doe@example.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  helper="Your credentials and secure work deliverables will be sent here."
+                />
+                <div className="md:col-span-2">
+                  <Input
+                    label="WhatsApp Number"
+                    type="tel"
+                    placeholder="+234..."
+                    value={whatsapp}
+                    onChange={e => setWhatsapp(e.target.value)}
+                    required
+                    helper="For emergency support and prompt status updates."
+                  />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] text-secondary font-bold ml-1 uppercase">WhatsApp Number</label>
-                  <input type="tel" placeholder="+234..." value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-xl text-sm outline-none text-primary font-bold hover:border-theme" required />
-                  <p className="text-[9px] text-secondary ml-1">For emergency support and prompt status updates.</p>
-                </div>
-              </>
+              </div>
             )}
 
-            <div className="space-y-2">
-              <label className="text-[10px] text-secondary font-bold ml-1 uppercase">Target Delivery Deadline</label>
-              <div className="relative group max-w-sm">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <input
-                  type="date"
-                  className="w-full bg-card border border-theme p-4 pl-12 rounded-xl text-sm text-primary outline-none dark:[color-scheme:dark] transition-all font-bold hover:border-theme cursor-pointer"
-                  value={deadline}
-                  onChange={e => setDeadline(e.target.value)}
-                  min={new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                  required
-                />
-              </div>
-              <p className="text-[9px] text-secondary ml-1">We require a minimum 2-week (14 day) lead time for quality delivery.</p>
-            </div>
+            <Input
+              label="Target Delivery Deadline"
+              type="date"
+              iconLeft={<Calendar className="w-5 h-5" />}
+              value={deadline}
+              onChange={e => setDeadline(e.target.value)}
+              min="2026-08-13"
+              required
+              helper="We require a minimum 2-week (14 day) lead time for quality delivery."
+              className="dark:[color-scheme:dark] cursor-pointer"
+            />
 
             {extraFields.map(f => (
-              <div key={f.key} className="space-y-1">
-                <label className="text-[10px] text-secondary font-bold ml-1 uppercase">{f.label}</label>
+              <div key={f.key}>
                 {f.type === 'select' ? (
-                  <select className="w-full bg-card border border-theme p-4 rounded-xl text-sm outline-none text-primary font-bold" value={extraValues[f.key]} onChange={e => setExtraValue(f.key, e.target.value)}>
-                    {f.options.map(opt => <option key={opt}>{opt}</option>)}
-                  </select>
+                  <Select
+                    label={f.label}
+                    value={extraValues[f.key]}
+                    onChange={e => setExtraValue(f.key, e.target.value)}
+                    options={f.options.map(opt => ({ value: opt, label: opt }))}
+                  />
                 ) : (
-                  <input type="text" placeholder={f.placeholder} value={extraValues[f.key]} onChange={e => setExtraValue(f.key, e.target.value)} className="w-full bg-card border border-theme p-4 rounded-xl text-sm outline-none text-primary font-bold hover:border-theme" required={f.required} />
+                  <Input
+                    label={f.label}
+                    placeholder={f.placeholder}
+                    value={extraValues[f.key]}
+                    onChange={e => setExtraValue(f.key, e.target.value)}
+                    required={f.required}
+                    helper={f.helperText}
+                  />
                 )}
-                {f.type === 'text' && f.helperText && <p className="text-[9px] text-secondary ml-1">{f.helperText}</p>}
               </div>
             ))}
 
-            <div className="space-y-1">
-              <label className="text-[10px] text-secondary font-bold ml-1 uppercase">{topicLabel}</label>
-              <input type="text" placeholder={topicPlaceholder} value={topic} onChange={e => setTopic(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-xl text-sm outline-none text-primary font-bold hover:border-theme" required />
-              {topicHelperText && <p className="text-[9px] text-secondary ml-1">{topicHelperText}</p>}
-            </div>
+            <Input
+              label={topicLabel}
+              placeholder={topicPlaceholder}
+              value={topic}
+              onChange={e => setTopic(e.target.value)}
+              required
+              helper={topicHelperText}
+            />
 
             <BillingDetailsFields companyName={clientCompany} setCompanyName={setClientCompany} address={clientAddress} setAddress={setClientAddress} />
 
-            <div className="space-y-1">
-              <label className="text-[10px] text-secondary font-bold ml-1 uppercase">{additionalInfoLabel || 'Additional Instructions'}</label>
-              <textarea
-                placeholder="Specific instructions, methodologies, or requirements..."
-                className="w-full bg-card border border-theme p-4 rounded-xl text-sm outline-none resize-none h-32 text-primary font-medium hover:border-theme"
-                value={instructions}
-                onChange={e => setInstructions(e.target.value)}
-              />
-            </div>
+            <Textarea
+              label={additionalInfoLabel || 'Additional Instructions'}
+              placeholder="Specific instructions, methodologies, or requirements..."
+              value={instructions}
+              onChange={e => setInstructions(e.target.value)}
+              rows={4}
+            />
 
             <div className="space-y-1">
               <label className="text-[10px] text-secondary font-bold ml-1 uppercase">{briefLabel}</label>
@@ -549,7 +570,7 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
           />
 
           {isLoggedIn && (
-            <div className="bg-secondary p-4 rounded-xl border border-theme">
+            <Card elevation={0}>
               <div className="text-xs font-medium text-secondary mb-2 ml-1">Payment method</div>
               <div className="flex flex-wrap gap-4">
                 <label className="flex items-center gap-2 cursor-pointer text-primary font-bold">
@@ -566,7 +587,7 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
                   </span>
                 </label>
               </div>
-            </div>
+            </Card>
           )}
 
           {/* Terms of Service */}
@@ -588,21 +609,24 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
             </label>
           </div>
 
-          <div className="bg-primary p-6 rounded-2xl border border-theme text-center">
+          <Card elevation={0} className="text-center">
             <div className="text-3xl font-semibold text-primary tracking-tight">₦{finalQuote.toLocaleString()}</div>
             <p className="text-xs text-secondary mt-2">
               {isProposing ? 'Proposed quote — subject to approval' : 'Calculated quote'}
             </p>
-          </div>
+          </Card>
 
-          <button
+          <Button
             onClick={submitOrder}
             disabled={!acceptTerms || submitting || (isLoggedIn && paymentMethod === 'wallet' && walletBalance < depositAmount)}
-            className={`w-full ${accent.solid} text-black font-semibold text-sm py-4 rounded-full transition hover:opacity-90 disabled:opacity-50`}
+            loading={submitting}
+            loadingText="Processing..."
+            fullWidth
+            className={`${accent.solid} text-black font-semibold text-sm py-4 rounded-full transition hover:opacity-90 disabled:opacity-50`}
           >
-            {submitting ? 'Processing...' : 'Submit request'}
-          </button>
-        </div>
+            Submit request
+          </Button>
+        </Card>
       </div>
     </div>
   );

@@ -9,6 +9,8 @@ import ThemeToggle from '@/app/components/ThemeToggle';
 import NotificationBell from '@/app/components/ui/NotificationBell';
 import PromoBanner from '@/app/components/PromoBanner';
 import { getEffectiveUser, clearImpersonation } from '@/lib/impersonate';
+import { Avatar } from '@/app/components/ui/Avatar';
+import Button from '@/app/components/ui/Button';
 
 interface NavItem {
   key: string;
@@ -23,8 +25,6 @@ interface NavGroup {
   items: NavItem[];
 }
 
-// Single source of truth for both the desktop sidebar and mobile menu — previously
-// hand-duplicated in two places, which risked the two falling out of sync.
 const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Workspace',
@@ -59,7 +59,7 @@ const NAV_GROUPS: NavGroup[] = [
 
 const Spinner = () => (
   <div className="min-h-screen bg-primary flex items-center justify-center">
-    <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+    <div className="w-12 h-12 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
   </div>
 );
 
@@ -110,7 +110,6 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkUser = async () => {
-      // 1. Try to load from cache for instant initial rendering
       let cachedUser = null;
       let cachedProfile = null;
       if (typeof window !== 'undefined') {
@@ -127,7 +126,6 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         } catch (e) {}
       }
 
-      // 2. Fetch fresh user details
       const { user, profile, isImpersonating } = await getEffectiveUser();
       if (!user) {
         if (typeof window !== 'undefined') {
@@ -141,15 +139,14 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       setUser(user);
       const activeProfile = isImpersonating ? { ...profile, _original_is_admin: true } : profile;
       setProfile(activeProfile);
-      
-      // Save to cache
+
       if (typeof window !== 'undefined') {
         try {
           sessionStorage.setItem('yrw_user', JSON.stringify(user));
           sessionStorage.setItem('yrw_profile', JSON.stringify(activeProfile));
         } catch (e) {}
       }
-      
+
       await fetchUnviewedVault();
       setLoading(false);
     };
@@ -192,14 +189,14 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         onClick={onNavigate}
         className={`group relative w-full flex items-center justify-between gap-2.5 pl-2 pr-3 py-1.5 rounded-xl transition font-bold ${top ? 'text-sm' : 'text-xs'} ${
           active
-            ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
-            : 'border border-transparent text-secondary hover:bg-white/5 hover:text-primary'
+            ? 'bg-accent/10 border border-accent/20 text-accent'
+            : 'border border-transparent text-secondary hover:bg-hover hover:text-primary'
         }`}
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <div
             className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-              active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/5 text-secondary group-hover:text-primary'
+              active ? 'bg-accent/15 text-accent' : 'bg-secondary border border-theme text-secondary group-hover:text-primary'
             }`}
           >
             <Icon className={`w-4 h-4 ${item.iconColor || ''}`} />
@@ -207,7 +204,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           <span className="truncate">{item.label}</span>
         </div>
         {item.key === 'vault' && unviewedVaultCount > 0 && (
-          <span className="px-2 py-0.5 bg-emerald-500 text-black rounded-md text-[10px] font-black shrink-0">{unviewedVaultCount}</span>
+          <span className="px-2 py-0.5 bg-accent text-[var(--accent-foreground)] rounded-md text-[10px] font-black shrink-0">{unviewedVaultCount}</span>
         )}
       </Link>
     );
@@ -216,48 +213,38 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row font-['Inter'] selection:bg-emerald-500/30">
-
-      {/* ================= SIDEBAR ================= */}
+    <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row selection:bg-accent/30">
       <aside className="hidden md:flex flex-col w-72 bg-secondary border-r border-theme h-screen sticky top-0 p-5 z-40 relative overflow-hidden">
-        <div
-          className="absolute left-1/2 -top-24 -translate-x-1/2 w-72 h-72 rounded-full opacity-[0.07] blur-3xl pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #10b981, transparent 70%)' }}
-        />
-
-        <div className="flex items-center gap-3 mb-5 shrink-0 relative z-10">
-          <div className="w-9 h-9 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-black font-black text-lg shadow-lg shadow-emerald-500/20">Y</div>
+        <div className="flex items-center gap-3 mb-6 shrink-0 relative z-10">
+          <div className="w-9 h-9 bg-accent rounded-xl flex items-center justify-center text-[var(--accent-foreground)] font-black text-lg shadow-sm">Y</div>
           <div>
             <h1 className="font-black tracking-tight leading-none text-base">YRW</h1>
-            <p className="text-[10px] text-emerald-500 uppercase tracking-widest font-bold">Client Portal</p>
+            <p className="text-[10px] text-accent uppercase tracking-widest font-bold">Client Portal</p>
           </div>
         </div>
 
         {(profile?.is_admin || profile?._original_is_admin) && (
-          <button
+          <Button
+            variant="outline"
+            size="sm"
+            className="mb-3 border-purple-500/30 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 shrink-0 relative z-10"
             onClick={() => router.push('/admin')}
-            className="flex items-center gap-2.5 w-full p-2 mb-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 transition cursor-pointer shrink-0 relative z-10"
           >
-            <div className="w-7 h-7 rounded-lg bg-purple-500/15 flex items-center justify-center text-purple-400 shrink-0">
-              <lucide.Shield className="w-4 h-4" />
-            </div>
-            <span className="text-purple-400 font-black text-xs uppercase tracking-wider">Admin Control Panel</span>
-          </button>
+            <lucide.Shield className="w-4 h-4" /> Admin Control Panel
+          </Button>
         )}
 
         <nav className="flex flex-col gap-0.5 flex-1 min-h-0 overflow-y-auto pr-1 relative z-10">
           {NAV_GROUPS.map((group, gi) => (
             <div key={group.title || `group-${gi}`} className={gi === 0 ? 'flex flex-col gap-0.5' : 'mt-3 flex flex-col gap-0.5'}>
-              {group.title && (
-                <p className="text-[10px] uppercase tracking-widest text-secondary font-black pl-2 mb-1">{group.title}</p>
-              )}
-              {group.items.map(item => renderNavItem(item, gi === 0))}
+              {group.title && <p className="text-[10px] uppercase tracking-widest text-secondary font-black pl-2 mb-1">{group.title}</p>}
+              {group.items.map((item) => renderNavItem(item, gi === 0))}
             </div>
           ))}
         </nav>
@@ -266,20 +253,18 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           <PromoBanner position="sidebar" limit={1} />
         </div>
 
-        <div className="mt-3 shrink-0 relative z-10">
+        <div className="mt-3 shrink-0 relative z-10 space-y-3">
           <Link
             href="/advertise"
-            className="flex items-center justify-center gap-1.5 w-full py-1.5 mb-3 rounded-full border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400 font-semibold text-[11px] transition cursor-pointer"
+            className="flex items-center justify-center gap-1.5 w-full py-2 rounded-full border border-warning/30 bg-warning/5 hover:bg-warning/10 text-warning font-semibold text-[11px] transition cursor-pointer"
           >
             <lucide.Megaphone className="w-3.5 h-3.5" /> Advertise With Us
           </Link>
 
-          <div className="glass-panel rounded-2xl border border-theme p-2.5">
+          <div className="bg-card border border-theme rounded-2xl p-3">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30 shrink-0">
-                  <lucide.User className="w-4 h-4 text-emerald-400" />
-                </div>
+                <Avatar name={profile?.full_name || 'Client'} size="sm" />
                 <div className="overflow-hidden">
                   <p className="text-xs font-bold truncate">{profile?.full_name || 'Client'}</p>
                   <p className="text-[10px] text-secondary truncate">{user?.email}</p>
@@ -287,47 +272,49 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               </div>
               <ThemeToggle compact />
             </div>
-            <button onClick={handleLogout} className="w-full flex items-center gap-2.5 text-red-400 hover:text-red-300 transition text-xs font-bold p-2 mt-1.5 rounded-lg hover:bg-red-500/10 border-t border-theme/60 pt-2.5">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2.5 text-danger hover:text-red-300 transition text-xs font-bold p-2 mt-2 rounded-lg hover:bg-danger/10 border-t border-theme pt-2.5"
+            >
               <lucide.LogOut className="w-3.5 h-3.5" /> Sign Out
             </button>
           </div>
         </div>
       </aside>
 
-      {/* ================= MOBILE TOPBAR ================= */}
       <div className="md:hidden bg-secondary border-b border-theme px-4 pb-4 topbar-safe flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-black font-black">Y</div>
+          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-[var(--accent-foreground)] font-black">Y</div>
           <span className="font-bold text-primary">Portal</span>
         </div>
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2.5 text-primary" aria-label="Toggle menu">
-          {mobileMenuOpen ? <lucide.X /> : <lucide.Menu />}
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2.5 text-primary hover:bg-hover rounded-lg" aria-label="Toggle menu">
+          {mobileMenuOpen ? <lucide.X className="w-5 h-5" /> : <lucide.Menu className="w-5 h-5" />}
         </button>
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 dropdown-top-safe shadow-lg max-h-[80vh] overflow-y-auto">
+        <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-2 absolute w-full z-40 dropdown-top-safe shadow-elevation-3 max-h-[80vh] overflow-y-auto">
           {(profile?.is_admin || profile?._original_is_admin) && (
-            <button
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-purple-500/30 text-purple-400"
               onClick={() => { router.push('/admin'); setMobileMenuOpen(false); }}
-              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl bg-purple-500/10 text-purple-400 font-black text-xs uppercase tracking-wider border border-purple-500/25 transition cursor-pointer"
             >
-              <lucide.Shield className="w-4 h-4" /> Admin Control Panel
-            </button>
+              <lucide.Shield className="w-4 h-4 mr-2" /> Admin Control Panel
+            </Button>
           )}
           {NAV_GROUPS.map((group, gi) => (
             <div key={group.title || `mgroup-${gi}`} className={gi === 0 ? 'flex flex-col gap-1' : 'mt-3 flex flex-col gap-1'}>
-              {group.title && (
-                <p className="text-[10px] uppercase tracking-widest text-secondary font-black pl-4 mb-1">{group.title}</p>
-              )}
-              {group.items.map(item => renderNavItem(item, gi === 0, () => setMobileMenuOpen(false)))}
+              {group.title && <p className="text-[10px] uppercase tracking-widest text-secondary font-black pl-4 mb-1">{group.title}</p>}
+              {group.items.map((item) => renderNavItem(item, gi === 0, () => setMobileMenuOpen(false)))}
             </div>
           ))}
           <div className="border-t border-theme mt-1 pt-2">
             <Link
               href="/advertise"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl bg-amber-500/10 text-amber-400 font-black text-xs uppercase tracking-wider border border-amber-500/25 transition cursor-pointer"
+              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl bg-warning/10 text-warning font-black text-xs uppercase tracking-wider border border-warning/25 transition cursor-pointer"
             >
               <lucide.Megaphone className="w-4 h-4" /> Advertise With Us
             </Link>
@@ -335,24 +322,20 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           <div className="p-2">
             <ThemeToggle />
           </div>
-          <button onClick={handleLogout} className="mt-2 p-3 text-red-400 font-bold text-left flex items-center gap-2 rounded-xl hover:bg-red-500/10 transition"><lucide.LogOut className="w-4 h-4"/> Sign Out</button>
+          <button onClick={handleLogout} className="mt-2 p-3 text-danger font-bold text-left flex items-center gap-2 rounded-xl hover:bg-danger/10 transition">
+            <lucide.LogOut className="w-4 h-4" /> Sign Out
+          </button>
         </div>
       )}
 
-      {/* ================= MAIN CONTENT AREA ================= */}
       <main className="flex-1 overflow-y-auto flex flex-col h-screen bg-primary">
-        {/* Top Header */}
         <header className="bg-secondary/40 backdrop-blur-md border-b border-theme px-6 py-4 flex justify-between items-center sticky top-0 z-30 shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="font-black text-xs uppercase tracking-widest text-secondary">
-              Client Portal
-            </span>
-          </div>
+          <span className="font-black text-xs uppercase tracking-widest text-secondary">Client Portal</span>
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard/client?tab=chat"
               title="Support Desk"
-              className="p-2 text-secondary hover:text-primary hover:bg-white/5 rounded-full transition relative flex items-center justify-center cursor-pointer"
+              className="p-2 text-secondary hover:text-primary hover:bg-hover rounded-full transition relative flex items-center justify-center"
             >
               <lucide.MessageSquare className="w-5 h-5" />
             </Link>

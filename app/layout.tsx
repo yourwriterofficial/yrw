@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import PWAUpdater from "./components/PWAUpdater";
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -10,7 +10,17 @@ import ReferralCapture from "./components/ReferralCapture";
 import PromoPopup from "./components/PromoPopup";
 import { siteUrl } from "@/lib/siteUrl";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const display = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   themeColor: "#050505",
@@ -35,9 +45,6 @@ export const metadata: Metadata = {
     "content writing", "resume writing", "software development", "Nigeria",
   ],
   manifest: "/manifest.json",
-  // iOS uses the Home Screen icon as the artwork for web-push notifications and
-  // prefers apple-touch-icon over the manifest entries — without it, pushes on
-  // iPhone rendered as a blank tile.
   icons: {
     icon: [
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
@@ -73,7 +80,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${display.variable}`}>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -97,7 +104,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} pwa-shell`}>
         <ThemeProvider>
           <PWAUpdater />
           <PushAutoSubscriber />
@@ -106,7 +113,6 @@ export default function RootLayout({
           {children}
           <OrderAssistant />
           <PromoPopup />
-          {/* Floating WhatsApp Support Button */}
           <a
             href="https://wa.me/2348121443666"
             target="_blank"

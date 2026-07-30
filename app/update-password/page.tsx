@@ -2,6 +2,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
+import { Input } from '@/app/components/ui/Input';
+import Button from '@/app/components/ui/Button';
+import { Card } from '@/app/components/ui/Card';
+import { Shell } from '@/app/components/ui/Shell';
+import { showToast } from '@/app/components/ui/Toast';
 
 export default function UpdatePassword() {
   const [password, setPassword] = useState('');
@@ -21,13 +26,14 @@ export default function UpdatePassword() {
 
   const handleUpdate = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ 
+    const { error } = await supabase.auth.updateUser({
       password,
-      data: { password_is_email: false }
+      data: { password_is_email: false },
     });
-    if (error) alert(error.message);
-    else {
-      alert('Password updated. Please log in again.');
+    if (error) {
+      showToast(error.message, 'error');
+    } else {
+      showToast('Password updated. Please log in again.', 'success');
       await supabase.auth.signOut();
       router.push('/login');
     }
@@ -36,19 +42,35 @@ export default function UpdatePassword() {
 
   if (checkingSession) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white/60 text-sm">Verifying your link…</div>
+      <div className="min-h-screen bg-primary flex items-center justify-center">
+        <Shell size="sm" className="w-full max-w-md text-center">
+          <p className="text-secondary text-sm">Verifying your link…</p>
+        </Shell>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="bg-[#0a0a0a] p-8 rounded-2xl w-full max-w-md">
-        <h1 className="text-2xl font-black mb-6">Set New Password</h1>
-        <input type="password" placeholder="New password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl p-3 mb-4 text-white" />
-        <button onClick={handleUpdate} disabled={loading} className="w-full bg-emerald-500 text-black font-black py-3 rounded-xl">Update Password</button>
-      </div>
+    <div className="min-h-screen bg-primary flex items-center justify-center p-4">
+      <Shell size="sm" className="w-full max-w-md">
+        <Card elevation={2} padding="lg" className="w-full">
+          <h1 className="text-2xl font-black text-primary mb-6">Set New Password</h1>
+          <div className="space-y-4">
+            <Input
+              type="password"
+              label="New password"
+              placeholder="Enter a new password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              fullWidth
+            />
+            <Button type="button" size="lg" fullWidth loading={loading} onClick={handleUpdate}>
+              Update Password
+            </Button>
+          </div>
+        </Card>
+      </Shell>
     </div>
   );
 }

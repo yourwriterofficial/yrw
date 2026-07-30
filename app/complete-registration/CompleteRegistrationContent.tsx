@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Input } from '@/app/components/ui/Input';
+import Button from '@/app/components/ui/Button';
+import { Card } from '@/app/components/ui/Card';
+import { Shell } from '@/app/components/ui/Shell';
 
 export default function CompleteRegistrationContent() {
   const router = useRouter();
@@ -80,75 +84,75 @@ export default function CompleteRegistrationContent() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 font-['Inter']">
-        <div className="bg-[#0a0a0a] border border-zinc-800 p-8 rounded-3xl max-w-md text-center">
-          <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <svg className="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Check Your Email</h2>
-          <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
-            We've sent a secure verification link to <strong className="text-white">{email}</strong>. Please verify your email address to access your client dashboard.
-          </p>
-          <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Redirecting to login...</p>
-        </div>
+      <div className="min-h-screen bg-primary flex items-center justify-center p-4">
+        <Shell size="sm" className="w-full max-w-md">
+          <Card elevation={2} padding="lg" className="text-center">
+            <div className="w-16 h-16 bg-success-bg border border-success/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-black text-primary mb-2 tracking-tight">Check Your Email</h2>
+            <p className="text-sm text-secondary mb-6 leading-relaxed">
+              We&apos;ve sent a secure verification link to <strong className="text-primary">{email}</strong>. Please verify your email address to access your client dashboard.
+            </p>
+            <p className="text-[10px] uppercase tracking-widest text-tertiary font-bold">Redirecting to login...</p>
+          </Card>
+        </Shell>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 font-['Inter']">
-      <div className="bg-[#0a0a0a] border border-zinc-800 p-8 rounded-3xl w-full max-w-md shadow-2xl">
-        <div className="inline-block px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">Final Step</div>
-        <h1 className="text-2xl font-black text-white mb-2 tracking-tight">Secure Your Account</h1>
-        <p className="text-xs text-zinc-400 leading-relaxed mb-8">
-          Order <span className="text-emerald-400 font-bold">{orderId}</span> is confirmed in our system. Set a password below to track your project's progress.
-        </p>
-        <form onSubmit={handleCreateAccount} className="space-y-4">
-          <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 ml-1">Email Address</label>
-            <input
+    <div className="min-h-screen bg-primary flex items-center justify-center p-4">
+      <Shell size="sm" className="w-full max-w-md">
+        <Card elevation={2} padding="lg" className="w-full">
+          <div className="inline-block px-3 py-1 bg-success-bg text-success border border-success/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
+            Final Step
+          </div>
+          <h1 className="text-2xl font-black text-primary mb-2 tracking-tight">Secure Your Account</h1>
+          <p className="text-xs text-secondary leading-relaxed mb-8">
+            Order <span className="text-accent font-bold">{orderId}</span> is confirmed in our system. Set a password below to track your project&apos;s progress.
+          </p>
+          <form onSubmit={handleCreateAccount} className="space-y-4">
+            <Input
               type="email"
+              label="Email Address"
+              placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-emerald-500 transition"
               required
-              placeholder="your@email.com"
+              fullWidth
             />
-          </div>
-          <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 ml-1">Password</label>
-            <input
+            <Input
               type="password"
+              label="Password"
               placeholder="At least 6 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-emerald-500 transition"
               required
+              fullWidth
             />
-          </div>
-          <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 ml-1">Confirm Password</label>
-            <input
+            <Input
               type="password"
+              label="Confirm Password"
               placeholder="Confirm your password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-emerald-500 transition"
               required
+              fullWidth
             />
-          </div>
-          {error && <p className="text-red-500 text-xs font-bold bg-red-500/10 p-3 rounded-lg border border-red-500/20">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-emerald-500 text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-xl hover:bg-emerald-400 transition mt-2 disabled:opacity-50"
-          >
-            {loading ? 'Encrypting...' : 'Create Account'}
-          </button>
-        </form>
-      </div>
+            {error && (
+              <p className="text-danger text-xs font-bold bg-danger-bg p-3 rounded-lg border border-danger/20">
+                {error}
+              </p>
+            )}
+            <Button type="submit" size="lg" fullWidth loading={loading} loadingText="Encrypting…">
+              Create Account
+            </Button>
+          </form>
+        </Card>
+      </Shell>
     </div>
   );
 }

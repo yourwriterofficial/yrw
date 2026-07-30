@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import Link from 'next/link';
 import * as lucide from 'lucide-react';
 import PageHeader from '@/app/components/ui/PageHeader';
 import StatusBadge from '@/app/components/ui/StatusBadge';
 import StatCard from '@/app/components/ui/StatCard';
 import Card from '@/app/components/ui/Card';
+import Button from '@/app/components/ui/Button';
+import { DataTable } from '@/app/components/ui/DataTable';
+import { EmptyState } from '@/app/components/ui/EmptyState';
 import { DashboardSkeleton } from '@/app/components/ui/Skeleton';
 
 const formatNaira = (amount: number) => '₦' + Math.round(amount).toLocaleString('en-NG');
@@ -61,51 +63,50 @@ export default function AdminDashboard() {
         title="Dashboard"
         description="Overview of orders, pipeline value, and recent activity."
         breadcrumb="Admin / Dashboard"
-        icon={<lucide.LayoutDashboard className="w-8 h-8 text-purple-500" />}
+        icon={<lucide.LayoutDashboard className="w-8 h-8 text-accent" />}
         actions={
-          <Link href="/admin/orders" className="btn-secondary flex items-center gap-2">
-            <lucide.Database className="w-4 h-4" /> Manage Orders
-          </Link>
+          <Button variant="secondary" href="/admin/orders" icon={<lucide.Database className="w-4 h-4" />}>
+            Manage Orders
+          </Button>
         }
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Orders" value={stats.totalOrders} icon={<lucide.Layers className="w-5 h-5" />} />
-        <StatCard label="Awaiting Brief" value={stats.pendingBriefs} color="text-purple-400" icon={<lucide.Clock className="w-5 h-5" />} />
+        <StatCard label="Awaiting Brief" value={stats.pendingBriefs} color="text-accent" icon={<lucide.Clock className="w-5 h-5" />} />
         <StatCard label="Completed" value={stats.completedOrders} color="text-emerald-400" icon={<lucide.CheckCircle2 className="w-5 h-5" />} />
         <StatCard label="Pipeline Value" value={formatNaira(stats.totalValue)} icon={<lucide.Banknote className="w-5 h-5" />} />
       </div>
 
-      <Card padding="lg">
-        <div className="flex justify-between items-center mb-4">
+      <Card padding="lg" header={
+        <div className="flex justify-between items-center">
           <h2 className="text-lg font-black text-primary">Recent Orders</h2>
-          <Link href="/admin/orders" className="text-purple-400 text-sm font-bold hover:text-purple-300 transition">
-            View All →
-          </Link>
+          <Button variant="ghost" size="sm" href="/admin/orders" icon={<lucide.ArrowRight className="w-4 h-4" />} iconPosition="right">
+            View All
+          </Button>
         </div>
+      }>
         {recentOrders.length === 0 ? (
-          <div className="empty-state py-8">
-            <lucide.Inbox className="w-10 h-10 text-secondary mx-auto mb-3" />
-            <p className="text-secondary text-sm">No orders yet.</p>
-          </div>
+          <EmptyState title="No orders yet" description="Orders will appear here once clients begin checkout." />
         ) : (
-          <div className="space-y-1 table-row-hover">
-            {recentOrders.map((order) => (
-              <div
-                key={order['Order ID']}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-theme py-4 last:border-0"
-              >
-                <div>
-                  <span className="font-mono text-sm font-bold text-primary">{order['Order ID']}</span>
-                  <div className="text-xs text-secondary mt-0.5">{order['Legal Name']}</div>
-                </div>
-                <StatusBadge status={order['Workflow Status']} />
-                <div className="font-mono text-sm font-bold text-primary">
-                  {formatNaira(parseFloat(order['Financial Quote']) || 0)}
-                </div>
-              </div>
-            ))}
-          </div>
+          <DataTable
+            rows={recentOrders}
+            rowKey={(order) => order['Order ID']}
+            columns={[
+              {
+                key: 'id',
+                header: 'Order',
+                cell: (order) => (
+                  <div>
+                    <span className="font-mono text-sm font-bold text-primary">{order['Order ID']}</span>
+                    <div className="text-xs text-secondary mt-0.5">{order['Legal Name']}</div>
+                  </div>
+                ),
+              },
+              { key: 'status', header: 'Status', cell: (order) => <StatusBadge status={order['Workflow Status']} /> },
+              { key: 'value', header: 'Quote', align: 'right', cell: (order) => <span className="font-mono text-sm font-bold text-primary">{formatNaira(parseFloat(order['Financial Quote']) || 0)}</span> },
+            ]}
+          />
         )}
       </Card>
     </div>

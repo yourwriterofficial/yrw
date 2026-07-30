@@ -1,10 +1,11 @@
 'use client';
 
 import { ReactNode, ButtonHTMLAttributes } from 'react';
-import * as lucide from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
-type ButtonSize = 'sm' | 'md' | 'lg';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'soft';
+type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -12,24 +13,25 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: ReactNode;
   iconPosition?: 'left' | 'right';
   loading?: boolean;
+  loadingText?: string;
   fullWidth?: boolean;
+  href?: string;
 }
 
-// Static per-variant class strings — required by Tailwind v4's JIT scanner, which
-// only generates utilities that appear literally in source (no runtime `${}` interpolation).
-// primary/secondary match .btn-primary/.btn-secondary in globals.css exactly, so old
-// and new buttons look identical during the opportunistic migration.
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-black font-extrabold hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed',
-  secondary: 'bg-secondary text-primary font-bold border border-theme hover:bg-[color-mix(in_srgb,var(--text-primary)_5%,var(--bg-secondary))] disabled:opacity-50 disabled:cursor-not-allowed',
-  ghost: 'bg-transparent text-primary font-bold hover:bg-[color-mix(in_srgb,var(--text-primary)_8%,transparent)] disabled:opacity-50 disabled:cursor-not-allowed',
-  danger: 'bg-red-500/10 text-red-400 font-bold border border-red-500/20 hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed',
+  primary: 'bg-accent text-[var(--accent-foreground)] font-extrabold hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed shadow-sm',
+  secondary: 'bg-secondary text-primary font-bold border border-theme hover:bg-hover disabled:opacity-50 disabled:cursor-not-allowed',
+  outline: 'bg-transparent text-primary font-bold border border-theme hover:bg-hover disabled:opacity-50 disabled:cursor-not-allowed',
+  ghost: 'bg-transparent text-primary font-bold hover:bg-hover disabled:opacity-50 disabled:cursor-not-allowed',
+  soft: 'bg-[var(--success-bg)] text-success font-bold hover:bg-[color-mix(in_srgb,var(--accent)_15%,transparent)] disabled:opacity-50 disabled:cursor-not-allowed',
+  danger: 'bg-[var(--danger-bg)] text-danger font-bold border border-danger/20 hover:bg-[color-mix(in_srgb,var(--danger)_20%,transparent)] disabled:opacity-50 disabled:cursor-not-allowed',
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-[11px] rounded-xl gap-1.5',
-  md: 'px-5 py-2.5 text-xs rounded-xl gap-2',
-  lg: 'px-6 py-3.5 text-sm rounded-xl gap-2',
+  sm: 'px-3 py-1.5 text-[11px] rounded-lg gap-1.5 h-8',
+  md: 'px-4 py-2 text-xs rounded-xl gap-2 h-10',
+  lg: 'px-6 py-2.5 text-sm rounded-xl gap-2 h-12',
+  icon: 'p-2 rounded-lg h-10 w-10',
 };
 
 export default function Button({
@@ -38,28 +40,47 @@ export default function Button({
   icon,
   iconPosition = 'left',
   loading = false,
+  loadingText,
   fullWidth = false,
   disabled,
   className = '',
   children,
+  href,
   ...rest
 }: ButtonProps) {
+  const baseClasses = `inline-flex items-center justify-center uppercase tracking-wide transition focus-ring ${VARIANT_CLASSES[variant]} ${size === 'icon' ? SIZE_CLASSES.icon : SIZE_CLASSES[size]} ${fullWidth ? 'w-full' : ''} ${className}`;
+  const content = loading ? (
+    <>
+      <Loader2 className="w-4 h-4 animate-spin" />
+      {loadingText && <span>{loadingText}</span>}
+    </>
+  ) : (
+    <>
+      {icon && iconPosition === 'left' && icon}
+      {children}
+      {icon && iconPosition === 'right' && icon}
+    </>
+  );
+
+  if (href) {
+    const isExternal = /^https?:\/\//.test(href);
+    if (isExternal) {
+      return (
+        <a href={href} className={baseClasses} {...(rest as any)}>
+          {content}
+        </a>
+      );
+    }
+    return (
+      <Link href={href} className={baseClasses} {...(rest as any)}>
+        {content}
+      </Link>
+    );
+  }
+
   return (
-    <button
-      type="button"
-      disabled={disabled || loading}
-      className={`inline-flex items-center justify-center uppercase tracking-wide transition cursor-pointer ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
-      {...rest}
-    >
-      {loading ? (
-        <lucide.Loader2 className="w-4 h-4 animate-spin" />
-      ) : (
-        <>
-          {icon && iconPosition === 'left' && icon}
-          {children}
-          {icon && iconPosition === 'right' && icon}
-        </>
-      )}
+    <button type="button" disabled={disabled || loading} className={baseClasses} {...rest}>
+      {content}
     </button>
   );
 }

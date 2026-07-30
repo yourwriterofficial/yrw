@@ -6,6 +6,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
 import BuyModal from '../BuyModal';
+import Card from '@/app/components/ui/Card';
+import Button from '@/app/components/ui/Button';
+import { Input } from '@/app/components/ui/Input';
+import { Badge } from '@/app/components/ui/Badge';
+import { EmptyState } from '@/app/components/ui/EmptyState';
+import { Shell } from '@/app/components/ui/Shell';
+import { Select } from '@/app/components/ui/Select';
 import { ArrowLeft, Code2, Download, Eye, Search, ShoppingBag, Tag } from 'lucide-react';
 
 const naira = (n: number) => '₦' + Math.round(n || 0).toLocaleString('en-NG');
@@ -16,6 +23,12 @@ const DEFAULT_SETTINGS: ShopSettings = {
   shop_title: 'Ready-Made Scripts',
   shop_description: 'Pre-built, source-available scripts and templates — buy once, download anytime from your dashboard.',
 };
+
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest' },
+  { value: 'price_asc', label: 'Price: Low to High' },
+  { value: 'price_desc', label: 'Price: High to Low' },
+];
 
 type Product = {
   id: number;
@@ -79,42 +92,38 @@ export default function DeveloperShopPage() {
   const previewUrl = (path: string) => supabase.storage.from('dev-shop-previews').getPublicUrl(path).data.publicUrl;
 
   return (
-    <div className="min-h-screen bg-primary text-primary font-['Inter'] selection:bg-cyan-500/30 transition-colors duration-200 overflow-x-hidden">
+    <div className="min-h-screen bg-primary text-primary overflow-x-hidden">
       <Header />
 
       <section className="pt-header-28 sm:pt-header-32 pb-16 sm:pb-24 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <Link href="/developer" className="inline-flex items-center gap-2 text-xs font-bold text-secondary hover:text-cyan-400 transition mb-6 sm:mb-8">
+        <Shell size="xl">
+          <Link href="/developer" className="inline-flex items-center gap-2 text-xs font-bold text-secondary hover:text-info transition mb-6 sm:mb-8">
             <ArrowLeft className="w-4 h-4" /> Back to Developer Services
           </Link>
 
           <div className="text-center mb-10 sm:mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
-              <ShoppingBag className="w-3 h-3" /> Script Marketplace
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black mb-4">{settings.shop_title}</h1>
+            <Badge variant="info" className="mb-4">
+              <ShoppingBag className="w-3 h-3 mr-1.5" /> Script Marketplace
+            </Badge>
+            <h1 className="font-display italic font-medium text-2xl sm:text-3xl md:text-4xl mb-4">{settings.shop_title}</h1>
             <p className="text-secondary text-sm max-w-xl mx-auto px-2">{settings.shop_description}</p>
           </div>
 
           <div className="flex flex-col md:flex-row gap-3 justify-center items-center mb-8 max-w-2xl mx-auto">
-            <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-secondary" />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search scripts…"
-                className="w-full glass-panel rounded-full pl-11 pr-4 py-2.5 text-sm text-primary outline-none focus:border-cyan-500"
-              />
-            </div>
-            <select
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search scripts…"
+              iconLeft={<Search className="w-4 h-4" />}
+              fullWidth
+              className="rounded-full"
+            />
+            <Select
               value={sortBy}
               onChange={e => setSortBy(e.target.value as SortOption)}
-              className="w-full md:w-auto glass-panel rounded-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-secondary outline-none focus:border-cyan-500 cursor-pointer shrink-0"
-            >
-              <option value="newest">Newest</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-            </select>
+              options={SORT_OPTIONS}
+              className="w-full md:w-44 rounded-full"
+            />
           </div>
 
           {categories.length > 1 && (
@@ -123,7 +132,11 @@ export default function DeveloperShopPage() {
                 <button
                   key={c}
                   onClick={() => setCategory(c)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition ${category === c ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black' : 'glass-panel text-secondary hover:border-cyan-500/50'}`}
+                  className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition ${
+                    category === c
+                      ? 'bg-accent text-[var(--accent-foreground)] border-accent'
+                      : 'bg-secondary border-theme text-secondary hover:border-strong'
+                  }`}
                 >
                   {c === 'all' ? 'All' : c}
                 </button>
@@ -133,63 +146,66 @@ export default function DeveloperShopPage() {
 
           {loading ? (
             <div className="flex justify-center py-16">
-              <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin" />
+              <div className="w-10 h-10 border-4 border-info/20 border-t-info rounded-full animate-spin" />
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="text-center py-16 text-secondary text-sm">
-              No scripts available in this category yet — check back soon.
-            </div>
+            <EmptyState
+              icon={<ShoppingBag className="w-5 h-5" />}
+              title="No scripts found"
+              description="Try a different search or category."
+              action={{ label: 'Clear filters', onClick: () => { setSearch(''); setCategory('all'); } }}
+            />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
               {filteredProducts.map(p => (
-                <div key={p.id} className="rounded-[24px] sm:rounded-[28px] glass-panel overflow-hidden hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+                <Card key={p.id} padding="none" interactive className="overflow-hidden flex flex-col group">
                   <div className="aspect-video bg-secondary relative overflow-hidden">
                     {p.preview_images?.[0] ? (
-                      <Image src={previewUrl(p.preview_images[0])} alt={p.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
+                      <Image
+                        src={previewUrl(p.preview_images[0])}
+                        alt={p.title}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-secondary">
                         <Code2 className="w-10 h-10 opacity-30" />
                       </div>
                     )}
-                    <span className="absolute top-3 left-3 bg-black/60 backdrop-blur text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1">
-                      <Tag className="w-2.5 h-2.5" /> {p.category}
-                    </span>
+                    <Badge variant="default" className="absolute top-3 left-3">
+                      <Tag className="w-2.5 h-2.5 mr-1" /> {p.category}
+                    </Badge>
                   </div>
                   <div className="p-5 sm:p-6 flex flex-col flex-1">
-                    <Link href={`/developer/scripts/${p.slug}`} className="hover:text-cyan-400 transition">
-                      <h3 className="text-base sm:text-lg font-black mb-2">{p.title}</h3>
+                    <Link href={`/developer/scripts/${p.slug}`} className="hover:text-info transition">
+                      <h3 className="text-base sm:text-lg font-bold mb-2">{p.title}</h3>
                     </Link>
                     <p className="text-xs text-secondary leading-relaxed mb-4 flex-1">{p.description}</p>
                     {p.tech_stack?.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mb-4">
                         {p.tech_stack.map((t, i) => (
-                          <span key={i} className="text-[9px] font-bold uppercase tracking-wider bg-white/5 border border-theme px-2 py-0.5 rounded-full text-secondary">{t}</span>
+                          <Badge key={i} variant="default" size="sm">{t}</Badge>
                         ))}
                       </div>
                     )}
                     <div className="flex items-center justify-between pt-4 border-t border-theme gap-2">
-                      <span className="text-base sm:text-lg font-black text-cyan-400">{naira(p.price)}</span>
+                      <span className="text-base sm:text-lg font-bold text-info">{naira(p.price)}</span>
                       <div className="flex gap-2">
-                        <Link
-                          href={`/developer/scripts/${p.slug}`}
-                          className="bg-white/5 hover:bg-white/10 border border-theme text-primary text-xs font-black uppercase tracking-wider px-3 py-2.5 rounded-xl transition flex items-center gap-1.5"
-                        >
+                        <Button href={`/developer/scripts/${p.slug}`} variant="secondary" size="sm" className="px-3">
                           <Eye className="w-3.5 h-3.5" />
-                        </Link>
-                        <button
-                          onClick={() => setBuyProduct(p)}
-                          className="bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black text-xs font-black uppercase tracking-wider px-4 py-2.5 rounded-xl transition flex items-center gap-1.5"
-                        >
+                        </Button>
+                        <Button size="sm" onClick={() => setBuyProduct(p)}>
                           <Download className="w-3.5 h-3.5" /> Buy
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
-        </div>
+        </Shell>
       </section>
 
       <footer className="border-t border-theme py-10 sm:py-12 px-4 sm:px-6 text-center text-xs text-secondary pb-safe">
