@@ -37,7 +37,7 @@ const TYPE_COLOR: Record<string, string> = {
   vault_delivery: 'bg-purple-500/10 text-purple-400',
   admin_message: 'bg-amber-500/10 text-amber-400',
   promotion: 'bg-pink-500/10 text-pink-400',
-  system: 'bg-slate-500/10 text-slate-400',
+  system: 'bg-secondary text-secondary border border-theme',
 };
 
 export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdmin: boolean; userEmail: string; userId?: string }) {
@@ -209,7 +209,7 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
           <div className="max-h-[380px] overflow-y-auto divide-y divide-theme">
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-secondary text-xs">
-                <lucide.BellOff className="w-8 h-8 mx-auto mb-2 text-slate-600" />
+                <lucide.BellOff className="w-8 h-8 mx-auto mb-2 text-tertiary" />
                 <p>No notifications yet</p>
               </div>
             ) : (

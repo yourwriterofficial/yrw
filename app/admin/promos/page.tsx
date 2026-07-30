@@ -106,7 +106,7 @@ export default function PromoCodesPage() {
                 onChange={e => setNewCode({ ...newCode, active: e.target.checked })} 
                 className="sr-only peer" 
               />
-              <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500 peer-checked:after:bg-white" />
+              <div className="w-9 h-5 bg-secondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-tertiary after:border-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500 peer-checked:after:bg-white" />
             </label>
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function PromoCodesPage() {
                     <td className="px-6 py-4 text-right space-x-2">
                       <button 
                         onClick={() => toggleStatus(code.code, code.active)} 
-                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${code.active ? 'bg-zinc-800 border-theme text-secondary hover:text-primary' : 'bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/20'}`}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${code.active ? 'bg-secondary border-theme text-secondary hover:text-primary' : 'bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/20'}`}
                       >
                         {code.active ? 'Deactivate' : 'Activate'}
                       </button>

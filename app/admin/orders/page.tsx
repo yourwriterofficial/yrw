@@ -1347,7 +1347,7 @@ function OrdersPageContent() {
                 <h2 className="text-xl font-black text-primary flex items-center gap-2"><lucide.ShieldCheck className="text-blue-500" /> Vault Upload</h2>
                 <p className="text-xs text-blue-500 uppercase tracking-widest mt-1 font-bold">Order: {deliveryModalOrder['Order ID']}</p>
               </div>
-              <button onClick={() => setDeliveryModalOrder(null)}><lucide.X className="w-5 h-5 text-slate-500 hover:text-primary transition" /></button>
+              <button onClick={() => setDeliveryModalOrder(null)}><lucide.X className="w-5 h-5 text-secondary hover:text-primary transition" /></button>
             </div>
             <div className="space-y-4">
               <p className="text-xs text-secondary leading-relaxed">Uploading the final deliverable marks the project as "Work Submitted". The file will appear in the client's vault according to the schedule set below.</p>

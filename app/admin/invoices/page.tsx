@@ -190,7 +190,7 @@ export default function InvoicesListPage() {
                       className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition ${
                         m.delivered
                           ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                          : 'bg-zinc-800 text-zinc-500 border border-theme'
+                          : 'bg-secondary text-secondary border border-theme'
                       }`}
                     >
                       {m.delivered ? 'DELIVERED' : 'PENDING'}

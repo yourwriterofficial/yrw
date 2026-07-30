@@ -438,7 +438,7 @@ export default function OrderForm() {
 
       {/* Stepper - Responsive */}
       <div className="flex justify-between items-center mb-12 relative px-2 max-w-2xl mx-auto flex-wrap gap-2">
-        <div className="absolute h-[1px] bg-zinc-800 dark:bg-zinc-900 left-8 right-8 top-[15px] -z-10 hidden md:block" />
+        <div className="absolute h-[1px] bg-theme left-8 right-8 top-[15px] -z-10 hidden md:block" />
         {[1, 2, 3, 4, 5].map((s) => (
           <div
             key={s}

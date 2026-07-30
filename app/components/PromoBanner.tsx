@@ -23,7 +23,7 @@ const AdImage = memo(({ ad, boxClass, compact = false }: {
   const fg = compact ? mobile : desktop;
 
   return (
-    <div className={`relative w-full overflow-hidden bg-zinc-900/40 rounded-xl ${boxClass}`}>
+    <div className={`relative w-full overflow-hidden bg-secondary/40 rounded-xl ${boxClass}`}>
       <img
         src={fg}
         alt=""

@@ -76,7 +76,7 @@ export default function PromoPopup() {
 
         <div onClick={handleClick} className={ad.link_url ? 'cursor-pointer' : ''}>
           {imageUrl ? (
-            <div className="relative w-full aspect-[4/3] max-h-[38vh] bg-zinc-900/40 overflow-hidden">
+            <div className="relative w-full aspect-[4/3] max-h-[38vh] bg-secondary/40 overflow-hidden">
               <img src={imageUrl} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-40" />
               <img src={imageUrl} alt={ad.title} className="relative w-full h-full object-contain" />
             </div>

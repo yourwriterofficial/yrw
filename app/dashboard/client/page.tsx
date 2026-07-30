@@ -688,12 +688,13 @@ function DashboardContent() {
           <div className="flex items-center gap-2">
             <lucide.Eye className="w-4 h-4" /> Admin Preview Mode
           </div>
-          <button 
-            onClick={() => router.push('/admin')} 
-            className="px-3 py-1 bg-black text-white hover:bg-zinc-800 transition font-black rounded-lg uppercase tracking-wider text-[9px] cursor-pointer"
+          <Button
+            size="sm"
+            onClick={() => router.push('/admin')}
+            className="!bg-black !text-white hover:!bg-black/80"
           >
             Go to Admin Panel →
-          </button>
+          </Button>
         </div>
       )}
 
@@ -706,12 +707,13 @@ function DashboardContent() {
               Security Notice: Your temporary password is currently set to your email address. For your security, please update it.
             </span>
           </div>
-          <button 
+          <Button
+            size="sm"
             onClick={() => setActiveTab('profile')}
-            className="px-4 py-2 bg-amber-500 text-black hover:bg-amber-450 transition font-black rounded-xl uppercase tracking-wider text-[10px] cursor-pointer shrink-0"
+            className="!bg-amber-500 !text-black hover:!bg-amber-500/90 shrink-0"
           >
             Change Password
-          </button>
+          </Button>
         </div>
       )}
 
@@ -1381,7 +1383,7 @@ function DashboardContent() {
                 {/* 3. DYNAMIC PIPELINE TIMELINE */}
                 {inspectorTab === 'timeline' && (
                   <div className="space-y-6 animate-in fade-in duration-250 pt-2">
-                    <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-zinc-800">
+                    <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-secondary">
                       {steps.map((step, i) => (
                         <TimelineItem 
                           key={i}
@@ -1454,7 +1456,7 @@ const TONE = {
   act:  { bar: 'bg-amber-500',   ring: 'border-l-amber-500',   chip: 'bg-amber-500/10 text-amber-500 border-amber-500/30',   icon: 'bg-amber-500 text-black' },
   prog: { bar: 'bg-blue-500',    ring: 'border-l-blue-500',    chip: 'bg-blue-500/10 text-blue-400 border-blue-500/30',      icon: 'bg-blue-500 text-white' },
   done: { bar: 'bg-emerald-500', ring: 'border-l-emerald-500', chip: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30', icon: 'bg-emerald-500 text-black' },
-  wait: { bar: 'bg-slate-500',   ring: 'border-l-slate-600',   chip: 'bg-slate-500/10 text-slate-400 border-slate-500/30',   icon: 'bg-slate-600 text-white' },
+  wait: { bar: 'bg-text-tertiary', ring: 'border-l-text-muted', chip: 'bg-secondary text-secondary border-theme', icon: 'bg-text-tertiary text-primary' },
 } as const;
 
 function ToneIcon({ tone }: { tone: 'act' | 'prog' | 'done' | 'wait' }) {
@@ -1475,12 +1477,12 @@ function MilestoneChips({ milestones, activeIndex }: { milestones: any[]; active
           : isNext
             ? 'border-amber-500/40 bg-amber-500/10'
             : 'border-theme bg-secondary/40 opacity-70';
-        const dot = m.paid ? 'bg-emerald-500' : isNext ? 'bg-amber-500' : 'bg-slate-500';
+        const dot = m.paid ? 'bg-emerald-500' : isNext ? 'bg-amber-500' : 'bg-text-tertiary';
         const pill = m.paid
           ? 'bg-emerald-500/15 text-emerald-400'
           : isNext
             ? 'bg-amber-500 text-black'
-            : 'bg-slate-500/15 text-secondary';
+            : 'bg-secondary text-secondary';
         return (
           <div key={i} className={`flex items-center gap-2 border rounded-xl px-3 py-2 text-xs min-w-0 ${cls}`}>
             <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />

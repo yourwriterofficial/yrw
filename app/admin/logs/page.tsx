@@ -317,14 +317,14 @@ export default function AdminLogsPage() {
                             </span>
                           </td>
                           <td className="p-4 text-[10px] font-bold text-secondary space-y-0.5">
-                            <div>In-App: <span className={log.send_in_app ? 'text-emerald-400' : 'text-zinc-600'}>{log.send_in_app ? 'YES' : 'NO'}</span></div>
-                            <div>Email: <span className={log.send_email ? 'text-emerald-400' : 'text-zinc-600'}>{log.send_email ? 'YES' : 'NO'}</span></div>
+                            <div>In-App: <span className={log.send_in_app ? 'text-emerald-400' : 'text-muted'}>{log.send_in_app ? 'YES' : 'NO'}</span></div>
+                            <div>Email: <span className={log.send_email ? 'text-emerald-400' : 'text-muted'}>{log.send_email ? 'YES' : 'NO'}</span></div>
                           </td>
                           <td className="p-4">
                             {log.is_group ? (
                               <span className="text-[10px] font-bold text-secondary">Mixed Status</span>
                             ) : (
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${log.read ? 'bg-zinc-500/10 text-zinc-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${log.read ? 'bg-secondary text-muted' : 'bg-emerald-500/10 text-emerald-400'}`}>
                                 {log.read ? 'Read' : 'Unread'}
                               </span>
                             )}

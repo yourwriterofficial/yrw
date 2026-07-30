@@ -79,7 +79,7 @@ function SlotOccupancyBadge({ position }: { position: string }) {
   if (!occ) return null;
   const full = occ.occupied >= occ.slot_cap;
   return (
-    <p className={`text-[11px] font-semibold mt-1 ${full ? 'text-amber-500' : 'text-zinc-500'}`}>
+    <p className={`text-[11px] font-semibold mt-1 ${full ? 'text-amber-500' : 'text-secondary'}`}>
       {occ.occupied}/{occ.slot_cap} slots filled{full ? ' — new ads will queue until a slot opens' : ''}
     </p>
   );

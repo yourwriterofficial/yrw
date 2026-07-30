@@ -37,7 +37,7 @@ export default function ImpersonationBanner() {
           clearImpersonation();
           window.location.href = '/admin/users';
         }}
-        className="px-4 py-1.5 bg-black text-white hover:bg-zinc-800 transition font-bold rounded-lg uppercase tracking-wider text-[10px] cursor-pointer whitespace-nowrap"
+        className="px-4 py-1.5 bg-black text-white hover:bg-black/80 transition font-bold rounded-lg uppercase tracking-wider text-[10px] cursor-pointer whitespace-nowrap"
       >
         ✕ Stop Impersonation
       </button>

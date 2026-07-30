@@ -117,14 +117,14 @@ export default function PaymentCallbackContent() {
   }, [rawStatus, tx_ref, router]);
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 font-['Inter']">
-      <div className="bg-[#0a0a0a] border border-zinc-800 p-8 rounded-3xl w-full max-w-md shadow-2xl text-center">
+    <div className="min-h-screen bg-primary flex items-center justify-center p-4 font-['Inter']">
+      <div className="bg-card border border-theme p-8 rounded-3xl w-full max-w-md shadow-2xl text-center">
         
         {displayState === 'processing' && (
           <div className="flex flex-col items-center animate-in fade-in duration-300">
             <Loader2 className="w-16 h-16 text-emerald-500 animate-spin mb-6" />
-            <h2 className="text-xl font-black text-white tracking-tight mb-2">Verifying Transaction</h2>
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <h2 className="text-xl font-black text-primary tracking-tight mb-2">Verifying Transaction</h2>
+            <p className="text-xs text-secondary leading-relaxed">
               Please wait while we confirm your payment securely with the gateway. Do not close this window.
             </p>
           </div>
@@ -135,8 +135,8 @@ export default function PaymentCallbackContent() {
             <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mb-6">
               <CheckCircle2 className="w-8 h-8 text-emerald-500" />
             </div>
-            <h2 className="text-xl font-black text-white tracking-tight mb-2">Payment Successful!</h2>
-            <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+            <h2 className="text-xl font-black text-primary tracking-tight mb-2">Payment Successful!</h2>
+            <p className="text-xs text-secondary leading-relaxed mb-6">
               Your transaction has been securely cleared. Our system has updated your project vault.
             </p>
             <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest animate-pulse">
@@ -150,8 +150,8 @@ export default function PaymentCallbackContent() {
             <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mb-6">
               <XCircle className="w-8 h-8 text-red-500" />
             </div>
-            <h2 className="text-xl font-black text-white tracking-tight mb-2">Payment Failed</h2>
-            <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+            <h2 className="text-xl font-black text-primary tracking-tight mb-2">Payment Failed</h2>
+            <p className="text-xs text-secondary leading-relaxed mb-6">
               We could not process your transaction. Please verify your network and payment details, then try again.
             </p>
             <div className="text-[10px] font-black text-red-500 uppercase tracking-widest animate-pulse">
