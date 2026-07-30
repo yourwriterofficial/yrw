@@ -16,7 +16,7 @@ const supabase = createClient(
 
 const MIN_CUSTOM_QUOTE = 10000;
 
-const orderDataSchema = z.object({
+export const orderDataSchema = z.object({
   service_tier: z.enum(['GOLD', 'SILVER', 'BRONZE', 'STANDARD', 'CUSTOM']),
   financial_quote: z.number().optional(),
   word_count: z.number().optional(),

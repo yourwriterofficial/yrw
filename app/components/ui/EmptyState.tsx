@@ -21,8 +21,8 @@ export function EmptyState({ icon, title, description, action, className = '', c
       {description && <p className="text-xs text-secondary max-w-xs mb-4">{description}</p>}
       {action && (
         action.href ? (
-          <Button variant="secondary" size="sm" asChild>
-            <a href={action.href}>{action.label}</a>
+          <Button variant="secondary" size="sm" href={action.href}>
+            {action.label}
           </Button>
         ) : (
           <Button variant="secondary" size="sm" onClick={action.onClick}>

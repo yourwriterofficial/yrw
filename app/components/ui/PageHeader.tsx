@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Breadcrumb, BreadcrumbItem } from './Breadcrumb';
+import { Breadcrumb } from './Breadcrumb';
+import type { BreadcrumbItem } from './Breadcrumb';
 
 interface PageHeaderProps {
   title: string;

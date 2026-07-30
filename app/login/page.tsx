@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
 import { SocialLoginButton } from '@/app/components/ui/SocialLoginButton';
-import { Card } from '@/app/components/ui/Card';
+import Card from '@/app/components/ui/Card';
 import { Shell } from '@/app/components/ui/Shell';
 import ThemeToggle from '@/app/components/ThemeToggle';
 

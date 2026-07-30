@@ -677,6 +677,16 @@ Furthermore, there is a lack of localized research that addresses the specific c
     return Array.from(set).sort();
   }, [depts])();
 
+  const browseFilterOptions = {
+    dept: [{ value: 'all', label: 'All Departments' }, ...mergedDepts.map(d => ({ value: d, label: d }))],
+    level: [
+      { value: 'all', label: 'All Levels' },
+      { value: 'BSc', label: 'BSc / HND' },
+      { value: 'MSc', label: 'MSc / PGD' },
+      { value: 'PhD', label: 'PhD' },
+    ],
+  };
+
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -1148,17 +1158,6 @@ Furthermore, there is a lack of localized research that addresses the specific c
         </Shell>
       </div>
 
-      const browseFilterOptions = {
-        dept: [{ value: 'all', label: 'All Departments' }, ...mergedDepts.map(d => ({ value: d, label: d }))],
-        level: [
-          { value: 'all', label: 'All Levels' },
-          { value: 'BSc', label: 'BSc / HND' },
-          { value: 'MSc', label: 'MSc / PGD' },
-          { value: 'PhD', label: 'PhD' },
-        ],
-      };
-
-      return (
       {/* DATABASE SEARCH & AVAILABILITY RESULTS CONTAINER */}
       {hasSearched && !isSearching && !loading && topics.length > 0 && (
         <Shell size="full" className="max-w-[1320px] py-8">
@@ -1411,7 +1410,7 @@ Furthermore, there is a lack of localized research that addresses the specific c
               <div className="p-2.5 sm:p-4 border-b border-theme/50 flex justify-between items-center gap-2 sm:gap-4 bg-secondary/20">
                 <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap min-w-0">
                   <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full truncate">{preview.department}</span>
-                  <span className={`text-[8px] sm:text-[9px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded border ${levelBadge(preview.level)}`}>{preview.level}</span>
+                  <span className={`text-[8px] sm:text-[9px] font-black uppercase px-1.5 sm:px-2 py-0.5 rounded border ${levelBadgeClass(preview.level)}`}>{preview.level}</span>
                   <span className="hidden sm:flex text-[10px] font-bold text-emerald-500 items-center gap-1.5 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10">
                     <lucide.Lock className="w-3.5 h-3.5" /> SECURE PREVIEW (TITLE PAGE VISIBLE, 49 LOCKED)
                   </span>
@@ -1692,7 +1691,7 @@ Furthermore, there is a lack of localized research that addresses the specific c
                 <button onClick={() => setCart(null)} className="text-secondary hover:text-primary"><lucide.X className="w-5 h-5" /></button>
               </div>
               <div className="bg-secondary border border-theme rounded-xl p-4">
-                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(cart.level)}`}>{cart.level}</span>
+                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${levelBadgeClass(cart.level)}`}>{cart.level}</span>
                 <p className="text-sm font-bold text-primary mt-2">{cart.title}</p>
                 <p className="text-[11px] text-secondary">Chapters 1–5 · MS Word · {naira(cart.basePrice)}</p>
                 <p className="text-[11px] font-bold text-amber-500 mt-1">{pageSettings.delivery_text}</p>

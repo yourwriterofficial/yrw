@@ -7,7 +7,7 @@ import { Input } from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
 import { Checkbox } from '@/app/components/ui/Checkbox';
 import { SocialLoginButton } from '@/app/components/ui/SocialLoginButton';
-import { Card } from '@/app/components/ui/Card';
+import Card from '@/app/components/ui/Card';
 import { Shell } from '@/app/components/ui/Shell';
 import { showToast } from '@/app/components/ui/Toast';
 import { REFERRAL_STORAGE_KEY } from '@/app/components/ReferralCapture';

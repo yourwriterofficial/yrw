@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
+import Card from '@/app/components/ui/Card';
 import { Shell } from '@/app/components/ui/Shell';
 
 export default function CompleteRegistrationContent() {

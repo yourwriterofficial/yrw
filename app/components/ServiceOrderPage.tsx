@@ -4,9 +4,10 @@ import { BillingDetailsFields, PaymentStructureFields, compileMilestones } from 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
-import { createSecureOrder } from '@/app/actions/createOrder';
+import { createSecureOrder, orderDataSchema } from '@/app/actions/createOrder';
 import { Upload, Paperclip, CheckCircle2, Calendar, Star, Info, type LucideIcon } from 'lucide-react';
 import type { CreateOrderServerActionResponse } from '@/lib/types';
+import type { z } from 'zod';
 import OrderCategoryNav from '@/app/components/OrderCategoryNav';
 import { fetchPricingTiers, type PricingTier, type ServicePricingCategory } from '@/lib/pricingTiers';
 import { fetchPageSettings } from '@/lib/pageSettings';
@@ -237,19 +238,19 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
     `.trim();
 
     const finalQuote = calculateTotal();
-    const payload: Record<string, unknown> = {
+    const payload: z.infer<typeof import('@/app/actions/createOrder').orderDataSchema> & { client_id?: string | null } = {
       order_id: orderStringId,
       legal_name: name,
       email: email,
       whatsapp_sync: whatsapp,
       topic: isProposing ? `[PROPOSAL] ${topic}` : `[${serviceCategory}] ${topic}`,
-      service_tier: 'CUSTOM' as const,
+      service_tier: 'CUSTOM',
       financial_quote: finalQuote,
-      word_count: isPerWord ? words : null,
-      page_count: isPerWord ? Math.ceil(words / 275) : null,
-      client_company: clientCompany || null,
-      client_address: clientAddress || null,
-      client_phone: whatsapp || null,
+      word_count: isPerWord ? words : undefined,
+      page_count: isPerWord ? Math.ceil(words / 275) : undefined,
+      client_company: clientCompany || undefined,
+      client_address: clientAddress || undefined,
+      client_phone: whatsapp || undefined,
       payment_structure_type: paymentStructure,
       payment_milestones: compileMilestones(paymentStructure, milestones, finalQuote),
       deadline,
