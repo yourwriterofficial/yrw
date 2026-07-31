@@ -123,7 +123,7 @@ export async function POST(request: Request) {
 
     // --- PROJECT MATERIAL (pay-first; order only created here, after payment) ---
     if (type === 'project_material') {
-      const { userId, topicId, title, department, price, name, whatsapp, level, addons, customLocation, assignedWriter, guestCheckout, guestEmail } = metadata;
+      const { userId, topicId, title, department, price, name, whatsapp, level, addons, customLocation, guestCheckout, guestEmail } = metadata;
       console.log(`📦 Project material purchase by ${userId}: "${title}"`);
 
       if (!userId || !title) {
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
         sixty_percent_paid: true,
         forty_percent_paid: true,
         work_submitted: instant,
-        additional_info: `[PROJECT MATERIAL]\nLevel: ${level || 'BSc'}\nDepartment: ${department || 'General'}\nScope: Chapters 1 to 5 (MS Word).\nAdd-ons: ${addons || 'None'}${customLocation ? `\nPreferred Location: ${customLocation}` : ''}${assignedWriter ? `\nAssigned Writer: ${assignedWriter}` : ''}\nSource: ${topicId ? `Catalogue topic #${topicId}` : 'Custom request'}\nNote: Ready-made material — similarity/AI levels not checked (as advertised).`,
+        additional_info: `[PROJECT MATERIAL]\nLevel: ${level || 'BSc'}\nDepartment: ${department || 'General'}\nScope: Chapters 1 to 5 (MS Word).\nAdd-ons: ${addons || 'None'}${customLocation ? `\nPreferred Location: ${customLocation}` : ''}\nSource: ${topicId ? `Catalogue topic #${topicId}` : 'Custom request'}\nNote: Ready-made material — similarity/AI levels not checked (as advertised).`,
       };
 
       const { data: inserted, error: insErr } = await supabase.from('orders').insert(orderRow).select().single();

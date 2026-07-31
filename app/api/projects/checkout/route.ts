@@ -11,7 +11,6 @@ const admin = createServiceClient(
 
 const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
-const LEVEL_PRICE: Record<string, number> = { OND: 4999, HND: 5999, BSc: 5999, MSc: 4500, PhD: 10000 };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
@@ -38,7 +37,6 @@ export async function POST(request: Request) {
       addonWords,
       addonFeatures,
       customLocation,
-      assignedWriter,
       email: guestEmailInput,
     } = body;
 
@@ -225,7 +223,7 @@ export async function POST(request: Request) {
           sixty_percent_paid: true,
           forty_percent_paid: true,
           work_submitted: instant,
-          additional_info: `[PROJECT MATERIAL]\nLevel: ${lvl}\nDepartment: ${dept}\nScope: Chapters 1 to 5 (MS Word).\nAdd-ons: ${addonDescriptions.length ? addonDescriptions.join(', ') : 'None'}${customLocation ? `\nPreferred Location: ${customLocation}` : ''}${assignedWriter ? `\nAssigned Writer: ${assignedWriter}` : ''}\nSource: ${topicId ? `Catalogue topic #${topicId}` : 'Custom request'}\nNote: Ready-made material — similarity/AI levels not checked (as advertised).`,
+          additional_info: `[PROJECT MATERIAL]\nLevel: ${lvl}\nDepartment: ${dept}\nScope: Chapters 1 to 5 (MS Word).\nAdd-ons: ${addonDescriptions.length ? addonDescriptions.join(', ') : 'None'}${customLocation ? `\nPreferred Location: ${customLocation}` : ''}\nSource: ${topicId ? `Catalogue topic #${topicId}` : 'Custom request'}\nNote: Ready-made material — similarity/AI levels not checked (as advertised).`,
         };
 
         const { data: inserted, error: insErr } = await admin.from('orders').insert(orderRow).select().single();
@@ -302,7 +300,6 @@ export async function POST(request: Request) {
           basePrice,
           addons: addonDescriptions.length ? addonDescriptions.join(', ') : 'None',
           customLocation: customLocation || null,
-          assignedWriter: assignedWriter || null,
           name: profile?.full_name || buyerEmail.split('@')[0] || 'Client',
           whatsapp: profile?.whatsapp || null,
           guestCheckout,
