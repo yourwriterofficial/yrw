@@ -119,27 +119,6 @@ const NIGERIAN_DEPARTMENTS = [
   "Zoology"
 ];
 
-const IGBO_FIRST = ["Chidi", "Emeka", "Kelechi", "Uchenna", "Tochukwu", "Nonso", "Ejike", "Nnamdi", "Ngozi", "Chioma", "Chinyere", "Ifeoma", "Ogechi", "Uju", "Ezinne", "Nneka", "Chinedu", "Chika", "Ezenwa", "Obinna"];
-const IGBO_LAST = ["Okeke", "Okafor", "Nwosu", "Okoye", "Nwachukwu", "Opara", "Diala", "Ezeugo", "Onuoha", "Eze", "Obi", "Okoro", "Chukwu"];
-const YORUBA_FIRST = ["Olumide", "Babajide", "Tunde", "Segun", "Adebayo", "Femi", "Kunle", "Jide", "Kola", "Dayo", "Wale", "Damilola", "Temitope", "Gbolahan", "Yetunde", "Funmilayo"];
-const YORUBA_LAST = ["Balogun", "Adebayo", "Ojo", "Alabi", "Babalola", "Awolowo", "Soyinka", "Adenuga", "Alakija", "Adeleke", "Abiola"];
-const HAUSA_FIRST = ["Abdul", "Aminu", "Ibrahim", "Musa", "Yusuf", "Usman", "Amina", "Zainab", "Halima", "Fatimah", "Aisha", "Lawal"];
-const HAUSA_LAST = ["Bello", "Ibrahim", "Abubakar", "Garba", "Usman", "Mohammed", "Dangote", "Danjuma", "Shagari"];
-const ENGLISH_FIRST = ["Emmanuel", "Blessing", "Grace", "Victor", "Daniel", "Faith", "Miracle", "Precious", "David", "Samuel", "Joseph", "Esther"];
-
-const pickWriter = (): string => {
-  const roll = Math.random();
-  if (roll < 0.33) {
-    return `${IGBO_FIRST[Math.floor(Math.random() * IGBO_FIRST.length)]} ${IGBO_LAST[Math.floor(Math.random() * IGBO_LAST.length)]}`;
-  } else if (roll < 0.66) {
-    return `${YORUBA_FIRST[Math.floor(Math.random() * YORUBA_FIRST.length)]} ${YORUBA_LAST[Math.floor(Math.random() * YORUBA_LAST.length)]}`;
-  } else if (roll < 0.90) {
-    return `${HAUSA_FIRST[Math.floor(Math.random() * HAUSA_FIRST.length)]} ${HAUSA_LAST[Math.floor(Math.random() * HAUSA_LAST.length)]}`;
-  } else {
-    return `${ENGLISH_FIRST[Math.floor(Math.random() * ENGLISH_FIRST.length)]} ${IGBO_LAST[Math.floor(Math.random() * IGBO_LAST.length)]}`;
-  }
-};
-
 export default function ProjectsTab({ user }: { user: any }) {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,17 +147,11 @@ export default function ProjectsTab({ user }: { user: any }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
-  // Writer Assignment Simulation
-  const [assignedWriter, setAssignedWriter] = useState<string | null>(null);
-  const [assigningWriter, setAssigningWriter] = useState(false);
-  const [writerStage, setWriterStage] = useState<'idle' | 'searching' | 'bidding' | 'done'>('idle');
-  const [bidDetails, setBidDetails] = useState({ available: 0, bidding: 0 });
-
   // Preview Modal
   const [previewTopic, setPreviewTopic] = useState<Topic | null>(null);
 
   // Settings loaded from DB
-  const [levelPrices, setLevelPrices] = useState<Record<string, number>>({ BSc: 3, MSc: 4, PhD: 10 });
+  const [levelPrices, setLevelPrices] = useState<Record<string, number>>({ OND: 4999, HND: 5999, BSc: 5999, MSc: 4500, PhD: 10000 });
   const [deptPrices, setDeptPrices] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -189,7 +162,7 @@ export default function ProjectsTab({ user }: { user: any }) {
   const fetchSettings = async () => {
     const { data } = await supabase.from('project_settings').select('*');
     if (data) {
-      let lp = { BSc: 3999, MSc: 4500, PhD: 10000 };
+      let lp = { OND: 4999, HND: 5999, BSc: 5999, MSc: 4500, PhD: 10000 };
       let dp = {};
       data.forEach(s => {
         if (s.key === 'level_prices') lp = s.value;
@@ -298,33 +271,6 @@ export default function ProjectsTab({ user }: { user: any }) {
     setCustomLocation('');
     setAcceptedTerms(false);
     setMsg('');
-    setAssignedWriter(null);
-    setWriterStage('idle');
-
-    // Automatically trigger simulated writer search
-    triggerWriterSimulation();
-  };
-
-  const triggerWriterSimulation = () => {
-    setAssigningWriter(true);
-    setWriterStage('searching');
-    
-    // Step 1: Searching for 1.6s
-    setTimeout(() => {
-      const avail = Math.floor(12 + Math.random() * 10);
-      const bid = Math.floor(5 + Math.random() * (avail - 6));
-      setBidDetails({ available: avail, bidding: bid });
-      setWriterStage('bidding');
-
-      // Step 2: Bidding for 1.8s
-      setTimeout(() => {
-        const writer = pickWriter();
-        setAssignedWriter(writer);
-        setWriterStage('done');
-        setAssigningWriter(false);
-      }, 1800);
-
-    }, 1600);
   };
 
   const handleAddonChange = (addonId: number) => {
@@ -362,7 +308,7 @@ export default function ProjectsTab({ user }: { user: any }) {
   };
 
   const checkout = async () => {
-    if (!cart || !acceptedTerms || !assignedWriter) return;
+    if (!cart || !acceptedTerms) return;
     setBusy(true);
     setMsg('');
     try {
@@ -378,7 +324,6 @@ export default function ProjectsTab({ user }: { user: any }) {
           addonWords,
           addonFeatures,
           customLocation,
-          assignedWriter,
         }),
       });
       const data = await res.json();
@@ -417,7 +362,7 @@ export default function ProjectsTab({ user }: { user: any }) {
             <span className="border border-theme bg-secondary/60 text-secondary px-3 py-1 rounded-full">🇳🇬 Nigerian University Standard</span>
             <span className="border border-theme bg-secondary/60 text-secondary px-3 py-1 rounded-full">⚡ Less than 7 Hours Delivery</span>
             <span className="border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full">
-              BSc ₦3,999 · MSc ₦4,999 · PhD ₦5,999
+              OND {naira(levelPrices.OND)} · HND {naira(levelPrices.HND)} · BSc {naira(levelPrices.BSc)} · MSc {naira(levelPrices.MSc)} · PhD {naira(levelPrices.PhD)}
             </span>
           </div>
 
@@ -464,7 +409,9 @@ export default function ProjectsTab({ user }: { user: any }) {
                         className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
                       >
                         <option value="all">🎓 All Levels</option>
-                        <option value="BSc">BSc / HND</option>
+                        <option value="OND">OND</option>
+                        <option value="HND">HND</option>
+                        <option value="BSc">BSc</option>
                         <option value="MSc">MSc / PGD</option>
                         <option value="PhD">PhD</option>
                       </select>
@@ -486,7 +433,6 @@ export default function ProjectsTab({ user }: { user: any }) {
               <Card elevation={2} padding="lg" className="space-y-4">
                 <div className="relative w-12 h-12 mx-auto">
                   <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                  <div className="absolute inset-2 rounded-full border-4 border-amber-500/20 border-b-amber-500 animate-spin [animation-direction:reverse]" />
                 </div>
                 <div>
                   <h3 className="text-xs font-bold text-primary">Scanning Project Database...</h3>
@@ -548,7 +494,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                   title: search.trim(),
                   basePrice: getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept)
                 })}
-                className="bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition cursor-pointer"
+                className="bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition cursor-pointer"
               >
                 Order Custom Write-up
               </button>
@@ -594,7 +540,9 @@ export default function ProjectsTab({ user }: { user: any }) {
                   className="bg-secondary border border-theme rounded-xl px-4 py-2.5 text-xs text-primary font-bold outline-none focus:border-emerald-500 cursor-pointer flex-1 md:flex-none"
                 >
                   <option value="all">🎓 All Levels</option>
-                  <option value="BSc">BSc / HND</option>
+                  <option value="OND">OND</option>
+                  <option value="HND">HND</option>
+                  <option value="BSc">BSc</option>
                   <option value="MSc">MSc / PGD</option>
                   <option value="PhD">PhD</option>
                 </select>
@@ -616,10 +564,9 @@ export default function ProjectsTab({ user }: { user: any }) {
                 <div className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-secondary font-mono">
                   <span>📄 {t.pages || '—'} pages</span><span>📖 Ch. {t.chapters || '1–5'}</span><span>📅 {t.year || '2026'}</span><span>📝 {t.format || 'DOCX'}</span>
                 </div>
-                <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1 w-fit">⚡ Instant Vault Delivery</span>
                 <div className="flex gap-2 mt-auto pt-1 flex-wrap">
                   <button onClick={() => setPreviewTopic(t)} className="flex-1 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition min-w-[70px]">👁 Preview</button>
-                  <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: getTopicPrice(t.level, t.department) })} className="flex-2 py-2.5 rounded-lg text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 transition">Get · {naira(getTopicPrice(t.level, t.department))}</button>
+                  <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: getTopicPrice(t.level, t.department) })} className="flex-2 py-2.5 rounded-lg text-xs font-black bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] transition">Get · {naira(getTopicPrice(t.level, t.department))}</button>
                 </div>
               </Card>
             ))}
@@ -653,7 +600,7 @@ export default function ProjectsTab({ user }: { user: any }) {
           <div className="w-full max-w-lg bg-primary h-screen border-l border-theme flex flex-col shadow-2xl animate-in slide-in-from-right duration-350">
             <header className="p-6 border-b border-theme flex justify-between items-center shrink-0">
               <div>
-                <span className="text-[10px] font-black uppercase text-amber-400 tracking-widest">Order Processing Pipeline</span>
+                <span className="text-[10px] font-black uppercase text-emerald-400 tracking-widest">Order Processing Pipeline</span>
                 <h3 className="text-lg font-black text-primary mt-1">Configure Deliverable</h3>
               </div>
               <button onClick={() => setCart(null)} className="w-11 h-11 rounded-full bg-secondary hover:bg-white/5 text-primary flex items-center justify-center transition">
@@ -672,50 +619,14 @@ export default function ProjectsTab({ user }: { user: any }) {
                 <div className="text-[10px] text-secondary font-mono">Chapters 1 to 5 (Full Study Material)</div>
               </div>
 
-              {/* Writer Assignment Simulator Box */}
-              <Card elevation={1} padding="md" className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-secondary flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Writer Selection Status
-                  </h4>
-                  {assigningWriter && <lucide.Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />}
+              <Card elevation={1} padding="md" className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success border border-success/20 shrink-0">
+                  <lucide.Zap className="w-4 h-4" />
                 </div>
-
-                {writerStage === 'searching' && (
-                  <div className="flex flex-col items-center py-4 space-y-3">
-                    <div className="w-10 h-10 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-                    <div className="text-[11px] font-bold text-emerald-500 uppercase tracking-widest animate-pulse">Searching available writers...</div>
-                  </div>
-                )}
-
-                {writerStage === 'bidding' && (
-                  <div className="space-y-2 py-2">
-                    <div className="flex justify-between items-center text-xs font-bold">
-                      <span className="text-secondary">Writers Online:</span>
-                      <span className="text-primary">{bidDetails.available} found</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-bold">
-                      <span className="text-secondary">Active Bidders:</span>
-                      <span className="text-amber-400">{bidDetails.bidding} bidding</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-amber-400 rounded-full w-2/3 animate-[pulse_1.5s_infinite]" />
-                    </div>
-                  </div>
-                )}
-
-                {writerStage === 'done' && assignedWriter && (
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-450 border border-emerald-500/30">
-                      ✏️
-                    </div>
-                    <div>
-                      <div className="text-[9px] text-secondary font-black uppercase tracking-widest">Assigned Specialist Writer</div>
-                      <div className="text-sm font-black text-emerald-400">{assignedWriter}</div>
-                      <p className="text-[10px] text-secondary mt-0.5">Assigned to complete and format your deliverable.</p>
-                    </div>
-                  </div>
-                )}
+                <div>
+                  <div className="text-xs font-bold text-primary">Ready for instant delivery</div>
+                  <p className="text-[10px] text-secondary mt-0.5">This is a completed material — no writer wait, delivered to your Secure Vault right after payment.</p>
+                </div>
               </Card>
 
               {/* Add-ons */}
@@ -820,7 +731,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                 </div>
                 <button
                   onClick={checkout}
-                  disabled={!acceptedTerms || !assignedWriter || busy}
+                  disabled={!acceptedTerms || busy}
                   className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase text-xs tracking-wider rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
                 >
                   {busy ? (
@@ -882,7 +793,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                   setPreviewTopic(null);
                   openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: getTopicPrice(t.level, t.department) });
                 }}
-                className="px-4 py-2 text-xs font-black bg-amber-400 hover:bg-amber-300 text-emerald-950 rounded-xl transition"
+                className="px-4 py-2 text-xs font-black bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] rounded-xl transition"
               >
                 Select Topic
               </button>

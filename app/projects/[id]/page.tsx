@@ -33,10 +33,14 @@ type Addon = {
 
 const naira = (n: number) => '₦' + Math.round(n || 0).toLocaleString('en-NG');
 
-const levelBadge = (lvl: string) =>
-  lvl === 'PhD' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-    : lvl === 'MSc' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+const LEVEL_BADGE: Record<string, string> = {
+  OND: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+  HND: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  BSc: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  MSc: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  PhD: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+};
+const levelBadge = (lvl: string) => LEVEL_BADGE[lvl] || LEVEL_BADGE.BSc;
 
 export default function ProjectPermalinkPage() {
   const params = useParams();
@@ -51,7 +55,7 @@ export default function ProjectPermalinkPage() {
   const [loading, setLoading] = useState(true);
 
   // Configuration + pricing
-  const [levelPrices, setLevelPrices] = useState<Record<string, number>>({ BSc: 3999, MSc: 4500, PhD: 10000 });
+  const [levelPrices, setLevelPrices] = useState<Record<string, number>>({ OND: 4999, HND: 5999, BSc: 5999, MSc: 4500, PhD: 10000 });
   const [deptPrices, setDeptPrices] = useState<Record<string, number>>({});
   const [pageSettings, setPageSettings] = useState<any>({
     checkout_terms: "I understand this is a ready-made material — similarity/plagiarism and AI-detection levels are not checked or guaranteed. My purchase means the project will be delivered (Chapters 1–5, MS Word) to my vault. Working hours are 8am–7pm; delivery is within 4 hours.",
@@ -71,159 +75,8 @@ export default function ProjectPermalinkPage() {
   const [guestEmail, setGuestEmail] = useState('');
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // Secure Document Preview States & Effects
   const [openPreview, setOpenPreview] = useState(false);
   const [userEmail, setUserEmail] = useState('');
-  const [isWindowBlurred, setIsWindowBlurred] = useState(false);
-  const [previewTab, setPreviewTab] = useState<'title' | 'abstract' | 'contents' | 'chapter1'>('title');
-  const [previewZoom, setPreviewZoom] = useState(100);
-
-  useEffect(() => {
-    if (!openPreview) return;
-    setPreviewTab('title');
-    setIsWindowBlurred(false);
-
-    // Prevent copying
-    const preventCopy = (e: ClipboardEvent) => {
-      e.preventDefault();
-      alert("Copying text is disabled in the secure document viewer. Please purchase the project material to download the complete file.");
-    };
-
-    // Prevent keyboard copy/selection shortcuts and PrintScreen
-    const preventKeys = (e: KeyboardEvent) => {
-      const isCmdOrCtrl = e.ctrlKey || e.metaKey;
-      if (
-        (isCmdOrCtrl && ['c', 'a', 's', 'p', 'x'].includes(e.key.toLowerCase())) ||
-        e.key === 'PrintScreen' || 
-        e.key === 'Snapshot'
-      ) {
-        e.preventDefault();
-        alert("This operation is disabled in the secure document viewer. Please purchase the material to unlock.");
-      }
-    };
-
-    const preventDrag = (e: DragEvent) => {
-      e.preventDefault();
-    };
-
-    document.addEventListener('copy', preventCopy);
-    document.addEventListener('keydown', preventKeys);
-    document.addEventListener('dragstart', preventDrag);
-
-    // Dynamic blur protection when focus is lost (blocks screenshot/snip programs)
-    const handleBlur = () => {
-      setIsWindowBlurred(true);
-    };
-    const handleFocus = () => {
-      setIsWindowBlurred(false);
-    };
-
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      document.removeEventListener('copy', preventCopy);
-      document.removeEventListener('keydown', preventKeys);
-      document.removeEventListener('dragstart', preventDrag);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [openPreview]);
-
-  const getFaculty = (dept: string) => {
-    const d = (dept || '').toLowerCase();
-    if (d.includes('computer') || d.includes('science') || d.includes('microbiology') || d.includes('biochemistry') || d.includes('math') || d.includes('geology') || d.includes('chemistry') || d.includes('biology') || d.includes('botany')) return 'Science';
-    if (d.includes('engineering') || d.includes('technology')) return 'Engineering and Technology';
-    if (d.includes('accounting') || d.includes('business') || d.includes('finance') || d.includes('admin') || d.includes('actuarial') || d.includes('insurance')) return 'Management Sciences';
-    if (d.includes('law')) return 'Law';
-    if (d.includes('nursing') || d.includes('anatomy') || d.includes('medicine') || d.includes('dentistry') || d.includes('medical')) return 'Basic Medical Sciences';
-    if (d.includes('education')) return 'Education';
-    if (d.includes('economics') || d.includes('mass') || d.includes('sociology') || d.includes('geography') || d.includes('relation') || d.includes('political')) return 'Social Sciences';
-    if (d.includes('english') || d.includes('history') || d.includes('linguistics') || d.includes('art') || d.includes('music')) return 'Arts';
-    if (d.includes('agric') || d.includes('animal') || d.includes('fisheries') || d.includes('forestry')) return 'Agriculture';
-    return 'Social & Management Sciences';
-  };
-
-  const getCleanTitle = (title: string) => {
-    return (title || '').replace(/^\[PROJECT\]\s*/i, '').trim().toUpperCase();
-  };
-
-  const parseTitle = (title: string, dept: string) => {
-    let clean = (title || '').replace(/^\[PROJECT\]\s*/i, '').trim();
-    
-    // Extract case study / location
-    let caseStudy = '';
-    const caseMatch = clean.match(/\((?:a\s+)?case\s+study\s+(?:of|in)\s+([^\)]+)\)/i) || 
-                      clean.match(/(?:a\s+)?case\s+study\s+(?:of|in)\s+([^,\.\(]+)/i) ||
-                      clean.match(/in\s+([A-Z][a-zA-Z\s]+(?:State|University|Hospital|LGA|Nigeria))/i);
-    if (caseMatch) {
-      caseStudy = caseMatch[1].trim();
-      clean = clean.replace(/\(?(?:a\s+)?case\s+study\s+(?:of|in)\s+[^\)]+\)?/i, '').replace(/in\s+[A-Z][a-zA-Z\s]+(?:State|University|Hospital|LGA|Nigeria)/i, '').trim();
-    } else {
-      caseStudy = "selected organizations in Nigeria";
-    }
-
-    // Attempt to extract variables X and Y
-    let varA = '';
-    let varB = '';
-    const cleanLower = clean.toLowerCase();
-    
-    if (cleanLower.startsWith('impact of') || cleanLower.startsWith('effect of') || cleanLower.startsWith('influence of') || cleanLower.startsWith('assessment of') || cleanLower.startsWith('evaluation of')) {
-      const core = clean.replace(/^(impact|effect|influence|assessment|evaluation|analysis)\s+of\s+/i, '').trim();
-      const splitOn = core.match(/^(.*?)\s+(?:on|to|against|in|towards)\s+(.*)$/i);
-      if (splitOn) {
-        varA = splitOn[1].trim();
-        varB = splitOn[2].trim();
-      } else {
-        varA = core;
-        varB = dept;
-      }
-    } else if (cleanLower.startsWith('relationship between')) {
-      const core = clean.replace(/^relationship\s+between\s+/i, '').trim();
-      const splitAnd = core.match(/^(.*?)\s+and\s+(.*)$/i);
-      if (splitAnd) {
-        varA = splitAnd[1].trim();
-        varB = splitAnd[2].trim();
-      } else {
-        varA = core;
-        varB = dept;
-      }
-    } else if (cleanLower.startsWith('challenges and prospects of')) {
-      varA = clean.replace(/^challenges\s+and\s+prospects\s+of\s+/i, '').trim();
-      varB = dept;
-    } else {
-      const words = clean.split(' ');
-      const half = Math.floor(words.length / 2);
-      varA = words.slice(0, half).join(' ');
-      varB = words.slice(half).join(' ');
-    }
-
-    return {
-      varA: varA || clean,
-      varB: varB || dept,
-      caseStudy: caseStudy,
-      cleanTitle: clean.toUpperCase()
-    };
-  };
-
-  const generateProjectPreview = (title: string, dept: string, lvl: string) => {
-    const { varA, varB, caseStudy, cleanTitle } = parseTitle(title, dept);
-    const deptUpper = (dept || '').toUpperCase();
-    
-    const abstract = `This study investigates the critical dimensions of "${cleanTitle}" with particular emphasis on "${caseStudy}". The main objective of the study was to evaluate the statistical relationship between "${varA}" and "${varB}" within the contemporary Nigerian environment. The research design employed was a descriptive survey design. A sample size of 150 respondents was selected from the target population using simple random sampling techniques. Data collection was done using a structured questionnaire titled "${cleanTitle} Questionnaire" which was validated by academic experts in the Department of ${deptUpper}. The collected data were analyzed using statistical package for social sciences (SPSS) with descriptive statistics (mean and standard deviation) and inferential statistics (Chi-Square/Regression analysis). The findings revealed that "${varA}" has a statistically significant positive effect on "${varB}" in Nigeria. Based on the findings, it is recommended that stakeholders should prioritize implementation of policies that support these parameters to foster sustainable national development.`;
-    
-    const background = `In contemporary academic and operational discourse, the concept of "${varA}" has transitioned from a localized initiative to a global imperative. Historically, the integration of structured frameworks around "${varA}" has been recognized as a primary driver of efficiency, organizational resilience, and systemic progress within the domain of ${deptUpper}.
-
-Within the specific context of Nigeria, the practical execution of "${varA}" is often constrained by socio-economic dynamics, policy inconsistencies, and infrastructural limitations. These challenges create a complex environment that requires rigorous empirical analysis to resolve.
-
-Furthermore, the direct relationship between "${varA}" and "${varB}" remains a critical point of interest. While theoretical models suggest that positive improvements in "${varA}" will yield corresponding advancements in "${varB}", practitioners in "${caseStudy}" frequently encounter institutional bottlenecks. This study, focusing on "${caseStudy}", seeks to bridge the gap between academic theory and practical reality by providing localized, actionable evidence.`;
-
-    const problem = `Despite the growing recognition and potential benefits of "${varA}", there remains a persistent gap in its standard implementation and documentation within Nigeria. Many organizations and institutions in "${caseStudy}" continue to operate under outdated paradigms, leading to low productivity, sub-optimal outcomes, and strategic resource wastage.
-
-Moreover, there is a lack of rigorous academic literature focusing on how "${varA}" directly impacts "${varB}" within ${deptUpper} in Nigeria. Without localized, empirical datasets, administrators are left without the necessary guideposts to formulate effective policies. This study is designed to address this critical gap by conducting a detailed, mixed-methods evaluation of "${varA}" in relation to "${varB}" in "${caseStudy}".`;
-
-    return { abstract, background, problem, varA, varB, caseStudy };
-  };
 
   // Fetch data
   useEffect(() => {
@@ -236,7 +89,7 @@ Moreover, there is a lack of rigorous academic literature focusing on how "${var
 
       // Load settings
       const { data: settingsData } = await supabase.from('project_settings').select('*');
-      let lp: Record<string, number> = { BSc: 3999, MSc: 4500, PhD: 10000 };
+      let lp: Record<string, number> = { OND: 4999, HND: 5999, BSc: 5999, MSc: 4500, PhD: 10000 };
       let dp = {};
       let ps = { ...pageSettings };
       if (settingsData) {
@@ -583,7 +436,7 @@ Moreover, there is a lack of rigorous academic literature focusing on how "${var
 
             {msg && <div className="text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl p-3">{msg}</div>}
 
-            <button onClick={pay} disabled={!acceptedTerms || busy || (isLoggedIn === false && !EMAIL_RE.test(guestEmail.trim()))} className="w-full py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-emerald-950 font-black text-sm uppercase tracking-wider transition disabled:opacity-40 disabled:cursor-not-allowed">
+            <button onClick={pay} disabled={!acceptedTerms || busy || (isLoggedIn === false && !EMAIL_RE.test(guestEmail.trim()))} className="w-full py-3.5 rounded-xl bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-black text-sm uppercase tracking-wider transition disabled:opacity-40 disabled:cursor-not-allowed">
               {busy ? 'Redirecting to payment…' : `Pay ${naira(cartTotal())} & Get Material`}
             </button>
             <button onClick={() => setOpenPreview(true)} className="w-full py-3 rounded-xl bg-secondary border border-theme hover:bg-white/5 text-primary font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2">
@@ -596,215 +449,60 @@ Moreover, there is a lack of rigorous academic literature focusing on how "${var
 
       <ProjectsAssistant />
 
-      {/* SECURE PREVIEW MODAL */}
+      {/* PREVIEW MODAL — an honest metadata/structure summary, not a fake
+          scanned-document simulation (that used to render a fabricated
+          cover page, fake student name, fake matric number, fake abstract,
+          and a tabbed "chapter 1" of Lorem-ipsum-adjacent generated text). */}
       {openPreview && topic && (
-        <div className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setOpenPreview(false)}>
-          <div className="bg-card border border-theme rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="p-4 border-b border-theme/50 flex justify-between items-center gap-4 bg-secondary/20">
-              <div className="flex items-center gap-3 flex-wrap">
+        <div className="fixed inset-0 z-[200] bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setOpenPreview(false)}>
+          <div className="bg-card border border-theme rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-theme/50 flex justify-between items-start gap-3">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
                 <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">{topic.department}</span>
                 <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${levelBadge(topic.level)}`}>{topic.level}</span>
-                <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1.5 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10">
-                  <lucide.Lock className="w-3.5 h-3.5" /> SECURE PREVIEW (ANTI-COPY/SCREENSHOT ACTIVE)
-                </span>
               </div>
-              <button onClick={() => setOpenPreview(false)} className="text-secondary hover:text-primary p-1 bg-white/5 hover:bg-white/10 rounded-lg transition"><lucide.X className="w-5 h-5" /></button>
+              <button onClick={() => setOpenPreview(false)} className="text-secondary hover:text-primary p-1.5 bg-hover rounded-lg transition shrink-0"><lucide.X className="w-4 h-4" /></button>
             </div>
 
-            {/* Document Viewer Body */}
-            <div className="p-6 overflow-y-auto flex-1 bg-secondary/30">
-              <h2 className="text-base font-black text-primary leading-snug mb-4">{topic.title}</h2>
-              
-              <div className="flex flex-col lg:flex-row gap-6 items-stretch">
-                {/* Document Navigation Tabs */}
-                <div className="flex lg:flex-col overflow-x-auto lg:overflow-x-visible shrink-0 gap-2 pb-3 lg:pb-0 border-b lg:border-b-0 lg:border-r border-theme/30 lg:pr-4 lg:w-48">
-                  <button onClick={() => setPreviewTab('title')} className={`px-4 py-2.5 rounded-xl text-xs font-bold text-left whitespace-nowrap transition flex items-center gap-2 ${previewTab === 'title' ? 'bg-emerald-500 text-black' : 'bg-card text-primary border border-theme hover:bg-white/5'}`}>
-                    <lucide.FileText className="w-3.5 h-3.5" /> Title Page
-                  </button>
-                  <button onClick={() => setPreviewTab('abstract')} className={`px-4 py-2.5 rounded-xl text-xs font-bold text-left whitespace-nowrap transition flex items-center gap-2 ${previewTab === 'abstract' ? 'bg-emerald-500 text-black' : 'bg-card text-primary border border-theme hover:bg-white/5'}`}>
-                    <lucide.Bookmark className="w-3.5 h-3.5" /> Abstract
-                  </button>
-                  <button onClick={() => setPreviewTab('contents')} className={`px-4 py-2.5 rounded-xl text-xs font-bold text-left whitespace-nowrap transition flex items-center gap-2 ${previewTab === 'contents' ? 'bg-emerald-500 text-black' : 'bg-card text-primary border border-theme hover:bg-white/5'}`}>
-                    <lucide.List className="w-3.5 h-3.5" /> Table of Contents
-                  </button>
-                  <button onClick={() => setPreviewTab('chapter1')} className={`px-4 py-2.5 rounded-xl text-xs font-bold text-left whitespace-nowrap transition flex items-center gap-2 ${previewTab === 'chapter1' ? 'bg-emerald-500 text-black' : 'bg-card text-primary border border-theme hover:bg-white/5'}`}>
-                    <lucide.BookOpen className="w-3.5 h-3.5" /> Chapter One
-                  </button>
-                </div>
+            <div className="p-5 space-y-5">
+              <h3 className="text-base font-bold text-primary leading-snug">{topic.title}</h3>
 
-                <div className="flex-1 flex flex-col gap-2">
-                  {/* Document Zoom Controls Toolbar */}
-                  <div className="flex justify-end items-center gap-2 px-3 py-1.5 bg-card border border-theme/60 rounded-xl text-[10px] text-secondary w-fit ml-auto">
-                    <span>ZOOM:</span>
-                    <button onClick={() => setPreviewZoom(z => Math.max(80, z - 10))} className="w-6 h-6 rounded bg-white/5 hover:bg-white/10 flex items-center justify-center font-bold text-primary">-</button>
-                    <span className="font-mono text-primary font-bold min-w-[32px] text-center">{previewZoom}%</span>
-                    <button onClick={() => setPreviewZoom(z => Math.min(130, z + 10))} className="w-6 h-6 rounded bg-white/5 hover:bg-white/10 flex items-center justify-center font-bold text-primary">+</button>
-                  </div>
+              <div className="flex gap-x-4 gap-y-1 flex-wrap text-xs text-secondary font-mono">
+                <span className="inline-flex items-center gap-1"><lucide.FileText className="w-3.5 h-3.5" /> {topic.pages || 50} pages</span>
+                <span className="inline-flex items-center gap-1"><lucide.ScrollText className="w-3.5 h-3.5" /> Chapters {topic.chapters || '1-5'}</span>
+                <span className="inline-flex items-center gap-1"><lucide.Calendar className="w-3.5 h-3.5" /> {topic.year || new Date().getFullYear()}</span>
+                <span className="inline-flex items-center gap-1"><lucide.Zap className="w-3.5 h-3.5" /> {topic.format || 'MS Word'}</span>
+              </div>
 
-                  {/* Page Canvas (Papersheet View) */}
-                  <div 
-                    className="w-full bg-white text-zinc-950 border border-zinc-200 p-8 md:p-12 shadow-inner relative rounded-xl select-none overflow-y-auto max-h-[50vh] lg:max-h-[60vh] min-h-[45vh]" 
-                    style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}
-                    onContextMenu={e => e.preventDefault()}
-                  >
-                    {/* Dynamic Watermark Overlay */}
-                    <div className="absolute inset-0 pointer-events-none select-none overflow-hidden opacity-[0.03] z-10 flex flex-wrap gap-x-12 gap-y-16 rotate-[-25deg] scale-125 justify-center items-center">
-                      {Array.from({ length: 30 }).map((_, i) => (
-                        <span key={i} className="text-[10px] font-black tracking-widest text-black font-mono uppercase whitespace-nowrap">
-                          {userEmail || 'GUEST_UNAUTHORIZED'} • DO NOT COPY • SECURE PREVIEW
-                        </span>
-                      ))}
-                    </div>
+              <div>
+                <h4 className="text-[11px] font-black uppercase tracking-wider text-secondary mb-2">What's Included</h4>
+                <ul className="space-y-1.5">
+                  {[
+                    'Chapter 1 — Introduction, Background & Objectives',
+                    'Chapter 2 — Literature Review',
+                    'Chapter 3 — Research Methodology',
+                    'Chapter 4 — Data Presentation & Analysis',
+                    'Chapter 5 — Summary, Conclusion & Recommendations',
+                    'References & Questionnaire/Appendix',
+                  ].map(item => (
+                    <li key={item} className="flex items-start gap-2 text-xs text-primary">
+                      <lucide.CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" /> {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-                    {/* Window Focus Blur Shield */}
-                    {isWindowBlurred && (
-                      <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-[6px] flex flex-col items-center justify-center p-6 text-center select-none cursor-pointer" onClick={() => setIsWindowBlurred(false)}>
-                        <lucide.Lock className="w-12 h-12 text-emerald-600 mb-3 animate-bounce" />
-                        <h3 className="text-zinc-950 font-black text-sm uppercase tracking-wider">Preview Hidden for Security</h3>
-                        <p className="text-zinc-600 text-xs mt-1 max-w-xs">Window lost focus (anti-screenshot active). Click here to restore the preview.</p>
-                      </div>
-                    )}
-
-                    {/* Document Pages */}
-                    {previewTab === 'title' && (
-                      <div className="text-center space-y-10 py-6 text-zinc-900" style={{ fontSize: `${previewZoom / 100}em` }}>
-                        <div className="text-sm font-black tracking-wide leading-relaxed font-serif uppercase">
-                          {getCleanTitle(topic.title)}
-                        </div>
-                        <div className="text-xs uppercase font-serif">
-                          BY
-                          <br /><br />
-                          <span className="font-bold underline text-xs">CONFIDENTIAL STUDENT</span>
-                          <br />
-                          (MATRIC NO: RW/2022/NIG-042)
-                        </div>
-                        <div className="text-xs leading-relaxed max-w-md mx-auto font-serif">
-                          A RESEARCH PROJECT SUBMITTED TO THE DEPARTMENT OF {topic.department.toUpperCase()}, 
-                          FACULTY OF {getFaculty(topic.department).toUpperCase()}, IN PARTIAL FULFILLMENT OF THE REQUIREMENTS 
-                          FOR THE AWARD OF THE DEGREE OF {topic.level === 'PhD' ? 'DOCTOR OF PHILOSOPHY (Ph.D)' : topic.level === 'MSc' ? 'MASTER OF SCIENCE (M.Sc)' : 'BACHELOR OF SCIENCE (B.Sc)'} IN {topic.department.toUpperCase()}.
-                        </div>
-                        <div className="text-xs uppercase tracking-wider font-serif">
-                          NIGERIAN UNIVERSITY ACADEMIC DEPOSIT SYSTEM
-                          <br /><br />
-                          YEAR: {topic.year || new Date().getFullYear()}
-                        </div>
-                      </div>
-                    )}
-
-                    {previewTab === 'abstract' && (
-                      <div className="text-zinc-900 text-justify font-serif space-y-4" style={{ fontSize: `${previewZoom / 100}em` }}>
-                        <h3 className="text-center font-bold text-sm uppercase underline mb-4">ABSTRACT</h3>
-                        <p className="text-xs leading-relaxed text-indent-8 font-serif" style={{ textIndent: '2rem' }}>
-                          {generateProjectPreview(topic.title, topic.department, topic.level).abstract}
-                        </p>
-                        <p className="text-xs font-bold mt-4 font-serif">
-                          Keywords: <span className="font-normal italic">{topic.department}, Nigerian Development, Implementation, Performance Evaluation, {topic.level} Research.</span>
-                        </p>
-                      </div>
-                    )}
-
-                    {previewTab === 'contents' && (
-                      <div className="text-zinc-900 font-serif space-y-3 text-xs" style={{ fontSize: `${previewZoom / 100}em` }}>
-                        <h3 className="text-center font-bold text-sm uppercase underline mb-4">TABLE OF CONTENTS</h3>
-                        <div className="space-y-1">
-                          <div className="flex justify-between font-bold"><span>Title Page</span><span>i</span></div>
-                          <div className="flex justify-between font-bold"><span>Certification / Approval Page</span><span>ii</span></div>
-                          <div className="flex justify-between font-bold"><span>Dedication</span><span>iii</span></div>
-                          <div className="flex justify-between font-bold"><span>Acknowledgements</span><span>iv</span></div>
-                          <div className="flex justify-between font-bold"><span>Abstract</span><span>v</span></div>
-                          <div className="flex justify-between font-bold"><span>Table of Contents</span><span>vi</span></div>
-                          
-                          <div className="flex justify-between font-bold mt-2"><span>CHAPTER ONE: INTRODUCTION</span><span>1</span></div>
-                          <div className="flex justify-between pl-4"><span>1.1 Background of the Study</span><span>1</span></div>
-                          <div className="flex justify-between pl-4"><span>1.2 Statement of the Problem</span><span>4</span></div>
-                          <div className="flex justify-between pl-4"><span>1.3 Objectives of the Study</span><span>5</span></div>
-                          <div className="flex justify-between pl-4"><span>1.4 Research Questions</span><span>6</span></div>
-                          <div className="flex justify-between pl-4"><span>1.5 Research Hypotheses</span><span>7</span></div>
-                          <div className="flex justify-between pl-4"><span>1.6 Significance of the Study</span><span>8</span></div>
-                          <div className="flex justify-between pl-4"><span>1.7 Scope and Delimitation of the Study</span><span>9</span></div>
-                          <div className="flex justify-between pl-4"><span>1.8 Operational Definition of Terms</span><span>10</span></div>
-
-                          <div className="flex justify-between font-bold mt-2"><span>CHAPTER TWO: LITERATURE REVIEW</span><span>12</span></div>
-                          <div className="flex justify-between pl-4"><span>2.1 Conceptual Framework</span><span>12</span></div>
-                          <div className="flex justify-between pl-4"><span>2.2 Theoretical Framework</span><span>22</span></div>
-                          <div className="flex justify-between pl-4"><span>2.3 Empirical Literature Review</span><span>28</span></div>
-
-                          <div className="flex justify-between font-bold mt-2"><span>CHAPTER THREE: RESEARCH METHODOLOGY</span><span>35</span></div>
-                          <div className="flex justify-between pl-4"><span>3.1 Research Design</span><span>35</span></div>
-                          <div className="flex justify-between pl-4"><span>3.2 Population of the Study</span><span>36</span></div>
-                          <div className="flex justify-between pl-4"><span>3.3 Sample Size and Sampling Techniques</span><span>37</span></div>
-                          <div className="flex justify-between pl-4"><span>3.4 Instrument for Data Collection</span><span>38</span></div>
-                          <div className="flex justify-between pl-4"><span>3.5 Method of Data Analysis</span><span>40</span></div>
-
-                          <div className="flex justify-between font-bold mt-2"><span>CHAPTER FOUR: DATA ANALYSIS & DISCUSSION</span><span>42</span></div>
-                          <div className="flex justify-between font-bold mt-2"><span>CHAPTER FIVE: SUMMARY, CONCLUSION & RECOMM.</span><span>48</span></div>
-                        </div>
-                      </div>
-                    )}
-
-                    {previewTab === 'chapter1' && (
-                      <div className="text-zinc-900 font-serif space-y-6 text-xs text-justify" style={{ fontSize: `${previewZoom / 100}em` }}>
-                        <div className="text-center font-bold">
-                          <h3>CHAPTER ONE</h3>
-                          <h3>INTRODUCTION</h3>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <h4 className="font-bold">1.1 Background of the Study</h4>
-                          <p style={{ textIndent: '2rem' }} className="leading-relaxed">{generateProjectPreview(topic.title, topic.department, topic.level).background}</p>
-                        </div>
-
-                        <div className="space-y-2">
-                          <h4 className="font-bold">1.2 Statement of the Problem</h4>
-                          <p style={{ textIndent: '2rem' }} className="leading-relaxed">{generateProjectPreview(topic.title, topic.department, topic.level).problem}</p>
-                        </div>
-
-                        <div className="space-y-2">
-                          <h4 className="font-bold">1.3 Objectives of the Study</h4>
-                          <p>The main objective of this study is to examine the implications and impact of {getCleanTitle(topic.title)} in Nigeria. Specifically, the study aims to:</p>
-                          <ul className="list-decimal pl-6 space-y-1">
-                            <li>Assess the current level of implementation and awareness of {generateProjectPreview(topic.title, topic.department, topic.level).varA} in {generateProjectPreview(topic.title, topic.department, topic.level).caseStudy}.</li>
-                            <li>Evaluate the main socio-economic challenges hindering optimal performance of these parameters.</li>
-                            <li>Determine the statistical relationship between {generateProjectPreview(topic.title, topic.department, topic.level).varA} and {generateProjectPreview(topic.title, topic.department, topic.level).varB} in the target sector.</li>
-                            <li>Offer strategic recommendations to policy makers and academic researchers.</li>
-                          </ul>
-                        </div>
-
-                        <div className="space-y-2">
-                          <h4 className="font-bold">1.4 Research Questions</h4>
-                          <p>To guide this investigation, the following research questions have been formulated:</p>
-                          <ul className="list-disc pl-6 space-y-1">
-                            <li>What is the current level of implementation and awareness of {generateProjectPreview(topic.title, topic.department, topic.level).varA} in {generateProjectPreview(topic.title, topic.department, topic.level).caseStudy}?</li>
-                            <li>What are the primary challenges affecting the optimal integration of {generateProjectPreview(topic.title, topic.department, topic.level).varA}?</li>
-                            <li>Is there any significant relationship between {generateProjectPreview(topic.title, topic.department, topic.level).varA} and {generateProjectPreview(topic.title, topic.department, topic.level).varB}?</li>
-                          </ul>
-                        </div>
-
-                        <div className="space-y-2">
-                          <h4 className="font-bold">1.5 Research Hypotheses</h4>
-                          <p className="italic">Hypothesis One:</p>
-                          <p className="pl-4"><strong>H0:</strong> There is no significant relationship between the implementation of {generateProjectPreview(topic.title, topic.department, topic.level).varA} and the performance of {generateProjectPreview(topic.title, topic.department, topic.level).varB} in {generateProjectPreview(topic.title, topic.department, topic.level).caseStudy}.</p>
-                          <p className="pl-4"><strong>H1:</strong> There is a significant relationship between the implementation of {generateProjectPreview(topic.title, topic.department, topic.level).varA} and the performance of {generateProjectPreview(topic.title, topic.department, topic.level).varB} in {generateProjectPreview(topic.title, topic.department, topic.level).caseStudy}.</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <div className="bg-secondary/60 border border-theme rounded-xl p-3 text-[11px] text-secondary leading-relaxed">
+                Ready-made material — not custom-written or plagiarism-checked. Delivered straight to your Secure Vault as an editable MS Word document.
               </div>
             </div>
 
-            {/* Footer Actions */}
-            <div className="p-4 border-t border-theme/50 flex flex-col md:flex-row justify-between items-center gap-4 bg-secondary/20">
-              <div className="text-left">
-                <span className="block text-[11px] font-bold text-secondary uppercase">Project Scope details</span>
-                <span className="text-xs text-primary font-bold">{topic.pages || 50} pages • Chapters 1-5 complete (MS Word & PDF format)</span>
-              </div>
-              <button 
-                onClick={() => { setOpenPreview(false); pay(); }} 
-                className="bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2"
+            <div className="p-5 border-t border-theme/50">
+              <button
+                onClick={() => { setOpenPreview(false); pay(); }}
+                className="w-full bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center justify-center gap-2"
               >
-                💳 Purchase Complete Material — {naira(topic.price)}
+                Get Material — {naira(topic.price)}
               </button>
             </div>
           </div>

@@ -11,7 +11,7 @@ export default function ContentOrderPage() {
         pageKey="order_content"
         orderPrefix="CT"
         tosKey="content_tos"
-        accent="amber"
+        accent="rose"
         icon={PenTool}
         vaultStatusDefault="Pending Outline"
         topicLabel="Project Title / Topic"

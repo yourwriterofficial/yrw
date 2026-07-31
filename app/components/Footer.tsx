@@ -4,7 +4,7 @@ import { Code2, GraduationCap, PenLine, FileText, LineChart } from 'lucide-react
 const SERVICES = [
   { href: '/academic-writing', label: 'Academic Writing', icon: GraduationCap, color: 'hover:text-emerald-500' },
   { href: '/statistics-fieldwork', label: 'Statistics & Fieldwork', icon: LineChart, color: 'hover:text-purple-500' },
-  { href: '/content-writing', label: 'Content Writing', icon: PenLine, color: 'hover:text-amber-500' },
+  { href: '/content-writing', label: 'Content Writing', icon: PenLine, color: 'hover:text-rose-500' },
   { href: '/resume-cv', label: 'Executive Resumes', icon: FileText, color: 'hover:text-blue-500' },
   { href: '/developer', label: 'Software Development', icon: Code2, color: 'hover:text-cyan-500' },
 ];

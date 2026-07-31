@@ -16,6 +16,7 @@ import LoadingScreen from '@/app/components/ui/LoadingScreen';
 import { startImpersonation } from '@/lib/impersonate';
 import { showToast } from '@/app/components/ui/Toast';
 import PageHeader from '@/app/components/ui/PageHeader';
+import Button from '@/app/components/ui/Button';
 
 const formatNaira = (amount: number) => '₦' + amount.toLocaleString('en-NG');
 const formatDate = (iso: string) => new Date(iso).toLocaleString();
@@ -255,7 +256,7 @@ export default function AdminUsersPage() {
     setSendingAlert(false);
   };
 
-  if (loading) return <LoadingScreen label="Loading users..." accent="purple" />;
+  if (loading) return <LoadingScreen label="Loading users..." accent="brand" />;
 
   return (
     <div className="p-6 md:p-10">
@@ -265,7 +266,7 @@ export default function AdminUsersPage() {
       {/* Edit User Modal */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-primary border border-purple-500/30 rounded-3xl p-8 max-w-md w-full">
+          <div className="bg-primary border border-accent/30 rounded-3xl p-8 max-w-md w-full">
             <h2 className="text-xl font-black text-primary mb-4">Edit User</h2>
             <div className="space-y-4">
               <div>
@@ -302,13 +303,13 @@ export default function AdminUsersPage() {
                   type="checkbox"
                   checked={userForm.is_admin}
                   onChange={e => setUserForm({ ...userForm, is_admin: e.target.checked })}
-                  className="accent-purple-500 w-5 h-5"
+                  className="accent-accent w-5 h-5"
                 />
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setEditingUser(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
-              <button onClick={updateUser} className="flex-1 py-3 bg-purple-500 text-white rounded-xl font-black">Save</button>
+              <Button variant="secondary" fullWidth onClick={() => setEditingUser(null)}>Cancel</Button>
+              <Button fullWidth onClick={updateUser}>Save</Button>
             </div>
           </div>
         </div>
@@ -317,7 +318,7 @@ export default function AdminUsersPage() {
       {/* Wallet Adjustment Modal */}
       {adjustingWallet && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-primary border border-amber-500/30 rounded-3xl p-8 max-w-md w-full">
+          <div className="bg-primary border border-warning/30 rounded-3xl p-8 max-w-md w-full">
             <h2 className="text-xl font-black text-primary mb-4">Adjust Wallet</h2>
             <p className="text-secondary text-sm mb-2">User ID: {adjustingWallet.userId}</p>
             <p className="text-secondary text-sm mb-4">Current Balance: {formatNaira(adjustingWallet.currentBalance)}</p>
@@ -332,8 +333,8 @@ export default function AdminUsersPage() {
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setAdjustingWallet(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
-              <button onClick={adjustWallet} className="flex-1 py-3 bg-amber-500 text-black rounded-xl font-black">Apply Adjustment</button>
+              <Button variant="secondary" fullWidth onClick={() => setAdjustingWallet(null)}>Cancel</Button>
+              <Button fullWidth onClick={adjustWallet}>Apply Adjustment</Button>
             </div>
           </div>
         </div>
@@ -342,14 +343,14 @@ export default function AdminUsersPage() {
       {/* Set Balance Modal */}
       {editingWallet && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-primary border border-emerald-500/30 rounded-3xl p-8 max-w-md w-full">
+          <div className="bg-primary border border-success/30 rounded-3xl p-8 max-w-md w-full">
             <h2 className="text-xl font-black text-primary mb-4">Set Wallet Balance</h2>
             <p className="text-secondary text-sm mb-2">User ID: {editingWallet.userId}</p>
             <label className="text-[10px] uppercase font-black text-secondary">New Balance (₦)</label>
             <input type="number" value={newBalance} onChange={e => setNewBalance(Number(e.target.value))} className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1 mb-4" />
             <div className="flex gap-3">
-              <button onClick={() => setEditingWallet(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
-              <button onClick={setWalletBalance} className="flex-1 py-3 bg-emerald-500 text-black rounded-xl font-black">Set Balance</button>
+              <Button variant="secondary" fullWidth onClick={() => setEditingWallet(null)}>Cancel</Button>
+              <Button fullWidth onClick={setWalletBalance}>Set Balance</Button>
             </div>
           </div>
         </div>
@@ -358,7 +359,7 @@ export default function AdminUsersPage() {
       {/* Send In-App Alert Modal */}
       {showAlertModal && alertRecipient && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-primary border border-purple-500/30 rounded-3xl p-8 max-w-md w-full">
+          <div className="bg-primary border border-accent/30 rounded-3xl p-8 max-w-md w-full">
             <h2 className="text-xl font-black text-primary mb-2">Send In-App Alert</h2>
             <p className="text-secondary text-sm mb-4">Recipient: <span className="text-primary font-bold">{alertRecipient.name} ({alertRecipient.email})</span></p>
             <div className="space-y-4">
@@ -369,30 +370,19 @@ export default function AdminUsersPage() {
                   onChange={e => setAlertMessage(e.target.value)}
                   rows={4}
                   maxLength={280}
-                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1 focus:border-purple-500 outline-none resize-none text-sm font-semibold"
+                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1 focus:border-accent outline-none resize-none text-sm font-semibold"
                   placeholder="Enter message (this will pop up on their notification bell)..."
                 />
                 <p className="text-[10px] text-secondary text-right mt-1">{alertMessage.length}/280</p>
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button 
-                onClick={() => {
-                  setShowAlertModal(false);
-                  setAlertRecipient(null);
-                  setAlertMessage('');
-                }} 
-                className="flex-1 py-3 bg-white/5 text-primary rounded-xl"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={sendAlert} 
-                disabled={sendingAlert || !alertMessage.trim()}
-                className="flex-1 py-3 bg-purple-500 text-white rounded-xl font-black hover:bg-purple-400 disabled:opacity-50 transition"
-              >
-                {sendingAlert ? 'Sending...' : 'Send Alert'}
-              </button>
+              <Button variant="secondary" fullWidth onClick={() => {
+                setShowAlertModal(false);
+                setAlertRecipient(null);
+                setAlertMessage('');
+              }}>Cancel</Button>
+              <Button fullWidth onClick={sendAlert} disabled={sendingAlert || !alertMessage.trim()}>{sendingAlert ? 'Sending...' : 'Send Alert'}</Button>
             </div>
           </div>
         </div>
@@ -419,10 +409,10 @@ export default function AdminUsersPage() {
                       <div className="text-xs text-secondary">{formatDate(tx.created_at)}</div>
                       {tx.notes && <div className="text-xs text-secondary italic">{tx.notes}</div>}
                     </div>
-                    <div className={`font-bold ${tx.type === 'deposit' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    <div className={`font-bold ${tx.type === 'deposit' ? 'text-success' : 'text-warning'}`}>
                       {tx.type === 'deposit' ? '+' : '-'} {formatNaira(tx.amount)}
                     </div>
-                    <div className="text-xs capitalize px-2 py-1 rounded bg-white/5 text-secondary">{tx.status}</div>
+                    <div className="text-xs capitalize px-2 py-1 rounded bg-secondary border border-theme text-secondary">{tx.status}</div>
                   </div>
                 ))}
               </div>
@@ -452,10 +442,10 @@ export default function AdminUsersPage() {
                         <div className="font-mono text-sm font-bold text-primary">{order.order_id}</div>
                         <div className="text-xs text-secondary">{order.topic}</div>
                       </div>
-                      <span className={`text-[10px] px-2 py-1 rounded font-bold ${
-                        order.workflow_status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400' :
-                        order.workflow_status === 'Briefing Received' ? 'bg-purple-500/20 text-purple-400' :
-                        'bg-amber-500/20 text-amber-400'
+                      <span className={`text-[10px] px-2 py-1 rounded font-bold border ${
+                        order.workflow_status === 'Completed' ? 'bg-success/10 text-success border-success/20' :
+                        order.workflow_status === 'Briefing Received' ? 'bg-accent/10 text-accent border-accent/20' :
+                        'bg-warning/10 text-warning border-warning/20'
                       }`}>
                         {order.workflow_status}
                       </span>
@@ -476,7 +466,7 @@ export default function AdminUsersPage() {
       {/* Email Modal */}
       {showEmailModal && emailRecipient && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-primary border border-blue-500/30 rounded-3xl p-8 max-w-md w-full">
+          <div className="bg-primary border border-info/30 rounded-3xl p-8 max-w-md w-full">
             <h2 className="text-xl font-black text-primary mb-4">Send Email to {emailRecipient.name}</h2>
             <div className="space-y-4">
               <div>
@@ -489,10 +479,8 @@ export default function AdminUsersPage() {
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => { setShowEmailModal(false); setEmailRecipient(null); }} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
-              <button onClick={sendIndividualEmail} disabled={sendingEmail} className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-black">
-                {sendingEmail ? 'Sending...' : 'Send Email'}
-              </button>
+              <Button variant="secondary" fullWidth onClick={() => { setShowEmailModal(false); setEmailRecipient(null); }}>Cancel</Button>
+              <Button fullWidth onClick={sendIndividualEmail} disabled={sendingEmail}>{sendingEmail ? 'Sending...' : 'Send Email'}</Button>
             </div>
           </div>
         </div>
@@ -521,7 +509,7 @@ export default function AdminUsersPage() {
                 <td className="px-4 py-4 text-primary">{user.full_name || '—'}</td>
                 <td className="px-4 py-4 text-primary">{user.email}</td>
                 <td className="px-4 py-4">
-                  {user.is_admin ? <span className="text-purple-400">✓</span> : <span className="text-secondary">—</span>}
+                  {user.is_admin ? <span className="text-accent">✓</span> : <span className="text-secondary">—</span>}
                 </td>
                 <td className="px-4 py-4 font-mono text-primary">{formatNaira(user.balance)}</td>
                 <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
@@ -535,7 +523,7 @@ export default function AdminUsersPage() {
                         email: user.email || '',
                       });
                     }}
-                    className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs hover:bg-blue-500/30 transition"
+                    className="px-3 py-1 bg-info/10 text-info border border-info/20 rounded-lg text-xs hover:bg-info/20 transition"
                   >
                     <Edit2 className="w-3 h-3 inline mr-1" /> Edit
                   </button>
@@ -546,7 +534,7 @@ export default function AdminUsersPage() {
                       setAdjustAmount(0);
                       setAdjustReason('');
                     }}
-                    className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-xs hover:bg-amber-500/30 transition"
+                    className="px-3 py-1 bg-warning/10 text-warning border border-warning/20 rounded-lg text-xs hover:bg-warning/20 transition"
                   >
                     <Wallet className="w-3 h-3 inline mr-1" /> Adjust
                   </button>
@@ -556,28 +544,28 @@ export default function AdminUsersPage() {
                       setEditingWallet({ userId: user.id, balance: user.balance });
                       setNewBalance(user.balance);
                     }}
-                    className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-xs hover:bg-purple-500/30 transition"
+                    className="px-3 py-1 bg-success/10 text-success border border-success/20 rounded-lg text-xs hover:bg-success/20 transition"
                   >
                     <Coins className="w-3 h-3 inline mr-1" /> Set
                   </button>
 
                   <button
                     onClick={() => viewTransactions(user.id)}
-                    className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs hover:bg-emerald-500/30 transition"
+                    className="px-3 py-1 bg-info/10 text-info border border-info/20 rounded-lg text-xs hover:bg-info/20 transition"
                   >
                     <List className="w-3 h-3 inline mr-1" /> Txns
                   </button>
 
                   <button
                     onClick={() => viewOrders(user.id)}
-                    className="px-3 py-1 bg-indigo-500/20 text-indigo-400 rounded-lg text-xs hover:bg-indigo-500/30 transition"
+                    className="px-3 py-1 bg-accent/10 text-accent border border-accent/20 rounded-lg text-xs hover:bg-accent/20 transition"
                   >
                     <ShoppingBag className="w-3 h-3 inline mr-1" /> Orders
                   </button>
 
                   <button
                     onClick={() => resetPassword(user.id, user.email)}
-                    className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30 transition"
+                    className="px-3 py-1 bg-danger/10 text-danger border border-danger/20 rounded-lg text-xs hover:bg-danger/20 transition"
                   >
                     <Key className="w-3 h-3 inline mr-1" /> Reset
                   </button>
@@ -589,7 +577,7 @@ export default function AdminUsersPage() {
                       setEmailSubject('');
                       setEmailBody('');
                     }}
-                    className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs hover:bg-blue-500/30 transition"
+                    className="px-3 py-1 bg-info/10 text-info border border-info/20 rounded-lg text-xs hover:bg-info/20 transition"
                   >
                     <Mail className="w-3 h-3 inline mr-1" /> Email
                   </button>
@@ -601,9 +589,10 @@ export default function AdminUsersPage() {
                         window.open('/dashboard/client', '_blank');
                       }
                     }}
-                    className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-xs hover:bg-amber-500/30 transition"
+                    className="px-3 py-1 bg-warning/10 text-warning border border-warning/20 rounded-lg text-xs hover:bg-warning/20 transition"
                   >
-                    🎭 Impersonate
+                    <span className="inline-block mr-1 align-middle"><svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></span>
+                    Impersonate
                   </button>
 
                   <button
@@ -612,7 +601,7 @@ export default function AdminUsersPage() {
                       setShowAlertModal(true);
                       setAlertMessage('');
                     }}
-                    className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-xs hover:bg-purple-500/30 transition"
+                    className="px-3 py-1 bg-accent/10 text-accent border border-accent/20 rounded-lg text-xs hover:bg-accent/20 transition"
                   >
                     <Bell className="w-3 h-3 inline mr-1" /> Alert
                   </button>

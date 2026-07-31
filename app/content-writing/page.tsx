@@ -9,7 +9,7 @@ export const metadata = {
 export default function ContentWritingPage() {
   return (
     <ServiceLandingTemplate
-      accent="amber"
+      accent="rose"
       badgeLabel="Content Pipeline"
       icon={PenTool}
       title="Content & Creative Writing"

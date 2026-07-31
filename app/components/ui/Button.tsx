@@ -6,9 +6,11 @@ import Link from 'next/link';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'soft';
 type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
+type ButtonColor = 'success' | 'warning' | 'danger' | 'info';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'color'> {
   variant?: ButtonVariant;
+  color?: ButtonColor;
   size?: ButtonSize;
   icon?: ReactNode;
   iconPosition?: 'left' | 'right';
@@ -23,8 +25,15 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   secondary: 'bg-secondary text-primary font-bold border border-theme hover:bg-hover disabled:opacity-50 disabled:cursor-not-allowed',
   outline: 'bg-transparent text-primary font-bold border border-theme hover:bg-hover disabled:opacity-50 disabled:cursor-not-allowed',
   ghost: 'bg-transparent text-primary font-bold hover:bg-hover disabled:opacity-50 disabled:cursor-not-allowed',
-  soft: 'bg-[var(--success-bg)] text-success font-bold hover:bg-[color-mix(in_srgb,var(--accent)_15%,transparent)] disabled:opacity-50 disabled:cursor-not-allowed',
+  soft: 'font-bold disabled:opacity-50 disabled:cursor-not-allowed',
   danger: 'bg-[var(--danger-bg)] text-danger font-bold border border-danger/20 hover:bg-[color-mix(in_srgb,var(--danger)_20%,transparent)] disabled:opacity-50 disabled:cursor-not-allowed',
+};
+
+const SOFT_COLOR_CLASSES: Record<ButtonColor, string> = {
+  success: 'bg-[var(--success-bg)] text-success hover:bg-[color-mix(in_srgb,var(--success)_20%,transparent)]',
+  warning: 'bg-[var(--warning-bg)] text-warning hover:bg-[color-mix(in_srgb,var(--warning)_20%,transparent)]',
+  danger: 'bg-[var(--danger-bg)] text-danger hover:bg-[color-mix(in_srgb,var(--danger)_20%,transparent)]',
+  info: 'bg-[var(--info-bg)] text-info hover:bg-[color-mix(in_srgb,var(--info)_20%,transparent)]',
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
@@ -36,6 +45,7 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
 
 export default function Button({
   variant = 'primary',
+  color = 'success',
   size = 'md',
   icon,
   iconPosition = 'left',
@@ -48,7 +58,8 @@ export default function Button({
   href,
   ...rest
 }: ButtonProps) {
-  const baseClasses = `inline-flex items-center justify-center uppercase tracking-wide transition focus-ring ${VARIANT_CLASSES[variant]} ${size === 'icon' ? SIZE_CLASSES.icon : SIZE_CLASSES[size]} ${fullWidth ? 'w-full' : ''} ${className}`;
+  const variantClasses = variant === 'soft' ? `${VARIANT_CLASSES.soft} ${SOFT_COLOR_CLASSES[color]}` : VARIANT_CLASSES[variant];
+  const baseClasses = `inline-flex items-center justify-center uppercase tracking-wide transition focus-ring ${variantClasses} ${size === 'icon' ? SIZE_CLASSES.icon : SIZE_CLASSES[size]} ${fullWidth ? 'w-full' : ''} ${className}`;
   const content = loading ? (
     <>
       <Loader2 className="w-4 h-4 animate-spin" />

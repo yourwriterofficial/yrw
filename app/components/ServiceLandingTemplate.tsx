@@ -7,11 +7,11 @@ import Card from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Shell } from './ui/Shell';
 
-type Accent = 'emerald' | 'amber' | 'blue' | 'purple' | 'cyan';
+type Accent = 'emerald' | 'rose' | 'blue' | 'purple' | 'cyan';
 
 const ACCENT_STYLES: Record<Accent, { text: string; badge: string; iconBg: string }> = {
   emerald: { text: 'text-[var(--success)]', badge: 'text-[var(--success)] bg-[var(--success-bg)] border-[var(--success)]/20', iconBg: 'bg-[var(--success-bg)]' },
-  amber:   { text: 'text-[var(--warning)]', badge: 'text-[var(--warning)] bg-[var(--warning-bg)] border-[var(--warning)]/20', iconBg: 'bg-[var(--warning-bg)]' },
+  rose:    { text: 'text-rose-500',          badge: 'text-rose-400 bg-rose-500/10 border-rose-500/20',                       iconBg: 'bg-rose-500/10' },
   blue:    { text: 'text-[var(--info)]',    badge: 'text-[var(--info)] bg-[var(--info-bg)] border-[var(--info)]/20',       iconBg: 'bg-[var(--info-bg)]' },
   purple:  { text: 'text-purple-500',        badge: 'text-purple-400 bg-purple-500/10 border-purple-500/20',               iconBg: 'bg-purple-500/10' },
   cyan:    { text: 'text-cyan-500',          badge: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',                     iconBg: 'bg-cyan-500/10' },

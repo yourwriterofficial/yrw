@@ -12,7 +12,7 @@ export default function AcademicOrderPage() {
         pageKey="order_academic"
         orderPrefix="RW"
         tosKey="academic_tos"
-        accent="amber"
+        accent="emerald"
         icon={GraduationCap}
         vaultStatusDefault="Secured in Vault"
         topicLabel="Research Topic"

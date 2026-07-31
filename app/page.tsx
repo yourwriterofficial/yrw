@@ -155,46 +155,25 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-            {SERVICE_CARDS.map((card, index) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {SERVICE_CARDS.map((card) => {
               const Icon = card.Icon;
-              const isWide = index === 0;
-              const isCompact = index === 2 || index === 4;
-              const spanClass = isWide ? 'md:col-span-7' : isCompact ? 'md:col-span-5' : 'md:col-span-6';
-
               return (
                 <Link
                   key={card.href}
                   href={card.href}
-                  className={`group relative rounded-2xl border border-theme bg-card hover:border-strong transition-all duration-300 overflow-hidden select-none ${spanClass} ${isWide ? 'p-7 md:p-9' : 'p-6 md:p-7'} ${isWide ? 'flex flex-col md:flex-row md:items-center md:gap-8' : 'flex flex-col justify-between'}`}
+                  className="group relative rounded-2xl border border-theme bg-card hover:border-strong transition-all duration-300 overflow-hidden select-none p-5 flex flex-col gap-3"
                 >
-                  <div className="space-y-4 flex-1">
-                    <div className="flex justify-between items-start">
-                      <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border ${card.color} ${card.bg} ${card.border}`}>
-                        {card.badge}
-                      </span>
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${card.color} ${card.bg}`}>
-                        <Icon className="w-5 h-5" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className={`font-bold text-primary transition-colors duration-300 group-hover:text-accent ${isWide ? 'text-2xl md:text-3xl' : 'text-xl'}`}>
-                        {card.label}
-                      </h3>
-                      <p className="text-secondary text-sm leading-relaxed">{card.description}</p>
-                    </div>
-                    <ul className={`space-y-2 pt-2 ${isWide ? 'border-l border-theme/60 pl-6' : 'border-t border-theme/60 pt-4'}`}>
-                      {card.bullets.map((bullet, i) => (
-                        <li key={i} className="flex items-center gap-2 text-xs text-secondary">
-                          <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${card.color}`} />
-                          <span>{bullet}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${card.color} ${card.bg}`}>
+                    <Icon className="w-4 h-4" />
                   </div>
-                  <div className={`flex items-center justify-between text-xs text-secondary font-bold group-hover:text-primary transition-colors ${isWide ? 'mt-6 md:mt-0 md:flex-col md:items-start md:gap-3 md:w-40 shrink-0' : 'mt-6 pt-4 border-t border-theme/30'}`}>
-                    <span>Configure pipeline</span>
-                    <ArrowUpRight className="w-4 h-4 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-accent" />
+                  <h3 className="font-bold text-primary text-sm transition-colors duration-300 group-hover:text-accent">
+                    {card.label}
+                  </h3>
+                  <p className="text-secondary text-xs leading-relaxed line-clamp-2 flex-1">{card.description}</p>
+                  <div className="flex items-center justify-between text-[11px] text-secondary font-bold group-hover:text-primary transition-colors pt-2 border-t border-theme/30">
+                    <span>Configure</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 text-secondary transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-accent" />
                   </div>
                 </Link>
               );

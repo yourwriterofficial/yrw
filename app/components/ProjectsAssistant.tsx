@@ -3,8 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { HelpCircle, X, Headphones, User as UserIcon, ArrowLeft } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 type Msg = { role: 'bot' | 'user'; text: string };
+
+const naira = (n: number) => '₦' + Math.round(n || 0).toLocaleString('en-NG');
 
 /**
  * Page-scoped assistant for /projects ONLY. It answers questions about the
@@ -17,11 +20,18 @@ export default function ProjectsAssistant() {
   const [open, setOpen] = useState(false);
   const [history, setHistory] = useState<Msg[]>([]);
   const [step, setStep] = useState<'menu' | 'plagiarism'>('menu');
+  const [levelPrices, setLevelPrices] = useState<Record<string, number>>({ OND: 4999, HND: 5999, BSc: 5999, MSc: 4500, PhD: 10000 });
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [history, open]);
+
+  useEffect(() => {
+    supabase.from('project_settings').select('*').eq('key', 'level_prices').maybeSingle().then(({ data }) => {
+      if (data?.value) setLevelPrices(data.value);
+    });
+  }, []);
 
   const say = (text: string) => setHistory(h => [...h, { role: 'bot', text }]);
   const reply = (text: string) => setHistory(h => [...h, { role: 'user', text }]);
@@ -38,10 +48,10 @@ export default function ProjectsAssistant() {
   const answer = (q: string) => {
     reply(q);
     if (q === 'How does it work?') {
-      say("Browse or search 100,000+ topics by department and level (BSc/MSc/PhD). Click “Get”, pick any add-ons, accept the terms, and pay. Your material (Chapters 1–5, MS Word) lands in your secure vault. Working hours are 8am–7pm and delivery is within 4 hours.");
+      say("Browse or search 100,000+ topics by department and level (OND/HND/BSc/MSc/PhD). Click “Get”, pick any add-ons, accept the terms, and pay. Your material (Chapters 1–5, MS Word) lands in your secure vault. Working hours are 8am–7pm and delivery is within 4 hours.");
       setStep('menu');
     } else if (q === 'What are the prices?') {
-      say("BSc/HND ₦3,999 · MSc/PGD ₦4,500 · PhD ₦10,000. Optional add-ons (plagiarism report, SPSS analysis, slides, express delivery, etc.) are shown at checkout with their prices.");
+      say(`OND ${naira(levelPrices.OND)} · HND ${naira(levelPrices.HND)} · BSc ${naira(levelPrices.BSc)} · MSc/PGD ${naira(levelPrices.MSc)} · PhD ${naira(levelPrices.PhD)}. Optional add-ons (plagiarism report, SPSS analysis, slides, express delivery, etc.) are shown at checkout with their prices.`);
       setStep('menu');
     } else if (q === "Can't find my topic?") {
       say("Use the “Check Availability” box near the top — type your topic, choose your level, and it'll show as available with the price. Every topic can be prepared.");

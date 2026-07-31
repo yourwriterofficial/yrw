@@ -7,6 +7,7 @@ import * as lucide from 'lucide-react';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
 import { showToast } from '@/app/components/ui/Toast';
 import PageHeader from '@/app/components/ui/PageHeader';
+import Button from '@/app/components/ui/Button';
 
 const formatDate = (iso: string) => new Date(iso).toLocaleString();
 
@@ -59,7 +60,7 @@ export default function AdminVaultPage() {
     }
   };
 
-  if (loading) return <LoadingScreen label="Loading vault..." accent="purple" />;
+  if (loading) return <LoadingScreen label="Loading vault..." accent="brand" />;
 
   return (
     <div className="p-6 md:p-10">
@@ -68,11 +69,11 @@ export default function AdminVaultPage() {
         title="Vault Management"
         description="View and manage encrypted deliverables uploaded to client vaults."
         breadcrumb="Admin / Vault"
-        icon={<lucide.FolderArchive className="w-8 h-8 text-purple-500" />}
+        icon={<lucide.FolderArchive className="w-8 h-8 text-accent" />}
         actions={
-          <button type="button" onClick={fetchFiles} className="btn-secondary flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchFiles}>
             <lucide.RefreshCw className="w-4 h-4" /> Refresh
-          </button>
+          </Button>
         }
       />
       <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto table-row-hover">
@@ -105,7 +106,7 @@ export default function AdminVaultPage() {
                 <td className="px-4 py-4 text-right">
                   <button
                     onClick={() => handleDelete(file.id)}
-                    className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30 transition"
+                    className="px-3 py-1 bg-[var(--danger-bg)] text-danger rounded-lg text-xs hover:bg-[color-mix(in_srgb,var(--danger)_20%,transparent)] transition"
                   >
                     <lucide.Trash2 className="w-4 h-4 inline" />
                   </button>

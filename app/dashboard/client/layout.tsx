@@ -30,14 +30,8 @@ const NAV_GROUPS: NavGroup[] = [
     title: 'Workspace',
     items: [
       { key: 'dashboard', label: 'Dashboard Overview', href: '/dashboard/client', icon: 'LayoutDashboard', tourId: 'rw-tour-dashboard' },
-      { key: 'new', label: 'Create New Order', href: '/dashboard/client/order/new', icon: 'PlusCircle', tourId: 'rw-tour-neworder' },
-    ],
-  },
-  {
-    title: 'Project Store',
-    items: [
-      { key: 'projects', label: 'Buy Pre-Made Projects', href: '/dashboard/client?tab=projects', icon: 'BookOpen' },
-      { key: 'scripts', label: 'My Scripts / Software', href: '/dashboard/client?tab=scripts', icon: 'ShoppingBag' },
+      { key: 'new', label: 'Create New Order', href: '/dashboard/client/order/new/academic', icon: 'PlusCircle', tourId: 'rw-tour-neworder' },
+      { key: 'orders', label: 'My Orders', href: '/dashboard/client?tab=orders', icon: 'ClipboardList' },
     ],
   },
   {
@@ -153,6 +147,15 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
     checkUser();
   }, [router, fetchUnviewedVault]);
 
+  // The dashboard page (app/dashboard/client/page.tsx) fetches vault files
+  // independently and dispatches this after any change (download, mark-viewed,
+  // realtime update) so this sidebar badge doesn't go stale until reload.
+  useEffect(() => {
+    const onVaultUpdated = () => fetchUnviewedVault();
+    window.addEventListener('yrw:vault-updated', onVaultUpdated);
+    return () => window.removeEventListener('yrw:vault-updated', onVaultUpdated);
+  }, [fetchUnviewedVault]);
+
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {
       clearImpersonation();
@@ -169,7 +172,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       return pathname === '/dashboard/client' && !activeTab;
     }
     if (tab === 'new') {
-      return pathname === '/dashboard/client/order/new';
+      return pathname.startsWith('/dashboard/client/order/new');
     }
     if (tab.startsWith('new/')) {
       return pathname === `/dashboard/client/order/${tab.substring(4)}`;

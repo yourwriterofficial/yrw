@@ -11,7 +11,7 @@ const admin = createServiceClient(
 
 const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
-const LEVEL_PRICE: Record<string, number> = { BSc: 3999, MSc: 4500, PhD: 10000 };
+const LEVEL_PRICE: Record<string, number> = { OND: 4999, HND: 5999, BSc: 5999, MSc: 4500, PhD: 10000 };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
 
     // Fetch pricing settings (global level prices & department price overrides)
     const { data: settingsData } = await admin.from('project_settings').select('*');
-    let levelPrices: Record<string, number> = { BSc: 3999, MSc: 4500, PhD: 10000 };
+    let levelPrices: Record<string, number> = { OND: 4999, HND: 5999, BSc: 5999, MSc: 4500, PhD: 10000 };
     let deptPrices: Record<string, number> = {};
 
     if (settingsData) {

@@ -38,7 +38,7 @@ export interface ServiceOrderPageConfig {
   pageKey: keyof typeof ORDER_PAGE_DEFAULTS;
   orderPrefix: string;
   tosKey: string;
-  accent: 'amber' | 'cyan' | 'blue' | 'purple';
+  accent: 'emerald' | 'rose' | 'cyan' | 'blue' | 'purple';
   icon: LucideIcon;
   vaultStatusDefault: string;
   topicLabel: string;
@@ -56,7 +56,8 @@ export interface ServiceOrderPageConfig {
 // never be built by concatenating a Tailwind prefix (e.g. `focus:` or `border-`) with
 // a runtime string at the call site. See [[order-pricing-rebuild]] memory note.
 const ACCENTS = {
-  amber: { text: 'text-amber-500', border: 'border-amber-500', bg: 'bg-amber-500/5', ring: 'bg-amber-500/10', solid: 'bg-amber-500', chipBg: 'bg-amber-500/10', chipText: 'text-amber-500', chipBorder: 'border-amber-500/20', focusBorder: 'focus:border-amber-500', spinnerBorder: 'border-amber-500/20' },
+  emerald: { text: 'text-emerald-500', border: 'border-emerald-500', bg: 'bg-emerald-500/5', ring: 'bg-emerald-500/10', solid: 'bg-emerald-500', chipBg: 'bg-emerald-500/10', chipText: 'text-emerald-500', chipBorder: 'border-emerald-500/20', focusBorder: 'focus:border-emerald-500', spinnerBorder: 'border-emerald-500/20' },
+  rose: { text: 'text-rose-500', border: 'border-rose-500', bg: 'bg-rose-500/5', ring: 'bg-rose-500/10', solid: 'bg-rose-500', chipBg: 'bg-rose-500/10', chipText: 'text-rose-500', chipBorder: 'border-rose-500/20', focusBorder: 'focus:border-rose-500', spinnerBorder: 'border-rose-500/20' },
   cyan: { text: 'text-cyan-500', border: 'border-cyan-500', bg: 'bg-cyan-500/5', ring: 'bg-cyan-500/10', solid: 'bg-cyan-500', chipBg: 'bg-cyan-500/10', chipText: 'text-cyan-500', chipBorder: 'border-cyan-500/20', focusBorder: 'focus:border-cyan-500', spinnerBorder: 'border-cyan-500/20' },
   blue: { text: 'text-blue-500', border: 'border-blue-500', bg: 'bg-blue-500/5', ring: 'bg-blue-500/10', solid: 'bg-blue-500', chipBg: 'bg-blue-500/10', chipText: 'text-blue-500', chipBorder: 'border-blue-500/20', focusBorder: 'focus:border-blue-500', spinnerBorder: 'border-blue-500/20' },
   purple: { text: 'text-purple-500', border: 'border-purple-500', bg: 'bg-purple-500/5', ring: 'bg-purple-500/10', solid: 'bg-purple-500', chipBg: 'bg-purple-500/10', chipText: 'text-purple-500', chipBorder: 'border-purple-500/20', focusBorder: 'focus:border-purple-500', spinnerBorder: 'border-purple-500/20' },

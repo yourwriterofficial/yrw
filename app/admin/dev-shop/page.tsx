@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import * as lucide from 'lucide-react';
 import PageHeader from '@/app/components/ui/PageHeader';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
+import Button from '@/app/components/ui/Button';
 import { showToast } from '@/app/components/ui/Toast';
 
 type Product = {
@@ -185,7 +186,7 @@ export default function AdminDevShopPage() {
 
   const previewUrl = (path: string) => supabase.storage.from('dev-shop-previews').getPublicUrl(path).data.publicUrl;
 
-  if (loading) return <LoadingScreen label="Loading dev shop..." accent="purple" />;
+  if (loading) return <LoadingScreen label="Loading dev shop..." accent="brand" />;
 
   return (
     <div className="p-6 md:p-10">
@@ -193,19 +194,19 @@ export default function AdminDevShopPage() {
         title="Dev Shop"
         description="Manage the /developer page content and the script marketplace catalogue."
         breadcrumb="Admin / Dev Shop"
-        icon={<lucide.ShoppingBag className="w-8 h-8 text-cyan-500" />}
+        icon={<lucide.ShoppingBag className="w-8 h-8 text-accent" />}
         actions={
           tab === 'products' ? (
-            <button onClick={() => { setEditing({ ...BLANK }); setTechInput(''); }} className="bg-cyan-500 hover:bg-cyan-400 text-black px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2">
+            <Button size="sm" onClick={() => { setEditing({ ...BLANK }); setTechInput(''); }}>
               <lucide.Plus className="w-4 h-4" /> New Script
-            </button>
+            </Button>
           ) : null
         }
       />
 
       <div className="flex bg-secondary border border-theme rounded-full p-1 w-fit mb-6">
-        <button onClick={() => setTab('products')} className={`px-6 py-2 rounded-full text-xs font-bold transition ${tab === 'products' ? 'bg-cyan-500 text-black' : 'text-secondary hover:text-primary'}`}>Scripts ({products.length})</button>
-        <button onClick={() => setTab('settings')} className={`px-6 py-2 rounded-full text-xs font-bold transition ${tab === 'settings' ? 'bg-cyan-500 text-black' : 'text-secondary hover:text-primary'}`}>Page Content</button>
+        <button onClick={() => setTab('products')} className={`px-6 py-2 rounded-full text-xs font-bold transition ${tab === 'products' ? 'bg-accent text-[var(--accent-foreground)]' : 'text-secondary hover:text-primary'}`}>Scripts ({products.length})</button>
+        <button onClick={() => setTab('settings')} className={`px-6 py-2 rounded-full text-xs font-bold transition ${tab === 'settings' ? 'bg-accent text-[var(--accent-foreground)]' : 'text-secondary hover:text-primary'}`}>Page Content</button>
       </div>
 
       {tab === 'products' && (
@@ -220,21 +221,21 @@ export default function AdminDevShopPage() {
                   <tr key={p.id} className="hover:bg-white/[0.02]">
                     <td className="p-4 font-bold text-primary max-w-sm"><span className="line-clamp-2">{p.title}</span></td>
                     <td className="p-4 text-secondary">{p.category}</td>
-                    <td className="p-4 font-black text-cyan-500">₦{Number(p.price).toLocaleString()}</td>
+                    <td className="p-4 font-black text-info">₦{Number(p.price).toLocaleString()}</td>
                     <td className="p-4">
                       {p.file_path ? (
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">Uploaded</span>
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border bg-success/10 text-success border-success/20">Uploaded</span>
                       ) : (
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-red-500/10 text-red-400">Missing</span>
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border bg-danger/10 text-danger border-danger/20">Missing</span>
                       )}
                     </td>
                     <td className="p-4">
-                      <button onClick={() => toggleActive(p)} className={`text-[10px] font-black uppercase px-2 py-1 rounded ${p.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-secondary'}`}>{p.is_active ? 'Active' : 'Hidden'}</button>
+                      <button onClick={() => toggleActive(p)} className={`text-[10px] font-black uppercase px-2 py-1 rounded border ${p.is_active ? 'bg-success/10 text-success border-success/20' : 'bg-secondary text-secondary border-theme'}`}>{p.is_active ? 'Active' : 'Hidden'}</button>
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2 justify-end">
-                        <button onClick={() => { setEditing({ ...p, tech_stack: [...p.tech_stack], license_terms: p.license_terms || '' }); setTechInput(''); }} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-primary"><lucide.Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => removeProduct(p)} className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400"><lucide.Trash2 className="w-4 h-4" /></button>
+                        <Button size="icon" variant="secondary" onClick={() => { setEditing({ ...p, tech_stack: [...p.tech_stack], license_terms: p.license_terms || '' }); setTechInput(''); }}><lucide.Pencil className="w-4 h-4" /></Button>
+                        <Button size="icon" variant="danger" onClick={() => removeProduct(p)}><lucide.Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </td>
                   </tr>

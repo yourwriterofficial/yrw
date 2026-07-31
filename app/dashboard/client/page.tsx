@@ -60,9 +60,9 @@ const getPipelineDetails = (order: any) => {
     return {
       category: 'Project Material',
       icon: 'BookOpen',
-      colorClass: 'text-emerald-400',
-      bgClass: 'bg-emerald-500/10',
-      borderClass: 'border-emerald-500/20',
+      colorClass: 'text-success',
+      bgClass: 'bg-success/10',
+      borderClass: 'border-success/20',
       label: 'Ready-made Project Material',
       steps: [
         { title: 'Payment Confirmed', desc: 'Purchase received and logged.' },
@@ -77,9 +77,9 @@ const getPipelineDetails = (order: any) => {
     return {
       category: 'Software Dev',
       icon: 'Terminal',
-      colorClass: 'text-cyan-400',
-      bgClass: 'bg-cyan-500/10',
-      borderClass: 'border-cyan-500/20',
+      colorClass: 'text-info',
+      bgClass: 'bg-info/10',
+      borderClass: 'border-info/20',
       label: 'Full Stack & Custom Software',
       steps: [
         { title: 'Engineering Briefing', desc: 'Requirements received by engineering.' },
@@ -94,9 +94,9 @@ const getPipelineDetails = (order: any) => {
     return {
       category: 'Content Writing',
       icon: 'PenTool',
-      colorClass: 'text-amber-400',
-      bgClass: 'bg-amber-500/10',
-      borderClass: 'border-amber-500/20',
+      colorClass: 'text-warning',
+      bgClass: 'bg-warning/10',
+      borderClass: 'border-warning/20',
       label: 'Content & Creative Writing',
       steps: [
         { title: 'Briefing Received', desc: 'Content directives and style parameters logged.' },
@@ -111,9 +111,9 @@ const getPipelineDetails = (order: any) => {
     return {
       category: 'Bespoke Fieldwork',
       icon: 'LineChart',
-      colorClass: 'text-purple-400',
-      bgClass: 'bg-purple-500/10',
-      borderClass: 'border-purple-500/20',
+      colorClass: 'text-accent',
+      bgClass: 'bg-accent/10',
+      borderClass: 'border-accent/20',
       label: 'Statistics, Maths, Financial & Fieldwork',
       steps: [
         { title: 'Research Briefing', desc: 'Fieldwork parameters and methodologies logged.' },
@@ -128,9 +128,9 @@ const getPipelineDetails = (order: any) => {
     return {
       category: 'Resume & CV',
       icon: 'Briefcase',
-      colorClass: 'text-blue-400',
-      bgClass: 'bg-blue-500/10',
-      borderClass: 'border-blue-500/20',
+      colorClass: 'text-info',
+      bgClass: 'bg-info/10',
+      borderClass: 'border-info/20',
       label: 'Executive CVs & Resumes',
       steps: [
         { title: 'ATS Guidelines Logged', desc: 'Target role, LinkedIn profile, history logged.' },
@@ -146,9 +146,9 @@ const getPipelineDetails = (order: any) => {
   return {
     category: 'Academic Research',
     icon: 'BookOpen',
-    colorClass: 'text-emerald-400',
-    bgClass: 'bg-emerald-500/10',
-    borderClass: 'border-emerald-500/20',
+    colorClass: 'text-success',
+    bgClass: 'bg-success/10',
+    borderClass: 'border-success/20',
     label: 'Standard Academic Research',
     steps: [
       { title: 'Order Placed', desc: 'Briefing received by system.' },
@@ -188,7 +188,7 @@ function DashboardContent() {
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [orders, setOrders] = useState<AdminOrderView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'vault' | 'wallet' | 'profile' | 'chat' | 'projects' | 'scripts' | 'affiliate'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'vault' | 'wallet' | 'profile' | 'chat' | 'projects' | 'scripts' | 'affiliate'>('dashboard');
 
   const [processingPayment, setProcessingPayment] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -211,7 +211,7 @@ function DashboardContent() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'vault' || tab === 'wallet' || tab === 'profile' || tab === 'dashboard' || tab === 'chat' || tab === 'projects' || tab === 'scripts' || tab === 'affiliate') {
+    if (tab === 'vault' || tab === 'wallet' || tab === 'profile' || tab === 'dashboard' || tab === 'chat' || tab === 'projects' || tab === 'scripts' || tab === 'affiliate' || tab === 'orders') {
       setActiveTab(tab as any);
     }
   }, [searchParams]);
@@ -290,6 +290,13 @@ function DashboardContent() {
       }
       const unviewed = visibleFiles.filter((f: any) => f.downloaded_at === null).length || 0;
       setUnviewedVaultCount(unviewed);
+      // Tell the persistent sidebar (a separate component tree in layout.tsx,
+      // which tracks its own unviewed-vault badge count independently) to
+      // refresh — otherwise the badge stays stale after a download/mark-viewed
+      // here until a full page reload.
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('yrw:vault-updated'));
+      }
     } catch (err) {
       console.error('Error fetching vault files:', err);
       // Set empty state to avoid breaking the UI
@@ -684,7 +691,7 @@ function DashboardContent() {
 
       {/* Admin Preview Banner */}
       {isAdminPreview && (
-        <div className="bg-amber-500 text-black py-2 px-6 flex items-center justify-center gap-4 font-black text-xs uppercase tracking-widest mb-6 rounded-xl shadow-md">
+        <div className="bg-warning text-black py-2 px-6 flex items-center justify-center gap-4 font-black text-xs uppercase tracking-widest mb-6 rounded-xl shadow-md">
           <div className="flex items-center gap-2">
             <lucide.Eye className="w-4 h-4" /> Admin Preview Mode
           </div>
@@ -700,9 +707,9 @@ function DashboardContent() {
 
       {/* Temporary Password Advisory Banner */}
       {user?.user_metadata?.password_is_email === true && (
-        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-500 py-3.5 px-6 flex flex-col sm:flex-row items-center justify-between gap-4 font-bold text-xs uppercase tracking-wider mb-6 rounded-2xl shadow-sm animate-in slide-in-from-top duration-500">
+        <div className="bg-warning/10 border border-warning/30 text-warning py-3.5 px-6 flex flex-col sm:flex-row items-center justify-between gap-4 font-bold text-xs uppercase tracking-wider mb-6 rounded-2xl shadow-sm animate-in slide-in-from-top duration-500">
           <div className="flex items-center gap-3">
-            <lucide.ShieldAlert className="w-5 h-5 shrink-0 text-amber-500" />
+            <lucide.ShieldAlert className="w-5 h-5 shrink-0 text-warning" />
             <span className="leading-relaxed normal-case">
               Security Notice: Your temporary password is currently set to your email address. For your security, please update it.
             </span>
@@ -710,7 +717,7 @@ function DashboardContent() {
           <Button
             size="sm"
             onClick={() => setActiveTab('profile')}
-            className="!bg-amber-500 !text-black hover:!bg-amber-500/90 shrink-0"
+            className="!bg-warning !text-black hover:!bg-warning/90 shrink-0"
           >
             Change Password
           </Button>
@@ -735,9 +742,9 @@ function DashboardContent() {
 
           {/* Latest Vault Upload notification */}
           {latestUnviewedVaultFile && (
-            <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/25 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 mb-10 shadow-sm animate-in slide-in-from-top duration-500">
+            <div className="bg-gradient-to-r from-success/10 to-success/5 border border-success/25 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 mb-10 shadow-sm animate-in slide-in-from-top duration-500">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 border border-emerald-500/20 shrink-0">
+                <div className="w-10 h-10 bg-success/10 rounded-xl flex items-center justify-center text-success border border-success/20 shrink-0">
                   <lucide.FileText className="w-5 h-5" />
                 </div>
                 <div>
@@ -756,10 +763,10 @@ function DashboardContent() {
           {/* Redesigned Quick Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
             {[
-              { label: "Total Projects", value: orders.length, icon: lucide.Layers, color: "text-emerald-500", bg: "bg-emerald-500/[0.02]" },
-              { label: "Active Pipelines", value: activeOrders.length, icon: lucide.Activity, color: "text-amber-500", bg: "bg-amber-500/[0.02]" },
-              { label: "Completed Projects", value: completedOrders.length, icon: lucide.CheckCircle2, color: "text-purple-500", bg: "bg-purple-500/[0.02]" },
-              { label: "In Secure Vault", value: vaultFiles.length, icon: lucide.Lock, color: "text-cyan-500", bg: "bg-cyan-500/[0.02]" }
+              { label: "Total Projects", value: orders.length, icon: lucide.Layers, color: "text-success", bg: "bg-success/[0.02]" },
+              { label: "Active Pipelines", value: activeOrders.length, icon: lucide.Activity, color: "text-warning", bg: "bg-warning/[0.02]" },
+              { label: "Completed Projects", value: completedOrders.length, icon: lucide.CheckCircle2, color: "text-accent", bg: "bg-accent/[0.02]" },
+              { label: "In Secure Vault", value: vaultFiles.length, icon: lucide.Lock, color: "text-info", bg: "bg-info/[0.02]" }
             ].map((stat, i) => {
               const Icon = stat.icon;
               return (
@@ -777,11 +784,51 @@ function DashboardContent() {
             })}
           </div>
 
-          {/* Orders List */}
+          {/* Recent Projects preview — full list lives on the My Orders tab */}
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black">Active Projects</h3>
-              <Button variant="ghost" size="sm" icon={<lucide.Plus className="w-3 h-3" />} onClick={() => router.push('/dashboard/client/order/new')}>
+              <h3 className="text-xl font-black">Recent Projects</h3>
+              <div className="flex items-center gap-2">
+                {orders.length > 0 && (
+                  <Button variant="ghost" size="sm" onClick={() => setActiveTab('orders')}>
+                    View All Orders
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" icon={<lucide.Plus className="w-3 h-3" />} onClick={() => router.push('/dashboard/client/order/new/academic')}>
+                  New Order
+                </Button>
+              </div>
+            </div>
+
+            {orders.length === 0 ? (
+              <div className="empty-state">
+                <lucide.Inbox className="w-12 h-12 text-secondary mx-auto mb-4" />
+                <h4 className="text-lg font-bold text-primary mb-2">No projects yet</h4>
+                <p className="text-secondary text-sm mb-6 max-w-md mx-auto">Your workspace is empty. Submit a brief to get started with your first research project.</p>
+                <Button onClick={() => router.push('/dashboard/client/order/new/academic')}>Place First Order</Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {[...activeOrders, ...completedOrders].slice(0, 3).map(order => <OrderCard
+                  key={order['Order ID']}
+                  order={order}
+                  handlePayment={handlePayment}
+                  processingPayment={processingPayment === order['Order ID']}
+                  openDetails={() => setSelectedOrderDetails(order)}
+                />)}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* === TAB: MY ORDERS === */}
+      {activeTab === 'orders' && (
+        <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-black">My Orders</h3>
+              <Button variant="ghost" size="sm" icon={<lucide.Plus className="w-3 h-3" />} onClick={() => router.push('/dashboard/client/order/new/academic')}>
                 New Order
               </Button>
             </div>
@@ -791,17 +838,17 @@ function DashboardContent() {
                 <lucide.Inbox className="w-12 h-12 text-secondary mx-auto mb-4" />
                 <h4 className="text-lg font-bold text-primary mb-2">No projects yet</h4>
                 <p className="text-secondary text-sm mb-6 max-w-md mx-auto">Your workspace is empty. Submit a brief to get started with your first research project.</p>
-                <button onClick={() => router.push('/dashboard/client/order/new')} className="btn-primary">Place First Order</button>
+                <Button onClick={() => router.push('/dashboard/client/order/new/academic')}>Place First Order</Button>
               </div>
             ) : (
               <>
                 {activeOrders.length > 0 && (
                   <div className="space-y-4 mb-8">
-                    {activeOrders.map(order => <OrderCard 
-                      key={order['Order ID']} 
-                      order={order} 
-                      handlePayment={handlePayment} 
-                      processingPayment={processingPayment === order['Order ID']} 
+                    {activeOrders.map(order => <OrderCard
+                      key={order['Order ID']}
+                      order={order}
+                      handlePayment={handlePayment}
+                      processingPayment={processingPayment === order['Order ID']}
                       openDetails={() => setSelectedOrderDetails(order)}
                     />)}
                   </div>
@@ -810,11 +857,11 @@ function DashboardContent() {
                   <>
                     <h4 className="text-sm font-black uppercase tracking-widest text-secondary mb-4">Completed ({completedOrders.length})</h4>
                     <div className="space-y-4 opacity-90">
-                      {completedOrders.map(order => <OrderCard 
-                        key={order['Order ID']} 
-                        order={order} 
-                        handlePayment={handlePayment} 
-                        processingPayment={processingPayment === order['Order ID']} 
+                      {completedOrders.map(order => <OrderCard
+                        key={order['Order ID']}
+                        order={order}
+                        handlePayment={handlePayment}
+                        processingPayment={processingPayment === order['Order ID']}
                         openDetails={() => setSelectedOrderDetails(order)}
                       />)}
                     </div>
@@ -830,7 +877,7 @@ function DashboardContent() {
       {activeTab === 'vault' && (
         <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
           <header className="mb-10">
-            <h2 className="text-3xl font-black text-primary flex items-center gap-3"><lucide.Lock className="text-emerald-500" /> Secure Vault</h2>
+            <h2 className="text-3xl font-black text-primary flex items-center gap-3"><lucide.Lock className="text-success" /> Secure Vault</h2>
             <p className="text-secondary mt-1">Encrypted storage for all your completed deliverables.</p>
           </header>
           
@@ -880,33 +927,37 @@ function DashboardContent() {
 
                     <div className="flex flex-col sm:flex-row gap-2 relative z-10">
                       {fullyPaid ? (
-                        <button onClick={() => downloadFile(file.id)} className="flex-1 py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition cursor-pointer">
+                        <Button fullWidth onClick={() => downloadFile(file.id)} variant="soft" color="success" size="md">
                           <lucide.Download className="w-4 h-4" /> Download Package
-                        </button>
+                        </Button>
                       ) : (
-                        <button
+                        <Button
+                          fullWidth
                           onClick={() => order && nextUnpaid && handlePayment(order['Order ID'], nextUnpaid.amount, order['Email'], order['Legal Name'], ('INDEX-' + nextIdx) as any)}
-                          className="flex-1 py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-500/20 transition cursor-pointer"
+                          variant="soft"
+                          color="warning"
+                          size="md"
                         >
                           <lucide.Unlock className="w-4 h-4" /> {nextUnpaid ? `Pay ${nextUnpaid.name} to Unlock` : 'Pay Balance to Unlock'}
-                        </button>
+                        </Button>
                       )}
 
                       {!isViewed && fullyPaid && (
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="md"
                           onClick={() => markViewed(file.id)}
-                          className="px-4 py-3 bg-white/5 hover:bg-white/10 text-secondary rounded-xl text-sm flex items-center justify-center gap-2 transition whitespace-nowrap cursor-pointer"
                           title="Mark as viewed (clears notification badge)"
                         >
                           <lucide.Eye className="w-4 h-4" /> Mark Viewed
-                        </button>
+                        </Button>
                       )}
                     </div>
 
                     {/* Add-on Request Panel */}
                     <div className="mt-5 pt-4 border-t border-theme/40 space-y-3 relative z-10">
                       <div className="text-[11px] font-bold text-primary flex items-center gap-1.5">
-                        <lucide.PlusCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <lucide.PlusCircle className="w-3.5 h-3.5 text-success shrink-0" />
                         <span>Need presentation slides, PPT, or extra features?</span>
                       </div>
                       
@@ -916,9 +967,10 @@ function DashboardContent() {
                           placeholder="E.g. Presentation slides, custom modules..."
                           value={vaultAddonRequest[file.order_id] || ''}
                           onChange={e => setVaultAddonRequest({ ...vaultAddonRequest, [file.order_id]: e.target.value })}
-                          className="flex-1 bg-secondary border border-theme rounded-xl px-3 py-2 text-xs text-primary outline-none focus:border-emerald-500 font-medium"
+                          className="flex-1 bg-secondary border border-theme rounded-xl px-3 py-2 text-xs text-primary outline-none focus:border-success font-medium"
                         />
-                        <button
+                        <Button
+                          size="sm"
                           disabled={requestingAddon[file.order_id] || !(vaultAddonRequest[file.order_id] || '').trim()}
                           onClick={async () => {
                             const name = vaultAddonRequest[file.order_id];
@@ -944,10 +996,9 @@ function DashboardContent() {
                               setRequestingAddon({ ...requestingAddon, [file.order_id]: false });
                             }
                           }}
-                          className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 text-black font-black text-[10px] uppercase tracking-wider rounded-xl transition cursor-pointer"
                         >
                           {requestingAddon[file.order_id] ? 'Sending...' : 'Request'}
-                        </button>
+                        </Button>
                       </div>
 
                       {/* Display active extra addons status */}
@@ -959,25 +1010,25 @@ function DashboardContent() {
                               <span className="font-bold text-primary truncate max-w-[140px]">{a.name}</span>
                               <div className="flex items-center gap-2">
                                 {a.price && <span className="font-mono font-bold text-primary">{formatNaira(a.price)}</span>}
-                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                                  a.status === 'PAID' ? 'bg-emerald-500/10 text-emerald-400' :
-                                  a.status === 'AWAITING_PAYMENT' ? 'bg-amber-500/10 text-amber-400' :
-                                  'bg-purple-500/10 text-purple-400'
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${
+                                  a.status === 'PAID' ? 'bg-success/10 text-success border-success/20' :
+                                  a.status === 'AWAITING_PAYMENT' ? 'bg-warning/10 text-warning border-warning/20' :
+                                  'bg-accent/10 text-accent border-accent/20'
                                 }`}>
                                   {a.status === 'PENDING_QUOTE' ? 'Reviewing' : a.status === 'AWAITING_PAYMENT' ? 'Approved' : 'Paid'}
                                 </span>
                                 {a.status === 'AWAITING_PAYMENT' && (
-                                  <button
+                                  <Button
+                                    size="sm"
                                     onClick={() => {
                                       const match = orders.find(o => o['Order ID'] === file.order_id);
                                       if (match) {
                                         setSelectedOrderDetails(match);
                                       }
                                     }}
-                                    className="px-2 py-0.5 bg-amber-400 hover:bg-amber-350 text-emerald-950 font-black text-[8px] rounded uppercase cursor-pointer transition"
                                   >
                                     Pay
-                                  </button>
+                                  </Button>
                                 )}
                               </div>
                             </div>
@@ -998,7 +1049,7 @@ function DashboardContent() {
         <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
           <header className="mb-8">
             <h2 className="text-3xl font-black text-primary flex items-center gap-3">
-              <lucide.Wallet className="text-emerald-500 w-8 h-8" /> Wallet
+              <lucide.Wallet className="text-success w-8 h-8" /> Wallet
             </h2>
             <p className="text-secondary mt-1 text-sm">Manage your balance and view transaction history.</p>
           </header>
@@ -1044,13 +1095,13 @@ function DashboardContent() {
           
           <Card padding="lg">
             <div className="flex items-center gap-6 mb-8 border-b border-theme pb-8">
-              <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-500 font-black text-2xl">
+              <div className="w-20 h-20 rounded-full bg-success/20 border border-success/50 flex items-center justify-center text-success font-black text-2xl">
                 {profile?.full_name?.charAt(0) || 'U'}
               </div>
               <div>
                 <h3 className="text-xl font-bold text-primary">{profile?.full_name}</h3>
                 <p className="text-secondary text-sm">Account Type: Client</p>
-                {renderBool(profile?.is_admin) && <span className="inline-block mt-2 px-2 py-1 bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase rounded-md">Admin</span>}
+                {renderBool(profile?.is_admin) && <span className="inline-block mt-2 px-2 py-1 bg-accent/20 text-accent text-[10px] font-black uppercase rounded-md">Admin</span>}
               </div>
             </div>
 
@@ -1067,27 +1118,29 @@ function DashboardContent() {
                     type="email"
                     id="newEmail"
                     placeholder="newemail@example.com"
-                    className="flex-1 bg-secondary border border-theme rounded-xl px-4 py-2 text-sm focus:border-emerald-500 outline-none text-primary"
+                    className="flex-1 bg-secondary border border-theme rounded-xl px-4 py-2 text-sm focus:border-success outline-none text-primary"
                   />
-                  <button
+                  <Button
+                    size="sm"
                     onClick={async () => {
                       const newEmail = (document.getElementById('newEmail') as HTMLInputElement).value;
                       await handleUpdateEmail(newEmail);
                     }}
-                    className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-xl text-xs cursor-pointer whitespace-nowrap shrink-0"
                   >
                     Update Email
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               <div className="pt-2">
-                <button
+                <Button
+                  size="sm"
+                  variant="soft"
+                  color="warning"
                   onClick={handleResetPassword}
-                  className="px-4 py-2 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-xl text-xs font-bold cursor-pointer"
                 >
                   Reset Password
-                </button>
+                </Button>
               </div>
 
               <div className="pt-4 border-t border-theme">
@@ -1096,9 +1149,13 @@ function DashboardContent() {
               </div>
 
               <div className="pt-4">
-                <button onClick={() => window.open('https://wa.me/2348121443666', '_blank')} className="px-6 py-3 bg-[#25D366]/10 text-[#25D366] font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-[#25D366]/20 transition cursor-pointer">
+                <Button
+                  size="md"
+                  variant="outline"
+                  onClick={() => window.open('https://wa.me/2348121443666', '_blank')}
+                >
                   <lucide.MessageCircle className="w-4 h-4" /> Contact Support to Update Details
-                </button>
+                </Button>
               </div>
 
               {user?.id && <NotificationPreferencesPanel userId={user.id} />}
@@ -1165,7 +1222,7 @@ function DashboardContent() {
                     onClick={() => setInspectorTab(tab)}
                     className={`flex-1 text-center py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
                       inspectorTab === tab
-                        ? 'border-emerald-500 text-emerald-400 font-black'
+                        ? 'border-success text-success font-black'
                         : 'border-transparent text-secondary hover:text-primary'
                     }`}
                   >
@@ -1224,8 +1281,8 @@ function DashboardContent() {
                       {selectedOrderDetails['Media Sync'] && (
                         <div>
                           <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">External Storage Link</span>
-                          <a href={selectedOrderDetails['Media Sync']} target="_blank" rel="noopener noreferrer" className="p-3 bg-secondary/40 border border-theme rounded-xl text-blue-450 font-bold block truncate hover:underline">
-                            🔗 {selectedOrderDetails['Media Sync']}
+                          <a href={selectedOrderDetails['Media Sync']} target="_blank" rel="noopener noreferrer" className="p-3 bg-secondary/40 border border-theme rounded-xl text-info font-bold block truncate hover:underline">
+                            <span className="inline-block mr-1">🔗</span> {selectedOrderDetails['Media Sync']}
                           </a>
                         </div>
                       )}
@@ -1241,7 +1298,7 @@ function DashboardContent() {
                     {/* EXTRA REQUIREMENTS */}
                     <div className="pt-6 border-t border-theme/60 space-y-4">
                       <h4 className="text-xs font-black text-secondary uppercase tracking-widest flex items-center gap-1.5">
-                        <lucide.PlusCircle className="w-4 h-4 text-emerald-400" /> Extra Requirements & Custom Add-ons
+                        <lucide.PlusCircle className="w-4 h-4 text-success" /> Extra Requirements & Custom Add-ons
                       </h4>
                       
                       {/* List existing addon requests */}
@@ -1254,10 +1311,10 @@ function DashboardContent() {
                                   <p className="font-bold text-primary">{a.name}</p>
                                   <p className="text-[9px] text-secondary mt-1">Requested {formatDate(a.created_at)}</p>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                                  a.status === 'PAID' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                  a.status === 'AWAITING_PAYMENT' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                                  'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${
+                                  a.status === 'PAID' ? 'bg-success/10 text-success border-success/20' :
+                                  a.status === 'AWAITING_PAYMENT' ? 'bg-warning/10 text-warning border-warning/20' :
+                                  'bg-accent/10 text-accent border-accent/20'
                                 }`}>
                                   {a.status === 'PENDING_QUOTE' ? 'Reviewing' : a.status === 'AWAITING_PAYMENT' ? 'Approved' : 'Paid'}
                                 </span>
@@ -1272,20 +1329,23 @@ function DashboardContent() {
 
                               {a.status === 'AWAITING_PAYMENT' && (
                                 <div className="flex gap-2 pt-1">
-                                  <button 
+                                  <Button
+                                    fullWidth
+                                    size="sm"
                                     onClick={() => handlePayAddonWallet(selectedOrderDetails['Order ID'], a.id, a.price)}
                                     disabled={processingAddonPayment !== null}
-                                    className="flex-1 py-2 bg-emerald-500 text-black text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-400 transition cursor-pointer disabled:opacity-50"
                                   >
                                     {processingAddonPayment === a.id ? 'Processing...' : 'Pay from Wallet'}
-                                  </button>
-                                  <button 
+                                  </Button>
+                                  <Button
+                                    fullWidth
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={() => handlePayAddonCard(selectedOrderDetails['Order ID'], a.id, a.price)}
                                     disabled={processingAddonPayment !== null}
-                                    className="flex-1 py-2 bg-secondary border border-theme text-primary text-[9px] font-bold uppercase tracking-widest rounded-lg hover:bg-primary transition cursor-pointer disabled:opacity-50"
                                   >
                                     Card
-                                  </button>
+                                  </Button>
                                 </div>
                               )}
                             </div>
@@ -1303,15 +1363,15 @@ function DashboardContent() {
                           value={newAddonName} 
                           onChange={e => setNewAddonName(e.target.value)} 
                           rows={2}
-                          className="w-full bg-secondary border border-theme p-3 rounded-xl text-xs text-primary focus:border-emerald-500 outline-none transition font-bold"
+                          className="w-full bg-secondary border border-theme p-3 rounded-xl text-xs text-primary focus:border-success outline-none transition font-bold"
                         />
-                        <button 
+                        <Button
+                          fullWidth
                           onClick={() => handleRequestAddon(selectedOrderDetails['Order ID'])}
                           disabled={submittingAddon || !newAddonName.trim()}
-                          className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black text-[10px] font-black uppercase tracking-wider rounded-xl transition cursor-pointer disabled:opacity-50"
                         >
                           {submittingAddon ? 'Submitting...' : 'Submit Add-on Request'}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -1326,7 +1386,7 @@ function DashboardContent() {
                         <span className="text-2xl font-black text-primary">{awaitingAdminApproval ? 'Pending...' : formatNaira(total)}</span>
                       </div>
                       <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                        paid40 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                        paid40 ? 'bg-success/10 text-success border border-success/20' : 'bg-warning/10 text-warning border border-warning/20'
                       }`}>
                         {paid40 ? 'Fully Settled' : paid60 ? 'Deposit Paid' : 'Awaiting Deposit'}
                       </span>
@@ -1335,7 +1395,7 @@ function DashboardContent() {
                     {orderMilestones.length > 0 && (
                       <div className="space-y-3">
                         <h4 className="text-xs font-black text-secondary uppercase tracking-widest flex items-center gap-1.5">
-                          <lucide.CreditCard className="w-4 h-4 text-purple-400" /> Milestone Breakdown
+                          <lucide.CreditCard className="w-4 h-4 text-accent" /> Milestone Breakdown
                         </h4>
                         
                         {orderMilestones.map((m: any, idx: number) => (
@@ -1347,7 +1407,7 @@ function DashboardContent() {
                             <div className="flex items-center gap-3">
                               <span className="font-black text-primary font-mono">{formatNaira(m.amount)}</span>
                               <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                                m.paid ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                m.paid ? 'bg-success/10 text-success border border-success/20' : 'bg-danger/10 text-danger border border-danger/20'
                               }`}>
                                 {m.paid ? 'Paid' : 'Unpaid'}
                               </span>
@@ -1362,13 +1422,13 @@ function DashboardContent() {
                               const nextUnpaid = orderMilestones[nextUnpaidIdx];
                               if (nextUnpaid) {
                                 return (
-                                  <button
+                                  <Button
+                                    fullWidth
                                     onClick={() => handlePayment(selectedOrderDetails['Order ID'], nextUnpaid.amount, selectedOrderDetails['Email'], selectedOrderDetails['Legal Name'], ('INDEX-' + nextUnpaidIdx) as any)}
                                     disabled={processingPayment !== null}
-                                    className="w-full py-3 bg-emerald-500 text-black text-xs font-black uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition cursor-pointer disabled:opacity-50"
                                   >
                                     {processingPayment === selectedOrderDetails['Order ID'] ? 'Connecting...' : `Pay ${nextUnpaid.name} (${formatNaira(nextUnpaid.amount)})`}
-                                  </button>
+                                  </Button>
                                 );
                               }
                               return null;
@@ -1383,7 +1443,7 @@ function DashboardContent() {
                 {/* 3. DYNAMIC PIPELINE TIMELINE */}
                 {inspectorTab === 'timeline' && (
                   <div className="space-y-6 animate-in fade-in duration-250 pt-2">
-                    <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:to-secondary">
+                    <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-success before:to-secondary">
                       {steps.map((step, i) => (
                         <TimelineItem 
                           key={i}
@@ -1414,14 +1474,14 @@ function SidebarBtn({ active, onClick, icon, label, badge }: any) {
       type="button"
       onClick={onClick}
       className={`w-full flex items-center justify-between p-3 rounded-xl transition font-bold text-sm ${
-        active ? 'bg-emerald-500/10 text-emerald-500' : 'text-secondary hover:bg-white/5 hover:text-primary'
+        active ? 'bg-success/10 text-success' : 'text-secondary hover:bg-hover hover:text-primary'
       }`}
     >
       <div className="flex items-center gap-3">
         {icon} <span>{label}</span>
       </div>
       {badge !== undefined && badge > 0 && (
-        <span className="px-2 py-0.5 bg-emerald-500 text-black rounded-md text-[10px] font-black">{badge}</span>
+        <span className="px-2 py-0.5 bg-success text-black rounded-md text-[10px] font-black">{badge}</span>
       )}
     </button>
   );
@@ -1440,9 +1500,9 @@ function TimelineItem({ title, desc, date, done }: any) {
 
   return (
     <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-      <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-emerald-500 bg-emerald-500/20 text-emerald-500 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow"><lucide.Check className="w-5 h-5"/></div>
-      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
-        <div className="flex justify-between mb-1"><span className="font-bold text-sm text-emerald-400">{title}</span><span className="text-[10px] text-secondary">{date}</span></div>
+      <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-success bg-success/20 text-success shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow"><lucide.Check className="w-5 h-5"/></div>
+      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-success/30 bg-success/5">
+        <div className="flex justify-between mb-1"><span className="font-bold text-sm text-success">{title}</span><span className="text-[10px] text-secondary">{date}</span></div>
         <div className="text-xs text-secondary">{desc}</div>
       </div>
     </div>
@@ -1453,9 +1513,9 @@ function TimelineItem({ title, desc, date, done }: any) {
 // the only question a client actually has — so service colour is demoted to a
 // small text label and never competes with it.
 const TONE = {
-  act:  { bar: 'bg-amber-500',   ring: 'border-l-amber-500',   chip: 'bg-amber-500/10 text-amber-500 border-amber-500/30',   icon: 'bg-amber-500 text-black' },
-  prog: { bar: 'bg-blue-500',    ring: 'border-l-blue-500',    chip: 'bg-blue-500/10 text-blue-400 border-blue-500/30',      icon: 'bg-blue-500 text-white' },
-  done: { bar: 'bg-emerald-500', ring: 'border-l-emerald-500', chip: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30', icon: 'bg-emerald-500 text-black' },
+  act:  { bar: 'bg-warning',   ring: 'border-l-warning',   chip: 'bg-warning/10 text-warning border-warning/30',   icon: 'bg-warning text-black' },
+  prog: { bar: 'bg-info',    ring: 'border-l-info',    chip: 'bg-info/10 text-info border-info/30',      icon: 'bg-info text-white' },
+  done: { bar: 'bg-success', ring: 'border-l-success', chip: 'bg-success/10 text-success border-success/30', icon: 'bg-success text-black' },
   wait: { bar: 'bg-text-tertiary', ring: 'border-l-text-muted', chip: 'bg-secondary text-secondary border-theme', icon: 'bg-text-tertiary text-primary' },
 } as const;
 
@@ -1473,15 +1533,15 @@ function MilestoneChips({ milestones, activeIndex }: { milestones: any[]; active
       {milestones.map((m: any, i: number) => {
         const isNext = i === activeIndex;
         const cls = m.paid
-          ? 'border-emerald-500/30 bg-emerald-500/5'
+          ? 'border-success/30 bg-success/5'
           : isNext
-            ? 'border-amber-500/40 bg-amber-500/10'
+            ? 'border-warning/40 bg-warning/10'
             : 'border-theme bg-secondary/40 opacity-70';
-        const dot = m.paid ? 'bg-emerald-500' : isNext ? 'bg-amber-500' : 'bg-text-tertiary';
+        const dot = m.paid ? 'bg-success' : isNext ? 'bg-warning' : 'bg-text-tertiary';
         const pill = m.paid
-          ? 'bg-emerald-500/15 text-emerald-400'
+          ? 'bg-success/15 text-success'
           : isNext
-            ? 'bg-amber-500 text-black'
+            ? 'bg-warning text-black'
             : 'bg-secondary text-secondary';
         return (
           <div key={i} className={`flex items-center gap-2 border rounded-xl px-3 py-2 text-xs min-w-0 ${cls}`}>
@@ -1539,13 +1599,12 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
           <p className="text-secondary text-xs sm:text-sm mt-0.5 leading-snug">{status.subtitle}</p>
         </div>
         {status.action && (
-          <button
+          <Button
             onClick={() => handlePayment(order['Order ID'], status.action!.amount, order['Email'], order['Legal Name'], status.action!.paymentType)}
             disabled={processingPayment}
-            className="w-full sm:w-auto shrink-0 px-5 py-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-black text-sm font-black rounded-xl transition disabled:opacity-50 cursor-pointer min-h-[44px]"
           >
             {processingPayment ? 'Connecting…' : status.action.label}
-          </button>
+          </Button>
         )}
       </div>
 

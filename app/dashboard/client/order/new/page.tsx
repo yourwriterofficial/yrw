@@ -77,10 +77,10 @@ export default function SelectServicePage() {
           </Link>
 
           {/* Content Card */}
-          <Link href="/dashboard/client/order/new/content" className="group block p-6 md:p-8 rounded-[32px] bg-secondary border border-theme hover:border-amber-500/50 transition duration-300 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-6 md:p-8 opacity-0 group-hover:opacity-100 transition transform translate-x-4 group-hover:translate-x-0"><ArrowRight className="text-amber-500 w-5 h-5" /></div>
-            <div className="w-12 h-12 md:w-14 md:h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center mb-6 border border-amber-500/20">
-              <PenTool className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
+          <Link href="/dashboard/client/order/new/content" className="group block p-6 md:p-8 rounded-[32px] bg-secondary border border-theme hover:border-rose-500/50 transition duration-300 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-6 md:p-8 opacity-0 group-hover:opacity-100 transition transform translate-x-4 group-hover:translate-x-0"><ArrowRight className="text-rose-500 w-5 h-5" /></div>
+            <div className="w-12 h-12 md:w-14 md:h-14 bg-rose-500/10 rounded-2xl flex items-center justify-center mb-6 border border-rose-500/20">
+              <PenTool className="w-5 h-5 md:w-6 md:h-6 text-rose-400" />
             </div>
             <h3 className="text-lg md:text-xl font-black mb-3 break-words text-primary">Content & Creative Writing</h3>
             <p className="text-xs md:text-sm text-secondary mb-6 leading-relaxed break-words">SEO articles, eBooks, web copy – tailored tone and style.</p>

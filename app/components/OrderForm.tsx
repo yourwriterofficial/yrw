@@ -9,6 +9,7 @@ import type { ServiceTier, CreateOrderServerActionResponse } from '@/lib/types';
 import OrderCategoryNav from './OrderCategoryNav';
 import { getEffectiveUser } from '@/lib/impersonate';
 import { showToast } from '@/app/components/ui/Toast';
+import Button from '@/app/components/ui/Button';
 import { fetchPricingTiers, type PricingTier } from '@/lib/pricingTiers';
 import { fetchPageSettings } from '@/lib/pageSettings';
 import { ORDER_PAGE_DEFAULTS, type OrderPageContent } from '@/lib/pageContentDefaults';
@@ -18,10 +19,10 @@ type Plan = ServiceTier;
 // Fixed, per-tier accent so the visual identity stays stable even though admins can rename,
 // reprice, or re-describe each tier via /admin/settings.
 const TIER_ACCENT: Record<string, { text: string; border: string; bg: string; glow: string; ring: string }> = {
-  GOLD: { text: 'text-amber-400', border: 'border-amber-400', bg: 'bg-amber-400/5', glow: 'shadow-[0_0_20px_rgba(251,191,36,0.12)]', ring: 'bg-amber-400/10' },
-  SILVER: { text: 'text-slate-400', border: 'border-slate-400', bg: 'bg-slate-400/5', glow: 'shadow-[0_0_20px_rgba(203,213,225,0.12)]', ring: 'bg-slate-400/10' },
+  GOLD: { text: 'text-warning', border: 'border-warning', bg: 'bg-warning/5', glow: 'shadow-[0_0_20px_color-mix(in_srgb,var(--warning)_12%,transparent)]', ring: 'bg-warning/10' },
+  SILVER: { text: 'text-secondary', border: 'border-secondary', bg: 'bg-secondary/5', glow: 'shadow-[0_0_20px_color-mix(in_srgb,var(--text-secondary)_12%,transparent)]', ring: 'bg-secondary/10' },
   BRONZE: { text: 'text-orange-500', border: 'border-orange-500', bg: 'bg-orange-500/5', glow: 'shadow-[0_0_20px_rgba(249,115,22,0.12)]', ring: 'bg-orange-500/10' },
-  STANDARD: { text: 'text-emerald-500', border: 'border-emerald-500', bg: 'bg-emerald-500/5', glow: 'shadow-[0_0_20px_rgba(16,185,129,0.12)]', ring: 'bg-emerald-500/10' },
+  STANDARD: { text: 'text-success', border: 'border-success', bg: 'bg-success/5', glow: 'shadow-[0_0_20px_color-mix(in_srgb,var(--success)_12%,transparent)]', ring: 'bg-success/10' },
 };
 const DEFAULT_ACCENT = TIER_ACCENT.STANDARD;
 
@@ -281,8 +282,6 @@ export default function OrderForm() {
           return false;
         }
       }
-    }
-    if (currentStep === 4) {
       if (plan === 'CUSTOM' && (!customPrice || customPrice < 15000)) {
         showToast("Proposed budget must be at least ₦15,000.", 'error');
         return false;
@@ -424,8 +423,8 @@ export default function OrderForm() {
   if (!isLoaded || loading) {
     return (
       <div className="min-h-screen bg-primary text-primary flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4" />
-        <p className="text-xs uppercase tracking-widest font-black text-emerald-400 animate-pulse">
+        <div className="w-12 h-12 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-4" />
+        <p className="text-xs uppercase tracking-widest font-black text-accent animate-pulse">
           {loading ? 'Processing Order & Encrypting...' : 'Loading Framework...'}
         </p>
       </div>
@@ -439,17 +438,17 @@ export default function OrderForm() {
       {/* Stepper - Responsive */}
       <div className="flex justify-between items-center mb-12 relative px-2 max-w-2xl mx-auto flex-wrap gap-2">
         <div className="absolute h-[1px] bg-theme left-8 right-8 top-[15px] -z-10 hidden md:block" />
-        {[1, 2, 3, 4, 5].map((s) => (
+        {[1, 2, 3].map((s) => (
           <div
             key={s}
             className={`w-8 h-8 rounded-full flex flex-col items-center justify-center text-xs font-black transition-all duration-300 relative cursor-pointer ${
-              s <= step ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20 scale-110' : 'bg-secondary text-secondary border border-theme'
+              s <= step ? 'bg-accent text-[var(--accent-foreground)] shadow-lg shadow-accent/20 scale-110' : 'bg-secondary text-secondary border border-theme'
             }`}
             onClick={() => goToStep(s)}
           >
             {s}
-            <span className={`absolute top-10 text-[8px] tracking-widest uppercase hidden md:block font-black ${s <= step ? 'text-emerald-500' : 'text-secondary'}`}>
-              {['Details', 'Instructions', 'Materials', 'Links', 'Review'][s - 1]}
+            <span className={`absolute top-10 text-[8px] tracking-widest uppercase hidden md:block font-black ${s <= step ? 'text-accent' : 'text-secondary'}`}>
+              {['Details', 'Attachments', 'Review'][s - 1]}
             </span>
           </div>
         ))}
@@ -469,7 +468,7 @@ export default function OrderForm() {
                   <div
                     key={tier.id}
                     onClick={() => setPlan(tier.tier_key as Plan)}
-                    className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words bg-card ${isSelected ? `${accent.border} ${accent.bg} ${accent.glow}` : 'border-theme hover:border-zinc-500/50'}`}
+                    className={`p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words bg-card ${isSelected ? `${accent.border} ${accent.bg} ${accent.glow}` : 'border-theme hover:border-border-strong'}`}
                   >
                     {tier.highlight && (
                       <div className={`absolute top-0 right-0 ${accent.ring} ${accent.text} text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-bl-xl flex items-center gap-1`}>
@@ -495,18 +494,18 @@ export default function OrderForm() {
               })}
 
               {/* PROPOSE YOUR OWN BUDGET */}
-              <div onClick={() => setPlan('CUSTOM')} className={`col-span-1 md:col-span-2 p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words bg-card ${plan === 'CUSTOM' ? 'border-purple-500 bg-purple-500/5 shadow-[0_0_20px_rgba(168,85,247,0.12)]' : 'border-theme hover:border-zinc-500/50'}`}>
-                {plan === 'CUSTOM' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-purple-500" /></div>}
-                <h3 className="text-sm font-bold uppercase tracking-wide text-purple-500 mb-1">Propose Your Own Budget</h3>
+              <div onClick={() => setPlan('CUSTOM')} className={`col-span-1 md:col-span-2 p-6 rounded-2xl border cursor-pointer transition relative overflow-hidden break-words bg-card ${plan === 'CUSTOM' ? 'border-accent bg-accent/5 shadow-[0_0_20px_color-mix(in_srgb,var(--accent)_12%,transparent)]' : 'border-theme hover:border-border-strong'}`}>
+                {plan === 'CUSTOM' && <div className="absolute top-4 right-4"><CheckCircle2 className="w-5 h-5 text-accent" /></div>}
+                <h3 className="text-sm font-bold uppercase tracking-wide text-accent mb-1">Propose Your Own Budget</h3>
                 <p className="text-xs text-secondary leading-relaxed break-words mb-3">{pageContent.budget_note.title}</p>
-                <div className="flex items-start gap-2 text-xs text-secondary bg-purple-500/5 border border-purple-500/15 rounded-xl p-3 mb-4">
-                  <Info className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 text-xs text-secondary bg-accent/5 border border-accent/15 rounded-xl p-3 mb-4">
+                  <Info className="w-4 h-4 text-accent shrink-0 mt-0.5" />
                   <span>{pageContent.budget_note.text}</span>
                 </div>
                 {plan === 'CUSTOM' && (
                   <input
                     type="number"
-                    className="w-full bg-primary border border-theme p-4 rounded-xl font-bold text-lg outline-none focus:border-purple-500 transition text-primary"
+                    className="w-full bg-primary border border-theme p-4 rounded-xl font-bold text-lg outline-none focus:border-accent transition text-primary"
                     value={customPrice || ''}
                     onClick={e => e.stopPropagation()}
                     onChange={e => setCustomPrice(parseInt(e.target.value) || 0)}
@@ -523,19 +522,19 @@ export default function OrderForm() {
 
               <div className="space-y-1">
                 <label className="text-[10px] text-secondary block ml-1 font-bold">Full Name</label>
-                <input type="text" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition hover:border-zinc-550 font-bold" required />
+                <input type="text" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-accent outline-none transition hover:border-border-strong font-bold" required />
                 <p className="text-[9px] text-secondary ml-1">Please enter your legal name as it appears on your university files.</p>
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] text-secondary block ml-1 font-bold">Email Address</label>
-                <input type="email" placeholder="john.doe@university.edu" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition hover:border-zinc-550 font-bold" required />
+                <input type="email" placeholder="john.doe@university.edu" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-accent outline-none transition hover:border-border-strong font-bold" required />
                 <p className="text-[9px] text-secondary ml-1">We will send your quotes, confirmations, and vault release links to this email.</p>
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] text-secondary block ml-1 font-bold">WhatsApp Number</label>
-                <input type="tel" placeholder="+234..." value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition hover:border-zinc-550 font-bold" required />
+                <input type="tel" placeholder="+234..." value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-accent outline-none transition hover:border-border-strong font-bold" required />
                 <p className="text-[9px] text-secondary ml-1">Needed for emergency updates, status changes, and prompt feedback on requirements.</p>
               </div>
             </div>
@@ -543,7 +542,7 @@ export default function OrderForm() {
 
           <div className="space-y-1">
             <div className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 mb-2 font-bold">Research Topic</div>
-            <input type="text" placeholder="Research Topic Title" value={topic} onChange={e => setTopic(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition hover:border-zinc-550 font-bold" required />
+            <input type="text" placeholder="Research Topic Title" value={topic} onChange={e => setTopic(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-accent outline-none transition hover:border-border-strong font-bold" required />
             <p className="text-[9px] text-secondary ml-1">E.g., 'Impact of Monetary Policy on Small Businesses in Sub-Saharan Africa.'</p>
           </div>
 
@@ -552,11 +551,11 @@ export default function OrderForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] text-secondary block ml-1 font-bold">Company Name</label>
-                <input type="text" placeholder="e.g. My Company Ltd" value={clientCompany} onChange={e => setClientCompany(e.target.value)} className="w-full bg-card border border-theme p-3 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition font-semibold" />
+                <input type="text" placeholder="e.g. My Company Ltd" value={clientCompany} onChange={e => setClientCompany(e.target.value)} className="w-full bg-card border border-theme p-3 rounded-[16px] text-sm text-primary focus:border-accent outline-none transition font-semibold" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] text-secondary block ml-1 font-bold">Billing Address</label>
-                <input type="text" placeholder="Street, City, State, Country" value={clientAddress} onChange={e => setClientAddress(e.target.value)} className="w-full bg-card border border-theme p-3 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition font-semibold" />
+                <input type="text" placeholder="Street, City, State, Country" value={clientAddress} onChange={e => setClientAddress(e.target.value)} className="w-full bg-card border border-theme p-3 rounded-[16px] text-sm text-primary focus:border-accent outline-none transition font-semibold" />
               </div>
             </div>
           </div>
@@ -579,59 +578,50 @@ export default function OrderForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div>
                   <label className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 block ml-1">Citation Style</label>
-                  <select value={refStyle} onChange={e => setRefStyle(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-xs text-primary outline-none focus:border-emerald-500 font-bold">
+                  <select value={refStyle} onChange={e => setRefStyle(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-xs text-primary outline-none focus:border-accent font-bold">
                     {dbRefStyles.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[9px] text-secondary uppercase font-bold tracking-wider mb-1 block ml-1">Font Preference</label>
-                  <select value={fontStyle} onChange={e => setFontStyle(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-xs text-primary outline-none focus:border-emerald-500 font-bold">
+                  <select value={fontStyle} onChange={e => setFontStyle(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-xs text-primary outline-none focus:border-accent font-bold">
                     {dbFontStyles.map(f => <option key={f}>{f}</option>)}
                   </select>
                 </div>
               </div>
             )}
           </div>
-          <button onClick={() => { if (validateStep(1)) goToStep(2); }} className="w-full bg-[#1DB954] text-black font-black uppercase text-[11px] tracking-[1.5px] py-5 rounded-full hover:bg-[#1ed760] transition flex items-center justify-center gap-2">
-            Proceed to Instructions <ChevronRight className="w-4 h-4" />
-          </button>
+          <Button fullWidth onClick={() => { if (validateStep(1)) goToStep(2); }} icon={<ChevronRight className="w-4 h-4" />} iconPosition="right">
+            Proceed to Attachments
+          </Button>
         </div>
       )}
 
-      {/* STEP 2: Instructions */}
+      {/* STEP 2: Attachments (instructions, extra materials, cloud links — all optional) */}
       {step === 2 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="bg-secondary p-6 rounded-2xl border border-theme">
-            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-500 mb-2">Upload Your Instructions</h3>
+            <h3 className="text-sm font-black uppercase tracking-wider text-success mb-2">Upload Your Instructions (Optional)</h3>
             <p className="text-xs text-secondary leading-relaxed mb-6">Upload the project prompt, grading rubric, or core guidelines provided by your university.</p>
-            <label className="border-2 border-dashed border-theme hover:border-emerald-500/50 bg-card rounded-[20px] p-10 flex flex-col items-center justify-center cursor-pointer transition">
+            <label className="border-2 border-dashed border-theme hover:border-success/50 bg-card rounded-[20px] p-10 flex flex-col items-center justify-center cursor-pointer transition">
               <Upload className="w-8 h-8 text-secondary mb-3" />
               <span className="text-xs font-bold text-primary">Select Instruction File</span>
               <span className="text-[10px] text-secondary mt-1">Accepts PDF, DOCX, TXT (Max 25MB)</span>
               <input type="file" accept=".pdf,.doc,.docx,.txt" className="hidden" onChange={(e) => handleFileInterception(e, 'brief')} />
             </label>
             {briefFile && (
-              <div className="mt-4 flex items-center gap-2 text-xs bg-emerald-500/10 text-emerald-400 p-3 rounded-xl border border-emerald-500/20 break-words w-full">
+              <div className="mt-4 flex items-center gap-2 text-xs bg-success/10 text-success p-3 rounded-xl border border-success/20 break-words w-full">
                 <Paperclip className="w-4 h-4 shrink-0" />
                 <span className="truncate font-medium">{briefFile.name}</span>
                 <span className="ml-auto text-[10px] opacity-60 shrink-0">({(briefFile.size / (1024 * 1024)).toFixed(2)} MB)</span>
               </div>
             )}
           </div>
-          <div className="flex gap-4">
-            <button onClick={() => goToStep(3)} className="bg-emerald-500 text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-full flex-1 flex items-center justify-center gap-1 hover:bg-emerald-450 transition cursor-pointer">Save and Continue <ChevronRight className="w-4 h-4" /></button>
-            <button onClick={() => goToStep(1)} className="bg-primary text-secondary border border-theme px-6 rounded-full font-bold text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary"><ChevronLeft className="w-4 h-4" /> Back</button>
-          </div>
-        </div>
-      )}
 
-      {/* STEP 3: Materials */}
-      {step === 3 && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="bg-secondary p-6 rounded-2xl border border-theme">
-            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-500 mb-2">Additional Materials (Optional)</h3>
+            <h3 className="text-sm font-black uppercase tracking-wider text-success mb-2">Additional Materials (Optional)</h3>
             <p className="text-xs text-secondary leading-relaxed mb-6">Attach any extra reading lists, datasets, lecture slides, or references you want our writers to use.</p>
-            <label className="border-2 border-dashed border-theme hover:border-emerald-500/50 bg-card rounded-[20px] p-10 flex flex-col items-center justify-center cursor-pointer transition">
+            <label className="border-2 border-dashed border-theme hover:border-success/50 bg-card rounded-[20px] p-10 flex flex-col items-center justify-center cursor-pointer transition">
               <Paperclip className="w-8 h-8 text-secondary mb-3" />
               <span className="text-xs font-bold text-primary">Select Extra Files</span>
               <span className="text-[10px] text-secondary mt-1">Combined maximum: 25MB</span>
@@ -649,38 +639,30 @@ export default function OrderForm() {
               </div>
             )}
           </div>
-          <div className="flex gap-4">
-            <button onClick={() => goToStep(4)} className="bg-emerald-500 text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-full flex-1 hover:bg-emerald-450 transition cursor-pointer">Continue to Links</button>
-            <button onClick={() => goToStep(2)} className="bg-primary text-secondary border border-theme px-6 rounded-full font-bold text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary"><ChevronLeft className="w-4 h-4" /> Back</button>
-          </div>
-        </div>
-      )}
 
-      {/* STEP 4: Links */}
-      {step === 4 && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="bg-secondary p-6 rounded-2xl border border-theme">
-            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-500 mb-2">Link to Cloud Storage (Optional)</h3>
+            <h3 className="text-sm font-black uppercase tracking-wider text-success mb-2">Link to Cloud Storage (Optional)</h3>
             <p className="text-xs text-secondary leading-relaxed mb-6">If you have massive files or folders exceeding our 25MB upload limit, securely paste your Google Drive, Dropbox, or OneDrive share link here.</p>
-            <input type="url" placeholder="Paste your secure share link here" value={mediaLink} onChange={e => setMediaLink(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-emerald-500 outline-none transition" />
-            <div className="text-[10px] text-secondary mt-2 ml-1">💡 You can skip this step and click continue if you don't have large external links.</div>
+            <input type="url" placeholder="Paste your secure share link here" value={mediaLink} onChange={e => setMediaLink(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary focus:border-accent outline-none transition" />
+            <div className="text-[10px] text-secondary mt-2 ml-1"><span className="inline-block mr-1">💡</span> All attachments are optional — feel free to skip straight to review.</div>
           </div>
+
           <div className="flex gap-4">
-            <button onClick={() => goToStep(5)} className="bg-emerald-500 text-black font-black uppercase text-[11px] tracking-[1.5px] py-4 rounded-full flex-1 transition hover:bg-emerald-450 cursor-pointer">Review Order Summary</button>
-            <button onClick={() => goToStep(3)} className="bg-primary text-secondary border border-theme px-6 rounded-full font-bold text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary"><ChevronLeft className="w-4 h-4" /> Back</button>
+            <Button fullWidth onClick={() => goToStep(3)} icon={<ChevronRight className="w-4 h-4" />} iconPosition="right">Review Order Summary</Button>
+            <Button variant="secondary" onClick={() => goToStep(1)} icon={<ChevronLeft className="w-4 h-4" />}>Back</Button>
           </div>
         </div>
       )}
 
-      {/* STEP 5: Review & Terms (with wallet integration) */}
-      {step === 5 && (
+      {/* STEP 3: Review & Terms (with wallet integration) */}
+      {step === 3 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="bg-secondary p-6 rounded-[24px] border border-theme space-y-6">
-            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-500">Order Summary</h3>
+            <h3 className="text-sm font-black uppercase tracking-wider text-success">Order Summary</h3>
             {isCustom ? (
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-secondary block ml-1">Proposed Budget (₦)</label>
-                <input type="number" value={customPrice || ''} onChange={e => setCustomPrice(parseInt(e.target.value) || 0)} className="w-full bg-primary border border-emerald-500/30 p-4 rounded-xl text-emerald-500 font-black text-xl outline-none focus:border-emerald-500 font-bold" />
+                <input type="number" value={customPrice || ''} onChange={e => setCustomPrice(parseInt(e.target.value) || 0)} className="w-full bg-primary border border-success/30 p-4 rounded-xl text-success font-black text-xl outline-none focus:border-success font-bold" />
               </div>
             ) : (
               <div className="space-y-4">
@@ -689,11 +671,11 @@ export default function OrderForm() {
               </div>
             )}
             <div className="pt-4 border-t border-theme">
-              <div className="flex justify-between text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2">
+              <div className="flex justify-between text-[10px] font-black text-success uppercase tracking-widest mb-2">
                 <span>Select Word Count</span>
                 <span>{words.toLocaleString()} Total Words</span>
               </div>
-              <input type="range" max="30000" min="50" step="50" value={words} onChange={e => setWords(parseInt(e.target.value) || 0)} className="w-full accent-emerald-500 mb-4 cursor-pointer bg-card" />
+              <input type="range" max="30000" min="50" step="50" value={words} onChange={e => setWords(parseInt(e.target.value) || 0)} className="w-full accent-success mb-4 cursor-pointer bg-card" />
               <div className="grid grid-cols-2 gap-4">
                 <input type="number" value={words || ''} onChange={e => setWords(parseInt(e.target.value) || 0)} placeholder="Enter exact word count" className="w-full bg-primary border border-theme p-3 rounded-xl text-sm outline-none font-bold text-primary" />
                 <input type="text" readOnly value={`${Math.ceil(words / 275)} Target Pages`} className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-secondary font-black outline-none cursor-default" />
@@ -704,7 +686,7 @@ export default function OrderForm() {
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-secondary tracking-widest block ml-1 font-bold">Target Delivery Deadline</label>
             <div className="relative group">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none group-focus-within:text-emerald-500 transition-colors">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none group-focus-within:text-success transition-colors">
                 <Calendar className="w-5 h-5" />
               </div>
               <input
@@ -712,7 +694,7 @@ export default function OrderForm() {
                 value={deadline}
                 onChange={e => setDeadline(e.target.value)}
                 min={new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                className="w-full bg-card border border-theme p-4 pl-12 rounded-[16px] text-sm text-primary outline-none focus:border-emerald-500 transition-all font-bold hover:border-theme cursor-pointer dark:[color-scheme:dark]"
+                className="w-full bg-card border border-theme p-4 pl-12 rounded-[16px] text-sm text-primary outline-none focus:border-success transition-all font-bold hover:border-theme cursor-pointer dark:[color-scheme:dark]"
                 required
               />
             </div>
@@ -723,17 +705,17 @@ export default function OrderForm() {
 
           <div className="relative">
             <label className="text-[10px] font-black uppercase text-secondary tracking-widest block mb-1 ml-1 font-bold">Additional Notes for the Writer</label>
-            <textarea rows={4} placeholder="Enter any specific instructions, structure requirements, or source preferences..." value={additionalInfo} onChange={e => setAdditionalInfo(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary outline-none focus:border-emerald-500 transition pb-12 font-medium hover:border-theme" />
+            <textarea rows={4} placeholder="Enter any specific instructions, structure requirements, or source preferences..." value={additionalInfo} onChange={e => setAdditionalInfo(e.target.value)} className="w-full bg-card border border-theme p-4 rounded-[16px] text-sm text-primary outline-none focus:border-accent transition pb-12 font-medium hover:border-theme" />
             <div className="absolute bottom-4 right-4 text-[8px] font-black text-secondary tracking-widest uppercase">{additionalInfo.length} Chars | {additionalInfo.trim() === '' ? 0 : additionalInfo.trim().split(/\s+/).length} Words</div>
           </div>
 
           <div className="bg-secondary p-4 rounded-xl border border-theme">
             <div className="text-[10px] uppercase font-black text-secondary tracking-widest mb-2 ml-1 font-bold">Promo Code</div>
             <div className="flex gap-2">
-              <input type="text" placeholder="ENTER CODE" value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())} className="flex-1 bg-primary border border-theme p-4 rounded-xl text-xs uppercase tracking-widest font-black outline-none focus:border-emerald-500 text-primary" />
-              <button onClick={applyPromo} className="bg-secondary text-primary border border-theme px-6 rounded-xl text-[10px] font-black tracking-wider hover:bg-primary transition cursor-pointer">APPLY</button>
+              <input type="text" placeholder="ENTER CODE" value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())} className="flex-1 bg-primary border border-theme p-4 rounded-xl text-xs uppercase tracking-widest font-black outline-none focus:border-accent text-primary" />
+              <Button size="sm" onClick={applyPromo}>Apply</Button>
             </div>
-            {promoMsg && <p className={`text-[10px] font-bold mt-2.5 ml-1 ${promoMsg.includes('❌') ? 'text-red-500' : 'text-emerald-500'}`}>{promoMsg}</p>}
+            {promoMsg && <p className={`text-[10px] font-bold mt-2.5 ml-1 ${promoMsg.includes('❌') ? 'text-danger' : 'text-success'}`}>{promoMsg}</p>}
           </div>
 
           {/* Payment Structure Selection */}
@@ -741,11 +723,11 @@ export default function OrderForm() {
             <label className="text-[10px] font-black uppercase text-secondary tracking-widest block ml-1">Payment Structure</label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer text-primary font-bold text-sm">
-                <input type="radio" name="paymentStructure" value="60/40" checked={paymentStructure === '60/40'} onChange={() => setPaymentStructure('60/40')} className="accent-emerald-500" />
+                <input type="radio" name="paymentStructure" value="60/40" checked={paymentStructure === '60/40'} onChange={() => setPaymentStructure('60/40')} className="accent-success" />
                 <span>Standard (60% Deposit / 40% Balance)</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer text-primary font-bold text-sm">
-                <input type="radio" name="paymentStructure" value="CUSTOM" checked={paymentStructure === 'CUSTOM'} onChange={() => setPaymentStructure('CUSTOM')} className="accent-emerald-500" />
+                <input type="radio" name="paymentStructure" value="CUSTOM" checked={paymentStructure === 'CUSTOM'} onChange={() => setPaymentStructure('CUSTOM')} className="accent-success" />
                 <span>Custom Milestones</span>
               </label>
             </div>
@@ -757,7 +739,7 @@ export default function OrderForm() {
                   <button
                     type="button"
                     onClick={() => setMilestones([...milestones, { name: 'Milestone X', percentage: 10, trigger: 'Upon phase completion' }])}
-                    className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-black uppercase tracking-wider"
+                    className="px-2.5 py-1 bg-success/10 text-success border border-success/20 rounded-lg text-[10px] font-black uppercase tracking-wider"
                   >
                     + Add Milestone
                   </button>
@@ -783,12 +765,12 @@ export default function OrderForm() {
                         }} />
                         <span className="text-xs font-bold text-secondary">%</span>
                       </div>
-                      <button type="button" onClick={() => setMilestones(milestones.filter((_, i) => i !== idx))} className="col-span-1 text-secondary hover:text-red-400 text-center"><Trash2 className="w-4 h-4 mx-auto" /></button>
+                      <button type="button" onClick={() => setMilestones(milestones.filter((_, i) => i !== idx))} className="col-span-1 text-secondary hover:text-danger text-center"><Trash2 className="w-4 h-4 mx-auto" /></button>
                     </div>
                   ))}
                 </div>
                 <div className="text-right text-xs font-bold text-secondary">
-                  Total Milestone sum: <span className={milestones.reduce((s, m) => s + m.percentage, 0) === 100 ? 'text-emerald-400' : 'text-red-400'}>{milestones.reduce((s, m) => s + m.percentage, 0)}%</span>
+                  Total Milestone sum: <span className={milestones.reduce((s, m) => s + m.percentage, 0) === 100 ? 'text-success' : 'text-danger'}>{milestones.reduce((s, m) => s + m.percentage, 0)}%</span>
                 </div>
               </div>
             )}
@@ -799,10 +781,10 @@ export default function OrderForm() {
             const finalQuote = getUiTotalPrice();
             if (paymentStructure === 'CUSTOM') {
               return (
-                <div className="bg-emerald-500/5 p-6 rounded-[30px] border border-emerald-500/20 overflow-x-auto space-y-4">
+                <div className="bg-success/5 p-6 rounded-[30px] border border-success/20 overflow-x-auto space-y-4">
                   <div className="flex justify-between font-black text-lg pb-2 border-b border-theme flex-wrap gap-2 text-primary">
                     <span>Total Project Cost</span>
-                    <span className="text-emerald-500">₦{finalQuote.toLocaleString()}</span>
+                    <span className="text-success">₦{finalQuote.toLocaleString()}</span>
                   </div>
                   <div className="space-y-2">
                     {milestones.map((m, idx) => (
@@ -820,10 +802,10 @@ export default function OrderForm() {
               const deposit = customPrice * 0.6;
               const balance = customPrice * 0.4;
               return (
-                <div className="bg-purple-500/5 p-6 rounded-[30px] border border-purple-500/20 text-center space-y-3 overflow-x-auto">
-                  <div className="text-4xl font-black text-purple-500 tracking-tight break-words">₦{customPrice.toLocaleString()}</div>
+                <div className="bg-accent/5 p-6 rounded-[30px] border border-accent/20 text-center space-y-3 overflow-x-auto">
+                  <div className="text-4xl font-black text-accent tracking-tight break-words">₦{customPrice.toLocaleString()}</div>
                   <p className="text-[9px] uppercase font-black text-secondary tracking-widest">Proposed Budget</p>
-                  <div className="flex justify-between text-sm text-secondary border-t border-purple-500/10 pt-3 mt-2 flex-wrap gap-2">
+                  <div className="flex justify-between text-sm text-secondary border-t border-accent/10 pt-3 mt-2 flex-wrap gap-2">
                     <span>60% Deposit (due now)</span>
                     <span>₦{deposit.toLocaleString()}</span>
                   </div>
@@ -831,7 +813,7 @@ export default function OrderForm() {
                     <span>40% Balance (on completion)</span>
                     <span>₦{balance.toLocaleString()}</span>
                   </div>
-                  <div className="mt-3 inline-block bg-amber-500/10 border border-amber-500/20 text-amber-500 font-bold px-3 py-1 rounded-full text-[9px] uppercase tracking-wider break-words">Subject to Team Approval</div>
+                  <div className="mt-3 inline-block bg-warning/10 border border-warning/20 text-warning font-bold px-3 py-1 rounded-full text-[9px] uppercase tracking-wider break-words">Subject to Team Approval</div>
                 </div>
               );
             }
@@ -846,12 +828,12 @@ export default function OrderForm() {
             const depositAmount = finalQuote * 0.6;
             const balanceAmount = finalQuote * 0.4;
             return (
-              <div className="bg-emerald-500/5 p-6 rounded-[30px] border border-emerald-500/20 overflow-x-auto">
+              <div className="bg-success/5 p-6 rounded-[30px] border border-success/20 overflow-x-auto">
                 <div className="space-y-2 text-sm min-w-[280px]">
                   <div className="flex justify-between flex-wrap gap-2 text-primary font-medium"> <span>Base price ({words.toLocaleString()} words × ₦{rate})</span> <span>₦{originalPrice.toLocaleString()}</span> </div>
-                  {volumeDiscountPercent > 0 && ( <div className="flex justify-between text-emerald-500 font-bold flex-wrap gap-2"> <span>Volume discount ({volumeDiscountPercent}%)</span> <span>- ₦{Math.round(volumeSaved).toLocaleString()}</span> </div> )}
-                  {promoDiscount > 0 && ( <div className="flex justify-between text-emerald-500 font-bold flex-wrap gap-2"> <span>Promo code ({promoDiscount}%)</span> <span>- ₦{Math.round(promoAmount).toLocaleString()}</span> </div> )}
-                  <div className="flex justify-between font-black text-lg pt-2 border-t border-emerald-500/10 flex-wrap gap-2 text-primary"> <span>Total Quote</span> <span className="text-emerald-500 font-black">₦{finalQuote.toLocaleString()}</span> </div>
+                  {volumeDiscountPercent > 0 && ( <div className="flex justify-between text-success font-bold flex-wrap gap-2"> <span>Volume discount ({volumeDiscountPercent}%)</span> <span>- ₦{Math.round(volumeSaved).toLocaleString()}</span> </div> )}
+                  {promoDiscount > 0 && ( <div className="flex justify-between text-success font-bold flex-wrap gap-2"> <span>Promo code ({promoDiscount}%)</span> <span>- ₦{Math.round(promoAmount).toLocaleString()}</span> </div> )}
+                  <div className="flex justify-between font-black text-lg pt-2 border-t border-success/10 flex-wrap gap-2 text-primary"> <span>Total Quote</span> <span className="text-success font-black">₦{finalQuote.toLocaleString()}</span> </div>
                   <div className="flex justify-between text-xs text-secondary mt-2 flex-wrap gap-2 border-t border-theme pt-2"> <span>60% Deposit (due now)</span> <span>₦{depositAmount.toLocaleString()}</span> </div>
                   <div className="flex justify-between text-xs text-secondary flex-wrap gap-2"> <span>40% Balance (on completion)</span> <span>₦{balanceAmount.toLocaleString()}</span> </div>
                 </div>
@@ -865,21 +847,21 @@ export default function OrderForm() {
               <div className="text-[10px] uppercase font-black text-secondary tracking-widest mb-2 ml-1 font-bold">Payment Method</div>
               <div className="flex flex-wrap gap-4">
                 <label className="flex items-center gap-2 cursor-pointer text-primary font-bold">
-                  <input type="radio" name="paymentMethod" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="accent-emerald-500" />
+                  <input type="radio" name="paymentMethod" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="accent-success" />
                   <span className="text-sm">Pay with Card (Paystack)</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer text-primary font-bold">
-                  <input type="radio" name="paymentMethod" value="wallet" checked={paymentMethod === 'wallet'} onChange={() => setPaymentMethod('wallet')} className="accent-emerald-500" />
+                  <input type="radio" name="paymentMethod" value="wallet" checked={paymentMethod === 'wallet'} onChange={() => setPaymentMethod('wallet')} className="accent-success" />
                   <span className="text-sm">
                     Pay from Wallet (Balance: ₦{walletBalance.toLocaleString()})
                     {paymentMethod === 'wallet' && walletBalance < depositAmount && (
-                      <span className="text-red-400 ml-2 font-black text-xs">– Insufficient balance</span>
+                      <span className="text-danger ml-2 font-black text-xs">– Insufficient balance</span>
                     )}
                   </span>
                 </label>
               </div>
               {paymentMethod === 'wallet' && walletBalance >= depositAmount && (
-                <p className="text-emerald-500 text-xs mt-2 font-bold">
+                <p className="text-success text-xs mt-2 font-bold">
                   Deposit of ₦{depositAmount.toLocaleString()} will be deducted from your wallet.
                 </p>
               )}
@@ -895,7 +877,7 @@ export default function OrderForm() {
 
           <div className="bg-secondary p-5 rounded-xl border border-theme">
             <label className="flex items-start gap-3 cursor-pointer">
-              <input type="checkbox" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} className="mt-1 w-5 h-5 accent-emerald-500 shrink-0 bg-primary border-theme rounded" />
+              <input type="checkbox" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} className="mt-1 w-5 h-5 accent-success shrink-0 bg-primary border-theme rounded" />
               <span className="text-sm text-primary font-bold leading-relaxed break-words">
                 I have read, understand, and agree to the Terms of Service. I authorize processing under the {paymentStructure === 'CUSTOM' ? 'selected milestone' : '60%/40% deposit'} payment structure.
               </span>
@@ -903,14 +885,15 @@ export default function OrderForm() {
           </div>
 
           <div className="flex gap-4 pt-4">
-            <button
+            <Button
+              fullWidth
               onClick={submitOrder}
               disabled={!acceptTerms || loading || (paymentMethod === 'wallet' && walletBalance < depositAmount)}
-              className="bg-emerald-500 text-black font-black uppercase text-[11px] tracking-[1.5px] py-5 px-4 rounded-full flex-1 shadow-2xl shadow-emerald-500/20 hover:bg-emerald-450 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap md:whitespace-normal cursor-pointer"
+              className="shadow-2xl shadow-success/20"
             >
               Confirm Order & Proceed
-            </button>
-            <button onClick={() => goToStep(4)} className="bg-primary text-secondary border border-theme px-6 rounded-full font-bold text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary transition"><ChevronLeft className="w-4 h-4" /> Back</button>
+            </Button>
+            <Button variant="secondary" onClick={() => goToStep(2)} icon={<ChevronLeft className="w-4 h-4" />}>Back</Button>
           </div>
         </div>
       )}

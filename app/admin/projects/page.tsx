@@ -56,8 +56,8 @@ export default function AdminProjectsPage() {
   const [total, setTotal] = useState(0);
 
   // Settings State variables
-  const [levelPrices, setLevelPrices] = useState<Record<string, number>>({ BSc: 3999, MSc: 4500, PhD: 10000 });
-  const [levelPageCounts, setLevelPageCounts] = useState<Record<string, number>>({ BSc: 50, MSc: 50, PhD: 50 });
+  const [levelPrices, setLevelPrices] = useState<Record<string, number>>({ OND: 4999, HND: 5999, BSc: 5999, MSc: 4500, PhD: 10000 });
+  const [levelPageCounts, setLevelPageCounts] = useState<Record<string, number>>({ OND: 50, HND: 50, BSc: 50, MSc: 50, PhD: 50 });
   const [deptPrices, setDeptPrices] = useState<Record<string, number>>({});
   const [pageSettings, setPageSettings] = useState<any>({
     hero_title: '', hero_description: '', disclaimer_text: '', checkout_terms: '', delivery_text: '⚡ Delivered within 4 hours', show_random: true, features: []
@@ -84,8 +84,8 @@ export default function AdminProjectsPage() {
     // Fetch dynamic project settings
     const { data: settingsData } = await supabase.from('project_settings').select('*');
     if (settingsData) {
-      let lp = { BSc: 3999, MSc: 4500, PhD: 10000 };
-      let lpc = { BSc: 50, MSc: 50, PhD: 50 };
+      let lp = { OND: 4999, HND: 5999, BSc: 5999, MSc: 4500, PhD: 10000 };
+      let lpc = { OND: 50, HND: 50, BSc: 50, MSc: 50, PhD: 50 };
       let dp = {};
       let ps: any = { hero_title: '', hero_description: '', disclaimer_text: '', checkout_terms: '', delivery_text: '⚡ Delivered within 4 hours', show_random: true, features: [] };
       settingsData.forEach(s => {
@@ -713,7 +713,7 @@ export default function AdminProjectsPage() {
                 <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Department *</label><input className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={editing.department} onChange={e => setEditing({ ...editing, department: e.target.value })} placeholder="e.g. Computer Science" /></div>
                 <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Level</label>
                   <select className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary" value={editing.level} onChange={e => { const lv = e.target.value; setEditing({ ...editing, level: lv, price: levelPrices[lv] || editing.price, pages: levelPageCounts[lv] || editing.pages }); }}>
-                    <option value="BSc">BSc / HND</option><option value="MSc">MSc / PGD</option><option value="PhD">PhD</option>
+                    <option value="OND">OND</option><option value="HND">HND</option><option value="BSc">BSc</option><option value="MSc">MSc / PGD</option><option value="PhD">PhD</option>
                   </select>
                 </div>
                 <div><label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Price (₦)</label><input type="number" className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-mono" value={editing.price} onChange={e => setEditing({ ...editing, price: Number(e.target.value) })} /></div>

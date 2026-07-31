@@ -12,7 +12,7 @@ import { Menu, X, ArrowRight, ChevronDown, ShieldCheck, LayoutDashboard, LogOut,
 const SERVICE_LINKS = [
   { href: '/developer', label: 'Full Stack Development', icon: Code2, color: 'text-cyan-500 bg-cyan-500/10' },
   { href: '/academic-writing', label: 'Academic Writing & Research', icon: GraduationCap, color: 'text-emerald-500 bg-emerald-500/10' },
-  { href: '/content-writing', label: 'Content & Creative Writing', icon: PenLine, color: 'text-amber-500 bg-amber-500/10' },
+  { href: '/content-writing', label: 'Content & Creative Writing', icon: PenLine, color: 'text-rose-500 bg-rose-500/10' },
   { href: '/resume-cv', label: 'Executive CVs & Resumes', icon: FileText, color: 'text-blue-500 bg-blue-500/10' },
   { href: '/statistics-fieldwork', label: 'Statistics, Maths & Fieldwork', icon: LineChart, color: 'text-purple-500 bg-purple-500/10' },
 ];
