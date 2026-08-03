@@ -9,8 +9,8 @@ import Footer from './components/Footer';
 import * as lucide from 'lucide-react';
 import {
   BookOpen, LineChart, PenTool, Briefcase, Terminal, ArrowRight,
-  FileEdit, Users, PackageCheck, Wallet, ArrowUpRight, CheckCircle2, Rocket,
-  ShieldCheck, Quote, Zap, Globe2, Library, ShoppingBag, ChevronDown,
+  FileEdit, Users, PackageCheck, Wallet, ArrowUpRight, CheckCircle2, ShieldCheck,
+  Quote, Zap, Globe2, Library, ShoppingBag, ChevronDown,
 } from 'lucide-react';
 import Button from './components/ui/Button';
 import { Badge } from './components/ui/Badge';
@@ -340,7 +340,7 @@ export default function LandingPage() {
       {/* Final CTA */}
       <section className="py-20 sm:py-28 px-4 sm:px-6 md:px-8 border-t border-theme">
         <div className="max-w-4xl mx-auto rounded-2xl bg-card border border-theme p-8 md:p-12 text-center relative overflow-hidden shadow-elevation-3">
-          <Rocket className="w-8 h-8 text-accent mx-auto mb-4" />
+          <ShieldCheck className="w-8 h-8 text-accent mx-auto mb-4" />
           <h2 className="font-bold tracking-tight text-2xl md:text-4xl text-primary">Ready to get your project done properly?</h2>
           <p className="text-secondary text-sm md:text-base leading-relaxed max-w-xl mx-auto mt-4">
             Submit your detailed requirements now for an instant pipeline quote, or chat with our operations lead on WhatsApp for a custom invoice schedule.
