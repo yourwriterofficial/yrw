@@ -292,7 +292,7 @@ export default function OrderAssistant() {
         setStep('category');
       }
     } else {
-      say(`Hi! I'm the ResearchWriter Assistant 🤖. ${introLine()} First — what's your name?`);
+      say(`Hi! I'm the ResearchWriter Assistant. ${introLine()} First — what's your name?`);
       setStep('askName');
     }
   };
