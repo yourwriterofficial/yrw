@@ -90,7 +90,7 @@ function StudioSidebar({ icon: Icon, badge, title, subtitle, finalQuote, quoteLa
     { n: '4', title: 'Delivery', desc: 'Source + IP transfer on completion' },
   ];
   return (
-    <div className="lg:sticky lg:top-header-28 space-y-4 h-fit">
+    <div className="lg:sticky lg:top-6 space-y-4 h-fit">
       <div>
         <p className="text-xs font-medium tracking-wide mb-3 flex items-center gap-2 text-cyan-500">
           <Icon className="w-3.5 h-3.5" /> {badge}
