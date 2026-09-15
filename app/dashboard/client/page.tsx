@@ -189,6 +189,24 @@ function DashboardContent() {
   const [orders, setOrders] = useState<AdminOrderView[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'vault' | 'wallet' | 'profile' | 'chat' | 'projects' | 'scripts' | 'affiliate'>('dashboard');
+  const [isDevelopa, setIsDevelopa] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const brand = searchParams.get('brand');
+      const savedBrand = localStorage.getItem('developa_brand');
+      if (
+        host.includes('developa.me') ||
+        host.includes('developa.local') ||
+        brand === 'developa' ||
+        savedBrand === 'developa'
+      ) {
+        setIsDevelopa(true);
+        localStorage.setItem('developa_brand', 'developa');
+      }
+    }
+  }, [searchParams]);
 
   const [processingPayment, setProcessingPayment] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -733,10 +751,12 @@ function DashboardContent() {
           <header className="mb-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-theme pb-8">
             <div>
               <h2 className="text-3xl font-black text-primary tracking-tight">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
-              <p className="text-secondary mt-1.5 text-xs font-semibold uppercase tracking-wider">Here is the current status of your research pipeline.</p>
+              <p className="text-secondary mt-1.5 text-xs font-semibold uppercase tracking-wider">
+                {isDevelopa ? 'Here is the current status of your software sprints, code deliverables & deployments.' : 'Here is the current status of your research pipeline.'}
+              </p>
             </div>
             <div className="text-xs font-bold text-secondary bg-secondary px-4 py-2.5 rounded-xl border border-theme max-w-xs shrink-0 select-none">
-              Client Portal · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              {isDevelopa ? 'Developa Engineering' : 'Client Portal'} · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </div>
           </header>
 
@@ -763,10 +783,10 @@ function DashboardContent() {
           {/* Redesigned Quick Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
             {[
-              { label: "Total Projects", value: orders.length, icon: lucide.Layers, color: "text-success", bg: "bg-success/[0.02]" },
-              { label: "Active Pipelines", value: activeOrders.length, icon: lucide.Activity, color: "text-warning", bg: "bg-warning/[0.02]" },
-              { label: "Completed Projects", value: completedOrders.length, icon: lucide.CheckCircle2, color: "text-accent", bg: "bg-accent/[0.02]" },
-              { label: "In Secure Vault", value: vaultFiles.length, icon: lucide.Lock, color: "text-info", bg: "bg-info/[0.02]" }
+              { label: isDevelopa ? "Total Builds" : "Total Projects", value: orders.length, icon: lucide.Layers, color: "text-success", bg: "bg-success/[0.02]" },
+              { label: isDevelopa ? "Active Sprints" : "Active Pipelines", value: activeOrders.length, icon: lucide.Activity, color: "text-warning", bg: "bg-warning/[0.02]" },
+              { label: isDevelopa ? "Deployed / Completed" : "Completed Projects", value: completedOrders.length, icon: lucide.CheckCircle2, color: "text-accent", bg: "bg-accent/[0.02]" },
+              { label: isDevelopa ? "Code in Vault" : "In Secure Vault", value: vaultFiles.length, icon: lucide.Lock, color: "text-info", bg: "bg-info/[0.02]" }
             ].map((stat, i) => {
               const Icon = stat.icon;
               return (
@@ -787,15 +807,20 @@ function DashboardContent() {
           {/* Recent Projects preview — full list lives on the My Orders tab */}
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black">Recent Projects</h3>
+              <h3 className="text-xl font-black">{isDevelopa ? 'Recent Builds & Sprints' : 'Recent Projects'}</h3>
               <div className="flex items-center gap-2">
                 {orders.length > 0 && (
                   <Button variant="ghost" size="sm" onClick={() => setActiveTab('orders')}>
-                    View All Orders
+                    {isDevelopa ? 'View All Builds' : 'View All Orders'}
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" icon={<lucide.Plus className="w-3 h-3" />} onClick={() => router.push('/dashboard/client/order/new/academic')}>
-                  New Order
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<lucide.Plus className="w-3 h-3" />}
+                  onClick={() => router.push(isDevelopa ? '/dashboard/client/order/new/dev?brand=developa' : '/dashboard/client/order/new/academic')}
+                >
+                  {isDevelopa ? 'New Build' : 'New Order'}
                 </Button>
               </div>
             </div>
@@ -803,9 +828,13 @@ function DashboardContent() {
             {orders.length === 0 ? (
               <div className="empty-state">
                 <lucide.Inbox className="w-12 h-12 text-secondary mx-auto mb-4" />
-                <h4 className="text-lg font-bold text-primary mb-2">No projects yet</h4>
-                <p className="text-secondary text-sm mb-6 max-w-md mx-auto">Your workspace is empty. Submit a brief to get started with your first research project.</p>
-                <Button onClick={() => router.push('/dashboard/client/order/new/academic')}>Place First Order</Button>
+                <h4 className="text-lg font-bold text-primary mb-2">{isDevelopa ? 'No software builds yet' : 'No projects yet'}</h4>
+                <p className="text-secondary text-sm mb-6 max-w-md mx-auto">
+                  {isDevelopa ? 'Your engineering workspace is empty. Submit a technical brief or scope a build to get started.' : 'Your workspace is empty. Submit a brief to get started with your first research project.'}
+                </p>
+                <Button onClick={() => router.push(isDevelopa ? '/dashboard/client/order/new/dev?brand=developa' : '/dashboard/client/order/new/academic')}>
+                  {isDevelopa ? 'Scope First Build' : 'Place First Order'}
+                </Button>
               </div>
             ) : (
               <div className="space-y-4">
@@ -827,18 +856,27 @@ function DashboardContent() {
         <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black">My Orders</h3>
-              <Button variant="ghost" size="sm" icon={<lucide.Plus className="w-3 h-3" />} onClick={() => router.push('/dashboard/client/order/new/academic')}>
-                New Order
+              <h3 className="text-xl font-black">{isDevelopa ? 'My Builds & Sprints' : 'My Orders'}</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<lucide.Plus className="w-3 h-3" />}
+                onClick={() => router.push(isDevelopa ? '/dashboard/client/order/new/dev?brand=developa' : '/dashboard/client/order/new/academic')}
+              >
+                {isDevelopa ? 'New Build' : 'New Order'}
               </Button>
             </div>
 
             {orders.length === 0 ? (
               <div className="empty-state">
                 <lucide.Inbox className="w-12 h-12 text-secondary mx-auto mb-4" />
-                <h4 className="text-lg font-bold text-primary mb-2">No projects yet</h4>
-                <p className="text-secondary text-sm mb-6 max-w-md mx-auto">Your workspace is empty. Submit a brief to get started with your first research project.</p>
-                <Button onClick={() => router.push('/dashboard/client/order/new/academic')}>Place First Order</Button>
+                <h4 className="text-lg font-bold text-primary mb-2">{isDevelopa ? 'No software builds yet' : 'No projects yet'}</h4>
+                <p className="text-secondary text-sm mb-6 max-w-md mx-auto">
+                  {isDevelopa ? 'Your engineering workspace is empty. Submit a technical brief to start your first build.' : 'Your workspace is empty. Submit a brief to get started with your first research project.'}
+                </p>
+                <Button onClick={() => router.push(isDevelopa ? '/dashboard/client/order/new/dev?brand=developa' : '/dashboard/client/order/new/academic')}>
+                  {isDevelopa ? 'Scope First Build' : 'Place First Order'}
+                </Button>
               </div>
             ) : (
               <>

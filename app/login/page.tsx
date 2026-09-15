@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/app/components/ui/Input';
@@ -9,6 +9,7 @@ import { SocialLoginButton } from '@/app/components/ui/SocialLoginButton';
 import Card from '@/app/components/ui/Card';
 import { Shell } from '@/app/components/ui/Shell';
 import ThemeToggle from '@/app/components/ThemeToggle';
+import { Terminal } from 'lucide-react';
 
 export default function LoginPage() {
   return (
@@ -25,11 +26,34 @@ function LoginInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isDevelopa, setIsDevelopa] = useState(false);
   // Seeded from ?message= so an expired or already-used email link explains
   // itself. /auth/callback and /auth/confirm both redirect here with that
   // param on failure, but nothing read it — the user just landed on a blank
   // login form with no idea why their link hadn't worked.
   const [error, setError] = useState(searchParams.get('message') ?? '');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const brand = searchParams.get('brand');
+      const ref = document.referrer;
+      const savedBrand = localStorage.getItem('developa_brand');
+      if (
+        host.includes('developa.me') ||
+        host.includes('developa.local') ||
+        brand === 'developa' ||
+        nextPath?.includes('dev') ||
+        ref.includes('developa.me') ||
+        ref.includes('/developer') ||
+        ref.includes('/order/dev') ||
+        savedBrand === 'developa'
+      ) {
+        setIsDevelopa(true);
+        localStorage.setItem('developa_brand', 'developa');
+      }
+    }
+  }, [searchParams, nextPath]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,15 +103,18 @@ function LoginInner() {
     } else if (nextPath && nextPath.startsWith('/')) {
       window.location.href = nextPath;
     } else {
-      window.location.href = '/dashboard/client';
+      window.location.href = isDevelopa ? '/dashboard/client?brand=developa' : '/dashboard/client';
     }
   };
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    const callbackRedirect = isDevelopa
+      ? `${window.location.origin}/auth/callback?brand=developa`
+      : `${window.location.origin}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: callbackRedirect },
     });
     if (error) {
       setError(error.message);
@@ -98,15 +125,32 @@ function LoginInner() {
   return (
     <div className="min-h-screen bg-primary flex items-center justify-center p-4">
       <Shell size="sm" className="w-full max-w-md">
-        <Card elevation={2} padding="lg" className="w-full">
-          <div className="flex justify-end mb-4">
+        <Card elevation={2} padding="lg" className={`w-full ${isDevelopa ? 'border-cyan-500/20 shadow-xl shadow-cyan-950/20' : ''}`}>
+          <div className="flex justify-between items-center mb-4">
+            {isDevelopa ? (
+              <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs font-black">
+                <Terminal className="w-4 h-4" />
+                <span>developa.me</span>
+              </div>
+            ) : <div />}
             <ThemeToggle compact />
           </div>
           <div className="text-center mb-8">
-            <div className="inline-block px-3 py-1 bg-success-bg text-success border border-success/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
-              Client Portal
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 ${
+              isDevelopa
+                ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono'
+                : 'bg-success-bg text-success border border-success/20'
+            }`}>
+              {isDevelopa ? 'Client Engineering Portal' : 'Client Portal'}
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-primary">Welcome Back</h1>
+            <h1 className="text-2xl font-black tracking-tight text-primary">
+              {isDevelopa ? 'Engineering Sign-In' : 'Welcome Back'}
+            </h1>
+            {isDevelopa && (
+              <p className="text-xs text-secondary mt-1.5 leading-relaxed">
+                Log in to review architecture sprints, repository releases & milestone deliverables.
+              </p>
+            )}
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -133,8 +177,15 @@ function LoginInner() {
                 {error}
               </p>
             )}
-            <Button type="submit" size="lg" fullWidth loading={loading} loadingText="Authenticating…">
-              Secure Login
+            <Button
+              type="submit"
+              size="lg"
+              fullWidth
+              loading={loading}
+              loadingText="Authenticating…"
+              className={isDevelopa ? '!bg-cyan-500 hover:!bg-cyan-400 !text-black font-black uppercase tracking-wider' : ''}
+            >
+              {isDevelopa ? 'Access Engineering Portal' : 'Secure Login'}
             </Button>
           </form>
 
@@ -151,8 +202,11 @@ function LoginInner() {
 
           <p className="text-center text-xs text-secondary mt-8">
             Don&apos;t have an account?{' '}
-            <a href="/register" className="text-accent hover:text-accent-hover font-bold transition focus-ring rounded">
-              Create one
+            <a
+              href={isDevelopa ? '/register?brand=developa' : '/register'}
+              className={`${isDevelopa ? 'text-cyan-400 hover:text-cyan-300' : 'text-accent hover:text-accent-hover'} font-bold transition focus-ring rounded`}
+            >
+              {isDevelopa ? 'Create client account' : 'Create one'}
             </a>
           </p>
         </Card>

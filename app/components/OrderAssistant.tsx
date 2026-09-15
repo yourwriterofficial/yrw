@@ -248,9 +248,32 @@ export default function OrderAssistant() {
 
 
 
+  const [isDevelopa, setIsDevelopa] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const brand = new URLSearchParams(window.location.search).get('brand');
+      const savedBrand = localStorage.getItem('developa_brand');
+      if (
+        host.includes('developa.me') ||
+        host.includes('developa.local') ||
+        brand === 'developa' ||
+        pathname?.startsWith('/developer') ||
+        pathname?.startsWith('/order/dev') ||
+        pathname === '/order' ||
+        savedBrand === 'developa'
+      ) {
+        setIsDevelopa(true);
+      } else {
+        setIsDevelopa(false);
+      }
+    }
+  }, [pathname]);
+
   const category = data.category as CategoryId | undefined;
   const catDef = category ? CATEGORIES.find(c => c.id === category)! : undefined;
-  const accent = accentClasses(catDef?.accent || 'violet');
+  const accent = accentClasses(isDevelopa ? 'cyan' : (catDef?.accent || 'violet'));
   const firstName = (data.name || loggedInProfile?.full_name || '').split(' ')[0];
 
   const say = (text: string) => setHistory(h => [...h, { role: 'bot', text }]);
@@ -267,7 +290,7 @@ export default function OrderAssistant() {
 
   const reset = () => {
     setHistory([]);
-    setData(d => ({ name: d.name }));
+    setData(d => ({ name: d.name, ...(isDevelopa ? { category: 'dev' } : {}) }));
     setAddons([]);
     setAddonIndex(0);
     setSelectedAddons([]);
@@ -279,12 +302,19 @@ export default function OrderAssistant() {
     setTimeout(() => greet(), 150);
   };
 
-  const introLine = () => "By the way — if you'd rather talk to a writer directly, just tap \"Contact Writer\" up top any time.";
+  const introLine = () =>
+    isDevelopa
+      ? "If you'd like to discuss architecture or specs directly with our dev lead, tap \"Talk to Dev Lead\" up top any time."
+      : "By the way — if you'd rather talk to a writer directly, just tap \"Contact Writer\" up top any time.";
 
   const greet = () => {
     if (isLoggedIn) {
       const name = firstName || 'there';
-      if (hasHistory) {
+      if (isDevelopa) {
+        say(`Welcome back, ${name}! I'm your Developa technical scoping lead. ${introLine()} Let's scope your next software build.`);
+        setData(d => ({ ...d, category: 'dev' }));
+        advance('devBuild', "In your own words — what do you want to build or automate?");
+      } else if (hasHistory) {
         say(`Welcome back, ${name}! I'm the ResearchWriter Assistant. ${introLine()} What would you like to do today?`);
         setStep('quickMenu');
       } else {
@@ -292,8 +322,13 @@ export default function OrderAssistant() {
         setStep('category');
       }
     } else {
-      say(`Hi! I'm the ResearchWriter Assistant. ${introLine()} First — what's your name?`);
-      setStep('askName');
+      if (isDevelopa) {
+        say(`Hi! I'm the Developa technical scoping assistant. ${introLine()} First — what's your name?`);
+        setStep('askName');
+      } else {
+        say(`Hi! I'm the ResearchWriter Assistant. ${introLine()} First — what's your name?`);
+        setStep('askName');
+      }
     }
   };
 
@@ -326,19 +361,28 @@ export default function OrderAssistant() {
     if (!inputVal.trim()) return;
     const name = inputVal.trim();
     reply(name);
-    setData(d => ({ ...d, name }));
+    setData(d => ({ ...d, name, ...(isDevelopa ? { category: 'dev' } : {}) }));
     setInputVal('');
-    advance('category', `Great to meet you, ${name.split(' ')[0]}! How can I help you today?`);
+    if (isDevelopa) {
+      advance('devBuild', `Great to meet you, ${name.split(' ')[0]}! What software project, web application, or automation are you looking to build?`);
+    } else {
+      advance('category', `Great to meet you, ${name.split(' ')[0]}! How can I help you today?`);
+    }
   };
 
   // ---------- Quick menu (returning logged-in users) ----------
   const pickQuickAction = async (action: string) => {
     reply(action);
-    if (action === 'Start a New Order') {
+    if (action === 'Start a New Order' || action === 'Scope a New Software Project') {
+      if (isDevelopa) {
+        setData(d => ({ ...d, category: 'dev' }));
+        advance('devBuild', 'Great! What software project, web application, or automation would you like to build?');
+        return;
+      }
       advance('category', 'Sounds good — how can I help you today?');
       return;
     }
-    if (action === 'Check My Order Status') {
+    if (action === 'Check My Order Status' || action === 'Check Project / Build Status') {
       setThinking(true);
       const { data: orders } = await supabase
         .from('orders')
@@ -348,12 +392,12 @@ export default function OrderAssistant() {
         .limit(1);
       setThinking(false);
       const o = orders?.[0];
-      if (!o) { say("You don't have any orders yet — want to start one?"); }
-      else { say(`Your most recent order ${o.order_id} ("${o.topic}") is currently: ${o.workflow_status}. Quote: ₦${(o.financial_quote || 0).toLocaleString()}, due ${o.deadline ? new Date(o.deadline).toLocaleDateString() : 'TBC'}.`); }
+      if (!o) { say(isDevelopa ? "You don't have any projects in flight yet — want to scope one?" : "You don't have any orders yet — want to start one?"); }
+      else { say(`Your most recent project ${o.order_id} ("${o.topic}") is currently: ${o.workflow_status}. Quote: ₦${(o.financial_quote || 0).toLocaleString()}, target handover: ${o.deadline ? new Date(o.deadline).toLocaleDateString() : 'TBC'}.`); }
       setTimeout(() => { say('Anything else I can help with?'); setStep('quickMenu'); }, 400);
       return;
     }
-    if (action === 'View My Order History') {
+    if (action === 'View My Order History' || action === 'View Previous Builds') {
       setThinking(true);
       const { data: orders } = await supabase
         .from('orders')
@@ -362,12 +406,12 @@ export default function OrderAssistant() {
         .order('created_at', { ascending: false })
         .limit(10);
       setThinking(false);
-      if (!orders || orders.length === 0) { say("No orders on file yet — want to start one?"); }
+      if (!orders || orders.length === 0) { say(isDevelopa ? "No previous builds on file yet — want to scope one?" : "No orders on file yet — want to start one?"); }
       else { say(orders.map(o => `• ${o.order_id} — ${o.topic} (${o.workflow_status}, ₦${(o.financial_quote || 0).toLocaleString()})`).join('\n')); }
       setTimeout(() => { say('Anything else I can help with?'); setStep('quickMenu'); }, 400);
       return;
     }
-    if (action === 'Pay Outstanding Balance') {
+    if (action === 'Pay Outstanding Balance' || action === 'Pay Milestone / Deposit') {
       setThinking(true);
       const { data: orders } = await supabase
         .from('orders')
@@ -379,7 +423,7 @@ export default function OrderAssistant() {
       if (!due) { say("You're all caught up — no outstanding balance!"); setStep('quickMenu'); return; }
       const isDeposit = !due.sixty_percent_paid;
       const amount = Math.round((due.financial_quote || 0) * (isDeposit ? 0.6 : 0.4));
-      say(`You have ${isDeposit ? 'a deposit' : 'a balance'} of ₦${amount.toLocaleString()} due on ${due.order_id}. Generating your payment link...`);
+      say(`You have ${isDeposit ? 'an initial milestone deposit' : 'a final release balance'} of ₦${amount.toLocaleString()} due on ${due.order_id}. Generating your secure payment link...`);
       try {
         const res = await fetch('/api/paystack/create-invoice', {
           method: 'POST',
@@ -408,8 +452,10 @@ export default function OrderAssistant() {
       setTimeout(() => { setTourStep(0); setTourActive(true); }, 500);
       return;
     }
-    if (action === 'Message My Writer on WhatsApp') {
-      const msg = `Hi, this is ${loggedInProfile?.full_name || firstName || 'a client'} — I'd like to speak with a writer about my order.`;
+    if (action === 'Message My Writer on WhatsApp' || action === 'Talk to Dev Lead on WhatsApp') {
+      const msg = isDevelopa
+        ? `Hi, this is ${loggedInProfile?.full_name || firstName || 'a client'} — I'd like to speak with the dev lead about my project.`
+        : `Hi, this is ${loggedInProfile?.full_name || firstName || 'a client'} — I'd like to speak with a writer about my order.`;
       window.open(waLink(msg), '_blank');
       say('Opening WhatsApp for you now.');
       setStep('quickMenu');
@@ -843,7 +889,9 @@ export default function OrderAssistant() {
   };
 
   const contactWriter = () => {
-    const msg = `Hi, this is ${data.name || loggedInProfile?.full_name || 'a visitor'} — I'd like to speak with a writer directly${category ? ` about a ${catDef?.label.toLowerCase()} project` : ''}.`;
+    const msg = isDevelopa
+      ? `Hi, this is ${data.name || loggedInProfile?.full_name || 'a visitor'} — I'd like to discuss a software engineering project on developa.me.`
+      : `Hi, this is ${data.name || loggedInProfile?.full_name || 'a visitor'} — I'd like to speak with a writer directly${category ? ` about a ${catDef?.label.toLowerCase()} project` : ''}.`;
     window.open(waLink(msg), '_blank');
   };
 
@@ -892,7 +940,9 @@ export default function OrderAssistant() {
     if (rows.length === 0) return null;
     return (
       <div className="border-t border-theme bg-secondary/60 px-3 py-2 max-h-24 overflow-y-auto custom-scrollbar shrink-0 space-y-1">
-        <p className="text-[9px] uppercase font-black tracking-widest text-secondary mb-1">📝 Your Order Notes</p>
+        <p className="text-[9px] uppercase font-black tracking-widest text-secondary mb-1">
+          {isDevelopa ? '⚡ Technical Build Specs' : '📝 Your Order Notes'}
+        </p>
         {rows.map(([label, val]) => <TypewriterLine key={label + val} label={label} text={val} />)}
       </div>
     );
@@ -903,14 +953,18 @@ export default function OrderAssistant() {
       case 'askName':
         return <TextRow onSubmit={submitName} placeholder="Your name" />;
 
-      case 'quickMenu':
+      case 'quickMenu': {
+        const quickActions = isDevelopa
+          ? ['Scope a New Software Project', 'Check Project / Build Status', 'View Previous Builds', 'Pay Milestone / Deposit', 'Talk to Dev Lead on WhatsApp']
+          : ['Start a New Order', 'Check My Order Status', 'View My Order History', 'Pay Outstanding Balance', 'Take a Dashboard Tour', 'Message My Writer on WhatsApp', 'Update My Account'];
         return (
           <div className="flex flex-col gap-2">
-            {['Start a New Order', 'Check My Order Status', 'View My Order History', 'Pay Outstanding Balance', 'Take a Dashboard Tour', 'Message My Writer on WhatsApp', 'Update My Account'].map(a => (
+            {quickActions.map(a => (
               <Chip key={a} onClick={() => pickQuickAction(a)}>{a}</Chip>
             ))}
           </div>
         );
+      }
 
       case 'category':
         return (
@@ -1119,22 +1173,43 @@ export default function OrderAssistant() {
   return (
     <>
       {!open && !tourActive && (
-        <button onClick={openAssistant} className="fixed fab-bottom-safe left-6 z-50 flex items-center gap-2 pl-3 pr-4 py-3 rounded-full shadow-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:brightness-110 transition" aria-label="Open order assistant">
-          <HelpCircle className="w-5 h-5" />
-          <span className="text-xs font-black uppercase tracking-wide hidden sm:inline">Need Help Ordering?</span>
+        <button
+          onClick={openAssistant}
+          className={`fixed fab-bottom-safe left-6 z-50 flex items-center gap-2 pl-3 pr-4 py-3 rounded-full shadow-lg transition hover:brightness-110 ${
+            isDevelopa
+              ? 'bg-slate-900 border border-cyan-500/40 text-cyan-400 shadow-cyan-950/40'
+              : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
+          }`}
+          aria-label="Open order assistant"
+        >
+          {isDevelopa ? <Terminal className="w-5 h-5 text-cyan-400" /> : <HelpCircle className="w-5 h-5" />}
+          <span className="text-xs font-black uppercase tracking-wide hidden sm:inline">
+            {isDevelopa ? 'Need Help Scoping?' : 'Need Help Ordering?'}
+          </span>
         </button>
       )}
 
       {open && (
         <div className="fixed fab-bottom-safe left-6 z-50 w-[92vw] max-w-sm bg-card border border-theme rounded-[24px] shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '82vh' }}>
-          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shrink-0">
+          <div className={`flex items-center justify-between px-4 py-3 text-white shrink-0 ${
+            isDevelopa
+              ? 'bg-slate-950 border-b border-cyan-500/20 text-slate-100'
+              : 'bg-gradient-to-r from-violet-600 to-indigo-600'
+          }`}>
             <div className="flex items-center gap-2">
-              <HelpCircle className="w-4 h-4" />
-              <span className="text-xs font-black uppercase tracking-wide">Order Assistant</span>
+              {isDevelopa ? <Terminal className="w-4 h-4 text-cyan-400" /> : <HelpCircle className="w-4 h-4" />}
+              <span className="text-xs font-black uppercase tracking-wide">
+                {isDevelopa ? 'Technical Scoping' : 'Order Assistant'}
+              </span>
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={contactWriter} title="Contact Writer directly on WhatsApp" className="flex items-center gap-1 px-2 py-1.5 hover:bg-white/10 rounded-lg cursor-pointer text-[10px] font-black uppercase">
-                <MessageCircle className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Contact Writer</span>
+              <button
+                onClick={contactWriter}
+                title={isDevelopa ? 'Talk to Dev Lead on WhatsApp' : 'Contact Writer directly on WhatsApp'}
+                className="flex items-center gap-1 px-2 py-1.5 hover:bg-white/10 rounded-lg cursor-pointer text-[10px] font-black uppercase"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isDevelopa ? 'Talk to Dev Lead' : 'Contact Writer'}</span>
               </button>
               {history.length > 0 && <button onClick={reset} title="Start over" className="p-2.5 hover:bg-white/10 rounded-lg cursor-pointer"><ArrowLeft className="w-4 h-4" /></button>}
               <button onClick={() => setOpen(false)} className="p-2.5 hover:bg-white/10 rounded-lg cursor-pointer"><X className="w-4 h-4" /></button>
@@ -1147,17 +1222,27 @@ export default function OrderAssistant() {
                 const link = m.text.replace('__PAY_LINK__', '');
                 return (
                   <div key={i} className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 bg-violet-500/20 text-violet-400"><Headphones className="w-3.5 h-3.5" /></div>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isDevelopa ? 'bg-cyan-500/20 text-cyan-400' : 'bg-violet-500/20 text-violet-400'}`}>
+                      {isDevelopa ? <Terminal className="w-3.5 h-3.5" /> : <Headphones className="w-3.5 h-3.5" />}
+                    </div>
                     <a href={link} className="px-3 py-2 rounded-2xl text-xs font-black uppercase bg-emerald-500 text-black rounded-tl-sm">Pay Now →</a>
                   </div>
                 );
               }
               return (
                 <div key={i} className={`flex items-start gap-2 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${m.role === 'bot' ? 'bg-violet-500/20 text-violet-400' : 'bg-secondary text-secondary'}`}>
-                    {m.role === 'bot' ? <Headphones className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                    m.role === 'bot'
+                      ? (isDevelopa ? 'bg-cyan-500/20 text-cyan-400' : 'bg-violet-500/20 text-violet-400')
+                      : 'bg-secondary text-secondary'
+                  }`}>
+                    {m.role === 'bot' ? (
+                      isDevelopa ? <Terminal className="w-3.5 h-3.5" /> : <Headphones className="w-3.5 h-3.5" />
+                    ) : (
+                      <UserIcon className="w-3.5 h-3.5" />
+                    )}
                   </div>
-                  <div className={`px-3 py-2 rounded-2xl text-xs leading-relaxed max-w-[80%] whitespace-pre-line ${m.role === 'bot' ? 'bg-secondary text-primary rounded-tl-sm' : 'bg-emerald-500/10 text-primary rounded-tr-sm'}`}>
+                  <div className={`px-3 py-2 rounded-2xl text-xs leading-relaxed max-w-[80%] whitespace-pre-line ${m.role === 'bot' ? 'bg-secondary text-primary rounded-tl-sm' : `${isDevelopa ? 'bg-cyan-500/10' : 'bg-emerald-500/10'} text-primary rounded-tr-sm`}`}>
                     {m.text}
                   </div>
                 </div>
@@ -1165,7 +1250,9 @@ export default function OrderAssistant() {
             })}
             {thinking && (
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center bg-violet-500/20 text-violet-400"><Headphones className="w-3.5 h-3.5" /></div>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isDevelopa ? 'bg-cyan-500/20 text-cyan-400' : 'bg-violet-500/20 text-violet-400'}`}>
+                  {isDevelopa ? <Terminal className="w-3.5 h-3.5" /> : <Headphones className="w-3.5 h-3.5" />}
+                </div>
                 <div className="px-3 py-2 rounded-2xl bg-secondary text-secondary text-xs">•••</div>
               </div>
             )}

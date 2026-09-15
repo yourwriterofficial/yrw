@@ -31,9 +31,16 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      const redirectUrl = next && next.startsWith('/')
+      const brand = requestUrl.searchParams.get('brand');
+      const isDevelopa = brand === 'developa' || (next && next.includes('brand=developa')) || requestUrl.hostname.includes('developa.me');
+
+      let redirectUrl = next && next.startsWith('/')
         ? `${requestUrl.origin}${next}`
         : `${requestUrl.origin}/dashboard/client?verified=true`;
+
+      if (isDevelopa && !redirectUrl.includes('brand=developa')) {
+        redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 'brand=developa';
+      }
 
       const response = NextResponse.redirect(redirectUrl);
       response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');

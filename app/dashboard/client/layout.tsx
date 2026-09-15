@@ -75,6 +75,54 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [unviewedVaultCount, setUnviewedVaultCount] = useState(0);
+  const [isDevelopa, setIsDevelopa] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const brand = searchParams.get('brand');
+      const savedBrand = localStorage.getItem('developa_brand');
+      if (
+        host.includes('developa.me') ||
+        host.includes('developa.local') ||
+        brand === 'developa' ||
+        pathname?.includes('/dev') ||
+        savedBrand === 'developa'
+      ) {
+        setIsDevelopa(true);
+        localStorage.setItem('developa_brand', 'developa');
+      }
+    }
+  }, [searchParams, pathname]);
+
+  const effectiveNavGroups: NavGroup[] = isDevelopa
+    ? [
+        {
+          title: 'Engineering Workspace',
+          items: [
+            { key: 'dashboard', label: 'Project Overview', href: '/dashboard/client?brand=developa', icon: 'LayoutDashboard', tourId: 'rw-tour-dashboard' },
+            { key: 'new', label: 'Scope New Project', href: '/dashboard/client/order/new/dev?brand=developa', icon: 'Terminal', tourId: 'rw-tour-neworder' },
+            { key: 'orders', label: 'Active Builds & Sprints', href: '/dashboard/client?tab=orders&brand=developa', icon: 'Code2' },
+            { key: 'scripts', label: 'My Code & Templates', href: '/dashboard/client?tab=scripts&brand=developa', icon: 'FileCode' },
+          ],
+        },
+        {
+          title: 'Escrow & Code Vault',
+          items: [
+            { key: 'vault', label: 'Code & Handover Vault', href: '/dashboard/client?tab=vault&brand=developa', icon: 'Lock', tourId: 'rw-tour-vault' },
+            { key: 'wallet', label: 'Escrow & Wallet Ledger', href: '/dashboard/client?tab=wallet&brand=developa', icon: 'Wallet', tourId: 'rw-tour-wallet' },
+            { key: 'affiliate', label: 'Referral Partner Hub', href: '/dashboard/client?tab=affiliate&brand=developa', icon: 'Coins' },
+          ],
+        },
+        {
+          title: 'Dev Support',
+          items: [
+            { key: 'profile', label: 'Developer Credentials', href: '/dashboard/client?tab=profile&brand=developa', icon: 'User', tourId: 'rw-tour-profile' },
+            { key: 'chat', label: 'Engineering Helpdesk', href: '/dashboard/client?tab=chat&brand=developa', icon: 'MessageSquare' },
+          ],
+        },
+      ]
+    : NAV_GROUPS;
 
   const fetchUnviewedVault = useCallback(async () => {
     try {
@@ -225,11 +273,25 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row selection:bg-accent/30">
       <aside className="hidden md:flex flex-col w-72 bg-secondary border-r border-theme h-screen sticky top-0 p-5 z-40 relative overflow-hidden">
         <div className="flex items-center gap-3 mb-6 shrink-0 relative z-10">
-          <div className="w-9 h-9 bg-accent rounded-xl flex items-center justify-center text-[var(--accent-foreground)] font-black text-lg shadow-sm">Y</div>
-          <div>
-            <h1 className="font-black tracking-tight leading-none text-base">YRW</h1>
-            <p className="text-[10px] text-accent uppercase tracking-widest font-bold">Client Portal</p>
-          </div>
+          {isDevelopa ? (
+            <>
+              <div className="w-9 h-9 bg-slate-900 border border-cyan-500/40 rounded-xl flex items-center justify-center text-cyan-400 font-mono font-black text-lg shadow-sm shadow-cyan-950/40">
+                &gt;_
+              </div>
+              <div>
+                <h1 className="font-black tracking-tight leading-none text-base text-slate-100 font-mono">developa<span className="text-cyan-400">.me</span></h1>
+                <p className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold font-mono">Engineering Portal</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-9 h-9 bg-accent rounded-xl flex items-center justify-center text-[var(--accent-foreground)] font-black text-lg shadow-sm">Y</div>
+              <div>
+                <h1 className="font-black tracking-tight leading-none text-base">YRW</h1>
+                <p className="text-[10px] text-accent uppercase tracking-widest font-bold">Client Portal</p>
+              </div>
+            </>
+          )}
         </div>
 
         {(profile?.is_admin || profile?._original_is_admin) && (
@@ -244,7 +306,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         )}
 
         <nav className="flex flex-col gap-0.5 flex-1 min-h-0 overflow-y-auto pr-1 relative z-10">
-          {NAV_GROUPS.map((group, gi) => (
+          {effectiveNavGroups.map((group, gi) => (
             <div key={group.title || `group-${gi}`} className={gi === 0 ? 'flex flex-col gap-0.5' : 'mt-3 flex flex-col gap-0.5'}>
               {group.title && <p className="text-[10px] uppercase tracking-widest text-secondary font-black pl-2 mb-1">{group.title}</p>}
               {group.items.map((item) => renderNavItem(item, gi === 0))}
@@ -252,17 +314,21 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="shrink-0 relative z-10">
-          <PromoBanner position="sidebar" limit={1} />
-        </div>
+        {!isDevelopa && (
+          <div className="shrink-0 relative z-10">
+            <PromoBanner position="sidebar" limit={1} />
+          </div>
+        )}
 
         <div className="mt-3 shrink-0 relative z-10 space-y-3">
-          <Link
-            href="/advertise"
-            className="flex items-center justify-center gap-1.5 w-full py-2 rounded-full border border-warning/30 bg-warning/5 hover:bg-warning/10 text-warning font-semibold text-[11px] transition cursor-pointer"
-          >
-            <lucide.Megaphone className="w-3.5 h-3.5" /> Advertise With Us
-          </Link>
+          {!isDevelopa && (
+            <Link
+              href="/advertise"
+              className="flex items-center justify-center gap-1.5 w-full py-2 rounded-full border border-warning/30 bg-warning/5 hover:bg-warning/10 text-warning font-semibold text-[11px] transition cursor-pointer"
+            >
+              <lucide.Megaphone className="w-3.5 h-3.5" /> Advertise With Us
+            </Link>
+          )}
 
           <div className="bg-card border border-theme rounded-2xl p-3">
             <div className="flex items-center justify-between gap-2">
@@ -287,8 +353,19 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       <div className="md:hidden bg-secondary border-b border-theme px-4 pb-4 topbar-safe flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-[var(--accent-foreground)] font-black">Y</div>
-          <span className="font-bold text-primary">Portal</span>
+          {isDevelopa ? (
+            <>
+              <div className="w-8 h-8 bg-slate-900 border border-cyan-500/40 rounded-lg flex items-center justify-center text-cyan-400 font-mono font-black text-sm">
+                &gt;_
+              </div>
+              <span className="font-mono font-bold text-primary">developa.me</span>
+            </>
+          ) : (
+            <>
+              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-[var(--accent-foreground)] font-black">Y</div>
+              <span className="font-bold text-primary">Portal</span>
+            </>
+          )}
         </div>
         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2.5 text-primary hover:bg-hover rounded-lg" aria-label="Toggle menu">
           {mobileMenuOpen ? <lucide.X className="w-5 h-5" /> : <lucide.Menu className="w-5 h-5" />}
@@ -307,21 +384,23 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               <lucide.Shield className="w-4 h-4 mr-2" /> Admin Control Panel
             </Button>
           )}
-          {NAV_GROUPS.map((group, gi) => (
+          {effectiveNavGroups.map((group, gi) => (
             <div key={group.title || `mgroup-${gi}`} className={gi === 0 ? 'flex flex-col gap-1' : 'mt-3 flex flex-col gap-1'}>
               {group.title && <p className="text-[10px] uppercase tracking-widest text-secondary font-black pl-4 mb-1">{group.title}</p>}
               {group.items.map((item) => renderNavItem(item, gi === 0, () => setMobileMenuOpen(false)))}
             </div>
           ))}
-          <div className="border-t border-theme mt-1 pt-2">
-            <Link
-              href="/advertise"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl bg-warning/10 text-warning font-black text-xs uppercase tracking-wider border border-warning/25 transition cursor-pointer"
-            >
-              <lucide.Megaphone className="w-4 h-4" /> Advertise With Us
-            </Link>
-          </div>
+          {!isDevelopa && (
+            <div className="border-t border-theme mt-1 pt-2">
+              <Link
+                href="/advertise"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 w-full p-3 rounded-xl bg-warning/10 text-warning font-black text-xs uppercase tracking-wider border border-warning/25 transition cursor-pointer"
+              >
+                <lucide.Megaphone className="w-4 h-4" /> Advertise With Us
+              </Link>
+            </div>
+          )}
           <div className="p-2">
             <ThemeToggle />
           </div>
@@ -333,7 +412,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       <main className="flex-1 overflow-y-auto flex flex-col h-screen bg-primary">
         <header className="bg-secondary/40 backdrop-blur-md border-b border-theme px-6 py-4 flex justify-between items-center sticky top-0 z-30 shrink-0">
-          <span className="font-black text-xs uppercase tracking-widest text-secondary">Client Portal</span>
+          <span className="font-black text-xs uppercase tracking-widest text-secondary">
+            {isDevelopa ? 'Developa Engineering Portal' : 'Client Portal'}
+          </span>
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard/client?tab=chat"

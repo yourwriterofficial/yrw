@@ -55,11 +55,18 @@ export async function GET(request: NextRequest) {
           await applyReferralIfEligible(admin, { userId: user.id, refCode });
         }
 
-        const redirectUrl = isAdminEmail
+        const brand = requestUrl.searchParams.get('brand');
+        const isDevelopa = brand === 'developa' || (next && next.includes('brand=developa')) || requestUrl.hostname.includes('developa.me');
+
+        let redirectUrl = isAdminEmail
           ? `${requestUrl.origin}/admin`
           : next && next.startsWith('/')
             ? `${requestUrl.origin}${next}`
             : `${requestUrl.origin}/dashboard/client?verified=true`;
+
+        if (!isAdminEmail && isDevelopa && !redirectUrl.includes('brand=developa')) {
+          redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 'brand=developa';
+        }
 
         const response = NextResponse.redirect(redirectUrl);
         // Prevent CDN caching for secure auth routes

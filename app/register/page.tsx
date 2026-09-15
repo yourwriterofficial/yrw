@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
 import { Checkbox } from '@/app/components/ui/Checkbox';
@@ -12,15 +12,48 @@ import { Shell } from '@/app/components/ui/Shell';
 import { showToast } from '@/app/components/ui/Toast';
 import { REFERRAL_STORAGE_KEY } from '@/app/components/ReferralCapture';
 import ThemeToggle from '@/app/components/ThemeToggle';
+import { Terminal } from 'lucide-react';
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-primary flex items-center justify-center p-4">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <RegisterInner />
+    </Suspense>
+  );
+}
+
+function RegisterInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isDevelopa, setIsDevelopa] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const brand = searchParams.get('brand');
+      const ref = document.referrer;
+      if (
+        host.includes('developa.me') ||
+        host.includes('developa.local') ||
+        brand === 'developa' ||
+        ref.includes('developa.me') ||
+        ref.includes('/developer') ||
+        ref.includes('/order/dev')
+      ) {
+        setIsDevelopa(true);
+      }
+    }
+  }, [searchParams]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,14 +90,18 @@ export default function RegisterPage() {
     }
 
     showToast('Registration successful! Please check your email to confirm.', 'success');
-    router.push('/login');
+    router.push(isDevelopa ? '/login?brand=developa' : '/login');
     setLoading(false);
   };
 
   const handleGoogleSignUp = async () => {
     setLoading(true);
     const refCode = localStorage.getItem(REFERRAL_STORAGE_KEY);
-    const callbackUrl = `${window.location.origin}/auth/callback${refCode ? `?ref=${encodeURIComponent(refCode)}` : ''}`;
+    const query = new URLSearchParams();
+    if (refCode) query.set('ref', refCode);
+    if (isDevelopa) query.set('brand', 'developa');
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    const callbackUrl = `${window.location.origin}/auth/callback${queryString}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: callbackUrl },
@@ -78,15 +115,32 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-primary flex items-center justify-center p-4">
       <Shell size="sm" className="w-full max-w-md">
-        <Card elevation={2} padding="lg" className="w-full">
-          <div className="flex justify-end mb-4">
+        <Card elevation={2} padding="lg" className={`w-full ${isDevelopa ? 'border-cyan-500/20 shadow-xl shadow-cyan-950/20' : ''}`}>
+          <div className="flex justify-between items-center mb-4">
+            {isDevelopa ? (
+              <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs font-black">
+                <Terminal className="w-4 h-4" />
+                <span>developa.me</span>
+              </div>
+            ) : <div />}
             <ThemeToggle compact />
           </div>
           <div className="text-center mb-8">
-            <div className="inline-block px-3 py-1 bg-success-bg text-success border border-success/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
-              Registration
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 ${
+              isDevelopa
+                ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono'
+                : 'bg-success-bg text-success border border-success/20'
+            }`}>
+              {isDevelopa ? 'Client Engineering Portal' : 'Registration'}
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-primary">Create Account</h1>
+            <h1 className="text-2xl font-black tracking-tight text-primary">
+              {isDevelopa ? 'Create Client Account' : 'Create Account'}
+            </h1>
+            {isDevelopa && (
+              <p className="text-xs text-secondary mt-1.5 leading-relaxed">
+                Register to track custom software sprints, milestone releases & repository handovers.
+              </p>
+            )}
           </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
@@ -127,8 +181,15 @@ export default function RegisterPage() {
                 {error}
               </p>
             )}
-            <Button type="submit" size="lg" fullWidth loading={loading} loadingText="Processing…">
-              Register
+            <Button
+              type="submit"
+              size="lg"
+              fullWidth
+              loading={loading}
+              loadingText="Processing…"
+              className={isDevelopa ? '!bg-cyan-500 hover:!bg-cyan-400 !text-black font-black uppercase tracking-wider' : ''}
+            >
+              {isDevelopa ? 'Create Engineering Account' : 'Register'}
             </Button>
           </form>
 
@@ -145,7 +206,10 @@ export default function RegisterPage() {
 
           <p className="text-center text-xs text-secondary mt-8">
             Already have an account?{' '}
-            <a href="/login" className="text-accent hover:text-accent-hover font-bold transition focus-ring rounded">
+            <a
+              href={isDevelopa ? '/login?brand=developa' : '/login'}
+              className={`${isDevelopa ? 'text-cyan-400 hover:text-cyan-300' : 'text-accent hover:text-accent-hover'} font-bold transition focus-ring rounded`}
+            >
               Login securely
             </a>
           </p>
