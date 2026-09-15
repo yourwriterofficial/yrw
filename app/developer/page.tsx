@@ -169,7 +169,7 @@ export default function DeveloperPage() {
                 <Terminal className="w-3.5 h-3.5 mr-1.5" /> Development Pipeline
               </Badge>
               <h1 className="font-display italic font-semibold tracking-tight text-[2.25rem] leading-[1.15] sm:text-5xl sm:leading-[1.1] md:text-6xl mb-6">
-                {headline.base && <>{headline.base}{' '}</>}
+                {headline.base ? `${headline.base} ` : ''}
                 <span className="text-cyan-500">{headline.accent}</span>
               </h1>
               <p className="text-base sm:text-lg text-secondary max-w-lg leading-relaxed mb-8">
