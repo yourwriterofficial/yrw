@@ -40,6 +40,13 @@ const DEFAULT_SETTINGS: PageSettings = {
 
 const EASE = 'ease-[cubic-bezier(0.16,1,0.3,1)]';
 
+/** Splits a headline so the last two words can be accent-colored, e.g. "Full Stack & Custom Software" → base "Full Stack &", accent "Custom Software". Falls back gracefully for short titles. */
+function splitHeadline(title: string) {
+  const words = title.trim().split(/\s+/);
+  if (words.length <= 2) return { base: '', accent: title };
+  return { base: words.slice(0, -2).join(' '), accent: words.slice(-2).join(' ') };
+}
+
 const PROCESS_STEPS = [
   { n: '01', title: 'Brief', desc: 'Submit your project scope through the intake form — objectives, platform, and technical requirements.' },
   { n: '02', title: 'Scope call', desc: 'The dev lead reviews your brief personally and returns a fixed-fee quote within 24 hours.' },
@@ -132,6 +139,7 @@ function FeatureCapabilityCard({ capability }: { capability: Capability }) {
 
 export default function DeveloperPage() {
   const [settings, setSettings] = useState<PageSettings>(DEFAULT_SETTINGS);
+  const headline = splitHeadline(settings.hero_title);
 
   useEffect(() => {
     (async () => {
@@ -159,8 +167,9 @@ export default function DeveloperPage() {
               <Badge variant="info" className="mb-6">
                 <Terminal className="w-3.5 h-3.5 mr-1.5" /> Development Pipeline
               </Badge>
-              <h1 className="font-display italic font-medium text-[2.25rem] leading-[1.15] sm:text-5xl sm:leading-[1.1] md:text-6xl mb-6">
-                {settings.hero_title}
+              <h1 className="font-display italic font-semibold tracking-tight text-[2.25rem] leading-[1.15] sm:text-5xl sm:leading-[1.1] md:text-6xl mb-6">
+                {headline.base && <>{headline.base}{' '}</>}
+                <span className="text-cyan-500">{headline.accent}</span>
               </h1>
               <p className="text-base sm:text-lg text-secondary max-w-lg leading-relaxed mb-8">
                 {settings.hero_description}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Terminal, ArrowRight, ShoppingBag } from 'lucide-react';
 
 type Stage = { tag: string; ticker: string };
 
@@ -36,7 +37,7 @@ export default function BuildCanvas() {
 
   const current = STAGES[stage];
   const wireframe = stage === 0;
-  const structure = stage === 1;
+  const revealed = stage >= 2;
   const shipped = stage === 3;
 
   return (
@@ -63,53 +64,76 @@ export default function BuildCanvas() {
             Deployed ✓
           </div>
 
-          {/* badge */}
-          <div
-            className={`h-5 w-32 rounded-full transition-all duration-500 ${EASE} ${
-              wireframe ? 'border border-dashed border-strong bg-transparent'
-                : structure ? 'bg-theme'
-                : 'bg-cyan-500/10 border border-cyan-500/30'
-            }`}
-          />
-
-          {/* headline, wrapped across two lines like the real h1 */}
-          <div className="space-y-2">
+          {/* badge — placeholder shape while sketched/structured, real copy once styled */}
+          {revealed ? (
+            <div className="inline-flex w-fit items-center gap-1.5 text-[10px] font-bold text-cyan-500 bg-cyan-500/10 border border-cyan-500/30 rounded-full px-2.5 py-1 transition-opacity duration-500">
+              <Terminal className="w-2.5 h-2.5" /> Development Pipeline
+            </div>
+          ) : (
             <div
-              className={`h-6 w-full rounded transition-all duration-500 ${EASE} ${
+              className={`h-5 w-32 rounded-full transition-all duration-500 ${EASE} ${
                 wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme'
               }`}
             />
+          )}
+
+          {/* headline — real copy once styled, matching the actual h1 next to it */}
+          {revealed ? (
+            <h3 className="font-display italic font-semibold text-lg leading-snug transition-opacity duration-500">
+              Full Stack &amp; Custom Software
+            </h3>
+          ) : (
+            <div className="space-y-2">
+              <div
+                className={`h-6 w-full rounded transition-all duration-500 ${EASE} ${
+                  wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme'
+                }`}
+              />
+              <div
+                className={`h-6 w-3/5 rounded transition-all duration-500 ${EASE} ${
+                  wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme'
+                }`}
+              />
+            </div>
+          )}
+
+          {/* subhead — real paragraph excerpt once styled */}
+          {revealed ? (
+            <p className="text-[11px] text-secondary leading-relaxed line-clamp-2 transition-opacity duration-500">
+              Web apps, mobile builds, API integrations, and MVP prototypes — engineered end-to-end.
+            </p>
+          ) : (
             <div
-              className={`h-6 w-3/5 rounded transition-all duration-500 ${EASE} ${
-                wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme'
+              className={`h-3 w-4/5 rounded transition-all duration-500 ${EASE} ${
+                wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme/70'
               }`}
             />
-          </div>
-
-          {/* subhead paragraph */}
-          <div
-            className={`h-3 w-4/5 rounded transition-all duration-500 ${EASE} ${
-              wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme/70'
-            }`}
-          />
+          )}
 
           {/* the two real CTAs: Start a project (solid) + Browse scripts (outline) */}
-          <div className="flex gap-2.5 pt-1">
-            <div
-              className={`h-8 w-28 rounded-full transition-all duration-500 ${EASE} ${
-                wireframe ? 'border border-dashed border-strong bg-transparent'
-                  : structure ? 'bg-theme'
-                  : 'bg-cyan-500'
-              }`}
-            />
-            <div
-              className={`h-8 w-24 rounded-full border transition-all duration-500 ${EASE} ${
-                wireframe ? 'border-dashed border-strong bg-transparent'
-                  : structure ? 'border-theme bg-theme/40'
-                  : 'border-strong bg-transparent'
-              }`}
-            />
-          </div>
+          {revealed ? (
+            <div className="flex gap-2 pt-1">
+              <div className="inline-flex items-center gap-1 text-[10px] font-bold bg-cyan-500 text-black rounded-full px-3 py-1.5">
+                Start a project <ArrowRight className="w-2.5 h-2.5" />
+              </div>
+              <div className="inline-flex items-center gap-1 text-[10px] font-bold border border-strong rounded-full px-3 py-1.5">
+                <ShoppingBag className="w-2.5 h-2.5" /> Browse scripts
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2.5 pt-1">
+              <div
+                className={`h-8 w-28 rounded-full transition-all duration-500 ${EASE} ${
+                  wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme'
+                }`}
+              />
+              <div
+                className={`h-8 w-24 rounded-full border transition-all duration-500 ${EASE} ${
+                  wireframe ? 'border-dashed border-strong bg-transparent' : 'border-theme bg-theme/40'
+                }`}
+              />
+            </div>
+          )}
         </div>
       </div>
 
