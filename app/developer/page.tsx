@@ -88,7 +88,7 @@ function ProcessStep({ n, title, desc, isLast }: { n: string; title: string; des
           {n}
         </span>
         {!isLast && (
-          <div className="hidden sm:block flex-1 h-px bg-border relative overflow-hidden">
+          <div className="hidden sm:block flex-1 h-px bg-theme relative overflow-hidden">
             <div className={`absolute inset-y-0 left-0 bg-cyan-500 transition-all duration-700 ${EASE} ${visible ? 'w-full' : 'w-0'}`} />
           </div>
         )}
@@ -116,12 +116,13 @@ function FeatureCapabilityCard({ capability }: { capability: Capability }) {
           <span className="w-1.5 h-1.5 rounded-full bg-secondary/40" />
           <span className="w-1.5 h-1.5 rounded-full bg-secondary/40" />
         </div>
-        <div className="p-3 space-y-2">
-          <div className="h-2.5 w-2/5 rounded bg-cyan-500" />
-          <div className="h-8 rounded-lg bg-gradient-to-br from-cyan-500/15 to-transparent border border-theme" />
-          <div className="flex gap-1.5">
-            <div className="flex-1 h-6 rounded bg-card border border-theme" />
-            <div className="flex-1 h-6 rounded bg-card border border-theme" />
+        <div className="p-3 space-y-1.5">
+          <div className="h-2.5 w-16 rounded-full bg-cyan-500/10 border border-cyan-500/30" />
+          <div className="h-2.5 w-4/5 rounded bg-theme" />
+          <div className="h-2.5 w-3/5 rounded bg-theme" />
+          <div className="flex gap-1.5 pt-1">
+            <div className="h-4 w-12 rounded-full bg-cyan-500" />
+            <div className="h-4 w-10 rounded-full border border-strong" />
           </div>
         </div>
       </div>

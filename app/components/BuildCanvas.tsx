@@ -37,7 +37,6 @@ export default function BuildCanvas() {
   const current = STAGES[stage];
   const wireframe = stage === 0;
   const structure = stage === 1;
-  const styled = stage >= 2;
   const shipped = stage === 3;
 
   return (
@@ -55,7 +54,7 @@ export default function BuildCanvas() {
           </span>
         </div>
 
-        <div className="relative h-64 p-5 overflow-hidden">
+        <div className="relative h-64 p-6 overflow-hidden flex flex-col justify-center gap-3">
           <div
             className={`absolute top-3 right-3 text-[10px] font-bold bg-emerald-500 text-black rounded-full px-2.5 py-1 transition-all duration-500 ${EASE} ${
               shipped ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
@@ -64,35 +63,52 @@ export default function BuildCanvas() {
             Deployed ✓
           </div>
 
+          {/* badge */}
           <div
-            className={`h-4 rounded mb-5 transition-all duration-500 ${EASE} ${
-              wireframe ? 'w-2/3 border border-dashed border-strong bg-transparent'
-                : structure ? 'w-2/3 bg-border'
-                : 'w-2/5 bg-cyan-500'
-            }`}
-          />
-
-          <div
-            className={`h-16 rounded-lg mb-4 transition-all duration-500 ${EASE} ${
+            className={`h-5 w-32 rounded-full transition-all duration-500 ${EASE} ${
               wireframe ? 'border border-dashed border-strong bg-transparent'
-                : structure ? 'bg-border'
-                : 'bg-gradient-to-br from-cyan-500/15 to-transparent border border-theme'
+                : structure ? 'bg-theme'
+                : 'bg-cyan-500/10 border border-cyan-500/30'
             }`}
           />
 
-          <div className="flex gap-2.5">
-            {[0, 1, 2].map(i => (
-              <div
-                key={i}
-                className={`flex-1 h-[70px] rounded-lg transition-all duration-500 ${EASE} ${
-                  wireframe ? 'border border-dashed border-strong bg-transparent'
-                    : structure ? 'bg-border'
-                    : 'bg-primary border border-theme'
-                }`}
-              >
-                {styled && <div className="w-4 h-4 rounded bg-cyan-500/20 m-3" />}
-              </div>
-            ))}
+          {/* headline, wrapped across two lines like the real h1 */}
+          <div className="space-y-2">
+            <div
+              className={`h-6 w-full rounded transition-all duration-500 ${EASE} ${
+                wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme'
+              }`}
+            />
+            <div
+              className={`h-6 w-3/5 rounded transition-all duration-500 ${EASE} ${
+                wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme'
+              }`}
+            />
+          </div>
+
+          {/* subhead paragraph */}
+          <div
+            className={`h-3 w-4/5 rounded transition-all duration-500 ${EASE} ${
+              wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme/70'
+            }`}
+          />
+
+          {/* the two real CTAs: Start a project (solid) + Browse scripts (outline) */}
+          <div className="flex gap-2.5 pt-1">
+            <div
+              className={`h-8 w-28 rounded-full transition-all duration-500 ${EASE} ${
+                wireframe ? 'border border-dashed border-strong bg-transparent'
+                  : structure ? 'bg-theme'
+                  : 'bg-cyan-500'
+              }`}
+            />
+            <div
+              className={`h-8 w-24 rounded-full border transition-all duration-500 ${EASE} ${
+                wireframe ? 'border-dashed border-strong bg-transparent'
+                  : structure ? 'border-theme bg-theme/40'
+                  : 'border-strong bg-transparent'
+              }`}
+            />
           </div>
         </div>
       </div>
@@ -108,7 +124,7 @@ export default function BuildCanvas() {
             type="button"
             tabIndex={-1}
             onClick={() => setStage(i)}
-            className={`h-1.5 rounded-full transition-all duration-300 ${i === stage ? 'w-5 bg-cyan-500' : 'w-1.5 bg-border'}`}
+            className={`h-1.5 rounded-full transition-all duration-300 ${i === stage ? 'w-5 bg-cyan-500' : 'w-1.5 bg-theme'}`}
           />
         ))}
       </div>
