@@ -28,16 +28,26 @@ function OrderLayoutInner({ children }: { children: React.ReactNode }) {
       const host = window.location.hostname;
       const brand = searchParams.get('brand');
       const savedBrand = localStorage.getItem('developa_brand');
-      if (
+      const isExplicitAcademicOrOther =
+        pathname === '/order/academic' ||
+        pathname === '/order/content' ||
+        pathname === '/order/resume' ||
+        pathname === '/order/statistics';
+
+      if (isExplicitAcademicOrOther) {
+        setIsDevelopa(false);
+      } else if (
         host.includes('developa.me') ||
         host.includes('developa.local') ||
         brand === 'developa' ||
-        savedBrand === 'developa' ||
         pathname === '/order/dev' ||
         pathname?.startsWith('/order/dev') ||
-        pathname === '/order'
+        pathname === '/order' ||
+        (savedBrand === 'developa' && (pathname === '/order' || pathname?.includes('/dev')))
       ) {
         setIsDevelopa(true);
+      } else {
+        setIsDevelopa(false);
       }
     }
   }, [pathname, searchParams]);
