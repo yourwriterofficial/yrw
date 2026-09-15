@@ -654,7 +654,7 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
           <div className="space-y-4 pt-6 border-t border-theme">
             <label className="text-xs font-medium text-secondary block ml-1">Terms of service</label>
             <div className="h-32 overflow-y-auto bg-primary border border-theme rounded-xl p-4 leading-relaxed custom-scrollbar prose max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: decodeHtml(termsText || 'Loading terms...') }} />
+              <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: decodeHtml(termsText || 'Loading terms...') }} />
             </div>
             <label className="flex items-start gap-3 cursor-pointer">
               <input
