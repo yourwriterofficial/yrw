@@ -93,7 +93,7 @@ export default function DevelopaFooter() {
       </div>
 
       <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-theme flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-secondary">
-        <p>© {new Date().getFullYear()} developa.me. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} developa.me — an engineering division of ResearchWriter. All rights reserved.</p>
         <div className="flex items-center gap-6">
           <Link href="/order/dev" className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium flex items-center gap-1">
             <span>Hire Dev Lead</span>

@@ -102,9 +102,14 @@ export default function DevelopaHeader() {
             <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-mono font-bold text-xs group-hover:border-cyan-400/60 transition-colors">
               <Terminal className="w-4 h-4 text-cyan-400" />
             </div>
-            <div className="flex items-baseline gap-0.5">
-              <span className="text-primary font-black text-lg tracking-tight">developa</span>
-              <span className="text-cyan-400 font-bold text-sm tracking-tight">.me</span>
+            <div className="flex flex-col">
+              <div className="flex items-baseline gap-0.5 leading-none">
+                <span className="text-primary font-black text-lg tracking-tight">developa</span>
+                <span className="text-cyan-400 font-bold text-sm tracking-tight">.me</span>
+              </div>
+              <span className="text-[9px] font-mono text-secondary/70 tracking-wider">
+                an engineering division of ResearchWriter
+              </span>
             </div>
           </Link>
 
