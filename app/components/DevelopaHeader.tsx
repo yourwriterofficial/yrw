@@ -1,0 +1,282 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
+import { clearImpersonation } from '@/lib/impersonate';
+import ThemeToggle from './ThemeToggle';
+import ImpersonationBanner from './ImpersonationBanner';
+import {
+  Menu,
+  X,
+  ArrowRight,
+  Terminal,
+  ShoppingBag,
+  Code2,
+  Cpu,
+  LayoutDashboard,
+  LogOut,
+  User,
+  ShieldCheck,
+} from 'lucide-react';
+
+export default function DevelopaHeader() {
+  const router = useRouter();
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+        setIsAdmin(!!profile?.is_admin);
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
+    };
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+        setIsAdmin(!!profile?.is_admin);
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
+    });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    if (typeof window !== 'undefined') {
+      clearImpersonation();
+      sessionStorage.removeItem('yrw_user');
+      sessionStorage.removeItem('yrw_profile');
+      sessionStorage.removeItem('yrw_wallet');
+    }
+    await supabase.auth.signOut();
+    router.push('/developer');
+    router.refresh();
+  };
+
+  return (
+    <>
+      <ImpersonationBanner />
+      <header
+        className={`fixed top-0 left-0 w-full z-50 transition-all duration-200 pt-safe ${
+          scrolled
+            ? 'bg-primary/95 backdrop-blur-md border-b border-theme shadow-sm'
+            : 'bg-transparent border-b border-transparent'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
+          {/* Brand Logo */}
+          <Link
+            href="/developer"
+            className="text-[15px] font-semibold tracking-tight flex items-center gap-2.5 select-none group"
+            aria-label="developa.me home"
+          >
+            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-mono font-bold text-xs group-hover:border-cyan-400/60 transition-colors">
+              <Terminal className="w-4 h-4 text-cyan-400" />
+            </div>
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-primary font-black text-lg tracking-tight">developa</span>
+              <span className="text-cyan-400 font-bold text-sm tracking-tight">.me</span>
+            </div>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-7 text-[13px] font-medium text-secondary">
+            <Link
+              href="/developer#capabilities"
+              className="hover:text-primary transition-colors flex items-center gap-1.5"
+            >
+              <Code2 className="w-3.5 h-3.5 text-cyan-400" />
+              Capabilities
+            </Link>
+
+            <Link
+              href="/developer/shop"
+              className="hover:text-primary transition-colors flex items-center gap-1.5"
+            >
+              <ShoppingBag className="w-3.5 h-3.5 text-cyan-400" />
+              Script Marketplace
+            </Link>
+
+            <Link
+              href="/developer#trust"
+              className="hover:text-primary transition-colors flex items-center gap-1.5"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+              IP Transfer & Process
+            </Link>
+
+            {user ? (
+              <div className="flex items-center gap-4 pl-2 border-l border-theme">
+                {isAdmin ? (
+                  <Link
+                    href="/admin/dev-shop"
+                    className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 transition-colors font-bold text-xs bg-cyan-500/10 border border-cyan-500/30 px-3 py-1.5 rounded-lg"
+                  >
+                    <Cpu className="w-3.5 h-3.5" /> Dev Shop Admin
+                  </Link>
+                ) : (
+                  <Link
+                    href="/dashboard/client?tab=scripts"
+                    className="flex items-center gap-1.5 text-primary hover:text-cyan-400 transition-colors"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5 text-cyan-400" /> My Scripts
+                  </Link>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="hover:text-danger transition-colors p-1.5 rounded-lg hover:bg-hover"
+                  title="Sign out"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="hover:text-primary transition-colors flex items-center gap-1.5"
+              >
+                <User className="w-3.5 h-3.5" />
+                Sign in
+              </Link>
+            )}
+          </nav>
+
+          {/* Right Action & Theme Toggle */}
+          <div className="hidden lg:flex items-center gap-3">
+            <ThemeToggle compact />
+            <Link
+              href="/order/dev"
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold text-xs tracking-wide px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-cyan-500/20 flex items-center gap-1.5"
+            >
+              <span>Start a Project</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden flex items-center gap-2">
+            <ThemeToggle compact />
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-secondary hover:text-primary rounded-lg hover:bg-hover focus:outline-none transition-colors"
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Dropdown */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden bg-card border-b border-theme px-4 pt-3 pb-6 space-y-3 shadow-elevation-2 animate-in fade-in slide-in-from-top-2 duration-150">
+            <Link
+              href="/developer#capabilities"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-primary hover:bg-hover font-medium"
+            >
+              <Code2 className="w-4 h-4 text-cyan-400" />
+              Capabilities
+            </Link>
+            <Link
+              href="/developer/shop"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-primary hover:bg-hover font-medium"
+            >
+              <ShoppingBag className="w-4 h-4 text-cyan-400" />
+              Script Marketplace
+            </Link>
+            <Link
+              href="/developer#trust"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-primary hover:bg-hover font-medium"
+            >
+              <ShieldCheck className="w-4 h-4 text-cyan-400" />
+              IP Transfer & Milestones
+            </Link>
+
+            <div className="pt-3 border-t border-theme space-y-2">
+              {user ? (
+                <>
+                  {isAdmin ? (
+                    <Link
+                      href="/admin/dev-shop"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-cyan-400 font-bold bg-cyan-500/10"
+                    >
+                      <Cpu className="w-4 h-4" /> Dev Shop Admin
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/dashboard/client?tab=scripts"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-primary hover:bg-hover font-medium"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-cyan-400" /> My Scripts Dashboard
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-danger hover:bg-hover font-medium"
+                  >
+                    <LogOut className="w-4 h-4" /> Sign out
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-secondary hover:text-primary font-medium"
+                >
+                  <User className="w-4 h-4" /> Sign in
+                </Link>
+              )}
+
+              <Link
+                href="/order/dev"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full mt-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold text-xs py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm"
+              >
+                <span>Start a Project</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        )}
+      </header>
+    </>
+  );
+}

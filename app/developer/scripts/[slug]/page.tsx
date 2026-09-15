@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Header from '@/app/components/Header';
+import DevelopaHeader from '@/app/components/DevelopaHeader';
+import DevelopaFooter from '@/app/components/DevelopaFooter';
 import Image from 'next/image';
 import BuyModal from '../../BuyModal';
 import { supabase } from '@/lib/supabaseClient';
@@ -49,7 +50,7 @@ export default function ScriptDetailPage() {
   if (notFound) {
     return (
       <div className="min-h-screen bg-primary text-primary font-['Inter']">
-        <Header />
+        <DevelopaHeader />
         <div className="pt-header-40 pb-20 px-6 text-center">
           <h1 className="text-2xl font-black mb-4">Script not found</h1>
           <p className="text-secondary text-sm mb-8">This script may have been removed or is no longer available.</p>
@@ -69,7 +70,7 @@ export default function ScriptDetailPage() {
 
   return (
     <div className="min-h-screen bg-primary text-primary font-['Inter'] selection:bg-cyan-500/30 overflow-x-hidden">
-      <Header />
+      <DevelopaHeader />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-header-28 sm:pt-header-32 pb-16 sm:pb-24">
         <Link href="/developer/shop" className="inline-flex items-center gap-2 text-xs font-bold text-secondary hover:text-cyan-400 transition mb-6 sm:mb-8">
           <ArrowLeft className="w-4 h-4" /> Back to Scripts
@@ -151,6 +152,7 @@ export default function ScriptDetailPage() {
           onClose={() => setBuying(false)}
         />
       )}
+      <DevelopaFooter />
     </div>
   );
 }

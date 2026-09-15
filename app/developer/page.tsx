@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Header from '@/app/components/Header';
-import Footer from '@/app/components/Footer';
+import DevelopaHeader from '@/app/components/DevelopaHeader';
+import DevelopaFooter from '@/app/components/DevelopaFooter';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import {
@@ -57,7 +57,7 @@ export default function DeveloperPage() {
 
   return (
     <div className="min-h-screen bg-primary text-primary overflow-x-hidden">
-      <Header />
+      <DevelopaHeader />
 
       {/* Hero */}
       <section className="relative pt-header-28 sm:pt-header-32 pb-16 sm:pb-24 px-4 sm:px-6 overflow-hidden">
@@ -135,7 +135,7 @@ export default function DeveloperPage() {
       </section>
 
       {/* Trust */}
-      <section className="py-20 sm:py-28 px-4 sm:px-6 border-t border-theme relative">
+      <section id="trust" className="py-20 sm:py-28 px-4 sm:px-6 border-t border-theme relative">
         <Shell size="lg">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card padding="lg">
@@ -176,7 +176,7 @@ export default function DeveloperPage() {
         </Shell>
       </section>
 
-      <Footer />
+      <DevelopaFooter />
     </div>
   );
 }

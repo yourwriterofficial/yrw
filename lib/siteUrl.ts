@@ -18,3 +18,18 @@ export function siteUrl(): string {
 
   return 'https://yourresearchwriter.com.ng';
 }
+
+/**
+ * Canonical URL for Developa domain or local developer route.
+ */
+export function developaUrl(path: string = ''): string {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const explicit = process.env.NEXT_PUBLIC_DEVELOPA_URL;
+  if (explicit) return `${explicit.replace(/\/$/, '')}${cleanPath}`;
+
+  if (process.env.NODE_ENV === 'production') {
+    return `https://developa.me${cleanPath === '/developer' ? '' : cleanPath}`;
+  }
+
+  return cleanPath;
+}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Header from '@/app/components/Header';
+import DevelopaHeader from '@/app/components/DevelopaHeader';
+import DevelopaFooter from '@/app/components/DevelopaFooter';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
@@ -93,7 +94,7 @@ export default function DeveloperShopPage() {
 
   return (
     <div className="min-h-screen bg-primary text-primary overflow-x-hidden">
-      <Header />
+      <DevelopaHeader />
 
       <section className="pt-header-28 sm:pt-header-32 pb-16 sm:pb-24 px-4 sm:px-6">
         <Shell size="xl">
@@ -208,9 +209,7 @@ export default function DeveloperShopPage() {
         </Shell>
       </section>
 
-      <footer className="border-t border-theme py-10 sm:py-12 px-4 sm:px-6 text-center text-xs text-secondary pb-safe">
-        <p>© {new Date().getFullYear()} ResearchWriter. All rights reserved.</p>
-      </footer>
+      <DevelopaFooter />
 
       {buyProduct && <BuyModal product={buyProduct} onClose={() => setBuyProduct(null)} />}
     </div>

@@ -42,6 +42,75 @@ export default async function proxy(request: NextRequest) {
   )
 
   const path = request.nextUrl.pathname
+  const host = request.headers.get('host') || request.nextUrl.host || ''
+  const isDevelopaDomain =
+    host.includes('developa.me') ||
+    host.includes('developa.local') ||
+    request.nextUrl.searchParams.get('brand') === 'developa'
+
+  // Multi-domain routing for developa.me
+  if (isDevelopaDomain) {
+    // Canonicalize URLs: redirect explicit /developer prefixes to clean developa.me paths
+    if (path === '/developer' || path === '/developer/') {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/'
+      const res = NextResponse.redirect(redirectUrl, 308)
+      res.headers.set('Content-Security-Policy', CSP)
+      return res
+    }
+    if (path === '/developer/shop' || path === '/developer/shop/') {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/shop'
+      const res = NextResponse.redirect(redirectUrl, 308)
+      res.headers.set('Content-Security-Policy', CSP)
+      return res
+    }
+    if (path.startsWith('/developer/scripts/')) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = `/scripts/${path.slice(19)}`
+      const res = NextResponse.redirect(redirectUrl, 308)
+      res.headers.set('Content-Security-Policy', CSP)
+      return res
+    }
+    if (path === '/order/dev' || path === '/order/dev/') {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/order'
+      const res = NextResponse.redirect(redirectUrl, 308)
+      res.headers.set('Content-Security-Policy', CSP)
+      return res
+    }
+
+    // Rewrite root and clean paths to their respective handler routes
+    let rewritePath: string | null = null
+    if (path === '/') {
+      rewritePath = '/developer'
+    } else if (path === '/shop' || path === '/shop/') {
+      rewritePath = '/developer/shop'
+    } else if (path.startsWith('/scripts/')) {
+      rewritePath = `/developer/scripts/${path.slice(9)}`
+    } else if (path === '/order' || path === '/order/') {
+      rewritePath = '/order/dev'
+    }
+
+    if (rewritePath) {
+      const url = request.nextUrl.clone()
+      url.pathname = rewritePath
+      const res = NextResponse.rewrite(url, { request })
+      res.headers.set('Content-Security-Policy', CSP)
+      res.headers.set('x-brand', 'developa')
+      return res
+    }
+  } else {
+    // If on main site and redirection to developa.me is enabled via env var
+    const forceDevelopaRedirect = process.env.REDIRECT_TO_DEVELOPA_ME === 'true'
+    if (forceDevelopaRedirect && (path === '/developer' || path.startsWith('/developer/'))) {
+      const destPath = path.replace(/^\/developer/, '') || '/'
+      const redirectUrl = new URL(`https://developa.me${destPath}`, request.url)
+      const res = NextResponse.redirect(redirectUrl, 301)
+      res.headers.set('Content-Security-Policy', CSP)
+      return res
+    }
+  }
 
   // Only /dashboard and /admin actually consult the auth session below — every
   // other route (marketing/service pages, catalogs, order forms, API routes)

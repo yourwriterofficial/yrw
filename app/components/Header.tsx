@@ -9,8 +9,8 @@ import ThemeToggle from './ThemeToggle';
 import ImpersonationBanner from './ImpersonationBanner';
 import { Menu, X, ArrowRight, ChevronDown, ShieldCheck, LayoutDashboard, LogOut, User, Code2, GraduationCap, PenLine, FileText, LineChart } from 'lucide-react';
 
-const SERVICE_LINKS = [
-  { href: '/developer', label: 'Full Stack Development', icon: Code2, color: 'text-cyan-500 bg-cyan-500/10' },
+const SERVICE_LINKS: { href: string; label: string; icon: any; color: string; badge?: string }[] = [
+  { href: '/developer', label: 'Full Stack Development', icon: Code2, color: 'text-cyan-500 bg-cyan-500/10', badge: 'developa.me' },
   { href: '/academic-writing', label: 'Academic Writing & Research', icon: GraduationCap, color: 'text-emerald-500 bg-emerald-500/10' },
   { href: '/content-writing', label: 'Content & Creative Writing', icon: PenLine, color: 'text-rose-500 bg-rose-500/10' },
   { href: '/resume-cv', label: 'Executive CVs & Resumes', icon: FileText, color: 'text-blue-500 bg-blue-500/10' },
@@ -119,7 +119,14 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
                         <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${s.color}`}>
                           <Icon className="w-4 h-4" />
                         </span>
-                        <span>{s.label}</span>
+                        <div className="flex-1 flex items-center justify-between gap-2">
+                          <span>{s.label}</span>
+                          {s.badge && (
+                            <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                              {s.badge}
+                            </span>
+                          )}
+                        </div>
                       </Link>
                     );
                   })}
@@ -223,9 +230,16 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
                           <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${s.color}`}>
                             <Icon className="w-4 h-4" />
                           </span>
-                          {s.label}
+                          <span>{s.label}</span>
                         </span>
-                        <ChevronDown className="w-4 h-4 text-secondary -rotate-90" />
+                        <div className="flex items-center gap-2">
+                          {s.badge && (
+                            <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                              {s.badge}
+                            </span>
+                          )}
+                          <ChevronDown className="w-4 h-4 text-secondary -rotate-90" />
+                        </div>
                       </Link>
                     );
                   })}
