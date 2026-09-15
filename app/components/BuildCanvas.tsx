@@ -1,18 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Terminal, ArrowRight, ShoppingBag } from 'lucide-react';
 
 type Stage = { tag: string; ticker: string };
 
 const STAGES: Stage[] = [
-  { tag: 'wireframe.sketch', ticker: 'git init project-brief' },
-  { tag: 'structure.html', ticker: 'npm install @developa/scaffold' },
-  { tag: 'ui.css', ticker: 'tailwind build --minify' },
+  { tag: 'StatCard.tsx', ticker: 'git init project-brief' },
+  { tag: 'StatCard.tsx', ticker: 'npm install @developa/scaffold' },
+  { tag: 'styles.css', ticker: 'tailwind build --minify' },
   { tag: 'deployed', ticker: 'vercel deploy --prod' },
 ];
 
-const EASE = 'ease-[cubic-bezier(0.16,1,0.3,1)]';
+const BARS = [0.5, 0.9, 0.65, 1, 0.75];
 
 export default function BuildCanvas() {
   const [stage, setStage] = useState(0);
@@ -36,13 +35,6 @@ export default function BuildCanvas() {
   }, []);
 
   const current = STAGES[stage];
-  // Three-tier progressive-enhancement narrative, matching the corner tag at
-  // each stage: raw content (wireframe.sketch) -> unstyled semantic HTML
-  // (structure.html) -> real CSS applied (ui.css / deployed). Real copy is
-  // always on screen at every stage -- only its styling changes -- so there
-  // is never a blank/placeholder frame.
-  const structured = stage === 1;
-  const styled = stage >= 2;
   const shipped = stage === 3;
 
   return (
@@ -60,81 +52,44 @@ export default function BuildCanvas() {
           </span>
         </div>
 
-        <div className="relative h-64 p-6 overflow-hidden flex flex-col justify-center gap-3">
+        <div className="relative p-5 space-y-4 overflow-hidden">
           <div
-            className={`absolute top-3 right-3 text-[10px] font-bold bg-emerald-500 text-black rounded-full px-2.5 py-1 transition-all duration-500 ${EASE} ${
+            className={`absolute top-3 right-3 z-10 text-[10px] font-bold bg-emerald-500 text-black rounded-full px-2.5 py-1 transition-all duration-500 ${
               shipped ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
             }`}
           >
             Deployed ✓
           </div>
 
-          {/* badge — real copy at every stage, styling progresses raw -> unstyled HTML -> real CSS */}
-          {styled ? (
-            <div className="inline-flex w-fit items-center gap-1.5 text-[10px] font-bold text-cyan-500 bg-cyan-500/10 border border-cyan-500/30 rounded-full px-2.5 py-1 transition-all duration-500">
-              <Terminal className="w-2.5 h-2.5" /> Development Pipeline
-            </div>
-          ) : structured ? (
-            <span className="inline-flex w-fit items-center text-xs font-bold border border-strong px-2 py-1 transition-all duration-500">
-              Development Pipeline
-            </span>
-          ) : (
-            <span className="inline-flex w-fit items-center text-[11px] font-mono text-secondary/70 border-b border-dashed border-strong pb-0.5 transition-all duration-500">
-              Development Pipeline
-            </span>
-          )}
+          {/* A real, generic code snippet — always fully rendered, never a placeholder */}
+          <div className="rounded-lg bg-primary border border-theme p-3.5 font-mono text-[11px] leading-relaxed overflow-hidden">
+            <div><span className="text-purple-400">export function</span> <span className="text-cyan-500">StatCard</span>({'{'} <span className="text-amber-500">label, value</span> {'}'}) {'{'}</div>
+            <div className="pl-3"><span className="text-purple-400">return</span> (</div>
+            <div className="pl-6">&lt;<span className="text-cyan-500">div</span> <span className="text-emerald-400">className</span>=<span className="text-amber-500">"card"</span>&gt;</div>
+            <div className="pl-9">&lt;<span className="text-cyan-500">span</span>&gt;{'{label}'}&lt;/<span className="text-cyan-500">span</span>&gt;</div>
+            <div className="pl-9">&lt;<span className="text-cyan-500">h3</span>&gt;{'{value}'}&lt;/<span className="text-cyan-500">h3</span>&gt;</div>
+            <div className="pl-6">&lt;/<span className="text-cyan-500">div</span>&gt;</div>
+            <div className="pl-3">)</div>
+            <div>{'}'} <span className="inline-block w-1.5 h-3 -mb-0.5 bg-cyan-500 animate-pulse" /></div>
+          </div>
 
-          {/* headline — same text throughout, matching the actual h1 next to it once styled */}
-          {styled ? (
-            <h3 className="font-display italic font-semibold text-lg leading-snug transition-all duration-500">
-              Full Stack &amp; <span className="text-cyan-500">Custom Software</span>
-            </h3>
-          ) : structured ? (
-            <h3 className="font-bold text-xl leading-snug transition-all duration-500">
-              Full Stack &amp; Custom Software
-            </h3>
-          ) : (
-            <h3 className="font-mono text-sm text-secondary/70 leading-snug transition-all duration-500">
-              Full Stack &amp; Custom Software
-            </h3>
-          )}
-
-          {/* subhead — real paragraph excerpt at every stage */}
-          {styled ? (
-            <p className="text-[11px] text-secondary leading-relaxed line-clamp-2 transition-all duration-500">
-              Web apps, mobile builds, API integrations, and MVP prototypes — engineered end-to-end.
-            </p>
-          ) : structured ? (
-            <p className="text-xs leading-relaxed line-clamp-2 transition-all duration-500">
-              Web apps, mobile builds, API integrations, and MVP prototypes — engineered end-to-end.
-            </p>
-          ) : (
-            <p className="text-[11px] font-mono text-secondary/70 leading-relaxed line-clamp-2 transition-all duration-500">
-              Web apps, mobile builds, API integrations, and MVP prototypes — engineered end-to-end.
-            </p>
-          )}
-
-          {/* the two real CTAs: Start a project + Browse scripts, styling progresses each stage */}
-          {styled ? (
-            <div className="flex gap-2 pt-1">
-              <div className="inline-flex items-center gap-1 text-[10px] font-bold bg-cyan-500 text-black rounded-full px-3 py-1.5 transition-all duration-500">
-                Start a project <ArrowRight className="w-2.5 h-2.5" />
-              </div>
-              <div className="inline-flex items-center gap-1 text-[10px] font-bold border border-strong rounded-full px-3 py-1.5 transition-all duration-500">
-                <ShoppingBag className="w-2.5 h-2.5" /> Browse scripts
-              </div>
+          {/* The live rendered output of that component — a small stat card with an animated chart */}
+          <div className="rounded-lg border border-theme p-3.5 flex items-center gap-4">
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-wide text-secondary">Revenue</div>
+              <div className="text-lg font-bold text-cyan-500">$48.2k</div>
             </div>
-          ) : structured ? (
-            <div className="flex gap-2 pt-1">
-              <span className="text-xs font-bold border border-strong px-3 py-1.5 transition-all duration-500">Start a project</span>
-              <span className="text-xs font-bold border border-strong px-3 py-1.5 transition-all duration-500">Browse scripts</span>
+            <div className="flex items-end gap-1.5 h-10 flex-1 justify-end">
+              {BARS.map((h, i) => (
+                <div key={i} className="w-2.5 rounded-t bg-cyan-500/20 overflow-hidden flex items-end" style={{ height: '100%' }}>
+                  <div
+                    className="w-full rounded-t bg-cyan-500 animate-bar-pulse"
+                    style={{ height: `${h * 100}%`, animationDelay: `${i * 180}ms` }}
+                  />
+                </div>
+              ))}
             </div>
-          ) : (
-            <div className="flex gap-3 pt-1">
-              <span className="text-[11px] font-mono text-secondary/70 underline decoration-dashed underline-offset-2 transition-all duration-500">Start a project</span>
-              <span className="text-[11px] font-mono text-secondary/70 underline decoration-dashed underline-offset-2 transition-all duration-500">Browse scripts</span>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 

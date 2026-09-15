@@ -123,13 +123,14 @@ function FeatureCapabilityCard({ capability }: { capability: Capability }) {
           <span className="w-1.5 h-1.5 rounded-full bg-secondary/40" />
           <span className="w-1.5 h-1.5 rounded-full bg-secondary/40" />
         </div>
-        <div className="p-3 space-y-1.5">
-          <div className="h-2.5 w-16 rounded-full bg-cyan-500/10 border border-cyan-500/30" />
-          <div className="h-2.5 w-4/5 rounded bg-theme" />
-          <div className="h-2.5 w-3/5 rounded bg-theme" />
-          <div className="flex gap-1.5 pt-1">
-            <div className="h-4 w-12 rounded-full bg-cyan-500" />
-            <div className="h-4 w-10 rounded-full border border-strong" />
+        <div className="p-3 font-mono text-[9px] leading-relaxed space-y-2">
+          <div className="text-secondary/70">
+            <span className="text-purple-400">function</span> <span className="text-cyan-500">Card</span>() {'{ }'}
+          </div>
+          <div className="flex items-end gap-1 h-6">
+            {[0.5, 0.9, 0.65, 1, 0.75].map((h, i) => (
+              <div key={i} className="w-2 rounded-t bg-cyan-500/70" style={{ height: `${h * 100}%` }} />
+            ))}
           </div>
         </div>
       </div>

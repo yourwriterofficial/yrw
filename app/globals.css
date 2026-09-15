@@ -373,6 +373,18 @@ input[type="date"] {
   .animate-blob { animation: none; }
 }
 
+@keyframes bar-pulse {
+  0%, 100% { transform: scaleY(0.55); }
+  50% { transform: scaleY(1); }
+}
+.animate-bar-pulse {
+  animation: bar-pulse 2.2s ease-in-out infinite;
+  transform-origin: bottom;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-bar-pulse { animation: none; transform: scaleY(0.85); }
+}
+
 /* Shadows */
 .shadow-card { box-shadow: var(--shadow-md); }
 .shadow-pop { box-shadow: var(--shadow-lg); }
