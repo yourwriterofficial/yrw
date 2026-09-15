@@ -49,6 +49,8 @@ export interface ServiceOrderPageConfig {
   minProposedBudget: number;
   extraFields?: ExtraFieldSpec[];
   additionalInfoLabel?: string;
+  /** 'studio' renders the sidebar + section-labeled layout used by the DEV order form. Defaults to 'default' (unchanged legacy layout). */
+  layoutVariant?: 'default' | 'studio';
 }
 
 // Every fragment here is a complete, static class string — Tailwind's scanner only
@@ -73,8 +75,58 @@ function decodeHtml(str: string) {
     .replace(/&amp;/g, '&');
 }
 
+function StudioSidebar({ icon: Icon, badge, title, subtitle, finalQuote, quoteLabel }: {
+  icon: LucideIcon;
+  badge: string;
+  title: string;
+  subtitle: string;
+  finalQuote: number;
+  quoteLabel: string;
+}) {
+  const STEPS = [
+    { n: '1', title: 'Brief', desc: 'You submit the scope on this page' },
+    { n: '2', title: 'Scope call', desc: 'Dev lead reviews, quotes in 24h' },
+    { n: '3', title: 'Milestones', desc: 'Build tracked in your dashboard' },
+    { n: '4', title: 'Delivery', desc: 'Source + IP transfer on completion' },
+  ];
+  return (
+    <div className="lg:sticky lg:top-header-28 space-y-4 h-fit">
+      <div>
+        <p className="text-xs font-medium tracking-wide mb-3 flex items-center gap-2 text-cyan-500">
+          <Icon className="w-3.5 h-3.5" /> {badge}
+        </p>
+        <h1 className="text-2xl sm:text-3xl font-semibold mb-3 tracking-tight">{title}</h1>
+        <p className="text-secondary text-sm">{subtitle}</p>
+      </div>
+
+      <Card padding="lg">
+        <p className="text-[10px] font-bold uppercase text-secondary tracking-widest mb-4">What happens next</p>
+        <div className="space-y-4">
+          {STEPS.map(step => (
+            <div key={step.n} className="flex gap-3">
+              <span className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-500 font-mono text-[11px] font-bold flex items-center justify-center shrink-0">
+                {step.n}
+              </span>
+              <div>
+                <h5 className="text-xs font-bold">{step.title}</h5>
+                <p className="text-[11px] text-secondary leading-snug">{step.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card padding="lg" className="text-center border-cyan-500/30 bg-cyan-500/5">
+        <div className="text-2xl font-bold text-cyan-500">₦{finalQuote.toLocaleString()}</div>
+        <p className="text-[11px] text-secondary mt-1">{quoteLabel}</p>
+      </Card>
+    </div>
+  );
+}
+
 export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
-  const { serviceCategory, pageKey, orderPrefix, tosKey, vaultStatusDefault, topicLabel, topicPlaceholder, topicHelperText, briefLabel, briefHelperText, minProposedBudget, extraFields = [], additionalInfoLabel } = config;
+  const { serviceCategory, pageKey, orderPrefix, tosKey, vaultStatusDefault, topicLabel, topicPlaceholder, topicHelperText, briefLabel, briefHelperText, minProposedBudget, extraFields = [], additionalInfoLabel, layoutVariant = 'default' } = config;
+  const isStudio = layoutVariant === 'studio';
   const accent = ACCENTS[config.accent];
   const Icon = config.icon;
   const router = useRouter();
@@ -328,23 +380,27 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
 
   const finalQuote = calculateTotal();
 
-  return (
-    <div className="min-h-screen bg-primary text-primary py-10 sm:py-12 px-4 sm:px-6 font-['Inter']">
-      <OrderCategoryNav />
-      <div className="max-w-3xl mx-auto space-y-10 sm:space-y-12 mt-6">
-        <div className="text-center">
-          <p className={`text-xs font-medium tracking-wide mb-4 flex items-center justify-center gap-2 ${accent.text}`}>
-            <Icon className="w-3.5 h-3.5" /> {pageContent.hero.badge}
-          </p>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-4 tracking-tight">{pageContent.hero.title}</h1>
-          <p className="text-secondary text-sm px-2 max-w-xl mx-auto">{pageContent.hero.subtitle}</p>
-        </div>
+  const minDeadlineDate = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
 
-        <Card className="space-y-8">
+  const heroBlock = (
+    <div className="text-center">
+      <p className={`text-xs font-medium tracking-wide mb-4 flex items-center justify-center gap-2 ${accent.text}`}>
+        <Icon className="w-3.5 h-3.5" /> {pageContent.hero.badge}
+      </p>
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-4 tracking-tight">{pageContent.hero.title}</h1>
+      <p className="text-secondary text-sm px-2 max-w-xl mx-auto">{pageContent.hero.subtitle}</p>
+    </div>
+  );
+
+  const orderCard = (
+    <Card className="space-y-8">
 
           {/* PACKAGE TIERS */}
-          <div className="space-y-3">
-            <label className="text-xs font-medium text-secondary block ml-1">Choose a package</label>
+          <div className={`space-y-3 ${isStudio ? 'border-l-2 border-cyan-500/40 pl-4 sm:pl-5' : ''}`}>
+            {isStudio && <div className="font-mono text-[11px] font-bold text-cyan-500">// 01 — Project Scope</div>}
+            <label className="text-xs font-medium text-secondary block ml-1">
+              {serviceCategory === 'DEV' ? 'Choose an engineering package or scope' : 'Choose a package'}
+            </label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {tiers.map(tier => {
                 const isSelected = !isProposing && selectedTierId === tier.id;
@@ -459,7 +515,8 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
             </div>
           )}
 
-          <div className="space-y-4 pt-6 border-t border-theme">
+          <div className={`space-y-4 pt-6 border-t border-theme ${isStudio ? 'border-l-2 border-cyan-500/40 pl-4 sm:pl-5' : ''}`}>
+            {isStudio && <div className="font-mono text-[11px] font-bold text-cyan-500">// 02 — Specifications</div>}
             {isLoggedIn ? (
               <p className={`text-xs font-bold ${accent.text}`}>Ordering as: {loggedInProfile?.full_name || loggedInUser?.email}</p>
             ) : (
@@ -496,14 +553,14 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
             )}
 
             <Input
-              label="Target Delivery Deadline"
+              label={serviceCategory === 'DEV' ? 'Target Handover / Launch Date' : 'Target Delivery Deadline'}
               type="date"
               iconLeft={<Calendar className="w-5 h-5" />}
               value={deadline}
               onChange={e => setDeadline(e.target.value)}
-              min="2026-08-13"
+              min={minDeadlineDate}
               required
-              helper="We require a minimum 2-week (14 day) lead time for quality delivery."
+              helper={serviceCategory === 'DEV' ? 'Sprint turnaround: minimum 2-week lead time for architecture, development, QA and handover.' : 'We require a minimum 2-week (14 day) lead time for quality delivery.'}
               className="dark:[color-scheme:dark] cursor-pointer"
             />
 
@@ -563,6 +620,7 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
             </div>
           </div>
 
+          {isStudio && <div className="font-mono text-[11px] font-bold text-cyan-500 -mb-4">// 03 — Milestones & Terms</div>}
           <PaymentStructureFields
             paymentStructure={paymentStructure}
             setPaymentStructure={setPaymentStructure}
@@ -606,7 +664,9 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
                 className="mt-1 w-4 h-4 bg-primary border-theme rounded"
               />
               <span className="text-xs text-primary font-bold leading-relaxed">
-                I agree to the terms above. I understand this quote is subject to review by the team.
+                {serviceCategory === 'DEV'
+                  ? 'I agree to the engineering terms above. I understand this technical scope and milestone quote will be reviewed by the dev lead.'
+                  : 'I agree to the terms above. I understand this quote is subject to review by the team.'}
               </span>
             </label>
           </div>
@@ -614,7 +674,9 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
           <Card elevation={0} className="text-center">
             <div className="text-3xl font-semibold text-primary tracking-tight">₦{finalQuote.toLocaleString()}</div>
             <p className="text-xs text-secondary mt-2">
-              {isProposing ? 'Proposed quote — subject to approval' : 'Calculated quote'}
+              {isProposing
+                ? 'Proposed budget — subject to approval'
+                : (serviceCategory === 'DEV' ? 'Fixed-Fee Milestone Estimate' : 'Calculated quote')}
             </p>
           </Card>
 
@@ -626,9 +688,35 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
             fullWidth
             className={`${accent.solid} text-black font-semibold text-sm py-4 rounded-full transition hover:opacity-90 disabled:opacity-50`}
           >
-            Submit request
+            {serviceCategory === 'DEV' ? 'Submit Software Engineering Brief' : 'Submit request'}
           </Button>
-        </Card>
+    </Card>
+  );
+
+  if (isStudio) {
+    return (
+      <div className="min-h-screen bg-primary text-primary py-10 sm:py-12 px-4 sm:px-6 font-['Inter']">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-[320px_1fr] gap-6 lg:gap-10">
+          <StudioSidebar
+            icon={Icon}
+            badge={pageContent.hero.badge}
+            title={pageContent.hero.title}
+            subtitle={pageContent.hero.subtitle}
+            finalQuote={finalQuote}
+            quoteLabel={isProposing ? 'Proposed budget — subject to approval' : 'Fixed-Fee Milestone Estimate'}
+          />
+          {orderCard}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-primary text-primary py-10 sm:py-12 px-4 sm:px-6 font-['Inter']">
+      <OrderCategoryNav />
+      <div className="max-w-3xl mx-auto space-y-10 sm:space-y-12 mt-6">
+        {heroBlock}
+        {orderCard}
       </div>
     </div>
   );
