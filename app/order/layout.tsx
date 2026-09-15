@@ -21,28 +21,36 @@ export default function OrderLayout({ children }: { children: React.ReactNode })
 function OrderLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [isDevelopa, setIsDevelopa] = useState(false);
+
+  // Compute synchronously so SSR and initial render immediately show DevelopaHeader
+  // on /order/dev or /order without waiting for an asynchronous useEffect
+  const isExplicitAcademic =
+    pathname === '/order/academic' ||
+    pathname === '/order/content' ||
+    pathname === '/order/resume' ||
+    pathname === '/order/statistics';
+
+  const isDevPath = pathname === '/order/dev' || pathname?.startsWith('/order/dev') || pathname === '/order';
+  const hasDevBrandQuery = searchParams.get('brand') === 'developa';
+
+  const [isDevelopa, setIsDevelopa] = useState(() => {
+    if (isExplicitAcademic) return false;
+    return isDevPath || hasDevBrandQuery;
+  });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const host = window.location.hostname;
       const brand = searchParams.get('brand');
       const savedBrand = localStorage.getItem('developa_brand');
-      const isExplicitAcademicOrOther =
-        pathname === '/order/academic' ||
-        pathname === '/order/content' ||
-        pathname === '/order/resume' ||
-        pathname === '/order/statistics';
 
-      if (isExplicitAcademicOrOther) {
+      if (isExplicitAcademic) {
         setIsDevelopa(false);
       } else if (
         host.includes('developa.me') ||
         host.includes('developa.local') ||
         brand === 'developa' ||
-        pathname === '/order/dev' ||
-        pathname?.startsWith('/order/dev') ||
-        pathname === '/order' ||
+        isDevPath ||
         (savedBrand === 'developa' && (pathname === '/order' || pathname?.includes('/dev')))
       ) {
         setIsDevelopa(true);
@@ -50,7 +58,7 @@ function OrderLayoutInner({ children }: { children: React.ReactNode }) {
         setIsDevelopa(false);
       }
     }
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, isDevPath, hasDevBrandQuery, isExplicitAcademic]);
 
   return (
     <div className="min-h-screen bg-primary text-primary flex flex-col">
