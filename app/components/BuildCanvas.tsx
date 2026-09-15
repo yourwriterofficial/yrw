@@ -36,8 +36,13 @@ export default function BuildCanvas() {
   }, []);
 
   const current = STAGES[stage];
-  const wireframe = stage === 0;
-  const revealed = stage >= 2;
+  // Three-tier progressive-enhancement narrative, matching the corner tag at
+  // each stage: raw content (wireframe.sketch) -> unstyled semantic HTML
+  // (structure.html) -> real CSS applied (ui.css / deployed). Real copy is
+  // always on screen at every stage -- only its styling changes -- so there
+  // is never a blank/placeholder frame.
+  const structured = stage === 1;
+  const styled = stage >= 2;
   const shipped = stage === 3;
 
   return (
@@ -64,74 +69,70 @@ export default function BuildCanvas() {
             Deployed ✓
           </div>
 
-          {/* badge — placeholder shape while sketched/structured, real copy once styled */}
-          {revealed ? (
-            <div className="inline-flex w-fit items-center gap-1.5 text-[10px] font-bold text-cyan-500 bg-cyan-500/10 border border-cyan-500/30 rounded-full px-2.5 py-1 transition-opacity duration-500">
+          {/* badge — real copy at every stage, styling progresses raw -> unstyled HTML -> real CSS */}
+          {styled ? (
+            <div className="inline-flex w-fit items-center gap-1.5 text-[10px] font-bold text-cyan-500 bg-cyan-500/10 border border-cyan-500/30 rounded-full px-2.5 py-1 transition-all duration-500">
               <Terminal className="w-2.5 h-2.5" /> Development Pipeline
             </div>
+          ) : structured ? (
+            <span className="inline-flex w-fit items-center text-xs font-bold border border-strong px-2 py-1 transition-all duration-500">
+              Development Pipeline
+            </span>
           ) : (
-            <div
-              className={`h-5 w-32 rounded-full transition-all duration-500 ${EASE} ${
-                wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme'
-              }`}
-            />
+            <span className="inline-flex w-fit items-center text-[11px] font-mono text-secondary/70 border-b border-dashed border-strong pb-0.5 transition-all duration-500">
+              Development Pipeline
+            </span>
           )}
 
-          {/* headline — real copy once styled, matching the actual h1 next to it */}
-          {revealed ? (
-            <h3 className="font-display italic font-semibold text-lg leading-snug transition-opacity duration-500">
+          {/* headline — same text throughout, matching the actual h1 next to it once styled */}
+          {styled ? (
+            <h3 className="font-display italic font-semibold text-lg leading-snug transition-all duration-500">
+              Full Stack &amp; <span className="text-cyan-500">Custom Software</span>
+            </h3>
+          ) : structured ? (
+            <h3 className="font-bold text-xl leading-snug transition-all duration-500">
               Full Stack &amp; Custom Software
             </h3>
           ) : (
-            <div className="space-y-2">
-              <div
-                className={`h-6 w-full rounded transition-all duration-500 ${EASE} ${
-                  wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme'
-                }`}
-              />
-              <div
-                className={`h-6 w-3/5 rounded transition-all duration-500 ${EASE} ${
-                  wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme'
-                }`}
-              />
-            </div>
+            <h3 className="font-mono text-sm text-secondary/70 leading-snug transition-all duration-500">
+              Full Stack &amp; Custom Software
+            </h3>
           )}
 
-          {/* subhead — real paragraph excerpt once styled */}
-          {revealed ? (
-            <p className="text-[11px] text-secondary leading-relaxed line-clamp-2 transition-opacity duration-500">
+          {/* subhead — real paragraph excerpt at every stage */}
+          {styled ? (
+            <p className="text-[11px] text-secondary leading-relaxed line-clamp-2 transition-all duration-500">
+              Web apps, mobile builds, API integrations, and MVP prototypes — engineered end-to-end.
+            </p>
+          ) : structured ? (
+            <p className="text-xs leading-relaxed line-clamp-2 transition-all duration-500">
               Web apps, mobile builds, API integrations, and MVP prototypes — engineered end-to-end.
             </p>
           ) : (
-            <div
-              className={`h-3 w-4/5 rounded transition-all duration-500 ${EASE} ${
-                wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme/70'
-              }`}
-            />
+            <p className="text-[11px] font-mono text-secondary/70 leading-relaxed line-clamp-2 transition-all duration-500">
+              Web apps, mobile builds, API integrations, and MVP prototypes — engineered end-to-end.
+            </p>
           )}
 
-          {/* the two real CTAs: Start a project (solid) + Browse scripts (outline) */}
-          {revealed ? (
+          {/* the two real CTAs: Start a project + Browse scripts, styling progresses each stage */}
+          {styled ? (
             <div className="flex gap-2 pt-1">
-              <div className="inline-flex items-center gap-1 text-[10px] font-bold bg-cyan-500 text-black rounded-full px-3 py-1.5">
+              <div className="inline-flex items-center gap-1 text-[10px] font-bold bg-cyan-500 text-black rounded-full px-3 py-1.5 transition-all duration-500">
                 Start a project <ArrowRight className="w-2.5 h-2.5" />
               </div>
-              <div className="inline-flex items-center gap-1 text-[10px] font-bold border border-strong rounded-full px-3 py-1.5">
+              <div className="inline-flex items-center gap-1 text-[10px] font-bold border border-strong rounded-full px-3 py-1.5 transition-all duration-500">
                 <ShoppingBag className="w-2.5 h-2.5" /> Browse scripts
               </div>
             </div>
+          ) : structured ? (
+            <div className="flex gap-2 pt-1">
+              <span className="text-xs font-bold border border-strong px-3 py-1.5 transition-all duration-500">Start a project</span>
+              <span className="text-xs font-bold border border-strong px-3 py-1.5 transition-all duration-500">Browse scripts</span>
+            </div>
           ) : (
-            <div className="flex gap-2.5 pt-1">
-              <div
-                className={`h-8 w-28 rounded-full transition-all duration-500 ${EASE} ${
-                  wireframe ? 'border border-dashed border-strong bg-transparent' : 'bg-theme'
-                }`}
-              />
-              <div
-                className={`h-8 w-24 rounded-full border transition-all duration-500 ${EASE} ${
-                  wireframe ? 'border-dashed border-strong bg-transparent' : 'border-theme bg-theme/40'
-                }`}
-              />
+            <div className="flex gap-3 pt-1">
+              <span className="text-[11px] font-mono text-secondary/70 underline decoration-dashed underline-offset-2 transition-all duration-500">Start a project</span>
+              <span className="text-[11px] font-mono text-secondary/70 underline decoration-dashed underline-offset-2 transition-all duration-500">Browse scripts</span>
             </div>
           )}
         </div>
