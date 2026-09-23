@@ -657,7 +657,7 @@ function OrdersPageContent() {
              <strong>Requirement:</strong> ${newAddon.name}<br/>
              <strong>Price Tagged:</strong> <span style="font-size: 16px; color: #10b981; font-weight: bold;">${formatNaira(price)}</span>
            </div>
-           <p>You can pay for this addon from your client dashboard wallet or via debit/credit card to authorize implementation.</p>`,
+           <p>You can pay for this addon from your client dashboard wallet or via manual bank transfer to authorize implementation.</p>`,
           'Pay & Activate Now',
           `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/client?preview=${orderId}`
         );

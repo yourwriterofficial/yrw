@@ -21,7 +21,17 @@ export default function FinancePage() {
   
   // User edit modal
   const [editingUser, setEditingUser] = useState<any>(null);
-  const [userForm, setUserForm] = useState({ full_name: '', is_admin: false });
+  const [userForm, setUserForm] = useState({
+    full_name: '',
+    is_admin: false,
+    assigned_bank_name: '',
+    assigned_account_number: '',
+    assigned_account_name: '',
+    assigned_bank_notes: '',
+  });
+  const [userBanks, setUserBanks] = useState<Record<string, any>>({});
+  const [pendingTransfers, setPendingTransfers] = useState<any[]>([]);
+  const [processingAction, setProcessingAction] = useState<string | null>(null);
   
   // Wallet adjustment modal
   const [adjustingWallet, setAdjustingWallet] = useState<{ userId: string; currentBalance: number } | null>(null);
@@ -55,7 +65,7 @@ export default function FinancePage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setGeneratedLink(data.authorization_url);
-        showToast('Payment link generated and email sent successfully!', 'success');
+        showToast('Bank transfer invoice generated & emailed successfully!', 'success');
       } else {
         showToast(data.error || 'Failed to generate link', 'error');
       }
@@ -63,6 +73,51 @@ export default function FinancePage() {
       showToast('Network error', 'error');
     } finally {
       setGeneratingLink(false);
+    }
+  };
+
+  const handleApproveTransfer = async (reference: string) => {
+    setProcessingAction(reference);
+    try {
+      const res = await fetch('/api/admin/manual-payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve', reference }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Payment approved and credited successfully!', 'success');
+        fetchData();
+      } else {
+        showToast(data.error || 'Failed to approve payment', 'error');
+      }
+    } catch {
+      showToast('Network error approving payment', 'error');
+    } finally {
+      setProcessingAction(null);
+    }
+  };
+
+  const handleRejectTransfer = async (reference: string) => {
+    const reason = prompt('Please enter a reason for rejecting this transfer:');
+    if (reason === null) return;
+    setProcessingAction(reference);
+    try {
+      const res = await fetch('/api/admin/manual-payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject', reference, reason }),
+      });
+      if (res.ok) {
+        showToast('Transfer rejected.', 'success');
+        fetchData();
+      } else {
+        showToast('Failed to reject transfer', 'error');
+      }
+    } catch {
+      showToast('Network error rejecting payment', 'error');
+    } finally {
+      setProcessingAction(null);
     }
   };
 
@@ -84,25 +139,63 @@ export default function FinancePage() {
       .order('created_at', { ascending: false })
       .limit(500);
     if (txData) setTransactions(txData);
+
+    // Fetch user assigned bank accounts
+    try {
+      const banksRes = await fetch('/api/admin/manual-payments?action=get_all_banks');
+      const banksData = await banksRes.json();
+      if (banksData?.banks) setUserBanks(banksData.banks);
+    } catch {}
+
+    // Fetch pending manual transfers
+    try {
+      const transfersRes = await fetch('/api/admin/manual-payments');
+      const transfersData = await transfersRes.json();
+      if (transfersData?.payments) setPendingTransfers(transfersData.payments);
+    } catch {}
+
     setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, []);
 
-  // Update user details
+  // Update user details & bank assignment
   const updateUser = async () => {
     if (!editingUser) return;
-    const res = await fetch('/api/admin/update-user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: editingUser.id, full_name: userForm.full_name, is_admin: userForm.is_admin }),
-    });
-    if (res.ok) {
-      showToast('User updated', 'success');
-      fetchData();
-      setEditingUser(null);
-    } else {
-      showToast('Update failed', 'error');
+    try {
+      const res = await fetch('/api/admin/update-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: editingUser.id, full_name: userForm.full_name, is_admin: userForm.is_admin }),
+      });
+
+      // Save custom assigned bank details if provided
+      if (userForm.assigned_account_number) {
+        await fetch('/api/admin/manual-payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'assign_bank',
+            userId: editingUser.id,
+            bankDetails: {
+              bank_name: userForm.assigned_bank_name || 'Opay',
+              account_number: userForm.assigned_account_number,
+              account_name: userForm.assigned_account_name,
+              instructions: userForm.assigned_bank_notes,
+            },
+          }),
+        });
+      }
+
+      if (res.ok) {
+        showToast('User and bank settings updated successfully', 'success');
+        fetchData();
+        setEditingUser(null);
+      } else {
+        showToast('Update failed', 'error');
+      }
+    } catch {
+      showToast('Network error updating user', 'error');
     }
   };
 
@@ -142,13 +235,13 @@ export default function FinancePage() {
         icon={<lucide.Wallet className="w-8 h-8 text-purple-500" />}
       />
 
-      {/* ========== SECTION: Payment Link Generator ========== */}
+      {/* ========== SECTION: Bank Transfer Invoice Generator ========== */}
       <div className="bg-card border border-theme rounded-3xl p-6 md:p-8 space-y-6 max-w-4xl">
         <div>
           <h2 className="text-lg font-black text-primary flex items-center gap-2">
-            <lucide.Link2 className="w-5 h-5 text-purple-500" /> Generate Client Payment Link
+            <lucide.Link2 className="w-5 h-5 text-purple-500" /> Generate Client Bank Invoice
           </h2>
-          <p className="text-xs text-secondary mt-1">Generate a secure Paystack payment link for any custom topic, email the receipt/onboarding credentials, and track client delivery seamlessly.</p>
+          <p className="text-xs text-secondary mt-1">Generate an invoice with designated bank transfer details for any custom topic, email the receipt/onboarding credentials, and track client delivery seamlessly.</p>
         </div>
 
         <form onSubmit={generatePaymentLink} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -232,7 +325,7 @@ export default function FinancePage() {
               disabled={generatingLink}
               className="w-full py-3 bg-purple-500 hover:bg-purple-400 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-wider transition cursor-pointer"
             >
-              {generatingLink ? 'Generating Paystack Invoice...' : 'Generate & Email Payment Link'}
+              {generatingLink ? 'Generating Invoice...' : 'Generate & Email Bank Invoice'}
             </button>
           </div>
         </form>
@@ -241,7 +334,7 @@ export default function FinancePage() {
           <div className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-2xl space-y-2 mt-4 animate-in fade-in duration-300">
             <div className="flex items-center gap-1.5 text-xs text-purple-400 font-bold">
               <lucide.CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>Payment link successfully generated and emailed to user!</span>
+              <span>Invoice link successfully generated and emailed to user!</span>
             </div>
             <div className="flex gap-2">
               <input
@@ -263,11 +356,139 @@ export default function FinancePage() {
         )}
       </div>
 
-      {/* ========== MODAL: Edit User ========== */}
+      {/* ========== SECTION: Pending Bank Transfers Review ========== */}
+      <div className="bg-card border border-theme rounded-3xl p-6 md:p-8 space-y-6 max-w-4xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-black text-primary flex items-center gap-2">
+              <lucide.Clock className="w-5 h-5 text-amber-500" /> Pending Bank Transfers
+              {pendingTransfers.length > 0 && (
+                <span className="bg-amber-500/20 text-amber-400 text-xs px-2.5 py-0.5 rounded-full font-bold">
+                  {pendingTransfers.length} Pending
+                </span>
+              )}
+            </h2>
+            <p className="text-xs text-secondary mt-1">
+              Review and approve manual bank transfers submitted by clients. Approving activates the project milestone, credits the client wallet, or marks invoices paid.
+            </p>
+          </div>
+          <button
+            onClick={fetchData}
+            className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-white/5 border border-theme text-primary text-xs font-bold rounded-xl transition self-start sm:self-auto"
+          >
+            <lucide.RefreshCw className="w-3.5 h-3.5 text-secondary" /> Refresh List
+          </button>
+        </div>
+
+        {pendingTransfers.length === 0 ? (
+          <div className="py-10 text-center border border-dashed border-theme rounded-2xl">
+            <lucide.CheckCircle2 className="w-10 h-10 text-emerald-500/60 mx-auto mb-3" />
+            <p className="text-sm font-bold text-primary">All caught up!</p>
+            <p className="text-xs text-secondary mt-1">No pending manual bank transfers require review at this time.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {pendingTransfers.map((payment) => (
+              <div
+                key={payment.reference || payment.id}
+                className="bg-secondary/60 border border-theme rounded-2xl p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 hover:border-purple-500/30 transition"
+              >
+                <div className="space-y-2 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono font-black text-base text-primary">
+                      {formatNaira(payment.amount || 0)}
+                    </span>
+                    <span className="bg-purple-500/10 text-purple-400 text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
+                      {payment.payment_type || 'Transfer'}
+                    </span>
+                    <span className="font-mono text-xs text-secondary">
+                      Ref: {payment.reference}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-1 gap-x-4 text-xs text-secondary">
+                    <div>
+                      <span className="font-medium text-primary">Client:</span>{' '}
+                      {payment.user_email || payment.user_id}
+                    </div>
+                    {payment.sender_name && (
+                      <div>
+                        <span className="font-medium text-primary">Sender Account:</span>{' '}
+                        {payment.sender_name}
+                      </div>
+                    )}
+                    {payment.sender_bank && (
+                      <div>
+                        <span className="font-medium text-primary">Bank Sent From:</span>{' '}
+                        {payment.sender_bank}
+                      </div>
+                    )}
+                    {payment.assigned_bank && (
+                      <div>
+                        <span className="font-medium text-primary">Paid Into:</span>{' '}
+                        {payment.assigned_bank.bank_name} ({payment.assigned_bank.account_number})
+                      </div>
+                    )}
+                    {payment.notes && (
+                      <div className="sm:col-span-2">
+                        <span className="font-medium text-primary">Notes:</span> {payment.notes}
+                      </div>
+                    )}
+                    <div>
+                      <span className="font-medium text-primary">Date:</span>{' '}
+                      {new Date(payment.created_at).toLocaleString()}
+                    </div>
+                  </div>
+
+                  {payment.proof_url && (
+                    <div className="pt-1">
+                      <a
+                        href={payment.proof_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 underline font-semibold"
+                      >
+                        <lucide.ExternalLink className="w-3.5 h-3.5" /> View Payment Proof Receipt
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 self-end lg:self-center shrink-0">
+                  <button
+                    onClick={() => handleRejectTransfer(payment.reference)}
+                    disabled={processingAction === payment.reference}
+                    className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition disabled:opacity-50"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => handleApproveTransfer(payment.reference)}
+                    disabled={processingAction === payment.reference}
+                    className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-black rounded-xl text-xs font-black transition disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {processingAction === payment.reference ? (
+                      <>
+                        <lucide.Loader2 className="w-3.5 h-3.5 animate-spin" /> Approving...
+                      </>
+                    ) : (
+                      <>
+                        <lucide.Check className="w-3.5 h-3.5" /> Approve & Credit
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ========== MODAL: Edit User & Bank Assignment ========== */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-primary border border-purple-500/30 rounded-3xl p-8 max-w-md w-full">
-            <h2 className="text-xl font-black text-primary mb-4">Edit User</h2>
+          <div className="bg-primary border border-purple-500/30 rounded-3xl p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto space-y-6">
+            <h2 className="text-xl font-black text-primary">Edit User & Bank Assignment</h2>
             <div className="space-y-4">
               <div>
                 <label className="text-[10px] uppercase font-black text-secondary">Full Name</label>
@@ -275,22 +496,77 @@ export default function FinancePage() {
                   type="text"
                   value={userForm.full_name}
                   onChange={e => setUserForm({ ...userForm, full_name: e.target.value })}
-                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1"
+                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1 text-sm outline-none focus:border-purple-500"
                 />
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-[10px] uppercase font-black text-secondary">Admin</label>
+                <label className="text-[10px] uppercase font-black text-secondary">Admin Role</label>
                 <input
                   type="checkbox"
                   checked={userForm.is_admin}
                   onChange={e => setUserForm({ ...userForm, is_admin: e.target.checked })}
-                  className="accent-purple-500 w-5 h-5"
+                  className="accent-purple-500 w-5 h-5 cursor-pointer"
                 />
               </div>
+
+              <div className="pt-4 border-t border-theme space-y-4">
+                <div className="flex items-center gap-2 text-sm font-black text-primary">
+                  <lucide.Building2 className="w-4 h-4 text-purple-400" />
+                  <span>Custom Assigned Bank Account</span>
+                </div>
+                <p className="text-xs text-secondary leading-relaxed">
+                  Designate a dedicated bank account for this client. If left blank, the platform default business account (Opay) is used.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] uppercase font-black text-secondary">Bank Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Opay, GTBank, Kuda"
+                      value={userForm.assigned_bank_name}
+                      onChange={e => setUserForm({ ...userForm, assigned_bank_name: e.target.value })}
+                      className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary mt-1 outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase font-black text-secondary">Account Number</label>
+                    <input
+                      type="text"
+                      placeholder="10-digit Account No"
+                      value={userForm.assigned_account_number}
+                      onChange={e => setUserForm({ ...userForm, assigned_account_number: e.target.value })}
+                      className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary mt-1 font-mono outline-none focus:border-purple-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] uppercase font-black text-secondary">Account Name</label>
+                  <input
+                    type="text"
+                    placeholder="Beneficiary / Account Name"
+                    value={userForm.assigned_account_name}
+                    onChange={e => setUserForm({ ...userForm, assigned_account_name: e.target.value })}
+                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary mt-1 outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] uppercase font-black text-secondary">Special Instructions / Narration Note</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Include student name in transfer narration"
+                    value={userForm.assigned_bank_notes}
+                    onChange={e => setUserForm({ ...userForm, assigned_bank_notes: e.target.value })}
+                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary mt-1 outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setEditingUser(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl">Cancel</button>
-              <button onClick={updateUser} className="flex-1 py-3 bg-purple-500 text-white rounded-xl font-black">Save</button>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setEditingUser(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl text-xs font-bold transition hover:bg-white/10">Cancel</button>
+              <button onClick={updateUser} className="flex-1 py-3 bg-purple-500 hover:bg-purple-400 text-white rounded-xl text-xs font-black transition">Save Changes</button>
             </div>
           </div>
         </div>
@@ -360,33 +636,52 @@ export default function FinancePage() {
                 <th className="px-4 py-4">Name</th>
                 <th className="px-4 py-4">Email</th>
                 <th className="px-4 py-4">Admin</th>
+                <th className="px-4 py-4">Assigned Bank</th>
                 <th className="px-4 py-4">Balance</th>
                 <th className="px-4 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {users.map(user => (
-                <tr key={user.id} className="border-b border-theme">
-                  <td className="px-4 py-4 text-primary">{user.full_name || '—'}</td>
-                  <td className="px-4 py-4 text-primary">{user.email}</td>
-                  <td className="px-4 py-4">
-                    {user.is_admin ? (
-                      <span className="text-purple-400">✓</span>
-                    ) : (
-                      <span className="text-secondary">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-4 font-mono text-primary">{formatNaira(wallets[user.id] || 0)}</td>
-                  <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
-                    <button
-                      onClick={() => {
-                        setEditingUser(user);
-                        setUserForm({ full_name: user.full_name || '', is_admin: user.is_admin || false });
-                      }}
-                      className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs"
-                    >
-                      Edit User
-                    </button>
+              {users.map(user => {
+                const assigned = userBanks[user.id];
+                return (
+                  <tr key={user.id} className="border-b border-theme">
+                    <td className="px-4 py-4 text-primary">{user.full_name || '—'}</td>
+                    <td className="px-4 py-4 text-primary">{user.email}</td>
+                    <td className="px-4 py-4">
+                      {user.is_admin ? (
+                        <span className="text-purple-400">✓</span>
+                      ) : (
+                        <span className="text-secondary">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-xs">
+                      {assigned?.bank_name ? (
+                        <span className="text-primary font-medium">
+                          {assigned.bank_name} <span className="font-mono text-secondary">({assigned.account_number})</span>
+                        </span>
+                      ) : (
+                        <span className="text-secondary italic">Default (Opay)</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 font-mono text-primary">{formatNaira(wallets[user.id] || 0)}</td>
+                    <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
+                      <button
+                        onClick={() => {
+                          setEditingUser(user);
+                          setUserForm({
+                            full_name: user.full_name || '',
+                            is_admin: user.is_admin || false,
+                            assigned_bank_name: assigned?.bank_name || '',
+                            assigned_account_number: assigned?.account_number || '',
+                            assigned_account_name: assigned?.account_name || '',
+                            assigned_bank_notes: assigned?.instructions || '',
+                          });
+                        }}
+                        className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs hover:bg-blue-500/30 transition"
+                      >
+                        Edit User & Bank
+                      </button>
                     <button
                       onClick={() => {
                         setAdjustingWallet({ userId: user.id, currentBalance: wallets[user.id] || 0 });
@@ -408,8 +703,9 @@ export default function FinancePage() {
                     </button>
                   </td>
                 </tr>
-              ))}
-            </tbody>
+              );
+            })}
+          </tbody>
           </table>
         </div>
       </div>

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
+import ManualPaymentModal from '@/app/components/ManualPaymentModal';
 
 interface Milestone {
   name: string;
@@ -57,6 +58,18 @@ export default function PublicInvoicePage() {
   const [contactEmail, setContactEmail] = useState('yourwriterofficial@gmail.com');
   const [processingIndex, setProcessingIndex] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [manualModal, setManualModal] = useState<{
+    isOpen: boolean;
+    reference: string;
+    amount: number;
+    bankDetails: any;
+    milestoneIndex?: number;
+  }>({
+    isOpen: false,
+    reference: '',
+    amount: 0,
+    bankDetails: null,
+  });
 
   useEffect(() => {
     if (!invoiceNumber) return;
@@ -100,11 +113,19 @@ export default function PublicInvoicePage() {
       });
 
       const data = await response.json();
-      if (response.ok && data.link) {
-        window.location.href = data.link;
+      if (response.ok && data.manual_transfer) {
+        setManualModal({
+          isOpen: true,
+          reference: data.tx_ref,
+          amount: data.amount,
+          bankDetails: data.bankDetails,
+          milestoneIndex: index,
+        });
       } else if (response.ok && data.paid_via_wallet) {
         alert('Milestone successfully paid instantly using your wallet balance!');
         window.location.reload();
+      } else if (response.ok && data.link) {
+        window.location.href = data.link;
       } else {
         setErrorMsg(data.error || 'Failed to initialize payment.');
       }
@@ -485,6 +506,24 @@ export default function PublicInvoicePage() {
 
         </div>
       </div>
+
+      {manualModal.isOpen && manualModal.bankDetails && (
+        <ManualPaymentModal
+          isOpen={manualModal.isOpen}
+          onClose={() => setManualModal((prev) => ({ ...prev, isOpen: false }))}
+          reference={manualModal.reference}
+          amount={manualModal.amount}
+          bankDetails={manualModal.bankDetails}
+          orderId={invoice.invoice_number}
+          invoiceId={invoice.invoice_number}
+          milestoneIndex={manualModal.milestoneIndex}
+          paymentType="CUSTOM_INVOICE"
+          title={`Milestone Payment - ${invoice.invoice_number}`}
+          onSuccess={() => {
+            alert('Transfer proof submitted. Once verified by our team, this invoice will be updated.');
+          }}
+        />
+      )}
     </div>
   );
 }

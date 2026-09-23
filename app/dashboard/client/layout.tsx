@@ -46,7 +46,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: 'Account Settings',
     items: [
       { key: 'profile', label: 'Profile & Credentials', href: '/dashboard/client?tab=profile', icon: 'User', tourId: 'rw-tour-profile' },
-      { key: 'chat', label: 'Helpdesk & Support Chat', href: '/dashboard/client?tab=chat', icon: 'MessageSquare' },
+      { key: 'whatsapp', label: 'WhatsApp Support Desk', href: 'https://wa.me/2348121443666?text=Hello%20YRW%20Support%2C%20I%20need%20assistance%20with%20my%20account.', icon: 'MessageCircle' },
     ],
   },
 ];
@@ -118,7 +118,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           title: 'Dev Support',
           items: [
             { key: 'profile', label: 'Developer Credentials', href: '/dashboard/client?tab=profile&brand=developa', icon: 'User', tourId: 'rw-tour-profile' },
-            { key: 'chat', label: 'Engineering Helpdesk', href: '/dashboard/client?tab=chat&brand=developa', icon: 'MessageSquare' },
+            { key: 'whatsapp', label: 'WhatsApp Dev Desk', href: 'https://wa.me/2348121443666?text=Hello%20Developa%20Desk%2C%20I%20need%20technical%20assistance.', icon: 'MessageCircle' },
           ],
         },
       ]
@@ -231,12 +231,15 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const renderNavItem = (item: NavItem, top: boolean, onNavigate?: () => void) => {
     const active = isActive(item.key);
     const Icon = lucide[item.icon] as lucide.LucideIcon;
+    const isExternal = item.href.startsWith('http');
     return (
       <Link
         key={item.key}
         id={item.tourId}
         href={item.href}
         title={item.label}
+        target={isExternal ? '_blank' : undefined}
+        rel={isExternal ? 'noopener noreferrer' : undefined}
         onClick={onNavigate}
         className={`group relative w-full flex items-center justify-between gap-2.5 pl-2 pr-3 py-1.5 rounded-xl transition font-bold ${top ? 'text-sm' : 'text-xs'} ${
           active
@@ -416,13 +419,15 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
             {isDevelopa ? 'Developa Engineering Portal' : 'Client Portal'}
           </span>
           <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard/client?tab=chat"
-              title="Support Desk"
-              className="p-2 text-secondary hover:text-primary hover:bg-hover rounded-full transition relative flex items-center justify-center"
+            <a
+              href="https://wa.me/2348121443666?text=Hello%20YRW%20Support%2C%20I%20need%20assistance%20with%20my%20account."
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Chat on WhatsApp"
+              className="p-2 text-secondary hover:text-[#25D366] hover:bg-[#25D366]/10 rounded-full transition relative flex items-center justify-center cursor-pointer"
             >
-              <lucide.MessageSquare className="w-5 h-5" />
-            </Link>
+              <lucide.MessageCircle className="w-5 h-5" />
+            </a>
             <NotificationBell isAdmin={false} userEmail={user?.email || ''} userId={user?.id} />
           </div>
         </header>

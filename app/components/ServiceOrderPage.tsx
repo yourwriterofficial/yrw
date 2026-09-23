@@ -367,6 +367,11 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
       return;
     }
 
+    if (isLoggedIn) {
+      router.push(`/invoice/${orderStringId}`);
+      return;
+    }
+
     router.push(`/complete-registration?email=${encodeURIComponent(email)}&orderId=${orderStringId}`);
   };
 
@@ -635,7 +640,7 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
               <div className="flex flex-wrap gap-4">
                 <label className="flex items-center gap-2 cursor-pointer text-primary font-bold">
                   <input type="radio" name="paymentMethod" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} />
-                  <span className="text-sm">Pay with Card (Paystack)</span>
+                  <span className="text-sm">Pay via Bank Transfer</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer text-primary font-bold">
                   <input type="radio" name="paymentMethod" checked={paymentMethod === 'wallet'} onChange={() => setPaymentMethod('wallet')} />

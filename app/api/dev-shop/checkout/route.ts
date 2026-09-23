@@ -3,6 +3,8 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { listAllAuthUsers } from '@/lib/adminAuth';
 import { creditReferralCommission } from '@/lib/affiliate';
+import { getUserBankDetails } from '@/lib/bankDetails';
+import { createManualPaymentRequest } from '@/lib/manualPayments';
 
 const admin = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -129,35 +131,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'This script is not priced for checkout.' }, { status: 400 });
     }
 
-    const res = await fetch('https://api.paystack.co/transaction/initialize', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: buyerEmail,
-        amount: total * 100,
-        reference,
-        callback_url: `${BASE}/payment/callback?tx_ref=${reference}`,
-        metadata: {
-          type: 'dev_product',
-          userId: buyerId,
-          productId: product.id,
-          title: product.title,
-          price: total,
-          name: profile?.full_name || buyerEmail.split('@')[0] || 'Client',
-          guestCheckout,
-          guestEmail: guestCheckout ? buyerEmail : null,
-        },
-      }),
+    const bankDetails = await getUserBankDetails(buyerId);
+
+    await createManualPaymentRequest({
+      reference,
+      userId: buyerId,
+      paymentType: 'DEV_PRODUCT',
+      amount: total,
+      bankDetails,
+      notes: `Dev shop script purchase: ${product.title} (Product #${product.id})`,
     });
 
-    const data = await res.json();
-    if (!data.status) {
-      return NextResponse.json({ error: data.message || 'Payment init failed' }, { status: 400 });
-    }
-    return NextResponse.json({ authorization_url: data.data.authorization_url, reference, total });
+    return NextResponse.json({
+      manual_transfer: true,
+      reference,
+      total,
+      bankDetails,
+      productId: product.id,
+      productTitle: product.title,
+    });
   } catch (err: any) {
     console.error('Dev shop checkout error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

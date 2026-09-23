@@ -423,7 +423,7 @@ export default function OrderAssistant() {
       if (!due) { say("You're all caught up — no outstanding balance!"); setStep('quickMenu'); return; }
       const isDeposit = !due.sixty_percent_paid;
       const amount = Math.round((due.financial_quote || 0) * (isDeposit ? 0.6 : 0.4));
-      say(`You have ${isDeposit ? 'an initial milestone deposit' : 'a final release balance'} of ₦${amount.toLocaleString()} due on ${due.order_id}. Generating your secure payment link...`);
+      say(`You have ${isDeposit ? 'an initial milestone deposit' : 'a final release balance'} of ₦${amount.toLocaleString()} due on ${due.order_id}. Generating your bank transfer invoice...`);
       try {
         const res = await fetch('/api/paystack/create-invoice', {
           method: 'POST',
@@ -432,15 +432,15 @@ export default function OrderAssistant() {
         });
         const json = await res.json();
         if (res.ok && json.link) {
-          say('Your payment link is ready.');
+          say('Your bank transfer invoice is ready.');
           say('__PAY_LINK__' + json.link);
           setStep('quickMenu');
         } else {
-          say(`Couldn't generate a payment link right now: ${json.error || 'please try again later.'}`);
+          say(`Couldn't generate the invoice right now: ${json.error || 'please try again later.'}`);
           setStep('quickMenu');
         }
       } catch {
-        say("Couldn't reach the payment gateway — please try again shortly.");
+        say("Couldn't reach the server — please try again shortly.");
         setStep('quickMenu');
       }
       return;

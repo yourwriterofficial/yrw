@@ -62,7 +62,7 @@ export default function Footer() {
         <div className="py-6 flex flex-col sm:flex-row items-center justify-between text-xs text-secondary gap-4">
           <p>© {new Date().getFullYear()} ResearchWriter. All rights reserved.</p>
           <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
-            <span className="text-[10px]">Paystack Secure Gateway</span>
+            <span className="text-[10px]">Direct Bank Escrow & Transfer</span>
             <span className="text-[10px]">Distributed Vault Escrow</span>
           </div>
         </div>

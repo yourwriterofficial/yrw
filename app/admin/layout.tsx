@@ -49,7 +49,6 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Communication',
     items: [
-      { href: '/admin/chat', label: 'Support Chat', icon: lucide.MessageSquare },
       { href: '/admin/email', label: 'Messaging', icon: lucide.Send },
     ],
   },

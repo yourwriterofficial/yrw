@@ -150,12 +150,23 @@ export default function PaymentCallbackContent() {
             <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mb-6">
               <XCircle className="w-8 h-8 text-red-500" />
             </div>
-            <h2 className="text-xl font-black text-primary tracking-tight mb-2">Payment Failed</h2>
+            <h2 className="text-xl font-black text-primary tracking-tight mb-2">Need Payment Help?</h2>
             <p className="text-xs text-secondary leading-relaxed mb-6">
-              We could not process your transaction. Please verify your network and payment details, then try again.
+              If you completed a bank transfer, our operations team can verify your payment receipt immediately via WhatsApp.
             </p>
-            <div className="text-[10px] font-black text-red-500 uppercase tracking-widest animate-pulse">
-              Redirecting back...
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <button
+                onClick={() => window.open(`https://wa.me/2348121443666?text=${encodeURIComponent(`Hello Support, I transferred for Reference #${tx_ref || 'N/A'}. Please verify.`)}`, '_blank')}
+                className="flex-1 py-3 px-4 bg-[#25D366] hover:bg-[#20ba5a] text-black text-xs font-black uppercase tracking-wider rounded-xl transition"
+              >
+                Confirm on WhatsApp
+              </button>
+              <button
+                onClick={() => router.push('/dashboard/client?tab=orders')}
+                className="py-3 px-4 bg-secondary border border-theme text-primary text-xs font-bold rounded-xl transition"
+              >
+                Dashboard
+              </button>
             </div>
           </div>
         )}

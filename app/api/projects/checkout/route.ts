@@ -3,6 +3,8 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { listAllAuthUsers } from '@/lib/adminAuth';
 import { creditReferralCommission } from '@/lib/affiliate';
+import { getUserBankDetails } from '@/lib/bankDetails';
+import { createManualPaymentRequest } from '@/lib/manualPayments';
 
 const admin = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -278,41 +280,67 @@ export async function POST(request: Request) {
       }
     }
 
-    const res = await fetch('https://api.paystack.co/transaction/initialize', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
+    // Fetch assigned bank details for buyer (per user or site default)
+    const bankDetails = await getUserBankDetails(buyerId);
+
+    // Create order with Pending Bank Transfer status
+    const orderStringId = `PRJ-${Math.floor(100000 + Math.random() * 900000)}`;
+    const milestone = [
+      {
+        name: 'Full Payment',
+        percentage: 100,
+        amount: total,
+        paid: false,
+        delivered: false,
+        trigger: 'Manual Bank Transfer',
       },
-      body: JSON.stringify({
-        email: buyerEmail,
-        amount: total * 100,
-        reference,
-        callback_url: `${BASE}/payment/callback?tx_ref=${reference}`,
-        metadata: {
-          type: 'project_material',
-          userId: buyerId,
-          topicId: topicRef,
-          title,
-          department: dept,
-          level: lvl,
-          price: total,
-          basePrice,
-          addons: addonDescriptions.length ? addonDescriptions.join(', ') : 'None',
-          customLocation: customLocation || null,
-          name: profile?.full_name || buyerEmail.split('@')[0] || 'Client',
-          whatsapp: profile?.whatsapp || null,
-          guestCheckout,
-          guestEmail: guestCheckout ? buyerEmail : null,
-        },
-      }),
+    ];
+
+    const orderRow: any = {
+      order_id: orderStringId,
+      client_id: buyerId || null,
+      legal_name: profile?.full_name || buyerEmail.split('@')[0] || 'Client',
+      email: buyerEmail,
+      whatsapp_sync: profile?.whatsapp || null,
+      client_phone: profile?.whatsapp || null,
+      topic: `[PROJECT] ${title}`,
+      service_tier: 'CUSTOM',
+      financial_quote: total,
+      deadline: null,
+      workflow_status: 'Pending Bank Transfer',
+      corrections_status: 'None',
+      vault_status: 'Locked Until Payment Verified',
+      payment_structure_type: '60/40',
+      payment_milestones: milestone,
+      sixty_percent_paid: false,
+      forty_percent_paid: false,
+      work_submitted: false,
+      additional_info: `[PROJECT MATERIAL — MANUAL TRANSFER]\nLevel: ${lvl}\nDepartment: ${dept}\nScope: Chapters 1 to 5 (MS Word).\nAdd-ons: ${addonDescriptions.length ? addonDescriptions.join(', ') : 'None'}${customLocation ? `\nPreferred Location: ${customLocation}` : ''}\nReference: ${reference}`,
+    };
+
+    const { error: insErr } = await admin.from('orders').insert(orderRow);
+    if (insErr) {
+      console.warn('Order insert notice:', insErr);
+    }
+
+    // Register manual payment request
+    await createManualPaymentRequest({
+      reference,
+      userId: buyerId,
+      orderId: orderStringId,
+      paymentType: 'ORDER_DEPOSIT',
+      amount: total,
+      bankDetails,
+      notes: `Project purchase: ${title}`,
     });
 
-    const data = await res.json();
-    if (!data.status) {
-      return NextResponse.json({ error: data.message || 'Payment init failed' }, { status: 400 });
-    }
-    return NextResponse.json({ authorization_url: data.data.authorization_url, reference, total });
+    return NextResponse.json({
+      manual_transfer: true,
+      reference,
+      orderId: orderStringId,
+      total,
+      bankDetails,
+    });
   } catch (err: any) {
     console.error('Project checkout error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

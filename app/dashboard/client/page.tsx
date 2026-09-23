@@ -18,7 +18,7 @@ import NotificationPreferencesPanel from '@/app/components/ui/NotificationPrefer
 import MilestoneTimeline from '@/app/components/ui/MilestoneTimeline';
 import { isOrderFullyPaid, isCustomPayment } from '@/lib/orderPayment';
 import { deriveOrderStatus, amountPaid, displayMilestones } from '@/lib/orderStatus';
-import SupportChat from './SupportChat';
+import ManualPaymentModal from '@/app/components/ManualPaymentModal';
 import ProjectsTab from './ProjectsTab';
 import ScriptsTab from './ScriptsTab';
 import AffiliateTab from './AffiliateTab';
@@ -188,7 +188,7 @@ function DashboardContent() {
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [orders, setOrders] = useState<AdminOrderView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'vault' | 'wallet' | 'profile' | 'chat' | 'projects' | 'scripts' | 'affiliate'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'vault' | 'wallet' | 'profile' | 'projects' | 'scripts' | 'affiliate'>('dashboard');
   const [isDevelopa, setIsDevelopa] = useState(false);
 
   useEffect(() => {
@@ -222,6 +222,19 @@ function DashboardContent() {
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [vaultAddonRequest, setVaultAddonRequest] = useState<Record<string, string>>({});
   const [requestingAddon, setRequestingAddon] = useState<Record<string, boolean>>({});
+  const [manualModalPayment, setManualModalPayment] = useState<{
+    isOpen: boolean;
+    reference: string;
+    amount: number;
+    bankDetails: any;
+    orderId?: string | null;
+  }>({
+    isOpen: false,
+    reference: '',
+    amount: 0,
+    bankDetails: null,
+    orderId: null,
+  });
 
   const userEmailRef = useRef<string | null>(null);
   const isAdminPreviewRef = useRef<boolean>(false);
@@ -229,7 +242,10 @@ function DashboardContent() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'vault' || tab === 'wallet' || tab === 'profile' || tab === 'dashboard' || tab === 'chat' || tab === 'projects' || tab === 'scripts' || tab === 'affiliate' || tab === 'orders') {
+    if (tab === 'chat') {
+      window.open('https://wa.me/2348121443666?text=Hello%20YRW%20Support%2C%20I%20need%20assistance%20with%20my%20account.', '_blank');
+      setActiveTab('dashboard');
+    } else if (tab === 'vault' || tab === 'wallet' || tab === 'profile' || tab === 'dashboard' || tab === 'projects' || tab === 'scripts' || tab === 'affiliate' || tab === 'orders') {
       setActiveTab(tab as any);
     }
   }, [searchParams]);
@@ -514,7 +530,7 @@ function DashboardContent() {
       }
     }
 
-    // Card (Paystack) path
+    // Bank transfer path
     setProcessingPayment(orderId);
     try {
       const res = await fetch('/api/paystack/create-invoice', {
@@ -523,10 +539,21 @@ function DashboardContent() {
         body: JSON.stringify({ orderId, amount, email, name, type }),
       });
       const data = await res.json();
-      if (data.link) window.location.href = data.link;
-      else showToast(`Payment initiation failed: ${data.error}`, 'error');
+      if (data.manual_transfer) {
+        setManualModalPayment({
+          isOpen: true,
+          reference: data.tx_ref,
+          amount: data.amount,
+          bankDetails: data.bankDetails,
+          orderId,
+        });
+      } else if (data.link) {
+        window.location.href = data.link;
+      } else {
+        showToast(`Payment initiation failed: ${data.error}`, 'error');
+      }
     } catch (err) {
-      showToast('Network error communicating with payment gateway.', 'error');
+      showToast('Network error communicating with payment service.', 'error');
     }
     setProcessingPayment(null);
   };
@@ -624,13 +651,21 @@ function DashboardContent() {
         }),
       });
       const data = await res.json();
-      if (data.link) {
+      if (data.manual_transfer) {
+        setManualModalPayment({
+          isOpen: true,
+          reference: data.tx_ref,
+          amount: data.amount,
+          bankDetails: data.bankDetails,
+          orderId,
+        });
+      } else if (data.link) {
         window.location.href = data.link;
       } else {
-        showToast(`Card payment initiation failed: ${data.error}`, 'error');
+        showToast(`Payment initiation failed: ${data.error}`, 'error');
       }
     } catch (err) {
-      showToast('Network error initiating card payment.', 'error');
+      showToast('Network error initiating payment.', 'error');
     }
     setProcessingAddonPayment(null);
   };
@@ -1095,13 +1130,6 @@ function DashboardContent() {
         </div>
       )}
 
-      {/* === TAB: CHAT === */}
-      {activeTab === 'chat' && (
-        <div className="animate-in fade-in duration-500 max-w-4xl mx-auto h-[calc(100vh-180px)] flex flex-col bg-card border border-theme rounded-3xl overflow-hidden shadow-xl">
-          <SupportChat user={user} />
-        </div>
-      )}
-
       {/* === TAB: PROJECTS === */}
       {activeTab === 'projects' && (
         <div className="animate-in fade-in duration-500 max-w-6xl mx-auto">
@@ -1499,6 +1527,25 @@ function DashboardContent() {
           </div>
         );
       })()}
+
+      {manualModalPayment.isOpen && manualModalPayment.bankDetails && (
+        <ManualPaymentModal
+          isOpen={manualModalPayment.isOpen}
+          onClose={() => {
+            setManualModalPayment((prev) => ({ ...prev, isOpen: false }));
+            refreshOrders();
+          }}
+          reference={manualModalPayment.reference}
+          amount={manualModalPayment.amount}
+          bankDetails={manualModalPayment.bankDetails}
+          orderId={manualModalPayment.orderId}
+          paymentType="ORDER_MILESTONE"
+          title={manualModalPayment.orderId ? `Order #${manualModalPayment.orderId} Transfer` : 'Bank Transfer'}
+          onSuccess={() => {
+            refreshOrders();
+          }}
+        />
+      )}
     </div>
   );
 }

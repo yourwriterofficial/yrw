@@ -198,7 +198,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
             {[
               { icon: FileEdit, title: '1. Configure & submit', description: 'Select a custom service pipeline, specify requirements (page/word counts, deadlines), and get an instant quote.' },
-              { icon: Wallet, title: '2. Fund escrow', description: 'Pay the deposit (60% standard or customised installments) securely via Paystack or wallet balance.' },
+              { icon: Wallet, title: '2. Fund escrow', description: 'Pay the deposit (60% standard or customised installments) securely via direct bank transfer or wallet balance.' },
               { icon: Users, title: '3. Track drafts', description: 'Monitor logs and timelines in your client dashboard. Submit revisions directly to the document.' },
               { icon: PackageCheck, title: '4. Unlock vault', description: 'Confirm plagiarism and AI scans, clear the remaining balance, and download the unlocked docx files.' },
             ].map((step, i) => {

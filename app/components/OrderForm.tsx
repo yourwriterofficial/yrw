@@ -413,8 +413,11 @@ export default function OrderForm() {
       }
       showToast('Order placed! Deposit paid from wallet.', 'success');
       router.push('/dashboard/client');
+    } else if (isLoggedIn) {
+      // Manual bank transfer for logged in user – direct to invoice
+      router.push(`/invoice/${orderStringId}`);
     } else {
-      // Pay with card – redirect to Paystack (guest or card payment)
+      // Guest order – complete account setup to access dashboard and invoice
       router.push(`/complete-registration?email=${encodeURIComponent(email)}&orderId=${orderStringId}`);
     }
     setLoading(false);
@@ -848,7 +851,7 @@ export default function OrderForm() {
               <div className="flex flex-wrap gap-4">
                 <label className="flex items-center gap-2 cursor-pointer text-primary font-bold">
                   <input type="radio" name="paymentMethod" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="accent-success" />
-                  <span className="text-sm">Pay with Card (Paystack)</span>
+                  <span className="text-sm">Pay via Bank Transfer</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer text-primary font-bold">
                   <input type="radio" name="paymentMethod" value="wallet" checked={paymentMethod === 'wallet'} onChange={() => setPaymentMethod('wallet')} className="accent-success" />

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { z } from 'zod';
+import { getUserBankDetails } from '@/lib/bankDetails';
+import { createManualPaymentRequest } from '@/lib/manualPayments';
 
 const invoiceRequestSchema = z.object({
   orderId: z.string().min(5),
@@ -253,45 +255,50 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. Fallback: Call Paystack API to initialize transaction
-    const response = await fetch('https://api.paystack.co/transaction/initialize', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        reference: tx_ref,
-        amount: amount * 100,
-        email: email,
-        callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback?tx_ref=${tx_ref}`,
-        metadata: {
-          custom_fields: [
-            { display_name: "Client Name", variable_name: "client_name", value: name },
-            { display_name: "Order ID", variable_name: "order_id", value: orderId },
-            { display_name: "Invoice Type", variable_name: "invoice_type", value: type }
-          ]
-        }
-      }),
+    // 3. Fallback: Manual Bank Transfer
+    let milestoneIndex: number | null = null;
+    if (type.startsWith('INDEX-')) {
+      milestoneIndex = parseInt(type.replace('INDEX-', ''), 10);
+    } else if (type === 'BALANCE') {
+      milestoneIndex = 1;
+    } else if (type === 'DEPOSIT') {
+      milestoneIndex = 0;
+    }
+
+    const payerUserId = user?.id || (orderData && 'client_id' in orderData ? orderData.client_id : null);
+    const bankDetails = await getUserBankDetails(payerUserId);
+
+    // Register manual payment request
+    await createManualPaymentRequest({
+      reference: tx_ref,
+      userId: payerUserId,
+      orderId: isCustomInvoice ? null : orderId,
+      invoiceId: isCustomInvoice ? orderId : null,
+      milestoneIndex,
+      paymentType: isCustomInvoice ? 'CUSTOM_INVOICE' : (type.startsWith('ADDON-') ? 'ORDER_DEPOSIT' : 'ORDER_MILESTONE'),
+      amount,
+      bankDetails,
+      notes: `Invoice/Milestone transfer: ${orderId} (${type})`,
     });
 
-    const paystackData = await response.json();
-
-    if (paystackData.status === true) {
-      if (!isCustomInvoice && orderData) {
-        await supabase.from('invoices').insert({
-          order_id: orderData.id,
-          amount,
-          type: (type === 'DEPOSIT' || type === 'BALANCE') ? type : 'DEPOSIT',
-          flutterwave_transaction_ref: tx_ref, 
-          status: 'PENDING',
-        });
-      }
-
-      return NextResponse.json({ link: paystackData.data.authorization_url, tx_ref });
-    } else {
-      throw new Error(paystackData.message || 'Paystack API Error');
+    if (!isCustomInvoice && orderData) {
+      await supabase.from('invoices').insert({
+        order_id: orderData.id,
+        amount,
+        type: (type === 'DEPOSIT' || type === 'BALANCE') ? type : 'DEPOSIT',
+        flutterwave_transaction_ref: tx_ref,
+        status: 'PENDING',
+      });
     }
+
+    return NextResponse.json({
+      manual_transfer: true,
+      tx_ref,
+      amount,
+      bankDetails,
+      orderId,
+      isCustomInvoice,
+    });
   } catch (err: any) {
     console.error('Invoice Generation Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

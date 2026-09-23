@@ -8,6 +8,7 @@ import LoadingScreen from '@/app/components/ui/LoadingScreen';
 import { showToast } from '@/app/components/ui/Toast';
 import Card from '@/app/components/ui/Card';
 import Button from '@/app/components/ui/Button';
+import ManualPaymentModal from '@/app/components/ManualPaymentModal';
 
 import { getEffectiveUser } from '@/lib/impersonate';
 
@@ -22,6 +23,17 @@ export default function WalletPage({ embedded = false }: WalletPageProps) {
   const [loading, setLoading] = useState(true);
   const [topUpAmount, setTopUpAmount] = useState(5000);
   const [processing, setProcessing] = useState(false);
+  const [modalPayment, setModalPayment] = useState<{
+    isOpen: boolean;
+    reference: string;
+    amount: number;
+    bankDetails: any;
+  }>({
+    isOpen: false,
+    reference: '',
+    amount: 0,
+    bankDetails: null,
+  });
 
   const fetchWallet = async () => {
     const { user } = await getEffectiveUser();
@@ -79,25 +91,30 @@ export default function WalletPage({ embedded = false }: WalletPageProps) {
 
     setProcessing(true);
     try {
-      const callbackPath = embedded ? '/dashboard/client?tab=wallet&success=true' : '/dashboard/client/wallet?success=true';
       const res = await fetch('/api/wallet/topup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
           amount: topUpAmount,
-          callbackUrl: `${window.location.origin}${callbackPath}`,
         }),
       });
       const data = await res.json();
-      if (data.authorization_url) {
+      if (data.manual_transfer && data.bankDetails) {
+        setModalPayment({
+          isOpen: true,
+          reference: data.reference,
+          amount: data.amount,
+          bankDetails: data.bankDetails,
+        });
+      } else if (data.authorization_url) {
         window.location.href = data.authorization_url;
       } else {
         showToast(data.error || 'Failed to initialize payment', 'error');
-        setProcessing(false);
       }
     } catch {
       showToast('Network error. Please try again.', 'error');
+    } finally {
       setProcessing(false);
     }
   };
@@ -157,7 +174,7 @@ export default function WalletPage({ embedded = false }: WalletPageProps) {
             aria-label="Top-up amount"
           />
           <Button onClick={handleTopUp} disabled={processing || topUpAmount < 100} loading={processing} className="whitespace-nowrap">
-            {processing ? 'Processing...' : 'Top Up via Paystack'}
+            {processing ? 'Processing...' : 'Top Up via Bank Transfer'}
           </Button>
         </div>
       </Card>
@@ -198,6 +215,24 @@ export default function WalletPage({ embedded = false }: WalletPageProps) {
           </div>
         )}
       </Card>
+
+      {modalPayment.isOpen && modalPayment.bankDetails && (
+        <ManualPaymentModal
+          isOpen={modalPayment.isOpen}
+          onClose={() => {
+            setModalPayment((prev) => ({ ...prev, isOpen: false }));
+            fetchWallet();
+          }}
+          reference={modalPayment.reference}
+          amount={modalPayment.amount}
+          bankDetails={modalPayment.bankDetails}
+          paymentType="WALLET_TOPUP"
+          title="Fund Wallet via Bank Transfer"
+          onSuccess={() => {
+            fetchWallet();
+          }}
+        />
+      )}
     </div>
   );
 }
