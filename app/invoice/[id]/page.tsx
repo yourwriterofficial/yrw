@@ -330,7 +330,7 @@ export default function PublicInvoicePage() {
                 </p>
                 <p className="text-secondary font-medium flex items-center gap-2">
                   <lucide.Mail className="w-4 h-4 text-secondary shrink-0" />
-                  {isDevelopa ? 'hello@developa.me' : contactEmail}
+                  {contactEmail}
                 </p>
                 <p className="text-secondary font-medium flex items-center gap-2">
                   <lucide.Globe className="w-4 h-4 text-secondary shrink-0" />
