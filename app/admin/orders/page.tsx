@@ -686,8 +686,9 @@ function OrdersPageContent() {
         body: JSON.stringify({ orderId, amount, email, name, type }),
       });
       const data = await res.json();
-      if (data.link) window.open(data.link, '_blank');
-      else showToast(`Failed: ${data.error}`, 'error');
+      const targetLink = data.link || (data.manual_transfer ? `/invoice/${orderId}` : null);
+      if (targetLink) window.open(targetLink, '_blank');
+      else showToast(`Failed: ${data.error || 'Could not generate invoice'}`, 'error');
     } catch (err) {
       showToast('Network error triggering invoice.', 'error');
     }

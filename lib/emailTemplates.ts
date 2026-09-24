@@ -47,7 +47,26 @@ const milestoneBreakdownHtml = (order: OrderEmailData) => {
 // Mail/etc. Keep this light-background + solid-color approach — no
 // gradients or background-clip:text — to avoid unreadable text in clients
 // that strip unsupported CSS.
-const baseLayout = (content: string) => `
+const baseLayout = (content: string, brand?: 'developa' | 'yourresearchwriter') => {
+  const isDev = brand === 'developa' ||
+    content.toLowerCase().includes('developa') ||
+    content.toLowerCase().includes('dev shop') ||
+    content.toLowerCase().includes('my scripts') ||
+    content.toLowerCase().includes('dev lead') ||
+    content.toLowerCase().includes('technical brief');
+
+  const headerBg = isDev ? '#083344' : '#065f46';
+  const badgeText = isDev ? 'Engineering & Software Notification' : 'Official Service Notification';
+  const badgeColor = isDev ? '#67e8f9' : '#a7f3d0';
+  const siteUrl = isDev ? 'https://developa.me' : SITE_URL;
+  const logoHtml = isDev
+    ? `<a href="https://developa.me" class="logo" style="color:#ffffff; font-weight:900;">developa<span style="color:#38bdf8;">.me</span></a>`
+    : `<a href="${SITE_URL}" class="logo">YourResearch<span>Writer</span></a>`;
+  const footerText = isDev
+    ? `© ${new Date().getFullYear()} Developa (developa.me). Full-Stack Software Engineering &amp; Marketplace.<br>Direct Support: <a href="https://wa.me/2348121443666">WhatsApp Dev Lead</a>`
+    : `© ${new Date().getFullYear()} YourResearchWriter. Plagiarism-Free Academic &amp; Professional Writing.<br>Direct Support: <a href="https://wa.me/2348121443666">WhatsApp Customer Desk</a>`;
+
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -55,7 +74,7 @@ const baseLayout = (content: string) => `
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light">
   <meta name="supported-color-schemes" content="light">
-  <title>YourResearchWriter</title>
+  <title>${isDev ? 'developa.me' : 'YourResearchWriter'}</title>
   <!--[if mso]>
   <noscript>
     <xml>
@@ -79,7 +98,7 @@ const baseLayout = (content: string) => `
       background: rgba(255, 255, 255, 0.12);
       border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 100px;
-      color: #a7f3d0;
+      color: ${badgeColor};
       font-size: 10px;
       font-weight: 800;
       letter-spacing: 1.5px;
@@ -106,7 +125,7 @@ const baseLayout = (content: string) => `
     h2 {
       font-size: 16px;
       font-weight: 800;
-      color: #059669;
+      color: ${isDev ? '#0284c7' : '#059669'};
       margin-bottom: 12px;
     }
     p {
@@ -138,12 +157,12 @@ const baseLayout = (content: string) => `
     .price-tag {
       font-size: 30px;
       font-weight: 900;
-      color: #059669;
+      color: ${isDev ? '#0284c7' : '#059669'};
       margin: 10px 0;
     }
     .cta-button {
       display: inline-block;
-      background-color: #059669;
+      background-color: ${isDev ? '#0284c7' : '#059669'};
       color: #ffffff !important;
       text-decoration: none;
       padding: 14px 32px;
@@ -166,9 +185,9 @@ const baseLayout = (content: string) => `
       font-size: 11px;
       font-weight: 800;
       text-transform: uppercase;
-      background: #ecfdf5;
-      color: #059669;
-      border: 1px solid #a7f3d0;
+      background: ${isDev ? '#f0f9ff' : '#ecfdf5'};
+      color: ${isDev ? '#0284c7' : '#059669'};
+      border: 1px solid ${isDev ? '#bae6fd' : '#a7f3d0'};
     }
     .footer {
       padding: 22px 32px;
@@ -179,7 +198,7 @@ const baseLayout = (content: string) => `
       background: #fafafa;
     }
     .footer a {
-      color: #059669;
+      color: ${isDev ? '#0284c7' : '#059669'};
       text-decoration: none;
       font-weight: 600;
     }
@@ -194,9 +213,9 @@ const baseLayout = (content: string) => `
       <td align="center" style="padding: 30px 12px;">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#ffffff; border:1px solid #e4e4e7; border-radius:16px; overflow:hidden;">
           <tr>
-            <td bgcolor="#065f46" style="background-color:#065f46; padding:32px 32px; text-align:center;">
-              <div class="brand-badge">Official Service Notification</div>
-              <div><a href="${SITE_URL}" class="logo">YourResearch<span>Writer</span></a></div>
+            <td bgcolor="${headerBg}" style="background-color:${headerBg}; padding:32px 32px; text-align:center;">
+              <div class="brand-badge">${badgeText}</div>
+              <div>${logoHtml}</div>
             </td>
           </tr>
           <tr>
@@ -206,8 +225,7 @@ const baseLayout = (content: string) => `
           </tr>
           <tr>
             <td class="footer">
-              © ${new Date().getFullYear()} YourResearchWriter. Plagiarism-Free Academic &amp; Professional Writing.<br>
-              Direct Support: <a href="https://wa.me/2348121443666">WhatsApp Customer Desk</a>
+              ${footerText}
             </td>
           </tr>
         </table>
@@ -218,6 +236,7 @@ const baseLayout = (content: string) => `
 </body>
 </html>
 `;
+};
 
 /**
  * "Bulletproof" CTA button. Outlook's Word rendering engine ignores padding on
@@ -510,9 +529,9 @@ export const emailTemplates = {
   }),
 };
 
-export function emailShell(bodyHtml: string, ctaText?: string, ctaUrl?: string): string {
+export function emailShell(bodyHtml: string, ctaText?: string, ctaUrl?: string, brand?: 'developa' | 'yourresearchwriter'): string {
   return baseLayout(`
     ${bodyHtml}
     ${ctaText && ctaUrl ? ctaButton(ctaText, ctaUrl) : ''}
-  `);
+  `, brand);
 }

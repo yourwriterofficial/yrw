@@ -42,6 +42,17 @@ export async function POST(request: Request) {
       notes: notes || null,
     });
 
+    // Notify admins specifically that a transfer receipt/proof was submitted
+    try {
+      const { notifyAdmins } = await import('@/lib/notify');
+      await notifyAdmins({
+        title: `Payment Proof Uploaded: ₦${Number(amount).toLocaleString('en-NG')}`,
+        message: `${senderName ? `${senderName} submitted` : 'New'} transfer proof for ${orderId ? `Order #${orderId}` : (invoiceId ? `Invoice #${invoiceId}` : reference)}.`,
+        type: 'payment',
+        link: '/admin/orders',
+      });
+    } catch {}
+
     return NextResponse.json({ success: true, reference: result.reference });
   } catch (err: any) {
     console.error('Submit manual payment proof error:', err);

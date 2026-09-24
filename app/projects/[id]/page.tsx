@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import ProjectsAssistant from '@/app/components/ProjectsAssistant';
 import Header from '@/app/components/Header';
+import ManualPaymentModal from '@/app/components/ManualPaymentModal';
+import { BankDetails } from '@/lib/bankDetails';
 
 type Topic = {
   id: number;
@@ -74,6 +76,19 @@ export default function ProjectPermalinkPage() {
   const [copied, setCopied] = useState(false);
   const [guestEmail, setGuestEmail] = useState('');
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const [manualModal, setManualModal] = useState<{
+    isOpen: boolean;
+    reference: string;
+    orderId?: string | null;
+    amount: number;
+    bankDetails: BankDetails | null;
+  }>({
+    isOpen: false,
+    reference: '',
+    orderId: null,
+    amount: 0,
+    bankDetails: null,
+  });
 
   const [openPreview, setOpenPreview] = useState(false);
   const [userEmail, setUserEmail] = useState('');
@@ -202,8 +217,19 @@ export default function ProjectPermalinkPage() {
         }),
       });
       const data = await res.json();
-      if (res.ok && data.authorization_url) window.location.href = data.authorization_url;
-      else setMsg(data.error || 'Could not start checkout.');
+      if (res.ok && data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else if (res.ok && data.manual_transfer && data.bankDetails) {
+        setManualModal({
+          isOpen: true,
+          reference: data.reference,
+          orderId: data.orderId,
+          amount: data.total,
+          bankDetails: data.bankDetails,
+        });
+      } else {
+        setMsg(data.error || 'Could not start checkout.');
+      }
     } catch { setMsg('Network error. Please try again.'); }
     setBusy(false);
   };
@@ -507,6 +533,25 @@ export default function ProjectPermalinkPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {manualModal.isOpen && manualModal.bankDetails && (
+        <ManualPaymentModal
+          isOpen={manualModal.isOpen}
+          onClose={() => setManualModal(prev => ({ ...prev, isOpen: false }))}
+          reference={manualModal.reference}
+          amount={manualModal.amount}
+          bankDetails={manualModal.bankDetails}
+          orderId={manualModal.orderId}
+          paymentType="ORDER_DEPOSIT"
+          title="Project Material — Bank Transfer"
+          onSuccess={() => {
+            setMsg('Payment details recorded! We will verify and release your project material.');
+            if (manualModal.orderId) {
+              window.location.href = `/invoice/${manualModal.orderId}`;
+            }
+          }}
+        />
       )}
     </div>
   );

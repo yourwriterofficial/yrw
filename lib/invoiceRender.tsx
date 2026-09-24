@@ -14,6 +14,7 @@ export type InvoiceRenderData = {
   milestones?: InvoiceRenderMilestone[];
   created_at: string;
   status: string;
+  brand?: 'developa' | 'yourresearchwriter';
 };
 
 const WIDTH = 960;
@@ -24,6 +25,20 @@ function buildElement(data: InvoiceRenderData) {
   const allPaid = data.status === 'PAID';
   const currency = data.currency || '₦';
 
+  const isDevelopa = data.brand === 'developa' ||
+    data.invoice_number?.startsWith('DEV') ||
+    data.project_title?.toLowerCase().includes('software') ||
+    data.project_title?.toLowerCase().includes('script') ||
+    data.project_title?.toLowerCase().includes('developa') ||
+    data.company_name?.toLowerCase().includes('developa');
+
+  const brandColor = isDevelopa ? '#06b6d4' : '#1DB954';
+  const headerGradient = isDevelopa
+    ? 'linear-gradient(135deg, #083344, #050505)'
+    : 'linear-gradient(135deg, #0a2e1a, #050505)';
+  const brandName = isDevelopa ? 'developa.me' : 'YourResearchWriter';
+  const receiptTitle = allPaid ? (isDevelopa ? 'Official Engineering Receipt' : 'Official Receipt') : (isDevelopa ? 'Engineering Agreement & Invoice' : 'Invoice');
+
   return (
     <div
       style={{
@@ -33,7 +48,7 @@ function buildElement(data: InvoiceRenderData) {
         background: '#0a0a0a',
         color: '#e5e5e5',
         fontFamily: 'sans-serif',
-        border: '2px solid #1DB954',
+        border: `2px solid ${brandColor}`,
         borderRadius: 24,
       }}
     >
@@ -45,18 +60,18 @@ function buildElement(data: InvoiceRenderData) {
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           padding: '36px 44px',
-          background: 'linear-gradient(135deg, #0a2e1a, #050505)',
-          borderBottom: '1px solid #1DB954',
+          background: headerGradient,
+          borderBottom: `1px solid ${brandColor}`,
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', fontSize: 30, fontWeight: 800, color: '#1DB954' }}>YourResearchWriter</div>
+          <div style={{ display: 'flex', fontSize: 30, fontWeight: 800, color: brandColor }}>{brandName}</div>
           <div style={{ display: 'flex', fontSize: 13, color: '#888', marginTop: 6 }}>
-            {allPaid ? 'Official Receipt' : 'Invoice'} · {new Date(data.created_at).toLocaleDateString()}
+            {receiptTitle} · {new Date(data.created_at).toLocaleDateString()}
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-          <div style={{ display: 'flex', fontSize: 14, color: '#888' }}>Invoice</div>
+          <div style={{ display: 'flex', fontSize: 14, color: '#888' }}>{isDevelopa ? 'Build / Order' : 'Invoice'}</div>
           <div style={{ display: 'flex', fontSize: 22, fontWeight: 800, color: 'white', fontFamily: 'monospace' }}>
             #{data.invoice_number}
           </div>
@@ -137,7 +152,9 @@ function buildElement(data: InvoiceRenderData) {
 
       {/* Footer */}
       <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', padding: '18px 44px', borderTop: '1px solid #222', fontSize: 11, color: '#555' }}>
-        © {new Date().getFullYear()} YourResearchWriter — All documents encrypted.
+        {isDevelopa
+          ? `© ${new Date().getFullYear()} Developa (developa.me) — All software source code & IP protected.`
+          : `© ${new Date().getFullYear()} YourResearchWriter (yourresearchwriter.com.ng) — All documents encrypted.`}
       </div>
     </div>
   );

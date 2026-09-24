@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import ManualPaymentModal from '@/app/components/ManualPaymentModal';
@@ -36,6 +36,8 @@ interface CustomInvoice {
   company_name: string | null;
   address: string | null;
   phone: string | null;
+  project_title?: string | null;
+  project_description?: string | null;
   deliverables: DeliverableCategory[];
   additional_services: string[];
   timeline: TimelineItem[];
@@ -51,10 +53,12 @@ interface CustomInvoice {
 export default function PublicInvoicePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const invoiceNumber = params?.id as string;
 
   const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState<CustomInvoice | null>(null);
+  const [isDevelopa, setIsDevelopa] = useState(false);
   const [contactEmail, setContactEmail] = useState('yourwriterofficial@gmail.com');
   const [processingIndex, setProcessingIndex] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -94,6 +98,31 @@ export default function PublicInvoicePage() {
     };
     fetchInvoice();
   }, [invoiceNumber]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const host = window.location.host.toLowerCase();
+      const brandParam = searchParams?.get('brand');
+      const savedBrand = localStorage.getItem('developa_brand');
+      const isDevDomain = host.includes('developa.me') || host.includes('developa.local');
+      const isDevQuery = brandParam === 'developa';
+      const isDevSaved = savedBrand === 'developa';
+
+      const isDevInvoice = !!(
+        invoice?.invoice_number?.startsWith('DEV') ||
+        invoice?.company_name?.toLowerCase().includes('developa') ||
+        invoice?.project_title?.toLowerCase().includes('software') ||
+        invoice?.project_title?.toLowerCase().includes('script') ||
+        invoice?.project_title?.toLowerCase().includes('developa') ||
+        invoice?.project_title?.toLowerCase().includes('full stack') ||
+        invoice?.project_title?.toLowerCase().includes('api') ||
+        invoice?.project_title?.toLowerCase().includes('mobile app') ||
+        (invoice?.timeline && invoice.timeline.length > 0)
+      );
+
+      setIsDevelopa(isDevDomain || isDevQuery || (isDevSaved && isDevInvoice) || isDevInvoice);
+    }
+  }, [searchParams, invoice]);
 
   const handlePayMilestone = async (milestone: Milestone, index: number) => {
     if (!invoice) return;
@@ -192,39 +221,51 @@ export default function PublicInvoicePage() {
         
         {/* Header Ribbon */}
         <div className={`p-8 sm:p-12 border-b border-theme flex flex-col md:flex-row justify-between gap-6 relative ${
-          allPaid ? 'bg-gradient-to-r from-emerald-600/10 via-emerald-600/5 to-transparent border-emerald-500/20' : 'bg-gradient-to-r from-purple-600/10 via-purple-600/5 to-transparent'
+          allPaid 
+            ? (isDevelopa ? 'bg-gradient-to-r from-cyan-600/10 via-cyan-600/5 to-transparent border-cyan-500/20' : 'bg-gradient-to-r from-emerald-600/10 via-emerald-600/5 to-transparent border-emerald-500/20')
+            : (isDevelopa ? 'bg-gradient-to-r from-cyan-600/10 via-blue-600/5 to-transparent' : 'bg-gradient-to-r from-purple-600/10 via-purple-600/5 to-transparent')
         }`}>
           
           <div>
             <div className="flex items-center gap-4 mb-3">
               <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${
                 allPaid 
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                  : 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                  ? (isDevelopa ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20')
+                  : (isDevelopa ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-purple-500/10 text-purple-400 border-purple-500/20')
               }`}>
-                {allPaid ? 'Official Receipt' : 'Service Agreement & Invoice'}
+                {allPaid 
+                  ? (isDevelopa ? 'Developa Official Receipt' : 'Official Receipt') 
+                  : (isDevelopa ? 'Developa Software Agreement & Invoice' : 'Service Agreement & Invoice')}
               </span>
               <span className="text-secondary text-xs font-bold font-mono">
                 {invoice.invoice_number}
               </span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-tight mb-2">
-              {allPaid ? 'Payment Receipt' : 'Project Proposal & Invoice'}
+              {invoice.project_title || (allPaid 
+                ? (isDevelopa ? 'Developa Payment Receipt' : 'Payment Receipt') 
+                : (isDevelopa ? 'Software Engineering Proposal & Invoice' : 'Project Proposal & Invoice'))}
             </h1>
             <p className="text-secondary text-sm">
-              Issued on {new Date(invoice.created_at).toLocaleDateString()}
+              {invoice.project_title ? (allPaid ? (isDevelopa ? 'Developa Official Receipt • ' : 'Payment Receipt • ') : (isDevelopa ? 'Developa Engineering Invoice • ' : 'Project Invoice • ')) : ''}Issued on {new Date(invoice.created_at).toLocaleDateString()}
             </p>
           </div>
 
           <div className="flex flex-col md:items-end justify-between text-left md:text-right">
             <div>
               <p className="text-xs uppercase font-black tracking-widest text-secondary mb-1">Total Project Budget</p>
-              <p className={`text-4xl font-black ${allPaid ? 'text-emerald-500' : 'text-purple-500'}`}>
+              <p className={`text-4xl font-black ${
+                allPaid 
+                  ? (isDevelopa ? 'text-cyan-400' : 'text-emerald-500') 
+                  : (isDevelopa ? 'text-cyan-400' : 'text-purple-500')
+              }`}>
                 ₦{invoice.total_amount.toLocaleString()}
               </p>
             </div>
             {allPaid && (
-              <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full text-xs font-black uppercase tracking-wider">
+              <div className={`mt-4 inline-flex items-center gap-2 px-4 py-2 ${
+                isDevelopa ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+              } border rounded-full text-xs font-black uppercase tracking-wider`}>
                 <lucide.ShieldCheck className="w-4 h-4 animate-pulse" /> Fully Paid & Confirmed
               </div>
             )}
@@ -232,7 +273,9 @@ export default function PublicInvoicePage() {
 
           {/* Large stamp background for print */}
           {allPaid && (
-            <div className="absolute top-1/2 right-12 -translate-y-1/2 opacity-[0.03] pointer-events-none print:opacity-[0.08] select-none text-emerald-500 font-black text-9xl tracking-tighter uppercase rotate-12">
+            <div className={`absolute top-1/2 right-12 -translate-y-1/2 opacity-[0.03] pointer-events-none print:opacity-[0.08] select-none ${
+              isDevelopa ? 'text-cyan-500' : 'text-emerald-500'
+            } font-black text-9xl tracking-tighter uppercase rotate-12`}>
               Paid
             </div>
           )}
@@ -278,12 +321,20 @@ export default function PublicInvoicePage() {
             <div className="space-y-4 md:border-l md:border-theme md:pl-8">
               <h3 className="text-xs font-black uppercase text-secondary tracking-widest">Contractor / Issuer</h3>
               <div className="space-y-2 text-sm">
-                <p className="font-black text-primary text-base">YourResearchWriter</p>
-                <p className="text-secondary font-medium flex items-center gap-2">
-                  <lucide.Building className="w-4 h-4 text-secondary shrink-0" /> Tech & Writing Services
+                <p className="font-black text-primary text-base">
+                  {isDevelopa ? 'Developa Technologies' : 'YourResearchWriter'}
                 </p>
                 <p className="text-secondary font-medium flex items-center gap-2">
-                  <lucide.Mail className="w-4 h-4 text-secondary shrink-0" /> {contactEmail}
+                  <lucide.Building className="w-4 h-4 text-secondary shrink-0" />
+                  {isDevelopa ? 'Full-Stack Software, Web & Mobile Engineering' : 'Tech & Writing Services'}
+                </p>
+                <p className="text-secondary font-medium flex items-center gap-2">
+                  <lucide.Mail className="w-4 h-4 text-secondary shrink-0" />
+                  {isDevelopa ? 'hello@developa.me' : contactEmail}
+                </p>
+                <p className="text-secondary font-medium flex items-center gap-2">
+                  <lucide.Globe className="w-4 h-4 text-secondary shrink-0" />
+                  {isDevelopa ? 'https://developa.me' : 'https://yourresearchwriter.com.ng'}
                 </p>
                 <p className="text-secondary font-medium flex items-center gap-2">
                   <lucide.MapPin className="w-4 h-4 text-secondary shrink-0" /> Nigeria
@@ -295,16 +346,16 @@ export default function PublicInvoicePage() {
           {/* Scope of Deliverables */}
           <div className="space-y-4">
             <h3 className="text-xs font-black uppercase text-secondary tracking-widest flex items-center gap-2">
-              <lucide.FileText className="w-4 h-4 text-purple-400" /> Scope of Work & Deliverables
+              <lucide.FileText className={`w-4 h-4 ${isDevelopa ? 'text-cyan-400' : 'text-purple-400'}`} /> Scope of Work & Deliverables
             </h3>
             <div className="bg-secondary/40 border border-theme rounded-2xl p-6 space-y-5">
               {invoice.deliverables && invoice.deliverables.length > 0 ? invoice.deliverables.map((cat, catIdx) => (
                 <div key={catIdx}>
-                  <p className="text-xs font-black uppercase tracking-wider text-purple-400 mb-2">{cat.category}</p>
+                  <p className={`text-xs font-black uppercase tracking-wider ${isDevelopa ? 'text-cyan-400' : 'text-purple-400'} mb-2`}>{cat.category}</p>
                   <ul className="space-y-2 ml-1">
                     {(cat.items || []).map((item, idx) => (
                       <li key={idx} className="flex items-start gap-3 text-sm text-primary font-bold">
-                        <lucide.Check className="w-4 h-4 text-purple-400 mt-0.5 shrink-0" />
+                        <lucide.Check className={`w-4 h-4 ${isDevelopa ? 'text-cyan-400' : 'text-purple-400'} mt-0.5 shrink-0`} />
                         <span>{item}</span>
                       </li>
                     ))}
@@ -488,17 +539,25 @@ export default function PublicInvoicePage() {
             </div>
 
             <div className="border border-theme rounded-2xl p-6 bg-secondary/10 text-center relative overflow-hidden">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-secondary mb-8">YourWriter Management</h4>
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-secondary mb-8">
+                {isDevelopa ? 'Developa Engineering Leadership' : 'YourWriter Management'}
+              </h4>
               {allPaid ? (
                 <div className="space-y-2">
-                  <p className="text-emerald-400 font-black text-lg tracking-tight font-serif italic">Verified & Execution Released</p>
-                  <p className="text-[10px] text-secondary font-bold">Signee: Lead Architect</p>
+                  <p className={`${isDevelopa ? 'text-cyan-400' : 'text-emerald-400'} font-black text-lg tracking-tight font-serif italic`}>
+                    Verified & Execution Released
+                  </p>
+                  <p className="text-[10px] text-secondary font-bold">
+                    Signee: {isDevelopa ? 'Principal Software Architect' : 'Lead Architect'}
+                  </p>
                   <p className="text-[9px] text-secondary uppercase font-mono">Status: COMPLETED / RECEIPT GENERATED</p>
                 </div>
               ) : (
                 <div className="space-y-2 py-2">
-                  <p className="text-purple-400 font-bold text-xs">Awaiting Initial Deposit</p>
-                  <p className="text-[10px] text-secondary">Bank Preset: YourWriter Dev & Consulting</p>
+                  <p className={`${isDevelopa ? 'text-cyan-400' : 'text-purple-400'} font-bold text-xs`}>Awaiting Initial Deposit</p>
+                  <p className="text-[10px] text-secondary">
+                    {isDevelopa ? 'Bank Preset: Developa Software Engineering' : 'Bank Preset: YourWriter Dev & Consulting'}
+                  </p>
                 </div>
               )}
             </div>
@@ -518,7 +577,7 @@ export default function PublicInvoicePage() {
           invoiceId={invoice.invoice_number}
           milestoneIndex={manualModal.milestoneIndex}
           paymentType="CUSTOM_INVOICE"
-          title={`Milestone Payment - ${invoice.invoice_number}`}
+          title={isDevelopa ? `Developa Milestone - ${invoice.invoice_number}` : `Milestone Payment - ${invoice.invoice_number}`}
           onSuccess={() => {
             alert('Transfer proof submitted. Once verified by our team, this invoice will be updated.');
           }}

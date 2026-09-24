@@ -136,6 +136,7 @@ export async function POST(request: Request) {
     await createManualPaymentRequest({
       reference,
       userId: buyerId,
+      productId: product.id,
       paymentType: 'DEV_PRODUCT',
       amount: total,
       bankDetails,

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { X } from 'lucide-react';
+import ManualPaymentModal from '@/app/components/ManualPaymentModal';
+import { BankDetails } from '@/lib/bankDetails';
 
 const naira = (n: number) => '₦' + Math.round(n || 0).toLocaleString('en-NG');
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -14,6 +16,17 @@ export default function BuyModal({ product, onClose, onPurchased }: { product: B
   const [guestEmail, setGuestEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [manualModal, setManualModal] = useState<{
+    isOpen: boolean;
+    reference: string;
+    amount: number;
+    bankDetails: BankDetails | null;
+  }>({
+    isOpen: false,
+    reference: '',
+    amount: 0,
+    bankDetails: null,
+  });
 
   useEffect(() => {
     (async () => {
@@ -46,6 +59,13 @@ export default function BuyModal({ product, onClose, onPurchased }: { product: B
       } else if (data.paid_via_wallet) {
         setMsg('Purchased! Find it under "My Scripts" in your dashboard.');
         onPurchased?.();
+      } else if (data.manual_transfer && data.bankDetails) {
+        setManualModal({
+          isOpen: true,
+          reference: data.tx_ref,
+          amount: data.amount || product.price,
+          bankDetails: data.bankDetails,
+        });
       }
     } catch {
       setMsg('Network error. Please try again.');
@@ -95,6 +115,25 @@ export default function BuyModal({ product, onClose, onPurchased }: { product: B
           {busy ? 'Processing...' : 'Buy Now'}
         </button>
       </div>
+
+      {manualModal.isOpen && manualModal.bankDetails && (
+        <ManualPaymentModal
+          isOpen={manualModal.isOpen}
+          onClose={() => {
+            setManualModal(prev => ({ ...prev, isOpen: false }));
+            onClose();
+          }}
+          reference={manualModal.reference}
+          amount={manualModal.amount}
+          bankDetails={manualModal.bankDetails}
+          paymentType="DEV_PRODUCT"
+          title={`Developa: ${product.title}`}
+          onSuccess={() => {
+            setMsg('Transfer recorded! Once verified, this script will appear in your account.');
+            onPurchased?.();
+          }}
+        />
+      )}
     </div>
   );
 }

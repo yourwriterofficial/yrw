@@ -431,9 +431,10 @@ export default function OrderAssistant() {
           body: JSON.stringify({ orderId: due.order_id, amount, email: loggedInUser.email, name: loggedInProfile?.full_name || firstName, type: isDeposit ? 'DEPOSIT' : 'BALANCE' }),
         });
         const json = await res.json();
-        if (res.ok && json.link) {
+        const invoiceLink = json.link || (json.manual_transfer ? `/invoice/${due.order_id}` : null);
+        if (res.ok && invoiceLink) {
           say('Your bank transfer invoice is ready.');
-          say('__PAY_LINK__' + json.link);
+          say('__PAY_LINK__' + invoiceLink);
           setStep('quickMenu');
         } else {
           say(`Couldn't generate the invoice right now: ${json.error || 'please try again later.'}`);

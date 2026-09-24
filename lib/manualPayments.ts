@@ -28,6 +28,7 @@ export interface ManualPaymentPayload {
   orderId?: string | null;
   invoiceId?: string | null;
   milestoneIndex?: number | null;
+  productId?: number | null;
   paymentType: ManualPaymentType;
   amount: number;
   bankDetails: BankDetails;
@@ -47,6 +48,7 @@ export async function createManualPaymentRequest(payload: ManualPaymentPayload) 
     orderId,
     invoiceId,
     milestoneIndex,
+    productId,
     paymentType,
     amount,
     bankDetails,
@@ -60,6 +62,7 @@ export async function createManualPaymentRequest(payload: ManualPaymentPayload) 
     orderId: orderId || null,
     invoiceId: invoiceId || null,
     milestoneIndex: milestoneIndex ?? null,
+    productId: productId ?? null,
     bankName: bankDetails.bank_name,
     accountNumber: bankDetails.account_number,
     accountName: bankDetails.account_name,
@@ -141,6 +144,38 @@ export async function createManualPaymentRequest(payload: ManualPaymentPayload) 
     } catch (err) {
       console.warn('Failed to attach proof to order:', err);
     }
+  }
+
+  // 4. Dispatch push & in-app notifications for Pending Payment
+  try {
+    const { notifyAdmins, notifyUser } = await import('@/lib/notify');
+    const formattedAmount = `₦${Math.round(amount).toLocaleString('en-NG')}`;
+    const desc = orderId
+      ? `Order #${orderId}`
+      : invoiceId
+      ? `Invoice #${invoiceId}`
+      : paymentType === 'DEV_PRODUCT'
+      ? 'Software Script'
+      : 'Wallet Funding';
+
+    await notifyAdmins({
+      title: `Pending Transfer: ${formattedAmount}`,
+      message: `New pending ${paymentType.replace('_', ' ').toLowerCase()} transfer (${desc}) — Ref: ${reference}`,
+      type: 'payment',
+      link: `/admin/orders`,
+    });
+
+    if (userId) {
+      await notifyUser({
+        userId,
+        title: `Pending Payment: ${formattedAmount}`,
+        message: `Your transfer of ${formattedAmount} for ${desc} is pending verification. We will activate your order once confirmed.`,
+        type: 'payment',
+        link: orderId ? `/dashboard/client?order=${orderId}` : '/dashboard/client',
+      });
+    }
+  } catch (notifErr) {
+    console.warn('Failed to send pending payment notification:', notifErr);
   }
 
   return { success: true, reference };
@@ -395,7 +430,49 @@ export async function approveManualPayment(reference: string, adminNotes?: strin
           status: allPaid ? 'PAID' : 'PARTIALLY_PAID',
         })
         .eq('invoice_number', invoiceId);
+
+      if (invoice?.email) {
+        try {
+          const { notifyUser } = await import('@/lib/notify');
+          const { data: userProfile } = await admin
+            .from('profiles')
+            .select('id')
+            .eq('email', invoice.email)
+            .maybeSingle();
+
+          if (userProfile?.id) {
+            await notifyUser({
+              userId: userProfile.id,
+              title: allPaid ? `Invoice #${invoiceId} Fully Paid` : `Milestone Confirmed: #${invoiceId}`,
+              message: `Your payment of ₦${amount.toLocaleString('en-NG')} for invoice #${invoiceId} has been verified and approved.`,
+              type: 'payment',
+              link: `/invoice/${invoiceId}`,
+            });
+          }
+        } catch {}
+      }
     }
+  } else if (pType === 'DEV_PRODUCT' && userId) {
+    // Fulfill Developer Product script purchase
+    const productId = paymentMeta?.productId;
+    if (productId) {
+      await admin.from('dev_product_purchases').upsert({
+        product_id: productId,
+        user_id: userId,
+        amount_paid: Math.round(amount),
+        reference,
+      }, { onConflict: 'reference' });
+    }
+
+    try {
+      await notifyUser({
+        userId,
+        title: 'Script Purchased & Unlocked',
+        message: `Your manual payment of ₦${amount.toLocaleString('en-NG')} for the Dev Shop script was approved. You can download it under My Scripts in your dashboard.`,
+        type: 'payment',
+        link: '/dashboard/client?tab=scripts',
+      });
+    } catch {}
   }
 
   // 3. Mark transaction as completed
@@ -418,6 +495,18 @@ export async function approveManualPayment(reference: string, adminNotes?: strin
       .eq('reference', reference);
   } catch {}
 
+  // 5. Notify admins of approval
+  try {
+    const { notifyAdmins } = await import('@/lib/notify');
+    const formattedAmount = `₦${Math.round(amount).toLocaleString('en-NG')}`;
+    await notifyAdmins({
+      title: `Payment Approved: ${formattedAmount}`,
+      message: `Manual payment ${reference} (${pType}) was verified and marked APPROVED.`,
+      type: 'payment',
+      link: '/admin/orders',
+    });
+  } catch {}
+
   return { success: true };
 }
 
@@ -426,6 +515,33 @@ export async function approveManualPayment(reference: string, adminNotes?: strin
  */
 export async function rejectManualPayment(reference: string, reason?: string) {
   const admin = getAdmin();
+
+  // 1. Fetch payment info to identify user & order
+  let paymentRecord: any = null;
+  try {
+    const { data } = await admin
+      .from('manual_payments')
+      .select('*')
+      .eq('reference', reference)
+      .maybeSingle();
+    paymentRecord = data;
+  } catch {}
+
+  let txRecord: any = null;
+  if (!paymentRecord) {
+    try {
+      const { data } = await admin
+        .from('transactions')
+        .select('*')
+        .eq('reference', reference)
+        .maybeSingle();
+      txRecord = data;
+    } catch {}
+  }
+
+  const userId = paymentRecord?.user_id || txRecord?.user_id;
+  const orderId = paymentRecord?.order_id;
+  const amount = paymentRecord?.amount || txRecord?.amount || 0;
 
   try {
     await admin
@@ -445,6 +561,50 @@ export async function rejectManualPayment(reference: string, reason?: string) {
         admin_notes: reason || 'Transfer declined by admin',
       })
       .eq('reference', reference);
+  } catch {}
+
+  // If tied to an order, update order status
+  if (orderId) {
+    try {
+      await admin
+        .from('orders')
+        .update({
+          workflow_status: 'Payment Declined',
+          last_activity: new Date().toISOString(),
+        })
+        .eq('order_id', orderId);
+    } catch (e) {
+      console.warn('Failed to update order on payment rejection:', e);
+    }
+  }
+
+  // Notify User via push & in-app
+  if (userId) {
+    try {
+      const { notifyUser } = await import('@/lib/notify');
+      await notifyUser({
+        userId,
+        title: 'Payment Verification Declined',
+        message: reason
+          ? `Your bank transfer payment (Ref: ${reference}) was declined: "${reason}". Please check your details or submit a valid proof.`
+          : `Your bank transfer payment (Ref: ${reference}) could not be verified. Please contact support or retry.`,
+        type: 'payment',
+        link: orderId ? `/dashboard/client?order=${orderId}` : '/dashboard/client',
+      });
+    } catch (notifErr) {
+      console.warn('Failed to notify user of payment rejection:', notifErr);
+    }
+  }
+
+  // Notify admins
+  try {
+    const { notifyAdmins } = await import('@/lib/notify');
+    await notifyAdmins({
+      title: 'Payment Transfer Declined',
+      message: `Transfer ${reference} was marked REJECTED. Reason: ${reason || 'Not specified'}`,
+      type: 'payment',
+      link: '/admin/orders',
+    });
   } catch {}
 
   return { success: true };

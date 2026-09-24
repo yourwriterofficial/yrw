@@ -303,7 +303,7 @@ export default function OrderForm() {
     }
     if (!deadline) return showToast('Please assign a deadline.', 'error');
     if (paymentMethod === 'wallet' && isLoggedIn && walletBalance < depositAmount) {
-      showToast('Insufficient wallet balance. Please top up or choose card payment.', 'error');
+      showToast('Insufficient wallet balance. Please top up or pay via direct bank transfer.', 'error');
       return;
     }
 

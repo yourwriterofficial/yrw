@@ -297,6 +297,8 @@ export async function POST(request: Request) {
       amount,
       bankDetails,
       orderId,
+      link: `/invoice/${orderId}`,
+      invoice_url: `/invoice/${orderId}`,
       isCustomInvoice,
     });
   } catch (err: any) {

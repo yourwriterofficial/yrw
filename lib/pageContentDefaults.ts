@@ -98,7 +98,7 @@ export const HOME_PAGE_DEFAULTS: HomePageContent = {
   faqs: [
     { q: 'How fast is delivery?', a: 'Ready-made materials are delivered within 4 hours. Custom writing, resumes, and software are scoped to a deadline you set when you submit your brief.' },
     { q: 'Can I pay in installments?', a: 'Yes. Custom academic, content, resume, and software orders support milestone-based payment plans — a deposit followed by a balance, or a custom schedule for larger software builds.' },
-    { q: 'Is my payment and data secure?', a: 'Payments are processed through Paystack. Every final deliverable is encrypted and stays locked in your Secure Vault until your balance is fully cleared.' },
+    { q: 'Is my payment and data secure?', a: 'Payments are processed directly via secure, verified bank transfers and client wallet balances. Every final deliverable is encrypted and stays locked in your Secure Vault until your balance is fully cleared.' },
     { q: 'Do I get full source code for software projects?', a: 'Yes — complete source code and IP transfer are included for custom development orders and every script purchased from the Dev Shop marketplace.' },
   ],
 };

@@ -275,7 +275,7 @@ export default function ServiceOrderPage(config: ServiceOrderPageConfig) {
     }
     if (!acceptTerms) return showToast('You must accept the Terms of Service.', 'error');
     if (isLoggedIn && paymentMethod === 'wallet' && walletBalance < depositAmount) {
-      return showToast('Insufficient wallet balance. Please top up or choose card payment.', 'error');
+      return showToast('Insufficient wallet balance. Please top up or pay via direct bank transfer.', 'error');
     }
 
     setSubmitting(true);

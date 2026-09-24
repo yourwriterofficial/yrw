@@ -21,6 +21,8 @@ import { EmptyState } from '@/app/components/ui/EmptyState';
 import { Shell } from '@/app/components/ui/Shell';
 import { Select } from '@/app/components/ui/Select';
 import { Textarea } from '@/app/components/ui/Textarea';
+import ManualPaymentModal from '@/app/components/ManualPaymentModal';
+import { BankDetails } from '@/lib/bankDetails';
 
 type Topic = {
   id: number;
@@ -209,6 +211,19 @@ export default function ProjectsPage() {
   const [addonWords, setAddonWords] = useState<Record<number, number>>({});
   const [addonFeatures, setAddonFeatures] = useState<Record<number, string[]>>({});
   const [customLocation, setCustomLocation] = useState('');
+  const [manualModal, setManualModal] = useState<{
+    isOpen: boolean;
+    reference: string;
+    orderId?: string | null;
+    amount: number;
+    bankDetails: BankDetails | null;
+  }>({
+    isOpen: false,
+    reference: '',
+    orderId: null,
+    amount: 0,
+    bankDetails: null,
+  });
 
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const slugify = (title: string) =>
@@ -397,8 +412,19 @@ export default function ProjectsPage() {
         }),
       });
       const data = await res.json();
-      if (res.ok && data.authorization_url) window.location.href = data.authorization_url;
-      else setMsg(data.error || 'Could not start checkout.');
+      if (res.ok && data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else if (res.ok && data.manual_transfer && data.bankDetails) {
+        setManualModal({
+          isOpen: true,
+          reference: data.reference,
+          orderId: data.orderId,
+          amount: data.total,
+          bankDetails: data.bankDetails,
+        });
+      } else {
+        setMsg(data.error || 'Could not start checkout.');
+      }
     } catch { setMsg('Network error. Please try again.'); }
     setBusy(false);
   };
@@ -1081,6 +1107,25 @@ export default function ProjectsPage() {
       <footer className="border-t border-theme py-8 text-center text-xs text-secondary">
         <p>© {new Date().getFullYear()} YourResearchWriter · Working hours 8am–7pm · <Link href="/" className="text-emerald-500 hover:underline">Home</Link></p>
       </footer>
+
+      {manualModal.isOpen && manualModal.bankDetails && (
+        <ManualPaymentModal
+          isOpen={manualModal.isOpen}
+          onClose={() => setManualModal(prev => ({ ...prev, isOpen: false }))}
+          reference={manualModal.reference}
+          amount={manualModal.amount}
+          bankDetails={manualModal.bankDetails}
+          orderId={manualModal.orderId}
+          paymentType="ORDER_DEPOSIT"
+          title="Project Material — Bank Transfer"
+          onSuccess={() => {
+            setMsg('Payment details recorded! We will verify and release your project material.');
+            if (manualModal.orderId) {
+              window.location.href = `/invoice/${manualModal.orderId}`;
+            }
+          }}
+        />
+      )}
 
       <ProjectsAssistant />
     </div>

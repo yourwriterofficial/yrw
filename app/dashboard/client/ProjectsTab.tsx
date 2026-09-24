@@ -6,6 +6,8 @@ import * as lucide from 'lucide-react';
 import { showToast } from '@/app/components/ui/Toast';
 import Card from '@/app/components/ui/Card';
 import Button from '@/app/components/ui/Button';
+import ManualPaymentModal from '@/app/components/ManualPaymentModal';
+import { BankDetails } from '@/lib/bankDetails';
 
 type Topic = {
   id: number;
@@ -146,6 +148,19 @@ export default function ProjectsTab({ user }: { user: any }) {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [manualModal, setManualModal] = useState<{
+    isOpen: boolean;
+    reference: string;
+    orderId?: string | null;
+    amount: number;
+    bankDetails: BankDetails | null;
+  }>({
+    isOpen: false,
+    reference: '',
+    orderId: null,
+    amount: 0,
+    bankDetails: null,
+  });
 
   // Preview Modal
   const [previewTopic, setPreviewTopic] = useState<Topic | null>(null);
@@ -333,6 +348,14 @@ export default function ProjectsTab({ user }: { user: any }) {
         showToast('Purchase completed instantly using your wallet balance!', 'success');
         setCart(null);
         window.location.href = '/dashboard/client?tab=vault';
+      } else if (res.ok && data.manual_transfer && data.bankDetails) {
+        setManualModal({
+          isOpen: true,
+          reference: data.reference,
+          orderId: data.orderId,
+          amount: data.total,
+          bankDetails: data.bankDetails,
+        });
       } else {
         setMsg(data.error || 'Could not initiate checkout.');
       }
@@ -800,6 +823,26 @@ export default function ProjectsTab({ user }: { user: any }) {
             </footer>
           </div>
         </div>
+      )}
+
+      {manualModal.isOpen && manualModal.bankDetails && (
+        <ManualPaymentModal
+          isOpen={manualModal.isOpen}
+          onClose={() => setManualModal(prev => ({ ...prev, isOpen: false }))}
+          reference={manualModal.reference}
+          amount={manualModal.amount}
+          bankDetails={manualModal.bankDetails}
+          orderId={manualModal.orderId}
+          paymentType="ORDER_DEPOSIT"
+          title="Project Material — Bank Transfer"
+          onSuccess={() => {
+            showToast('Transfer recorded! Once verified, this project will appear in your Secure Vault.', 'success');
+            setCart(null);
+            if (manualModal.orderId) {
+              window.location.href = `/invoice/${manualModal.orderId}`;
+            }
+          }}
+        />
       )}
     </div>
   );

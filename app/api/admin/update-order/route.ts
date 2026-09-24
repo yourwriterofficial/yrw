@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     // 1. Fetch current order state
     const { data: oldOrder, error: fetchError } = await supabaseAdmin
       .from('orders')
-      .select('order_id, email, legal_name, topic, financial_quote, workflow_status, sixty_percent_paid, forty_percent_paid, work_submitted, payment_milestones')
+      .select('id, order_id, client_id, email, legal_name, topic, financial_quote, workflow_status, sixty_percent_paid, forty_percent_paid, work_submitted, payment_milestones')
       .eq('order_id', orderId)
       .single()
 
@@ -62,7 +62,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
-    // 3. Detect changes and send emails
+    // 3. Detect changes and send emails + push notifications
+    const { notifyUser } = await import('@/lib/notify');
     const orderEmailData = {
       order_id: oldOrder.order_id,
       legal_name: oldOrder.legal_name,
@@ -91,8 +92,39 @@ export async function POST(request: Request) {
           emailTemplates.orderCompleted(orderEmailData).html,
           orderId
         )
+        if (oldOrder.client_id) {
+          await notifyUser({
+            userId: oldOrder.client_id,
+            title: 'Order Completed & Delivered',
+            message: `Your project "${oldOrder.topic}" (${orderId}) is now completed and available in your Secure Vault.`,
+            type: 'vault_delivery',
+            link: '/dashboard/client?tab=vault',
+            orderDbId: oldOrder.id,
+          });
+        }
+      } else if (newStatus === 'Cancelled' || newStatus === 'Rejected' || newStatus === 'Declined') {
+        if (oldOrder.client_id) {
+          await notifyUser({
+            userId: oldOrder.client_id,
+            title: `Order Update: ${newStatus}`,
+            message: `Your order #${orderId} ("${oldOrder.topic}") has been set to ${newStatus}.`,
+            type: 'order_update',
+            link: '/dashboard/client?tab=orders',
+            orderDbId: oldOrder.id,
+          });
+        }
+      } else if (newStatus === 'Synthesis Active' || newStatus === 'In Progress') {
+        if (oldOrder.client_id) {
+          await notifyUser({
+            userId: oldOrder.client_id,
+            title: 'Order In Progress',
+            message: `Your order #${orderId} ("${oldOrder.topic}") is actively being synthesized by our research team.`,
+            type: 'order_update',
+            link: '/dashboard/client?tab=orders',
+            orderDbId: oldOrder.id,
+          });
+        }
       }
-      // You can add other status emails here if needed (e.g., 'Synthesis Active')
     }
 
     // --- Deposit payment (60%) changed from false to true ---
@@ -103,6 +135,16 @@ export async function POST(request: Request) {
         emailTemplates.depositPaid(orderEmailData).html,
         orderId
       )
+      if (oldOrder.client_id) {
+        await notifyUser({
+          userId: oldOrder.client_id,
+          title: 'Deposit Confirmed',
+          message: `Initial deposit for order #${orderId} was confirmed. Work is underway!`,
+          type: 'payment',
+          link: '/dashboard/client?tab=orders',
+          orderDbId: oldOrder.id,
+        });
+      }
     }
 
     // --- Work submitted changed from false to true ---
@@ -123,6 +165,16 @@ export async function POST(request: Request) {
         emailTemplates.balancePaid(orderEmailData).html,
         orderId
       )
+      if (oldOrder.client_id) {
+        await notifyUser({
+          userId: oldOrder.client_id,
+          title: 'Payment Cleared — Vault Unlocked',
+          message: `Final balance on order #${orderId} was confirmed. Your files are unlocked.`,
+          type: 'payment',
+          link: '/dashboard/client?tab=vault',
+          orderDbId: oldOrder.id,
+        });
+      }
     }
 
     return NextResponse.json({ success: true })
