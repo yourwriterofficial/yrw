@@ -7,6 +7,7 @@ import { Input } from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
 import { Checkbox } from '@/app/components/ui/Checkbox';
 import { SocialLoginButton } from '@/app/components/ui/SocialLoginButton';
+import { NairaguideLoginButton } from '@/app/components/ui/NairaguideLoginButton';
 import Card from '@/app/components/ui/Card';
 import { Shell } from '@/app/components/ui/Shell';
 import { showToast } from '@/app/components/ui/Toast';
@@ -203,6 +204,7 @@ function RegisterInner() {
           </div>
 
           <SocialLoginButton onClick={handleGoogleSignUp} loading={loading} label="Google Authentication" />
+          <NairaguideLoginButton developa={isDevelopa} label="Continue with your Nairaguide account" />
 
           <p className="text-center text-xs text-secondary mt-8">
             Already have an account?{' '}

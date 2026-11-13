@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { clearImpersonation } from '@/lib/impersonate';
+import { resolveIsAdmin, clearIsAdminCache } from '@/lib/authProfileCache';
 import ThemeToggle from './ThemeToggle';
 import ImpersonationBanner from './ImpersonationBanner';
 import { Menu, X, ArrowRight, ChevronDown, ShieldCheck, LayoutDashboard, LogOut, User, Code2, GraduationCap, PenLine, FileText, LineChart } from 'lucide-react';
@@ -32,39 +33,22 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
 
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', session.user.id)
-          .single();
-        setIsAdmin(!!profile?.is_admin);
-      } else {
-        setUser(null);
-        setIsAdmin(false);
-      }
-    };
-    checkUser();
-
+    let active = true;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!active) return;
       if (session?.user) {
         setUser(session.user);
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', session.user.id)
-          .single();
-        setIsAdmin(!!profile?.is_admin);
+        const adminFlag = await resolveIsAdmin(session.user.id);
+        if (active) setIsAdmin(adminFlag);
       } else {
         setUser(null);
         setIsAdmin(false);
+        if (event === 'SIGNED_OUT') clearIsAdminCache();
       }
     });
 
     return () => {
+      active = false;
       window.removeEventListener('scroll', handleScroll);
       subscription.unsubscribe();
     };
@@ -73,6 +57,7 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {
       clearImpersonation();
+      clearIsAdminCache();
       sessionStorage.removeItem('yrw_user');
       sessionStorage.removeItem('yrw_profile');
       sessionStorage.removeItem('yrw_wallet');

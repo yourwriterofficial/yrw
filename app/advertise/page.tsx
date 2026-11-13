@@ -152,13 +152,14 @@ export default function AdvertisePage() {
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser) {
       setUser({ id: currentUser.id });
-      const { data: prof } = await supabase.from('profiles').select('wallet_balance, ad_credits_balance').eq('id', currentUser.id).maybeSingle();
-      if (prof) {
-        setWalletBalance(prof.wallet_balance || 0);
-        setAdCredits(prof.ad_credits_balance || prof.wallet_balance || 0);
-      }
-
-      const { data: adsRes } = await supabase.from('user_ad_purchases').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+      const [{ data: prof }, { data: wallet }, { data: adsRes }] = await Promise.all([
+        supabase.from('profiles').select('ad_credits_balance').eq('id', currentUser.id).maybeSingle(),
+        supabase.from('wallets').select('balance').eq('user_id', currentUser.id).maybeSingle(),
+        supabase.from('user_ad_purchases').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false }),
+      ]);
+      const walletBal = Number(wallet?.balance || 0);
+      setWalletBalance(walletBal);
+      setAdCredits(Number(prof?.ad_credits_balance || walletBal || 0));
       if (adsRes) setMyAds(adsRes as MyAdPurchase[]);
     }
 

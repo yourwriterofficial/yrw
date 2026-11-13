@@ -7,13 +7,36 @@ export default function HomeStats({ className = '', compact = false }: { classNa
   const [topicCount, setTopicCount] = useState<number | null>(null);
 
   useEffect(() => {
+    let active = true;
     (async () => {
+      try {
+        const cached = sessionStorage.getItem('yrw_topic_count');
+        if (cached !== null) {
+          const parsed = Number(cached);
+          if (Number.isFinite(parsed)) {
+            await Promise.resolve();
+            if (active) setTopicCount(parsed);
+            return;
+          }
+        }
+      } catch {
+        // sessionStorage unavailable
+      }
+
       const { count } = await supabase
         .from('project_topics')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true);
-      setTopicCount(count ?? null);
+      if (active && count !== null && count !== undefined) {
+        setTopicCount(count);
+        try {
+          sessionStorage.setItem('yrw_topic_count', String(count));
+        } catch {
+          // ignore
+        }
+      }
     })();
+    return () => { active = false; };
   }, []);
 
   if (topicCount === null) return null;

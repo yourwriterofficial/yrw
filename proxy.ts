@@ -1,5 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { extractDevelopaSubdomain, isCreateSubdomain, RESERVED_FORUM_SLUGS } from '@/lib/forums'
+import { lookupCustomDomainSlug } from '@/lib/customDomainCache'
 
 // Single canonical Content-Security-Policy. The browser is only ever asked to
 // talk to our own origin and Supabase (REST + realtime websockets). Paystack,
@@ -43,13 +45,55 @@ export default async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname
   const host = request.headers.get('host') || request.nextUrl.host || ''
+  const forumSubdomain = extractDevelopaSubdomain(host)
+  const isCreatePortal = isCreateSubdomain(host)
   const isDevelopaDomain =
     host.includes('developa.me') ||
     host.includes('developa.local') ||
     request.nextUrl.searchParams.get('brand') === 'developa'
 
+  const bypassPrefixes = ['/api/', '/_next/', '/auth/', '/login', '/register', '/dashboard', '/admin', '/forums/']
+  const shouldBypass = bypassPrefixes.some((prefix) => path === prefix.replace(/\/$/, '') || path.startsWith(prefix))
+
+  // Portal routing: create.developa.me -> /create
+  if (isCreatePortal && !shouldBypass) {
+    const url = request.nextUrl.clone()
+    url.pathname = path === '/' ? '/create' : `/create${path}`
+    const res = NextResponse.rewrite(url, { request })
+    res.headers.set('Content-Security-Policy', CSP)
+    res.headers.set('x-brand', 'developa')
+    return res
+  }
+
+  // Custom domain routing: mystore.com -> /forums/[slug]
+  if (!isDevelopaDomain && !shouldBypass) {
+    const customSlug = await lookupCustomDomainSlug(host)
+    if (customSlug) {
+      const url = request.nextUrl.clone()
+      url.pathname = path === '/' ? `/forums/${customSlug}` : `/forums/${customSlug}${path}`
+      const res = NextResponse.rewrite(url, { request })
+      res.headers.set('Content-Security-Policy', CSP)
+      res.headers.set('x-brand', 'developa')
+      res.headers.set('x-forum-slug', customSlug)
+      return res
+    }
+  }
+
+  // Subdomain-hosted user forums: [name].developa.me -> /forums/[name]
+  if (forumSubdomain && !RESERVED_FORUM_SLUGS.has(forumSubdomain)) {
+    if (!shouldBypass) {
+      const url = request.nextUrl.clone()
+      url.pathname = path === '/' ? `/forums/${forumSubdomain}` : `/forums/${forumSubdomain}${path}`
+      const res = NextResponse.rewrite(url, { request })
+      res.headers.set('Content-Security-Policy', CSP)
+      res.headers.set('x-brand', 'developa')
+      res.headers.set('x-forum-slug', forumSubdomain)
+      return res
+    }
+  }
+
   // Multi-domain routing for developa.me
-  if (isDevelopaDomain) {
+  if (isDevelopaDomain && !forumSubdomain) {
     // Canonicalize URLs: redirect explicit /developer prefixes to clean developa.me paths
     if (path === '/developer' || path === '/developer/') {
       const redirectUrl = request.nextUrl.clone()

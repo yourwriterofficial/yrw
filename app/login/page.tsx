@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
 import { SocialLoginButton } from '@/app/components/ui/SocialLoginButton';
+import { NairaguideLoginButton } from '@/app/components/ui/NairaguideLoginButton';
 import Card from '@/app/components/ui/Card';
 import { Shell } from '@/app/components/ui/Shell';
 import ThemeToggle from '@/app/components/ThemeToggle';
@@ -199,6 +200,7 @@ function LoginInner() {
           </div>
 
           <SocialLoginButton onClick={handleGoogleLogin} loading={loading} label="Google Authentication" />
+          <NairaguideLoginButton next={nextPath} developa={isDevelopa} />
 
           <p className="text-center text-xs text-secondary mt-8">
             Don&apos;t have an account?{' '}

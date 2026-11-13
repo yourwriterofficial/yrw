@@ -29,7 +29,10 @@ export async function GET() {
       if (s.key === 'page_settings') pageSettings = { ...pageSettings, ...s.value };
     });
 
-    return NextResponse.json({ levelPrices, deptPrices, pageSettings, depts: depts || [], addons: addons || [] });
+    return NextResponse.json(
+      { levelPrices, deptPrices, pageSettings, depts: depts || [], addons: addons || [] },
+      { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' } }
+    );
   } catch (err: any) {
     console.error('GET /api/projects/meta failed:', err);
     return NextResponse.json({ error: err.message || 'Failed to load project metadata' }, { status: 500 });
