@@ -3,16 +3,12 @@
 import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Input } from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
-import { Checkbox } from '@/app/components/ui/Checkbox';
 import { SocialLoginButton } from '@/app/components/ui/SocialLoginButton';
-import Card from '@/app/components/ui/Card';
-import { Shell } from '@/app/components/ui/Shell';
+import { NairaguideLoginButton } from '@/app/components/ui/NairaguideLoginButton';
+import AuthShell from '@/app/components/AuthShell';
 import { showToast } from '@/app/components/ui/Toast';
 import { REFERRAL_STORAGE_KEY } from '@/app/components/ReferralCapture';
-import ThemeToggle from '@/app/components/ThemeToggle';
-import { Terminal } from 'lucide-react';
 
 export default function RegisterPage() {
   return (
@@ -30,7 +26,7 @@ function RegisterInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isDevelopa, setIsDevelopa] = useState(false);
@@ -57,6 +53,7 @@ function RegisterInner() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password.length < 8) { setError('Please use a password of at least 8 characters.'); return; }
     setLoading(true);
     setError('');
 
@@ -113,108 +110,44 @@ function RegisterInner() {
   };
 
   return (
-    <div className="min-h-screen bg-primary flex items-center justify-center p-4">
-      <Shell size="sm" className="w-full max-w-md">
-        <Card elevation={2} padding="lg" className={`w-full ${isDevelopa ? 'border-cyan-500/20 shadow-xl shadow-cyan-950/20' : ''}`}>
-          <div className="flex justify-between items-center mb-4">
-            {isDevelopa ? (
-              <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs font-black">
-                <Terminal className="w-4 h-4" />
-                <span>developa.me</span>
-              </div>
-            ) : <div />}
-            <ThemeToggle compact />
+    <AuthShell
+      developa={isDevelopa}
+      title="Create your account"
+      subtitle={isDevelopa ? 'Track your project, milestones and files in one place.' : 'It takes a minute. You only pay when you order.'}
+      footer={<>Already registered? <a href={isDevelopa ? '/login?brand=developa' : '/login'} className="text-accent font-semibold hover:underline">Log in</a></>}
+      reassurances={['Free to join, no card needed', 'Your work and details stay private', 'Message us on WhatsApp any time']}
+    >
+      <SocialLoginButton onClick={handleGoogleSignUp} loading={loading} label="Continue with Google" />
+      <NairaguideLoginButton developa={isDevelopa} label="Continue with Nairaguide" />
+
+      <div className="flex items-center gap-3 my-5 text-xs text-secondary">
+        <span className="flex-1 h-px bg-[var(--border)]" /> or use email <span className="flex-1 h-px bg-[var(--border)]" />
+      </div>
+
+      <form onSubmit={handleRegister} className="space-y-4">
+        <div>
+          <label htmlFor="reg-name" className="block text-sm font-medium mb-1.5">Full name</label>
+          <input id="reg-name" type="text" autoComplete="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-box w-full" />
+        </div>
+        <div>
+          <label htmlFor="reg-email" className="block text-sm font-medium mb-1.5">Email</label>
+          <input id="reg-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-box w-full" />
+        </div>
+        <div>
+          <label htmlFor="reg-password" className="block text-sm font-medium mb-1.5">Password <span className="text-secondary font-normal">(8+ characters)</span></label>
+          <div className="relative">
+            <input id="reg-password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="input-box w-full pr-14" />
+            <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-secondary hover:text-primary">
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
           </div>
-          <div className="text-center mb-8">
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 ${
-              isDevelopa
-                ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono'
-                : 'bg-success-bg text-success border border-success/20'
-            }`}>
-              {isDevelopa ? 'Client Engineering Portal' : 'Registration'}
-            </div>
-            <h1 className="text-2xl font-black tracking-tight text-primary">
-              {isDevelopa ? 'Create Client Account' : 'Create Account'}
-            </h1>
-            {isDevelopa && (
-              <p className="text-xs text-secondary mt-1.5 leading-relaxed">
-                Register to track custom software sprints, milestone releases & repository handovers.
-              </p>
-            )}
-          </div>
+        </div>
 
-          <form onSubmit={handleRegister} className="space-y-4">
-            <Input
-              type="text"
-              label="Full Name"
-              placeholder="John Doe"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              fullWidth
-            />
-            <Input
-              type="email"
-              label="Email Address"
-              placeholder="your@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              fullWidth
-            />
-            <Input
-              type="password"
-              label="Password"
-              placeholder="At least 6 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              fullWidth
-            />
-            <Checkbox
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              label="Remember me on this device"
-            />
-            {error && (
-              <p className="text-danger text-xs font-bold bg-danger-bg p-3 rounded-lg border border-danger/20">
-                {error}
-              </p>
-            )}
-            <Button
-              type="submit"
-              size="lg"
-              fullWidth
-              loading={loading}
-              loadingText="Processing…"
-              className={isDevelopa ? '!bg-cyan-500 hover:!bg-cyan-400 !text-black font-black uppercase tracking-wider' : ''}
-            >
-              {isDevelopa ? 'Create Engineering Account' : 'Register'}
-            </Button>
-          </form>
+        {error && <p className="text-sm text-danger" role="alert">{error}</p>}
 
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-theme" />
-            </div>
-            <div className="relative flex justify-center text-[10px] font-black tracking-widest uppercase">
-              <span className="bg-card px-4 text-secondary">Or Continue With</span>
-            </div>
-          </div>
-
-          <SocialLoginButton onClick={handleGoogleSignUp} loading={loading} label="Google Authentication" />
-
-          <p className="text-center text-xs text-secondary mt-8">
-            Already have an account?{' '}
-            <a
-              href={isDevelopa ? '/login?brand=developa' : '/login'}
-              className={`${isDevelopa ? 'text-cyan-400 hover:text-cyan-300' : 'text-accent hover:text-accent-hover'} font-bold transition focus-ring rounded`}
-            >
-              Login securely
-            </a>
-          </p>
-        </Card>
-      </Shell>
-    </div>
+        <Button type="submit" size="lg" fullWidth loading={loading} loadingText="Creating account…">Create account</Button>
+        <p className="text-xs text-secondary text-center">We&apos;ll email you a link to confirm your address.</p>
+      </form>
+    </AuthShell>
   );
 }

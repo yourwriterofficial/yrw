@@ -87,7 +87,7 @@ export default function NotificationPreferencesPanel({ userId }: { userId: strin
   return (
     <div className="pt-8 mt-8 border-t border-theme space-y-6">
       <div>
-        <h3 className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
           <lucide.Bell className="w-4 h-4 text-emerald-500" /> Notification Preferences
         </h3>
         <p className="text-secondary text-xs mt-1">Choose which updates you receive by email and push. In-app alerts (the bell) are always on.</p>
@@ -106,21 +106,21 @@ export default function NotificationPreferencesPanel({ userId }: { userId: strin
         </div>
         <button
           onClick={handlePushToggle}
-          className={`px-4 py-2 rounded-xl text-xs font-black uppercase shrink-0 cursor-pointer ${push.subscribed ? 'bg-secondary border border-theme text-primary' : 'bg-emerald-500 text-black'}`}
+          className={`px-4 py-2 rounded-xl text-xs font-semibold  shrink-0 cursor-pointer ${push.subscribed ? 'bg-secondary border border-theme text-primary' : 'bg-emerald-500 text-black'}`}
         >
           {push.subscribed ? 'Disable' : 'Enable'}
         </button>
       </div>
 
       <div className="space-y-3">
-        <div className="grid grid-cols-[1fr_60px_60px] gap-2 text-[9px] uppercase font-black text-secondary tracking-widest px-1">
+        <div className="grid grid-cols-[1fr_60px_60px] gap-2 text-[11px] font-semibold text-secondary px-1">
           <span>Category</span><span className="text-center">Email</span><span className="text-center">Push</span>
         </div>
         {CATEGORIES.map(cat => (
           <div key={cat.key} className="grid grid-cols-[1fr_60px_60px] gap-2 items-center bg-secondary/50 border border-theme rounded-xl p-3">
             <div>
               <p className="text-xs font-bold text-primary">{cat.label}</p>
-              <p className="text-[10px] text-secondary">{cat.desc}</p>
+              <p className="text-[11px] text-secondary">{cat.desc}</p>
             </div>
             <div className="flex justify-center">
               <input

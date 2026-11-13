@@ -1,21 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import DevelopaHeader from '@/app/components/DevelopaHeader';
 import DevelopaFooter from '@/app/components/DevelopaFooter';
-import BuildCanvas from '@/app/components/BuildCanvas';
+import QuoteRequestForm from '@/app/components/QuoteRequestForm';
 import { supabase } from '@/lib/supabaseClient';
-import {
-  Terminal, ArrowRight, Shield, Clock, Code2,
-  Database, Smartphone, Server, Layers, Rocket,
-  GitBranch, ShoppingBag,
-} from 'lucide-react';
 import Button from '@/app/components/ui/Button';
-import Card from '@/app/components/ui/Card';
-import { Badge } from '@/app/components/ui/Badge';
-import { Shell } from '@/app/components/ui/Shell';
-
-const ICONS: Record<string, any> = { Code2, Smartphone, Server, Database, Rocket, Layers, Terminal, ShoppingBag };
+import { Check } from 'lucide-react';
 
 type Capability = { icon: string; title: string; description: string };
 
@@ -38,109 +30,18 @@ const DEFAULT_SETTINGS: PageSettings = {
   ],
 };
 
-const EASE = 'ease-[cubic-bezier(0.16,1,0.3,1)]';
+const tonal = 'var(--g-tonal)';
+const tonalStrong = 'var(--g-tonal-strong)';
 
-/** Splits a headline so the last two words can be accent-colored, e.g. "Full Stack & Custom Software" → base "Full Stack &", accent "Custom Software". Falls back gracefully for short titles. */
-function splitHeadline(title: string) {
-  const words = title.trim().split(/\s+/);
-  if (words.length <= 2) return { base: '', accent: title };
-  return { base: words.slice(0, -2).join(' '), accent: words.slice(-2).join(' ') };
-}
-
-const PROCESS_STEPS = [
-  { n: '01', title: 'Brief', desc: 'Submit your project scope through the intake form — objectives, platform, and technical requirements.' },
-  { n: '02', title: 'Scope call', desc: 'The dev lead reviews your brief personally and returns a fixed-fee quote within 24 hours.' },
-  { n: '03', title: 'Milestones', desc: 'Build starts against a milestone schedule, tracked live in your client dashboard.' },
-  { n: '04', title: 'Delivery', desc: 'Complete source code, repository access, and IP transfer on final handover.' },
+const STEPS = [
+  { title: 'Send your brief', text: 'Tell us what you want built, the platform, and any deadline.' },
+  { title: 'Get a fixed quote', text: 'The dev lead reads every brief and replies with a fixed-fee quote within 24 hours.' },
+  { title: 'Build in milestones', text: 'Pay in stages as milestones are completed. Track progress in your dashboard.' },
+  { title: 'Take ownership', text: 'You get the full source code, repository access and IP on final handover.' },
 ];
-
-function useInView<T extends HTMLElement>() {
-  const ref = useRef<T | null>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVisible(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.25 }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  return { ref, visible };
-}
-
-function ProcessStep({ n, title, desc, isLast }: { n: string; title: string; desc: string; isLast: boolean }) {
-  const { ref, visible } = useInView<HTMLDivElement>();
-  return (
-    <div
-      ref={ref}
-      className={`relative flex-1 transition-all duration-700 ${EASE} ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-    >
-      <div className="flex items-center gap-3 mb-3">
-        <span className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-500 font-mono text-sm font-bold flex items-center justify-center shrink-0">
-          {n}
-        </span>
-        {!isLast && (
-          <div className="hidden sm:block flex-1 h-px bg-theme relative overflow-hidden">
-            <div className={`absolute inset-y-0 left-0 bg-cyan-500 transition-all duration-700 ${EASE} ${visible ? 'w-full' : 'w-0'}`} />
-          </div>
-        )}
-      </div>
-      <h3 className="text-base font-bold mb-1.5">{title}</h3>
-      <p className="text-sm text-secondary leading-relaxed pr-4">{desc}</p>
-    </div>
-  );
-}
-
-function FeatureCapabilityCard({ capability }: { capability: Capability }) {
-  const Icon = ICONS[capability.icon] || Code2;
-  return (
-    <Card padding="lg" interactive className="flex flex-col justify-between group">
-      <div>
-        <div className="w-10 h-10 rounded-xl border border-theme bg-cyan-500/10 text-cyan-500 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
-          <Icon className="w-5 h-5" />
-        </div>
-        <h3 className="text-base font-bold mb-1.5">{capability.title}</h3>
-        <p className="text-sm text-secondary leading-relaxed mb-6">{capability.description}</p>
-      </div>
-      <div className="rounded-xl border border-theme bg-primary overflow-hidden">
-        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-theme">
-          <span className="w-1.5 h-1.5 rounded-full bg-secondary/40" />
-          <span className="w-1.5 h-1.5 rounded-full bg-secondary/40" />
-          <span className="w-1.5 h-1.5 rounded-full bg-secondary/40" />
-        </div>
-        <div className="p-3 font-mono text-[9px] leading-relaxed space-y-2">
-          <div className="text-secondary/70">
-            <span className="text-purple-400">function</span> <span className="text-cyan-500">Card</span>() {'{ }'}
-          </div>
-          <div className="flex items-end gap-1 h-6">
-            {[0.5, 0.9, 0.65, 1, 0.75].map((h, i) => (
-              <div key={i} className="w-2 rounded-t bg-cyan-500/70" style={{ height: `${h * 100}%` }} />
-            ))}
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
 
 export default function DeveloperPage() {
   const [settings, setSettings] = useState<PageSettings>(DEFAULT_SETTINGS);
-  const headline = splitHeadline(settings.hero_title);
 
   useEffect(() => {
     (async () => {
@@ -157,148 +58,97 @@ export default function DeveloperPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-primary text-primary overflow-x-hidden">
+    <div className="g-font min-h-screen bg-primary text-primary overflow-x-hidden">
       <DevelopaHeader />
 
-      {/* Hero */}
-      <section className="pt-header-28 sm:pt-header-32 pb-16 sm:pb-24 px-4 sm:px-6">
-        <Shell size="lg">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <main>
+        {/* Hero */}
+        <section className="px-[var(--page-gutter)] pt-header-28 sm:pt-header-32 pb-16 text-center">
+          <h1 className="mx-auto max-w-3xl g-h1">{settings.hero_title}</h1>
+          <p className="mx-auto max-w-2xl g-lead mt-6">{settings.hero_description}</p>
+          <div className="flex flex-wrap justify-center gap-3 mt-9">
+            <Button href="#quote" size="lg">Get a quote</Button>
+            <Button href="/developer/shop" variant="soft" color="info" size="lg">Browse scripts</Button>
+          </div>
+          <p className="text-sm text-secondary mt-6">Fixed-fee milestones · Full source and IP transfer · Brief reviewed by the dev lead</p>
+        </section>
+
+        {/* What we build */}
+        <section id="capabilities" className="px-[var(--page-gutter)] pb-16 scroll-mt-20">
+          <div className="max-w-[1100px] mx-auto">
+            <h2 className="g-h2 text-center">What we build</h2>
+            <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {settings.capabilities.map((cap, i) => (
+                <div key={i} className="rounded-[var(--radius-card)] p-6" style={{ background: tonal }}>
+                  <h3 className="font-medium text-lg">{cap.title}</h3>
+                  <p className="text-sm text-secondary mt-2 leading-relaxed">{cap.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Quote */}
+        <section id="quote" className="px-[var(--page-gutter)] pb-16 scroll-mt-20">
+          <div className="max-w-[1100px] mx-auto rounded-[var(--radius-panel)] p-6 sm:p-10 grid lg:grid-cols-2 gap-8 lg:gap-12" style={{ background: tonal }}>
             <div>
-              <Badge variant="info" className="mb-6">
-                <Terminal className="w-3.5 h-3.5 mr-1.5" /> Development Pipeline
-              </Badge>
-              <h1 className="font-display italic font-semibold tracking-tight text-[2.25rem] leading-[1.15] sm:text-5xl sm:leading-[1.1] md:text-6xl mb-6">
-                {headline.base ? `${headline.base} ` : ''}
-                <span className="text-cyan-500">{headline.accent}</span>
-              </h1>
-              <p className="text-base sm:text-lg text-secondary max-w-lg leading-relaxed mb-8">
-                {settings.hero_description}
-              </p>
-              <div className="flex gap-3 flex-wrap">
-                <Button href="/order/dev" size="lg">
-                  Start a project <ArrowRight className="w-4 h-4" />
-                </Button>
-                <Button href="/developer/shop" variant="secondary" size="lg">
-                  <ShoppingBag className="w-4 h-4" /> Browse scripts
-                </Button>
-              </div>
+              <h2 className="g-h3">Have a project in mind?</h2>
+              <p className="text-secondary mt-3 leading-relaxed">Send a short brief and we will reply with a fixed-fee quote within 24 hours. No payment needed.</p>
+              <ul className="mt-6 space-y-3 text-[15px]">
+                {['Fixed-fee quote, paid in milestones', 'Full source code and ownership at handover', 'Your brief is read by the dev lead'].map((t) => (
+                  <li key={t} className="flex gap-3">
+                    <span className="mt-0.5 w-5 h-5 rounded-full bg-accent text-[var(--accent-foreground)] flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3" strokeWidth={3} />
+                    </span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <BuildCanvas />
-          </div>
-        </Shell>
-      </section>
-
-      {/* Process */}
-      <section className="py-20 sm:py-28 px-4 sm:px-6 border-t border-theme">
-        <Shell size="lg">
-          <div className="mb-14 space-y-2">
-            <span className="text-[10px] font-bold uppercase text-cyan-500 tracking-widest">How it works</span>
-            <h2 className="font-bold tracking-tight text-2xl sm:text-3xl md:text-4xl">From brief to production</h2>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-10 sm:gap-6">
-            {PROCESS_STEPS.map((step, i) => (
-              <ProcessStep key={step.n} n={step.n} title={step.title} desc={step.desc} isLast={i === PROCESS_STEPS.length - 1} />
-            ))}
-          </div>
-        </Shell>
-      </section>
-
-      {/* Capabilities */}
-      <section id="capabilities" className="py-20 sm:py-28 px-4 sm:px-6 border-t border-theme">
-        <Shell size="lg">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
-            <div className="space-y-2">
-              <span className="text-[10px] font-bold uppercase text-cyan-500 tracking-widest">What we build</span>
-              <h2 className="font-bold tracking-tight text-2xl sm:text-3xl md:text-4xl">Engineering services</h2>
-            </div>
-            <p className="text-secondary text-sm max-w-sm">Scoped, quoted, and delivered by the dev lead — from prototype to production.</p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {settings.capabilities[0] && <FeatureCapabilityCard capability={settings.capabilities[0]} />}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:col-span-2 gap-4">
-              {settings.capabilities.slice(1).map((cap, i) => {
-                const Icon = ICONS[cap.icon] || Code2;
-                return (
-                  <Card key={i} padding="lg" interactive className="group">
-                    <div className="w-10 h-10 rounded-xl border border-theme bg-cyan-500/10 text-cyan-500 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-base font-bold mb-1.5">{cap.title}</h3>
-                    <p className="text-sm text-secondary leading-relaxed">{cap.description}</p>
-                  </Card>
-                );
-              })}
+            <div className="bg-primary rounded-[var(--radius-card)] p-6 sm:p-7 shadow-sm">
+              <h3 className="text-lg font-medium">Get a quote</h3>
+              <p className="text-sm text-secondary mt-1 mb-5">We reply within 24 hours.</p>
+              <QuoteRequestForm brand="developa" defaultService="dev" services={['dev']} bare />
             </div>
           </div>
-        </Shell>
-      </section>
+        </section>
 
-      {/* Proof strip */}
-      <section className="py-10 px-4 sm:px-6 border-t border-theme">
-        <Shell size="lg">
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-center text-xs sm:text-sm font-medium text-secondary">
-            <span>Fixed-fee milestones</span>
-            <span className="text-secondary/30">·</span>
-            <span>Full source & IP transfer on delivery</span>
-            <span className="text-secondary/30">·</span>
-            <span>Dev lead reviews every brief personally</span>
-            <span className="text-secondary/30">·</span>
-            <span>Structured escrow, no upfront lump sum</span>
+        {/* Process */}
+        <section id="trust" className="px-[var(--page-gutter)] py-[var(--section-y)] scroll-mt-20" style={{ background: tonal }}>
+          <div className="max-w-[1100px] mx-auto">
+            <h2 className="g-h2 text-center">How it works</h2>
+            <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {STEPS.map((step, i) => (
+                <div key={i} className="bg-primary rounded-[var(--radius-card)] p-6 shadow-sm">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium text-accent" style={{ background: tonalStrong }}>{i + 1}</div>
+                  <div className="font-medium mt-4">{step.title}</div>
+                  <p className="text-sm text-secondary mt-2 leading-relaxed">{step.text}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </Shell>
-      </section>
+        </section>
 
-      {/* Script Shop teaser */}
-      <section className="py-20 sm:py-28 px-4 sm:px-6 bg-card/30 border-t border-theme">
-        <Shell size="sm" className="text-center">
-          <Badge variant="info" className="mb-4">
-            <ShoppingBag className="w-3.5 h-3.5 mr-1.5" /> Script marketplace
-          </Badge>
-          <h2 className="font-bold tracking-tight text-2xl sm:text-3xl mb-4">Ready-made scripts</h2>
-          <p className="text-secondary text-sm max-w-xl mx-auto mb-8">
-            Pre-built, source-available scripts and templates — buy once, download anytime from your dashboard.
-          </p>
-          <Button href="/developer/shop" size="lg">
-            Browse scripts <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Shell>
-      </section>
-
-      {/* Trust */}
-      <section className="py-20 sm:py-28 px-4 sm:px-6 border-t border-theme">
-        <Shell size="lg">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card padding="lg">
-              <Shield className="w-5 h-5 mb-4 text-cyan-500" />
-              <h4 className="font-bold mb-1.5 text-sm">Complete IP transfer</h4>
-              <p className="text-sm text-secondary leading-relaxed">Full source code, repository access, and ownership rights delivered with every completed project.</p>
-            </Card>
-            <Card padding="lg">
-              <GitBranch className="w-5 h-5 mb-4 text-cyan-500" />
-              <h4 className="font-bold mb-1.5 text-sm">Milestone payments</h4>
-              <p className="text-sm text-secondary leading-relaxed">Structured payment plans tied to build milestones — no large upfront commitment.</p>
-            </Card>
-            <Card padding="lg">
-              <Clock className="w-5 h-5 mb-4 text-cyan-500" />
-              <h4 className="font-bold mb-1.5 text-sm">On-time delivery</h4>
-              <p className="text-sm text-secondary leading-relaxed">Realistic deadlines with real-time status tracking inside your client dashboard.</p>
-            </Card>
+        {/* Scripts + privacy */}
+        <section id="confidentiality" className="px-[var(--page-gutter)] py-[var(--section-y)]">
+          <div className="max-w-[1100px] mx-auto grid md:grid-cols-2 gap-5">
+            <div className="rounded-[var(--radius-card)] p-8 border border-theme">
+              <h3 className="g-h3">Ready-made scripts</h3>
+              <p className="text-secondary mt-3 leading-relaxed">Source-available scripts and templates. Buy once and download any time from your dashboard.</p>
+              <div className="mt-6"><Button href="/developer/shop" variant="soft" color="info">Browse the shop</Button></div>
+            </div>
+            <div className="rounded-[var(--radius-card)] p-8" style={{ background: tonal }}>
+              <h3 className="g-h3">Your work stays private</h3>
+              <p className="text-secondary mt-3 leading-relaxed">We never publish or show client work. Your brief, drafts and files are visible only to you and the people working on your order.</p>
+            </div>
           </div>
-        </Shell>
-      </section>
+        </section>
 
-      {/* Final CTA */}
-      <section className="py-24 sm:py-32 px-4 sm:px-6 border-t border-theme">
-        <Shell size="md" className="text-center">
-          <h2 className="font-display italic font-medium text-3xl sm:text-4xl md:text-5xl mb-6">Ready to build?</h2>
-          <p className="text-secondary text-sm sm:text-base max-w-md mx-auto mb-8">Submit your project brief and hear back from the dev lead within 24 hours.</p>
-          <Button href="/order/dev" size="lg">
-            Start your software request <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Shell>
-      </section>
+        <p className="px-[var(--page-gutter)] pb-10 text-center text-sm text-secondary">
+          Need an essay, thesis, data analysis or CV instead?{' '}
+          <Link href="/" className="text-accent hover:underline">ResearchWriter does that →</Link>
+        </p>
+      </main>
 
       <DevelopaFooter />
     </div>

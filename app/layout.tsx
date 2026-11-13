@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Roboto } from "next/font/google";
 import "./globals.css";
 import PWAUpdater from "./components/PWAUpdater";
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -10,15 +10,10 @@ import ReferralCapture from "./components/ReferralCapture";
 import PromoPopup from "./components/PromoPopup";
 import { siteUrl } from "@/lib/siteUrl";
 
-const inter = Inter({
+const roboto = Roboto({
   subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
   variable: "--font-sans",
-  display: "swap",
-});
-
-const display = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-display",
   display: "swap",
 });
 
@@ -39,7 +34,7 @@ export const metadata: Metadata = {
     template: "%s | YourResearchWriter",
   },
   description:
-    "Expert research & academic writing, content, executive resumes, and full-stack software development. Rigorously vetted, plagiarism-free, delivered on time.",
+    "Expert research & academic writing, content, executive resumes, and full-stack software development. Clear quotes, milestone payments, delivered to your deadline.",
   keywords: [
     "research writing", "academic writing", "dissertation help", "thesis writing",
     "content writing", "resume writing", "software development", "Nigeria",
@@ -58,7 +53,7 @@ export const metadata: Metadata = {
     siteName: "YourResearchWriter",
     title: "YourResearchWriter | Research, Writing, Software & Creative Services",
     description:
-      "Expert research & academic writing, content, executive resumes, and full-stack software development. Rigorously vetted, plagiarism-free, delivered on time.",
+      "Expert research & academic writing, content, executive resumes, and full-stack software development. Clear quotes, milestone payments, delivered to your deadline.",
     url: SITE,
   },
   twitter: {
@@ -80,7 +75,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${display.variable}`}>
+    <html lang="en" suppressHydrationWarning className={roboto.variable}>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -104,7 +99,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} pwa-shell`}>
+      <body className={`${roboto.className} pwa-shell`}>
         <ThemeProvider>
           <PWAUpdater />
           <PushAutoSubscriber />
@@ -117,7 +112,7 @@ export default function RootLayout({
             href="https://wa.me/2348121443666"
             target="_blank"
             rel="noopener noreferrer"
-            className="fixed fab-bottom-safe right-6 z-50 bg-[#25D366] p-3 rounded-full shadow-lg hover:bg-[#20b859] transition"
+            className="print:hidden fixed fab-bottom-safe right-6 z-50 bg-[#25D366] p-3 rounded-full shadow-lg hover:bg-[#20b859] transition"
             aria-label="Chat on WhatsApp"
           >
             <svg

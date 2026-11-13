@@ -162,14 +162,14 @@ const PromoBanner = memo(({ position, className = '', limit = 3 }: PromoBannerPr
           const img = a.image_url || a.image_mobile_url;
           return (
             <div key={slot} onClick={() => handleClick(a.link_url, a.id, a.source)}
-              className={`relative overflow-hidden rounded-2xl bg-card border border-theme cursor-pointer hover:border-emerald-500/40 transition shadow-md ${slot === 0 ? '' : 'hidden lg:block'}`}>
+              className={`relative overflow-hidden rounded-2xl bg-card border border-theme cursor-pointer hover:border-accent/40 transition shadow-md ${slot === 0 ? '' : 'hidden lg:block'}`}>
               {img ? (
                 <AdImage ad={a} boxClass="aspect-[3/1]" compact />
               ) : (
-                <div className="w-full aspect-[3/1] flex items-center justify-center p-3 bg-emerald-500/10 text-center">
+                <div className="w-full aspect-[3/1] flex items-center justify-center p-3 bg-accent/10 text-center">
                   <div>
                     <h3 className="font-bold text-sm sm:text-base text-primary">{a.title}</h3>
-                    {a.cta_text && <span className="text-xs text-emerald-500 font-semibold">{a.cta_text}</span>}
+                    {a.cta_text && <span className="text-xs text-accent font-semibold">{a.cta_text}</span>}
                   </div>
                 </div>
               )}
@@ -191,11 +191,11 @@ const PromoBanner = memo(({ position, className = '', limit = 3 }: PromoBannerPr
     if (!a) return null;
     return (
       <div onClick={() => a.link_url && handleClick(a.link_url, a.id, a.source)}
-        className={`rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-2.5 flex items-center gap-2.5 ${a.link_url ? 'cursor-pointer hover:bg-emerald-500/15' : ''} ${className}`}>
-        <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-500 text-[10px] font-bold tracking-wide uppercase">Ad</span>
+        className={`rounded-xl bg-accent/10 border border-accent/20 px-4 py-2.5 flex items-center gap-2.5 ${a.link_url ? 'cursor-pointer hover:bg-accent/15' : ''} ${className}`}>
+        <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-accent/20 text-accent text-[11px] font-bold">Ad</span>
         <span className="flex-1 min-w-0 truncate text-sm font-semibold text-primary">{a.title}</span>
         {a.cta_text && (
-          <span className="shrink-0 text-xs font-semibold text-emerald-500 flex items-center gap-0.5">
+          <span className="shrink-0 text-xs font-semibold text-accent flex items-center gap-0.5">
             {a.cta_text} <span aria-hidden="true">&rarr;</span>
           </span>
         )}
@@ -223,7 +223,7 @@ const PromoBanner = memo(({ position, className = '', limit = 3 }: PromoBannerPr
               key={idx}
               onClick={() => setCurrentIndex(idx)}
               className={`h-2 rounded-full transition-all ${
-                idx === currentIndex ? 'bg-emerald-500 w-4' : 'bg-secondary w-2'
+                idx === currentIndex ? 'bg-accent w-4' : 'bg-secondary w-2'
               }`}
             />
           ))}
@@ -237,10 +237,10 @@ const PromoBanner = memo(({ position, className = '', limit = 3 }: PromoBannerPr
         {imageUrl ? (
           <AdImage ad={ad} boxClass={boxClass} />
         ) : (
-          <div className={`w-full ${boxClass} flex items-center justify-center p-4 bg-emerald-500/10 text-center`}>
+          <div className={`w-full ${boxClass} flex items-center justify-center p-4 bg-accent/10 text-center`}>
             <div>
               <h3 className="font-bold text-base text-primary">{ad.title}</h3>
-              {ad.cta_text && <span className="text-sm text-emerald-500 mt-1">{ad.cta_text}</span>}
+              {ad.cta_text && <span className="text-sm text-accent mt-1">{ad.cta_text}</span>}
             </div>
           </div>
         )}

@@ -61,7 +61,7 @@ export default function ProjectsAssistant() {
       setStep('plagiarism');
     } else if (q === 'Yes, take me to custom writing') {
       say("Great — sending you to our academic writing service, where every project is written from scratch with plagiarism & AI reports.");
-      setTimeout(() => router.push('/academic-writing'), 800);
+      setTimeout(() => router.push('/#academic'), 800);
     } else if (q === 'No, a ready-made one is fine') {
       say("Perfect — just browse the catalogue, hit “Get”, and check out. Anything else?");
       setStep('menu');
@@ -75,15 +75,15 @@ export default function ProjectsAssistant() {
   return (
     <>
       {!open && (
-        <button onClick={openIt} className="fixed fab-bottom-safe left-6 z-50 flex items-center gap-2 pl-3 pr-4 py-3 rounded-full shadow-lg bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:brightness-110 transition" aria-label="Open projects assistant">
+        <button onClick={openIt} className="fixed fab-bottom-safe left-6 z-50 flex items-center gap-2 pl-3 pr-4 py-3 rounded-full shadow-lg bg-gradient-to-r from-accent to-accent text-white hover:brightness-110 transition" aria-label="Open projects assistant">
           <HelpCircle className="w-5 h-5" />
-          <span className="text-xs font-black uppercase tracking-wide hidden sm:inline">Materials Help</span>
+          <span className="text-xs font-semibold hidden sm:inline">Materials Help</span>
         </button>
       )}
       {open && (
         <div className="fixed fab-bottom-safe left-6 z-50 w-[92vw] max-w-sm bg-card border border-theme rounded-[24px] shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '78vh' }}>
-          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shrink-0">
-            <div className="flex items-center gap-2"><HelpCircle className="w-4 h-4" /><span className="text-xs font-black uppercase tracking-wide">Project Materials</span></div>
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-accent to-accent text-white shrink-0">
+            <div className="flex items-center gap-2"><HelpCircle className="w-4 h-4" /><span className="text-xs font-semibold">Project Materials</span></div>
             <div className="flex items-center gap-1">
               {history.length > 0 && <button onClick={reset} className="p-2.5 hover:bg-white/10 rounded-lg"><ArrowLeft className="w-4 h-4" /></button>}
               <button onClick={() => setOpen(false)} className="p-2.5 hover:bg-white/10 rounded-lg"><X className="w-4 h-4" /></button>
@@ -92,14 +92,14 @@ export default function ProjectsAssistant() {
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[140px]">
             {history.map((m, i) => (
               <div key={i} className={`flex items-start gap-2 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${m.role === 'bot' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-secondary text-secondary'}`}>{m.role === 'bot' ? <Headphones className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}</div>
-                <div className={`px-3 py-2 rounded-2xl text-xs leading-relaxed max-w-[82%] ${m.role === 'bot' ? 'bg-secondary text-primary rounded-tl-sm' : 'bg-emerald-500/10 text-primary rounded-tr-sm'}`}>{m.text}</div>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${m.role === 'bot' ? 'bg-accent/20 text-accent' : 'bg-secondary text-secondary'}`}>{m.role === 'bot' ? <Headphones className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}</div>
+                <div className={`px-3 py-2 rounded-2xl text-xs leading-relaxed max-w-[82%] ${m.role === 'bot' ? 'bg-secondary text-primary rounded-tl-sm' : 'bg-accent/10 text-primary rounded-tr-sm'}`}>{m.text}</div>
               </div>
             ))}
           </div>
           <div className="p-4 border-t border-theme shrink-0 flex flex-col gap-2">
             {options.map(o => (
-              <button key={o} onClick={() => answer(o)} className="text-left px-3 py-2 rounded-xl text-xs font-bold border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10 transition">{o}</button>
+              <button key={o} onClick={() => answer(o)} className="text-left px-3 py-2 rounded-xl text-xs font-bold border border-accent/30 text-accent dark:text-accent bg-accent/5 hover:bg-accent/10 transition">{o}</button>
             ))}
           </div>
         </div>

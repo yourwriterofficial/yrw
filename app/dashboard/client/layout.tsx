@@ -25,28 +25,19 @@ interface NavGroup {
   items: NavItem[];
 }
 
+const WHATSAPP = 'https://wa.me/2348121443666?text=Hello%2C%20I%20need%20help%20with%20my%20account.';
+
 const NAV_GROUPS: NavGroup[] = [
   {
-    title: 'Workspace',
     items: [
-      { key: 'dashboard', label: 'Dashboard Overview', href: '/dashboard/client', icon: 'LayoutDashboard', tourId: 'rw-tour-dashboard' },
-      { key: 'new', label: 'Create New Order', href: '/dashboard/client/order/new/academic', icon: 'PlusCircle', tourId: 'rw-tour-neworder' },
-      { key: 'orders', label: 'My Orders', href: '/dashboard/client?tab=orders', icon: 'ClipboardList' },
-    ],
-  },
-  {
-    title: 'Billing & Escrow',
-    items: [
-      { key: 'vault', label: 'Secure Deliverables Vault', href: '/dashboard/client?tab=vault', icon: 'Lock', tourId: 'rw-tour-vault' },
-      { key: 'wallet', label: 'My Wallet Ledger', href: '/dashboard/client?tab=wallet', icon: 'Wallet', tourId: 'rw-tour-wallet' },
-      { key: 'affiliate', label: 'Affiliate Earnings Hub', href: '/dashboard/client?tab=affiliate', icon: 'Coins' },
-    ],
-  },
-  {
-    title: 'Account Settings',
-    items: [
-      { key: 'profile', label: 'Profile & Credentials', href: '/dashboard/client?tab=profile', icon: 'User', tourId: 'rw-tour-profile' },
-      { key: 'whatsapp', label: 'WhatsApp Support Desk', href: 'https://wa.me/2348121443666?text=Hello%20YRW%20Support%2C%20I%20need%20assistance%20with%20my%20account.', icon: 'MessageCircle' },
+      { key: 'dashboard', label: 'Overview', href: '/dashboard/client', icon: 'LayoutDashboard', tourId: 'rw-tour-dashboard' },
+      { key: 'new', label: 'New order', href: '/dashboard/client/order/new/academic', icon: 'PlusCircle', tourId: 'rw-tour-neworder' },
+      { key: 'orders', label: 'My orders', href: '/dashboard/client?tab=orders', icon: 'ClipboardList' },
+      { key: 'vault', label: 'My files', href: '/dashboard/client?tab=vault', icon: 'FolderOpen', tourId: 'rw-tour-vault' },
+      { key: 'wallet', label: 'Wallet', href: '/dashboard/client?tab=wallet', icon: 'Wallet', tourId: 'rw-tour-wallet' },
+      { key: 'affiliate', label: 'Referrals', href: '/dashboard/client?tab=affiliate', icon: 'Coins' },
+      { key: 'profile', label: 'Account', href: '/dashboard/client?tab=profile', icon: 'User', tourId: 'rw-tour-profile' },
+      { key: 'whatsapp', label: 'Help on WhatsApp', href: WHATSAPP, icon: 'MessageCircle' },
     ],
   },
 ];
@@ -98,27 +89,16 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const effectiveNavGroups: NavGroup[] = isDevelopa
     ? [
         {
-          title: 'Engineering Workspace',
           items: [
-            { key: 'dashboard', label: 'Project Overview', href: '/dashboard/client?brand=developa', icon: 'LayoutDashboard', tourId: 'rw-tour-dashboard' },
-            { key: 'new', label: 'Scope New Project', href: '/dashboard/client/order/new/dev?brand=developa', icon: 'Terminal', tourId: 'rw-tour-neworder' },
-            { key: 'orders', label: 'Active Builds & Sprints', href: '/dashboard/client?tab=orders&brand=developa', icon: 'Code2' },
-            { key: 'scripts', label: 'My Code & Templates', href: '/dashboard/client?tab=scripts&brand=developa', icon: 'FileCode' },
-          ],
-        },
-        {
-          title: 'Escrow & Code Vault',
-          items: [
-            { key: 'vault', label: 'Code & Handover Vault', href: '/dashboard/client?tab=vault&brand=developa', icon: 'Lock', tourId: 'rw-tour-vault' },
-            { key: 'wallet', label: 'Escrow & Wallet Ledger', href: '/dashboard/client?tab=wallet&brand=developa', icon: 'Wallet', tourId: 'rw-tour-wallet' },
-            { key: 'affiliate', label: 'Referral Partner Hub', href: '/dashboard/client?tab=affiliate&brand=developa', icon: 'Coins' },
-          ],
-        },
-        {
-          title: 'Dev Support',
-          items: [
-            { key: 'profile', label: 'Developer Credentials', href: '/dashboard/client?tab=profile&brand=developa', icon: 'User', tourId: 'rw-tour-profile' },
-            { key: 'whatsapp', label: 'WhatsApp Dev Desk', href: 'https://wa.me/2348121443666?text=Hello%20Developa%20Desk%2C%20I%20need%20technical%20assistance.', icon: 'MessageCircle' },
+            { key: 'dashboard', label: 'Overview', href: '/dashboard/client?brand=developa', icon: 'LayoutDashboard', tourId: 'rw-tour-dashboard' },
+            { key: 'new', label: 'New project', href: '/dashboard/client/order/new/dev?brand=developa', icon: 'PlusCircle', tourId: 'rw-tour-neworder' },
+            { key: 'orders', label: 'My projects', href: '/dashboard/client?tab=orders&brand=developa', icon: 'ClipboardList' },
+            { key: 'scripts', label: 'My scripts', href: '/dashboard/client?tab=scripts&brand=developa', icon: 'FileCode' },
+            { key: 'vault', label: 'My files', href: '/dashboard/client?tab=vault&brand=developa', icon: 'FolderOpen', tourId: 'rw-tour-vault' },
+            { key: 'wallet', label: 'Wallet', href: '/dashboard/client?tab=wallet&brand=developa', icon: 'Wallet', tourId: 'rw-tour-wallet' },
+            { key: 'affiliate', label: 'Referrals', href: '/dashboard/client?tab=affiliate&brand=developa', icon: 'Coins' },
+            { key: 'profile', label: 'Account', href: '/dashboard/client?tab=profile&brand=developa', icon: 'User', tourId: 'rw-tour-profile' },
+            { key: 'whatsapp', label: 'Help on WhatsApp', href: WHATSAPP, icon: 'MessageCircle' },
           ],
         },
       ]
@@ -258,7 +238,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           <span className="truncate">{item.label}</span>
         </div>
         {item.key === 'vault' && unviewedVaultCount > 0 && (
-          <span className="px-2 py-0.5 bg-accent text-[var(--accent-foreground)] rounded-md text-[10px] font-black shrink-0">{unviewedVaultCount}</span>
+          <span className="px-2 py-0.5 bg-accent text-[var(--accent-foreground)] rounded-md text-[11px] font-semibold shrink-0">{unviewedVaultCount}</span>
         )}
       </Link>
     );
@@ -278,20 +258,20 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-3 mb-6 shrink-0 relative z-10">
           {isDevelopa ? (
             <>
-              <div className="w-9 h-9 bg-slate-900 border border-cyan-500/40 rounded-xl flex items-center justify-center text-cyan-400 font-mono font-black text-lg shadow-sm shadow-cyan-950/40">
+              <div className="w-9 h-9 bg-slate-900 border border-accent/40 rounded-xl flex items-center justify-center text-accent font-mono font-semibold text-lg shadow-sm shadow-accent/40">
                 &gt;_
               </div>
               <div>
-                <h1 className="font-black tracking-tight leading-none text-base text-slate-100 font-mono">developa<span className="text-cyan-400">.me</span></h1>
-                <p className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold font-mono">Engineering Portal</p>
+                <h1 className="font-semibold tracking-tight leading-none text-base text-slate-100 font-mono">developa<span className="text-accent">.me</span></h1>
+                <p className="text-[11px] text-secondary">My account</p>
               </div>
             </>
           ) : (
             <>
-              <div className="w-9 h-9 bg-accent rounded-xl flex items-center justify-center text-[var(--accent-foreground)] font-black text-lg shadow-sm">Y</div>
+              <div className="w-9 h-9 bg-accent rounded-xl flex items-center justify-center text-[var(--accent-foreground)] font-semibold text-lg shadow-sm">Y</div>
               <div>
-                <h1 className="font-black tracking-tight leading-none text-base">YRW</h1>
-                <p className="text-[10px] text-accent uppercase tracking-widest font-bold">Client Portal</p>
+                <h1 className="font-bold tracking-tight leading-none text-base">ResearchWriter</h1>
+                <p className="text-[11px] text-secondary">My account</p>
               </div>
             </>
           )}
@@ -301,7 +281,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           <Button
             variant="outline"
             size="sm"
-            className="mb-3 border-purple-500/30 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 shrink-0 relative z-10"
+            className="mb-3 border-accent/30 text-accent hover:bg-accent/10 hover:text-accent shrink-0 relative z-10"
             onClick={() => router.push('/admin')}
           >
             <lucide.Shield className="w-4 h-4" /> Admin Control Panel
@@ -311,7 +291,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         <nav className="flex flex-col gap-0.5 flex-1 min-h-0 overflow-y-auto pr-1 relative z-10">
           {effectiveNavGroups.map((group, gi) => (
             <div key={group.title || `group-${gi}`} className={gi === 0 ? 'flex flex-col gap-0.5' : 'mt-3 flex flex-col gap-0.5'}>
-              {group.title && <p className="text-[10px] uppercase tracking-widest text-secondary font-black pl-2 mb-1">{group.title}</p>}
+              {group.title && <p className="text-[11px] text-secondary font-semibold pl-2 mb-1">{group.title}</p>}
               {group.items.map((item) => renderNavItem(item, gi === 0))}
             </div>
           ))}
@@ -324,22 +304,13 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         )}
 
         <div className="mt-3 shrink-0 relative z-10 space-y-3">
-          {!isDevelopa && (
-            <Link
-              href="/advertise"
-              className="flex items-center justify-center gap-1.5 w-full py-2 rounded-full border border-warning/30 bg-warning/5 hover:bg-warning/10 text-warning font-semibold text-[11px] transition cursor-pointer"
-            >
-              <lucide.Megaphone className="w-3.5 h-3.5" /> Advertise With Us
-            </Link>
-          )}
-
           <div className="bg-card border border-theme rounded-2xl p-3">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
                 <Avatar name={profile?.full_name || 'Client'} size="sm" />
                 <div className="overflow-hidden">
                   <p className="text-xs font-bold truncate">{profile?.full_name || 'Client'}</p>
-                  <p className="text-[10px] text-secondary truncate">{user?.email}</p>
+                  <p className="text-[11px] text-secondary truncate">{user?.email}</p>
                 </div>
               </div>
               <ThemeToggle compact />
@@ -358,14 +329,14 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-2">
           {isDevelopa ? (
             <>
-              <div className="w-8 h-8 bg-slate-900 border border-cyan-500/40 rounded-lg flex items-center justify-center text-cyan-400 font-mono font-black text-sm">
+              <div className="w-8 h-8 bg-slate-900 border border-accent/40 rounded-lg flex items-center justify-center text-accent font-mono font-semibold text-sm">
                 &gt;_
               </div>
               <span className="font-mono font-bold text-primary">developa.me</span>
             </>
           ) : (
             <>
-              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-[var(--accent-foreground)] font-black">Y</div>
+              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-[var(--accent-foreground)] font-semibold">Y</div>
               <span className="font-bold text-primary">Portal</span>
             </>
           )}
@@ -381,7 +352,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
             <Button
               variant="outline"
               size="sm"
-              className="border-purple-500/30 text-purple-400"
+              className="border-accent/30 text-accent"
               onClick={() => { router.push('/admin'); setMobileMenuOpen(false); }}
             >
               <lucide.Shield className="w-4 h-4 mr-2" /> Admin Control Panel
@@ -389,21 +360,10 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           )}
           {effectiveNavGroups.map((group, gi) => (
             <div key={group.title || `mgroup-${gi}`} className={gi === 0 ? 'flex flex-col gap-1' : 'mt-3 flex flex-col gap-1'}>
-              {group.title && <p className="text-[10px] uppercase tracking-widest text-secondary font-black pl-4 mb-1">{group.title}</p>}
+              {group.title && <p className="text-[11px] text-secondary font-semibold pl-4 mb-1">{group.title}</p>}
               {group.items.map((item) => renderNavItem(item, gi === 0, () => setMobileMenuOpen(false)))}
             </div>
           ))}
-          {!isDevelopa && (
-            <div className="border-t border-theme mt-1 pt-2">
-              <Link
-                href="/advertise"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center gap-2 w-full p-3 rounded-xl bg-warning/10 text-warning font-black text-xs uppercase tracking-wider border border-warning/25 transition cursor-pointer"
-              >
-                <lucide.Megaphone className="w-4 h-4" /> Advertise With Us
-              </Link>
-            </div>
-          )}
           <div className="p-2">
             <ThemeToggle />
           </div>
@@ -415,8 +375,8 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       <main className="flex-1 overflow-y-auto flex flex-col h-screen bg-primary">
         <header className="bg-secondary/40 backdrop-blur-md border-b border-theme px-6 py-4 flex justify-between items-center sticky top-0 z-30 shrink-0">
-          <span className="font-black text-xs uppercase tracking-widest text-secondary">
-            {isDevelopa ? 'Developa Engineering Portal' : 'Client Portal'}
+          <span className="font-semibold text-xs text-secondary">
+            {isDevelopa ? 'developa.me' : 'ResearchWriter'}
           </span>
           <div className="flex items-center gap-2">
             <a

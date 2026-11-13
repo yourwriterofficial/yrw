@@ -57,10 +57,10 @@ interface SlotOccupancy {
 }
 
 const POSITION_ICONS: Record<string, React.ReactNode> = {
-  header: <Megaphone className="w-4 h-4 text-emerald-500" />,
-  footer: <Megaphone className="w-4 h-4 text-emerald-500" />,
-  sidebar: <BarChart2 className="w-4 h-4 text-blue-500" />,
-  inline: <Eye className="w-4 h-4 text-teal-500" />,
+  header: <Megaphone className="w-4 h-4 text-accent" />,
+  footer: <Megaphone className="w-4 h-4 text-accent" />,
+  sidebar: <BarChart2 className="w-4 h-4 text-accent" />,
+  inline: <Eye className="w-4 h-4 text-accent" />,
   popup: <AlertTriangle className="w-4 h-4 text-amber-500" />,
 };
 
@@ -91,7 +91,7 @@ function AdPreview({ title, imageUrl, ctaText, showBanner, showInline }: {
   const hasContent = !!(title.trim() || imageUrl);
   return (
     <div className="rounded-2xl border border-dashed border-theme bg-secondary/30 p-4 space-y-3">
-      <p className="text-[11px] font-black uppercase tracking-wider text-secondary">Live Creative Preview</p>
+      <p className="text-[11px] font-semibold text-secondary">Live Creative Preview</p>
       {!hasContent ? (
         <p className="text-xs text-secondary">Fill in title or upload an image above to preview your ad live.</p>
       ) : (
@@ -104,20 +104,20 @@ function AdPreview({ title, imageUrl, ctaText, showBanner, showInline }: {
                   <img src={imageUrl} alt={title || 'Ad preview'} className="relative w-full h-full object-contain" />
                 </>
               ) : (
-                <div className="w-full h-full grid place-items-center p-3 bg-emerald-500/10 text-center">
+                <div className="w-full h-full grid place-items-center p-3 bg-accent/10 text-center">
                   <div>
                     <p className="font-bold text-sm text-primary">{title}</p>
-                    {ctaText && <span className="text-xs text-emerald-500 font-semibold">{ctaText}</span>}
+                    {ctaText && <span className="text-xs text-accent font-semibold">{ctaText}</span>}
                   </div>
                 </div>
               )}
             </div>
           )}
           {showInline && (
-            <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-2.5 flex items-center gap-2.5 max-w-sm">
-              <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-500 text-[10px] font-bold tracking-wide uppercase">Ad</span>
+            <div className="rounded-xl bg-accent/10 border border-accent/20 px-4 py-2.5 flex items-center gap-2.5 max-w-sm">
+              <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-accent/20 text-accent text-[11px] font-bold">Ad</span>
               <span className="flex-1 min-w-0 truncate text-sm font-semibold text-primary">{title || 'Your ad title'}</span>
-              {ctaText && <span className="shrink-0 text-xs font-semibold text-emerald-500">{ctaText} &rarr;</span>}
+              {ctaText && <span className="shrink-0 text-xs font-semibold text-accent">{ctaText} &rarr;</span>}
             </div>
           )}
         </div>
@@ -282,20 +282,20 @@ export default function AdvertisePage() {
     <div className="min-h-screen bg-background text-primary">
       <Header />
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <main className="g-wrap pt-24 pb-[var(--section-y)] space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-theme pb-6">
           <div>
-            <h1 className="text-3xl font-black tracking-tight flex items-center gap-2">
-              <Megaphone className="w-7 h-7 text-emerald-500" /> Self-Serve Advertising
+            <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2">
+              <Megaphone className="w-7 h-7 text-accent" /> Self-Serve Advertising
             </h1>
             <p className="text-xs text-secondary mt-1">Promote your brand, products, or services sitewide to thousands of active visitors.</p>
           </div>
           <div className="flex items-center gap-3 bg-secondary/40 border border-theme rounded-2xl px-4 py-3">
-            <Wallet className="w-5 h-5 text-emerald-500 shrink-0" />
+            <Wallet className="w-5 h-5 text-accent shrink-0" />
             <div>
-              <p className="text-[10px] uppercase font-bold text-secondary">Ad Credits</p>
-              <p className="text-lg font-black text-emerald-500">₦{adCredits.toLocaleString()}</p>
+              <p className="text-[11px] font-bold text-secondary">Ad Credits</p>
+              <p className="text-lg font-semibold text-accent">₦{adCredits.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -304,24 +304,24 @@ export default function AdvertisePage() {
         {myAds.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-card border border-theme rounded-2xl p-4 shadow-sm">
-              <CheckCircle className="w-4 h-4 text-emerald-500 mb-2" />
+              <CheckCircle className="w-4 h-4 text-accent mb-2" />
               <p className="text-xs text-secondary font-semibold">Live Ads</p>
-              <p className="text-2xl font-black text-primary">{myAds.filter(a => a.status === 'approved').length}</p>
+              <p className="text-2xl font-semibold text-primary">{myAds.filter(a => a.status === 'approved').length}</p>
             </div>
             <div className="bg-card border border-theme rounded-2xl p-4 shadow-sm">
               <Clock className="w-4 h-4 text-amber-500 mb-2" />
               <p className="text-xs text-secondary font-semibold">Pending</p>
-              <p className="text-2xl font-black text-primary">{myAds.filter(a => a.status === 'pending').length}</p>
+              <p className="text-2xl font-semibold text-primary">{myAds.filter(a => a.status === 'pending').length}</p>
             </div>
             <div className="bg-card border border-theme rounded-2xl p-4 shadow-sm">
-              <Eye className="w-4 h-4 text-blue-500 mb-2" />
+              <Eye className="w-4 h-4 text-accent mb-2" />
               <p className="text-xs text-secondary font-semibold">Impressions</p>
-              <p className="text-2xl font-black text-primary">{myAds.reduce((sum, a) => sum + (a.impressions || 0), 0).toLocaleString()}</p>
+              <p className="text-2xl font-semibold text-primary">{myAds.reduce((sum, a) => sum + (a.impressions || 0), 0).toLocaleString()}</p>
             </div>
             <div className="bg-card border border-theme rounded-2xl p-4 shadow-sm">
-              <MousePointerClick className="w-4 h-4 text-teal-500 mb-2" />
+              <MousePointerClick className="w-4 h-4 text-accent mb-2" />
               <p className="text-xs text-secondary font-semibold">Clicks</p>
-              <p className="text-2xl font-black text-primary">{myAds.reduce((sum, a) => sum + (a.clicks || 0), 0).toLocaleString()}</p>
+              <p className="text-2xl font-semibold text-primary">{myAds.reduce((sum, a) => sum + (a.clicks || 0), 0).toLocaleString()}</p>
             </div>
           </div>
         )}
@@ -330,20 +330,20 @@ export default function AdvertisePage() {
         <div className="flex gap-1 bg-secondary/50 p-1.5 rounded-2xl w-fit border border-theme">
           <button
             onClick={() => setTab('buy')}
-            className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition ${tab === 'buy' ? 'bg-emerald-500 text-black shadow-md' : 'text-secondary hover:text-primary'}`}
+            className={`px-5 py-2 rounded-xl text-xs font-semibold   transition ${tab === 'buy' ? 'bg-accent text-black shadow-md' : 'text-secondary hover:text-primary'}`}
           >
             Buy Ad Slot
           </button>
           <button
             onClick={() => setTab('my-ads')}
-            className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition ${tab === 'my-ads' ? 'bg-emerald-500 text-black shadow-md' : 'text-secondary hover:text-primary'}`}
+            className={`px-5 py-2 rounded-xl text-xs font-semibold   transition ${tab === 'my-ads' ? 'bg-accent text-black shadow-md' : 'text-secondary hover:text-primary'}`}
           >
             My Campaigns {myAds.length > 0 && `(${myAds.length})`}
           </button>
         </div>
 
         {message && (
-          <div className={`p-4 rounded-2xl border text-xs font-bold ${message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
+          <div className={`p-4 rounded-2xl border text-xs font-bold ${message.type === 'success' ? 'bg-accent/10 border-accent/30 text-accent' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
             {message.text}
           </div>
         )}
@@ -355,20 +355,20 @@ export default function AdvertisePage() {
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex gap-3 text-xs">
               <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <p className="font-bold text-amber-400 uppercase tracking-wide">Ad Acceptance Guidelines</p>
+                <p className="font-bold text-amber-400">Ad Acceptance Guidelines</p>
                 <p className="text-secondary">All submitted ads must be appropriate, accurate, and free of deceptive claims. Explicit adult material, scams, and illegal financial schemes will be rejected without refund.</p>
               </div>
             </div>
 
             {/* Step 1: Select Placements */}
             <div className="space-y-4">
-              <h3 className="text-lg font-black uppercase tracking-wide flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-emerald-500 text-black text-xs font-black flex items-center justify-center">1</span>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-accent text-black text-xs font-semibold flex items-center justify-center">1</span>
                 Select Placement Slots
               </h3>
 
               {loading ? (
-                <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-emerald-500" /></div>
+                <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-accent" /></div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {pricing.map(p => {
@@ -378,7 +378,7 @@ export default function AdvertisePage() {
                       <div
                         key={p.id}
                         onClick={() => togglePlacement(p)}
-                        className={`p-5 rounded-2xl border cursor-pointer transition flex flex-col justify-between ${active ? 'bg-emerald-500/10 border-emerald-500' : 'bg-card border-theme hover:border-emerald-500/30'}`}
+                        className={`p-5 rounded-2xl border cursor-pointer transition flex flex-col justify-between ${active ? 'bg-accent/10 border-accent' : 'bg-card border-theme hover:border-accent/30'}`}
                       >
                         <div>
                           <div className="flex items-center justify-between mb-2">
@@ -386,7 +386,7 @@ export default function AdvertisePage() {
                               {POSITION_ICONS[p.position]}
                               <span className="font-extrabold text-sm text-primary">{p.label}</span>
                             </div>
-                            <span className="text-xs font-black text-emerald-500">₦{p.price_per_day.toLocaleString()}/day</span>
+                            <span className="text-xs font-semibold text-accent">₦{p.price_per_day.toLocaleString()}/day</span>
                           </div>
                           <p className="text-xs text-secondary mb-2">{p.description}</p>
                           <SlotOccupancyBadge position={p.position} />
@@ -405,7 +405,7 @@ export default function AdvertisePage() {
                                 max={p.max_days}
                                 value={cfg.duration_days}
                                 onChange={e => updateCfg(p.id, { duration_days: parseInt(e.target.value) })}
-                                className="w-full accent-emerald-500"
+                                className="w-full accent-accent"
                               />
                             </div>
                           </div>
@@ -419,42 +419,42 @@ export default function AdvertisePage() {
 
             {/* Step 2: Ad Creative & Live Preview */}
             <div className="space-y-4">
-              <h3 className="text-lg font-black uppercase tracking-wide flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-emerald-500 text-black text-xs font-black flex items-center justify-center">2</span>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-accent text-black text-xs font-semibold flex items-center justify-center">2</span>
                 Ad Creative & Preview
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-secondary mb-1 uppercase tracking-wider">Ad Title *</label>
+                    <label className="block text-xs font-bold text-secondary mb-1">Ad Title *</label>
                     <input
                       type="text"
                       required
                       value={form.title}
                       onChange={e => setForm({ ...form, title: e.target.value })}
                       placeholder="e.g. Professional Academic Research & Writing"
-                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-theme text-sm outline-none focus:border-emerald-500"
+                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-theme text-sm outline-none focus:border-accent"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-secondary mb-1 uppercase tracking-wider">Destination URL</label>
+                    <label className="block text-xs font-bold text-secondary mb-1">Destination URL</label>
                     <input
                       type="url"
                       value={form.link_url}
                       onChange={e => setForm({ ...form, link_url: e.target.value })}
                       placeholder="https://yourwebsite.com/landing"
-                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-theme text-sm outline-none focus:border-emerald-500"
+                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-theme text-sm outline-none focus:border-accent"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-secondary mb-1 uppercase tracking-wider">CTA Text</label>
+                    <label className="block text-xs font-bold text-secondary mb-1">CTA Text</label>
                     <input
                       type="text"
                       value={form.cta_text}
                       onChange={e => setForm({ ...form, cta_text: e.target.value })}
                       placeholder="Learn More"
-                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-theme text-sm outline-none focus:border-emerald-500"
+                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-theme text-sm outline-none focus:border-accent"
                     />
                   </div>
                   <ImageUploadField
@@ -484,14 +484,14 @@ export default function AdvertisePage() {
             {/* Step 3: Checkout Summary */}
             <div className="p-6 rounded-2xl bg-card border border-theme flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
-                <p className="text-xs text-secondary uppercase font-bold tracking-wider">Total Investment</p>
-                <p className="text-2xl font-black text-emerald-500">₦{totalCost.toLocaleString()}</p>
+                <p className="text-xs text-secondary font-bold">Total Investment</p>
+                <p className="text-2xl font-semibold text-accent">₦{totalCost.toLocaleString()}</p>
                 <p className="text-[11px] text-secondary mt-0.5">{selectedList.length} placement(s) selected</p>
               </div>
               <button
                 type="submit"
                 disabled={submitting || selectedList.length === 0}
-                className="px-8 py-3.5 rounded-full bg-emerald-500 text-black font-black uppercase tracking-wider text-xs hover:bg-emerald-400 disabled:opacity-50 transition shadow-lg"
+                className="px-8 py-3.5 rounded-full bg-accent text-black font-semibold text-xs hover:bg-accent disabled:opacity-50 transition shadow-lg"
               >
                 {submitting ? 'Submitting...' : 'Submit & Activate Ad'}
               </button>
@@ -512,8 +512,8 @@ export default function AdvertisePage() {
                 <div key={ad.id} className="p-5 rounded-2xl bg-card border border-theme shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-black text-sm text-primary truncate">{ad.title}</h4>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${ad.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' : ad.status === 'rejected' ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-amber-500/10 text-amber-500 border-amber-500/30'}`}>
+                      <h4 className="font-semibold text-sm text-primary truncate">{ad.title}</h4>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold   border ${ad.status === 'approved' ? 'bg-accent/10 text-accent border-accent/30' : ad.status === 'rejected' ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-amber-500/10 text-amber-500 border-amber-500/30'}`}>
                         {ad.paused_at ? 'Paused' : ad.status}
                       </span>
                     </div>
@@ -527,7 +527,7 @@ export default function AdvertisePage() {
 
                   <div className="flex items-center gap-6 shrink-0">
                     <div className="text-right">
-                      <p className="text-[10px] uppercase font-bold text-secondary">Performance</p>
+                      <p className="text-[11px] font-bold text-secondary">Performance</p>
                       <p className="text-xs font-bold text-primary tabular-nums">{ad.impressions.toLocaleString()} views · {ad.clicks.toLocaleString()} clicks</p>
                     </div>
 

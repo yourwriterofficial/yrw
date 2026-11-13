@@ -39,7 +39,7 @@ export function ToastContainer() {
           key={t.id}
           className={`px-4 py-3 rounded-xl shadow-lg text-sm font-bold border animate-in slide-in-from-right duration-300 ${
             t.type === 'success'
-              ? 'bg-emerald-500 text-black border-emerald-400'
+              ? 'bg-emerald-600 text-white border-emerald-500'
               : t.type === 'error'
                 ? 'bg-red-500 text-white border-red-400'
                 : 'bg-card text-primary border-theme'

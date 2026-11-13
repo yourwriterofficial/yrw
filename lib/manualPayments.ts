@@ -376,11 +376,17 @@ export async function approveManualPayment(reference: string, adminNotes?: strin
       });
 
       if (res.ok) {
+        // Keep the legacy 60/40 flags in step with the milestones: the vault gate
+        // (isOrderFullyPaid) reads them for standard orders, so a deposit that only
+        // touched the milestone array would leave the order looking unpaid.
+        const stillAwaitingPayment = ['Pending Bank Transfer', 'Briefing Received'].includes(order.workflow_status);
         await admin
           .from('orders')
           .update({
             payment_milestones: res.milestones,
+            sixty_percent_paid: res.firstPaid ? true : order.sixty_percent_paid,
             forty_percent_paid: res.allPaid ? true : order.forty_percent_paid,
+            ...(stillAwaitingPayment && res.firstPaid ? { workflow_status: 'In Progress' } : {}),
             last_activity: new Date().toISOString(),
           })
           .eq('order_id', orderId);

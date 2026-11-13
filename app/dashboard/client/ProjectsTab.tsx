@@ -379,12 +379,12 @@ export default function ProjectsTab({ user }: { user: any }) {
           <p className="text-xs md:text-sm text-secondary max-w-2xl mx-auto leading-relaxed">
             Browse, search, and instantly buy completed research projects covering Chapters 1–5.
           </p>
-          <div className="flex gap-2 justify-center flex-wrap mt-4 text-[10px] font-semibold">
+          <div className="flex gap-2 justify-center flex-wrap mt-4 text-[11px] font-semibold">
             <span className="border border-theme bg-secondary/60 text-secondary px-3 py-1 rounded-full">📖 Chapters 1–5</span>
             <span className="border border-theme bg-secondary/60 text-secondary px-3 py-1 rounded-full">🕗 Working hours 8am–7pm</span>
             <span className="border border-theme bg-secondary/60 text-secondary px-3 py-1 rounded-full">🇳🇬 Nigerian University Standard</span>
             <span className="border border-theme bg-secondary/60 text-secondary px-3 py-1 rounded-full">⚡ Less than 7 Hours Delivery</span>
-            <span className="border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full">
+            <span className="border border-accent/20 bg-accent/10 text-accent px-3 py-1 rounded-full">
               OND {naira(levelPrices.OND)} · HND {naira(levelPrices.HND)} · BSc {naira(levelPrices.BSc)} · MSc {naira(levelPrices.MSc)} · PhD {naira(levelPrices.PhD)}
             </span>
           </div>
@@ -394,7 +394,7 @@ export default function ProjectsTab({ user }: { user: any }) {
             <div className="max-w-2xl mx-auto mt-8 text-left">
               <Card elevation={2} padding="lg" className="space-y-5 text-center">
                 <div>
-                  <h3 className="text-lg font-black text-primary">Database Search & Availability</h3>
+                  <h3 className="text-lg font-semibold text-primary">Database Search & Availability</h3>
                   <p className="text-xs text-secondary mt-1 leading-relaxed font-semibold">
                     Place your full project topic below to search our database of 100,000+ completed projects and check instant availability.
                   </p>
@@ -402,34 +402,34 @@ export default function ProjectsTab({ user }: { user: any }) {
 
                 <div className="space-y-4 text-left">
                   <div>
-                    <label className="text-[9px] uppercase font-black text-secondary ml-1 block mb-1">Your Full Project Topic *</label>
+                    <label className="text-[11px] font-semibold text-secondary ml-1 block mb-1">Your Full Project Topic *</label>
                     <textarea
                       value={search}
                       onChange={e => setSearch(e.target.value)}
                       placeholder="e.g. Challenges and prospects of financial autonomy to local government administration..."
                       rows={3}
-                      className="w-full bg-secondary border border-theme rounded-xl p-4 text-xs text-primary focus:border-emerald-500 outline-none transition font-bold"
+                      className="w-full bg-secondary border border-theme rounded-xl p-4 text-xs text-primary focus:border-accent outline-none transition font-bold"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[9px] uppercase font-black text-secondary ml-1 block mb-1">Department</label>
+                      <label className="text-[11px] font-semibold text-secondary ml-1 block mb-1">Department</label>
                       <select
                         value={selectedSearchDept}
                         onChange={e => setSelectedSearchDept(e.target.value)}
-                        className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
+                        className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-accent font-bold cursor-pointer"
                       >
                         <option value="all">📂 All Departments</option>
                         {NIGERIAN_DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label className="text-[9px] uppercase font-black text-secondary ml-1 block mb-1">Academic Level</label>
+                      <label className="text-[11px] font-semibold text-secondary ml-1 block mb-1">Academic Level</label>
                       <select
                         value={selectedSearchLevel}
                         onChange={e => setSelectedSearchLevel(e.target.value)}
-                        className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-emerald-500 font-bold cursor-pointer"
+                        className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary outline-none focus:border-accent font-bold cursor-pointer"
                       >
                         <option value="all">🎓 All Levels</option>
                         <option value="OND">OND</option>
@@ -444,7 +444,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                   <button
                     onClick={executeAvailabilitySearch}
                     disabled={!search.trim()}
-                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase text-xs tracking-widest rounded-xl transition shadow-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-accent hover:bg-accent text-black font-semibold text-xs rounded-xl transition shadow-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
                   >
                     Check Availability & Retrieve Material
                   </button>
@@ -455,11 +455,11 @@ export default function ProjectsTab({ user }: { user: any }) {
             <div className="max-w-md mx-auto mt-8 text-center">
               <Card elevation={2} padding="lg" className="space-y-4">
                 <div className="relative w-12 h-12 mx-auto">
-                  <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+                  <div className="absolute inset-0 rounded-full border-4 border-accent/20 border-t-emerald-500 animate-spin" />
                 </div>
                 <div>
                   <h3 className="text-xs font-bold text-primary">Scanning Project Database...</h3>
-                  <p className="text-[10px] text-secondary mt-1">Checking chapters, tables, and references availability for your topic.</p>
+                  <p className="text-[11px] text-secondary mt-1">Checking chapters, tables, and references availability for your topic.</p>
                 </div>
               </Card>
             </div>
@@ -468,7 +468,7 @@ export default function ProjectsTab({ user }: { user: any }) {
               <Card elevation={2} padding="md" className="flex justify-between items-center gap-4">
                 <div>
                   <h3 className="text-xs font-bold text-primary">Search Results</h3>
-                  <p className="text-[10px] text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
+                  <p className="text-[11px] text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
                 </div>
                 <Button variant="secondary" size="sm" icon={<lucide.Search className="w-3.5 h-3.5" />} onClick={resetSearch}>
                   Search Another Topic
@@ -482,16 +482,16 @@ export default function ProjectsTab({ user }: { user: any }) {
       {/* SEARCH RESULTS OR BROWSE LIST */}
       {loading ? (
         <div className="py-12 text-center text-sm text-secondary flex items-center justify-center gap-2">
-          <lucide.Loader2 className="w-5 h-5 animate-spin text-emerald-500" /> Scanning database...
+          <lucide.Loader2 className="w-5 h-5 animate-spin text-accent" /> Scanning database...
         </div>
       ) : hasSearched && topics.length === 0 ? (
         /* NO RESULTS - CUSTOM WRITEUP CARD */
-        <div className="max-w-2xl mx-auto bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8 space-y-6 text-center shadow-xl">
-          <div className="w-14 h-14 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
-            <lucide.CheckCircle className="w-7 h-7 text-emerald-500" />
+        <div className="max-w-2xl mx-auto bg-accent/5 border border-accent/20 rounded-3xl p-8 space-y-6 text-center shadow-xl">
+          <div className="w-14 h-14 bg-accent/10 text-accent rounded-full flex items-center justify-center mx-auto">
+            <lucide.CheckCircle className="w-7 h-7 text-accent" />
           </div>
           <div>
-            <h4 className="text-lg font-black text-primary">Custom write-up available!</h4>
+            <h4 className="text-lg font-semibold text-primary">Custom write-up available!</h4>
             <p className="text-xs text-secondary mt-1.5 leading-relaxed max-w-md mx-auto font-semibold">
               Our writers can prepare this topic for you as an original custom project with complete Chapters 1–5, structured layout, and references.
             </p>
@@ -499,15 +499,15 @@ export default function ProjectsTab({ user }: { user: any }) {
 
           <div className="bg-card border border-theme p-6 rounded-2xl text-left space-y-4 max-w-lg mx-auto">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500 text-black">✓ Available</span>
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-theme text-primary">{selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel}</span>
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-white/5 text-purple-400">{selectedSearchDept === 'all' ? 'General' : selectedSearchDept}</span>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-accent text-black">✓ Available</span>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded border border-theme text-primary">{selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel}</span>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-white/5 text-accent">{selectedSearchDept === 'all' ? 'General' : selectedSearchDept}</span>
             </div>
             <p className="text-xs font-bold text-primary leading-normal">{search}</p>
             <div className="border-t border-theme/40 pt-4 flex justify-between items-center">
               <div>
-                <span className="text-[10px] text-secondary uppercase font-black block">Standard Cost</span>
-                <span className="text-sm font-mono font-bold text-emerald-500">{naira(getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept))}</span>
+                <span className="text-[11px] text-secondary font-semibold block">Standard Cost</span>
+                <span className="text-sm font-mono font-bold text-accent">{naira(getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept))}</span>
               </div>
               <button
                 onClick={() => openCart({
@@ -517,7 +517,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                   title: search.trim(),
                   basePrice: getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept)
                 })}
-                className="bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition cursor-pointer"
+                className="bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-semibold text-xs px-5 py-3 rounded-xl transition cursor-pointer"
               >
                 Order Custom Write-up
               </button>
@@ -529,7 +529,7 @@ export default function ProjectsTab({ user }: { user: any }) {
         <div className="space-y-6">
           {!hasSearched && (
             <div className="border-b border-theme pb-2">
-              <h3 className="text-lg font-black text-primary">Browse All Project Topics</h3>
+              <h3 className="text-lg font-semibold text-primary">Browse All Project Topics</h3>
               <p className="text-xs text-secondary mt-0.5">Select a topic from the directory or use the filters below.</p>
             </div>
           )}
@@ -543,7 +543,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Filter browse catalog..."
-                  className="w-full bg-secondary border border-theme rounded-xl pl-11 pr-4 py-2.5 text-xs text-primary outline-none focus:border-emerald-500 transition font-bold"
+                  className="w-full bg-secondary border border-theme rounded-xl pl-11 pr-4 py-2.5 text-xs text-primary outline-none focus:border-accent transition font-bold"
                 />
               </div>
 
@@ -551,7 +551,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                 <select
                   value={dept}
                   onChange={e => { setDept(e.target.value); setPage(1); }}
-                  className="bg-secondary border border-theme rounded-xl px-4 py-2.5 text-xs text-primary font-bold outline-none focus:border-emerald-500 cursor-pointer flex-1 md:flex-none"
+                  className="bg-secondary border border-theme rounded-xl px-4 py-2.5 text-xs text-primary font-bold outline-none focus:border-accent cursor-pointer flex-1 md:flex-none"
                 >
                   <option value="all">📂 All Departments</option>
                   {NIGERIAN_DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
@@ -560,7 +560,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                 <select
                   value={level}
                   onChange={e => { setLevel(e.target.value); setPage(1); }}
-                  className="bg-secondary border border-theme rounded-xl px-4 py-2.5 text-xs text-primary font-bold outline-none focus:border-emerald-500 cursor-pointer flex-1 md:flex-none"
+                  className="bg-secondary border border-theme rounded-xl px-4 py-2.5 text-xs text-primary font-bold outline-none focus:border-accent cursor-pointer flex-1 md:flex-none"
                 >
                   <option value="all">🎓 All Levels</option>
                   <option value="OND">OND</option>
@@ -578,8 +578,8 @@ export default function ProjectsTab({ user }: { user: any }) {
             {topics.map(t => (
               <Card key={t.id} elevation={1} padding="md" interactive className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">{t.department}</span>
-                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border border-theme text-primary">{t.level}</span>
+                  <span className="text-[11px] font-semibold text-accent bg-accent/10 px-2.5 py-1 rounded-full">{t.department}</span>
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded border border-theme text-primary">{t.level}</span>
                 </div>
                 <h3 className="text-sm font-bold leading-relaxed text-primary line-clamp-3">
                   {t.title}
@@ -589,7 +589,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                 </div>
                 <div className="flex gap-2 mt-auto pt-1 flex-wrap">
                   <button onClick={() => setPreviewTopic(t)} className="flex-1 py-2.5 rounded-lg text-xs font-bold border border-theme bg-secondary hover:bg-white/5 text-primary transition min-w-[70px]">👁 Preview</button>
-                  <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: getTopicPrice(t.level, t.department) })} className="flex-2 py-2.5 rounded-lg text-xs font-black bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] transition">Get · {naira(getTopicPrice(t.level, t.department))}</button>
+                  <button onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: getTopicPrice(t.level, t.department) })} className="flex-2 py-2.5 rounded-lg text-xs font-semibold bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] transition">Get · {naira(getTopicPrice(t.level, t.department))}</button>
                 </div>
               </Card>
             ))}
@@ -623,8 +623,8 @@ export default function ProjectsTab({ user }: { user: any }) {
           <div className="w-full max-w-lg bg-primary h-screen border-l border-theme flex flex-col shadow-2xl animate-in slide-in-from-right duration-350">
             <header className="p-6 border-b border-theme flex justify-between items-center shrink-0">
               <div>
-                <span className="text-[10px] font-black uppercase text-emerald-400 tracking-widest">Order Processing Pipeline</span>
-                <h3 className="text-lg font-black text-primary mt-1">Configure Deliverable</h3>
+                <span className="text-[11px] font-semibold text-accent">Order Processing Pipeline</span>
+                <h3 className="text-lg font-semibold text-primary mt-1">Configure Deliverable</h3>
               </div>
               <button onClick={() => setCart(null)} className="w-11 h-11 rounded-full bg-secondary hover:bg-white/5 text-primary flex items-center justify-center transition">
                 <lucide.X className="w-4 h-4" />
@@ -635,11 +635,11 @@ export default function ProjectsTab({ user }: { user: any }) {
               {/* Product Info */}
               <div className="bg-secondary/40 border border-theme rounded-2xl p-5 space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black uppercase bg-emerald-500 text-black px-2 py-0.5 rounded">{cart.level}</span>
-                  <span className="text-[9px] font-black uppercase border border-theme text-secondary px-2 py-0.5 rounded">{cart.department}</span>
+                  <span className="text-[11px] font-semibold bg-accent text-black px-2 py-0.5 rounded">{cart.level}</span>
+                  <span className="text-[11px] font-semibold border border-theme text-secondary px-2 py-0.5 rounded">{cart.department}</span>
                 </div>
                 <h4 className="text-sm font-bold text-primary leading-relaxed">{cart.title}</h4>
-                <div className="text-[10px] text-secondary font-mono">Chapters 1 to 5 (Full Study Material)</div>
+                <div className="text-[11px] text-secondary font-mono">Chapters 1 to 5 (Full Study Material)</div>
               </div>
 
               <Card elevation={1} padding="md" className="flex items-center gap-3">
@@ -648,34 +648,34 @@ export default function ProjectsTab({ user }: { user: any }) {
                 </div>
                 <div>
                   <div className="text-xs font-bold text-primary">Ready for instant delivery</div>
-                  <p className="text-[10px] text-secondary mt-0.5">This is a completed material — no writer wait, delivered to your Secure Vault right after payment.</p>
+                  <p className="text-[11px] text-secondary mt-0.5">This is a completed material — no writer wait, delivered to your Secure Vault right after payment.</p>
                 </div>
               </Card>
 
               {/* Add-ons */}
               {availableAddons.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-secondary">Enhance Project (Optional Add-ons)</h4>
+                  <h4 className="text-xs font-semibold text-secondary">Enhance Project (Optional Add-ons)</h4>
                   <div className="space-y-2">
                     {availableAddons.map(a => {
                       const checked = selectedAddons.has(a.id);
                       return (
-                        <div key={a.id} className={`border rounded-xl p-4 transition-all ${checked ? 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/30' : 'bg-card border-theme hover:bg-white/5'}`}>
+                        <div key={a.id} className={`border rounded-xl p-4 transition-all ${checked ? 'bg-accent/5 dark:bg-accent/10 border-accent/30' : 'bg-card border-theme hover:bg-white/5'}`}>
                           <div className="flex items-start gap-3">
                             <input
                               type="checkbox"
                               checked={checked}
                               onChange={() => handleAddonChange(a.id)}
-                              className="mt-1 accent-emerald-500 cursor-pointer"
+                              className="mt-1 accent-accent cursor-pointer"
                             />
                             <div className="flex-1">
                               <div className="flex justify-between items-center cursor-pointer" onClick={() => handleAddonChange(a.id)}>
                                 <span className="text-xs font-bold text-primary">{a.name}</span>
-                                <span className="text-xs font-mono font-black text-emerald-500">
+                                <span className="text-xs font-mono font-semibold text-accent">
                                   {a.price_type === 'per_word' ? `₦${a.price}/word` : `+${naira(a.price)}`}
                                 </span>
                               </div>
-                              {a.description && <p className="text-[10px] text-secondary mt-0.5 leading-relaxed">{a.description}</p>}
+                              {a.description && <p className="text-[11px] text-secondary mt-0.5 leading-relaxed">{a.description}</p>}
                               
                               {checked && (
                                 <div className="mt-3 space-y-3 border-t border-theme/20 pt-3">
@@ -691,9 +691,9 @@ export default function ProjectsTab({ user }: { user: any }) {
                                           const w = Math.max(100, Number(e.target.value) || 0);
                                           setAddonWords(prev => ({ ...prev, [a.id]: w }));
                                         }}
-                                        className="w-20 bg-secondary border border-theme rounded-md px-2 py-1 text-primary outline-none focus:border-emerald-500 font-mono text-center font-bold"
+                                        className="w-20 bg-secondary border border-theme rounded-md px-2 py-1 text-primary outline-none focus:border-accent font-mono text-center font-bold"
                                       />
-                                      <span className="text-emerald-500 font-bold ml-1">
+                                      <span className="text-accent font-bold ml-1">
                                         ➔ {naira((addonWords[a.id] || 1000) * a.price)}
                                       </span>
                                     </div>
@@ -701,12 +701,12 @@ export default function ProjectsTab({ user }: { user: any }) {
 
                                   {a.is_location_changer && (
                                     <div className="space-y-1 text-xs">
-                                      <label className="text-[9px] font-black uppercase tracking-wider text-secondary block">Specify Case Study Location/Region *</label>
+                                      <label className="text-[11px] font-semibold text-secondary block">Specify Case Study Location/Region *</label>
                                       <input
                                         value={customLocation}
                                         onChange={e => setCustomLocation(e.target.value)}
                                         placeholder="e.g. Kaduna State, First Bank Nigeria Plc..."
-                                        className="w-full bg-secondary border border-theme rounded-lg px-3 py-2 text-xs text-primary outline-none focus:border-emerald-500 font-bold"
+                                        className="w-full bg-secondary border border-theme rounded-lg px-3 py-2 text-xs text-primary outline-none focus:border-accent font-bold"
                                       />
                                     </div>
                                   )}
@@ -735,9 +735,9 @@ export default function ProjectsTab({ user }: { user: any }) {
                     type="checkbox"
                     checked={acceptedTerms}
                     onChange={e => setAcceptedTerms(e.target.checked)}
-                    className="mt-0.5 accent-emerald-500"
+                    className="mt-0.5 accent-accent"
                   />
-                  <span className="text-[10px] text-secondary leading-relaxed font-bold">
+                  <span className="text-[11px] text-secondary leading-relaxed font-bold">
                     I acknowledge that this is a study material purchase and will be delivered to my Secure Vault inside this dashboard.
                   </span>
                 </label>
@@ -749,13 +749,13 @@ export default function ProjectsTab({ user }: { user: any }) {
               
               <div className="flex justify-between items-center">
                 <div>
-                  <span className="text-[10px] text-secondary uppercase font-black block">Total Investment</span>
-                  <span className="text-xl font-mono font-black text-emerald-400">{naira(cartTotal())}</span>
+                  <span className="text-[11px] text-secondary font-semibold block">Total Investment</span>
+                  <span className="text-xl font-mono font-semibold text-accent">{naira(cartTotal())}</span>
                 </div>
                 <button
                   onClick={checkout}
                   disabled={!acceptedTerms || busy}
-                  className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase text-xs tracking-wider rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
+                  className="px-6 py-3.5 bg-accent hover:bg-accent text-black font-semibold text-xs rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
                 >
                   {busy ? (
                     <>
@@ -778,20 +778,20 @@ export default function ProjectsTab({ user }: { user: any }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-lg bg-primary border border-theme rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
             <header className="p-5 border-b border-theme flex justify-between items-center">
-              <h4 className="font-black text-sm text-primary">Topic Preview Details</h4>
+              <h4 className="font-semibold text-sm text-primary">Topic Preview Details</h4>
               <button onClick={() => setPreviewTopic(null)} className="w-11 h-11 rounded-full bg-secondary hover:bg-white/5 text-primary flex items-center justify-center">
                 <lucide.X className="w-4 h-4" />
               </button>
             </header>
             <div className="p-6 overflow-y-auto space-y-4">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full">{previewTopic.department}</span>
-                <span className="text-[10px] font-black uppercase border border-theme text-primary px-2 py-0.5 rounded">{previewTopic.level}</span>
+                <span className="text-[11px] font-semibold bg-accent/10 text-accent px-2 py-1 rounded-full">{previewTopic.department}</span>
+                <span className="text-[11px] font-semibold border border-theme text-primary px-2 py-0.5 rounded">{previewTopic.level}</span>
               </div>
               <h3 className="text-base font-bold text-primary leading-relaxed">{previewTopic.title}</h3>
               
               <div className="bg-secondary/40 border border-theme rounded-xl p-4 space-y-2">
-                <h5 className="text-[11px] font-black uppercase tracking-wider text-secondary">Document Scope</h5>
+                <h5 className="text-[11px] font-semibold text-secondary">Document Scope</h5>
                 <p className="text-xs text-primary leading-relaxed">
                   {previewTopic.description || 'Full research project covering Chapters 1 to 5, inclusive of abstract, introduction, literature review, methodology, data presentation/analysis, summary, conclusion, and detailed bibliography/references.'}
                 </p>
@@ -799,11 +799,11 @@ export default function ProjectsTab({ user }: { user: any }) {
 
               <div className="grid grid-cols-2 gap-4 text-xs font-mono">
                 <div className="bg-secondary/30 p-3 rounded-lg border border-theme/40 text-center">
-                  <div className="text-secondary text-[9px] uppercase font-black">Chapters</div>
+                  <div className="text-secondary text-[11px] font-semibold">Chapters</div>
                   <div className="text-primary font-bold mt-1">Ch. {previewTopic.chapters || '1–5'}</div>
                 </div>
                 <div className="bg-secondary/30 p-3 rounded-lg border border-theme/40 text-center">
-                  <div className="text-secondary text-[9px] uppercase font-black">Format</div>
+                  <div className="text-secondary text-[11px] font-semibold">Format</div>
                   <div className="text-primary font-bold mt-1">{previewTopic.format || 'MS Word'}</div>
                 </div>
               </div>
@@ -816,7 +816,7 @@ export default function ProjectsTab({ user }: { user: any }) {
                   setPreviewTopic(null);
                   openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: getTopicPrice(t.level, t.department) });
                 }}
-                className="px-4 py-2 text-xs font-black bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] rounded-xl transition"
+                className="px-4 py-2 text-xs font-semibold bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] rounded-xl transition"
               >
                 Select Topic
               </button>

@@ -3,13 +3,10 @@
 import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Input } from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
 import { SocialLoginButton } from '@/app/components/ui/SocialLoginButton';
-import Card from '@/app/components/ui/Card';
-import { Shell } from '@/app/components/ui/Shell';
-import ThemeToggle from '@/app/components/ThemeToggle';
-import { Terminal } from 'lucide-react';
+import { NairaguideLoginButton } from '@/app/components/ui/NairaguideLoginButton';
+import AuthShell from '@/app/components/AuthShell';
 
 export default function LoginPage() {
   return (
@@ -26,12 +23,15 @@ function LoginInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [isDevelopa, setIsDevelopa] = useState(false);
   // Seeded from ?message= so an expired or already-used email link explains
   // itself. /auth/callback and /auth/confirm both redirect here with that
   // param on failure, but nothing read it — the user just landed on a blank
   // login form with no idea why their link hadn't worked.
   const [error, setError] = useState(searchParams.get('message') ?? '');
+  const resetDone = searchParams.get('reset') === 'success';
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -107,6 +107,16 @@ function LoginInner() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) { setError('Enter your email above first, then tap "Forgot password?".'); return; }
+    setError('');
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth/confirm?next=/update-password`,
+    });
+    if (resetError) setError(resetError.message);
+    else setResetSent(true);
+  };
+
   const handleGoogleLogin = async () => {
     setLoading(true);
     const callbackRedirect = isDevelopa
@@ -123,94 +133,43 @@ function LoginInner() {
   };
 
   return (
-    <div className="min-h-screen bg-primary flex items-center justify-center p-4">
-      <Shell size="sm" className="w-full max-w-md">
-        <Card elevation={2} padding="lg" className={`w-full ${isDevelopa ? 'border-cyan-500/20 shadow-xl shadow-cyan-950/20' : ''}`}>
-          <div className="flex justify-between items-center mb-4">
-            {isDevelopa ? (
-              <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs font-black">
-                <Terminal className="w-4 h-4" />
-                <span>developa.me</span>
-              </div>
-            ) : <div />}
-            <ThemeToggle compact />
+    <AuthShell
+      developa={isDevelopa}
+      title="Log in"
+      subtitle={isDevelopa ? 'See your project progress and milestones.' : 'See your orders and download your files.'}
+      footer={<>New here? <a href={isDevelopa ? '/register?brand=developa' : '/register'} className="text-accent font-semibold hover:underline">Create a free account</a></>}
+    >
+      <SocialLoginButton onClick={handleGoogleLogin} loading={loading} label="Continue with Google" />
+      <NairaguideLoginButton next={nextPath} developa={isDevelopa} label="Continue with Nairaguide" />
+
+      <div className="flex items-center gap-3 my-5 text-xs text-secondary">
+        <span className="flex-1 h-px bg-[var(--border)]" /> or use email <span className="flex-1 h-px bg-[var(--border)]" />
+      </div>
+
+      <form onSubmit={handleLogin} className="space-y-4">
+        <div>
+          <label htmlFor="login-email" className="block text-sm font-medium mb-1.5">Email</label>
+          <input id="login-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-box w-full" />
+        </div>
+        <div>
+          <div className="flex justify-between items-baseline mb-1.5">
+            <label htmlFor="login-password" className="text-sm font-medium">Password</label>
+            <button type="button" onClick={handleForgotPassword} className="text-xs text-accent hover:underline">Forgot password?</button>
           </div>
-          <div className="text-center mb-8">
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 ${
-              isDevelopa
-                ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono'
-                : 'bg-success-bg text-success border border-success/20'
-            }`}>
-              {isDevelopa ? 'Client Engineering Portal' : 'Client Portal'}
-            </div>
-            <h1 className="text-2xl font-black tracking-tight text-primary">
-              {isDevelopa ? 'Engineering Sign-In' : 'Welcome Back'}
-            </h1>
-            {isDevelopa && (
-              <p className="text-xs text-secondary mt-1.5 leading-relaxed">
-                Log in to review architecture sprints, repository releases & milestone deliverables.
-              </p>
-            )}
+          <div className="relative">
+            <input id="login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className="input-box w-full pr-14" />
+            <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-secondary hover:text-primary">
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
           </div>
+        </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <Input
-              type="email"
-              label="Email Address"
-              placeholder="your@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              fullWidth
-            />
-            <Input
-              type="password"
-              label="Password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              fullWidth
-            />
-            {error && (
-              <p className="text-danger text-xs font-bold bg-danger-bg p-3 rounded-lg border border-danger/20">
-                {error}
-              </p>
-            )}
-            <Button
-              type="submit"
-              size="lg"
-              fullWidth
-              loading={loading}
-              loadingText="Authenticating…"
-              className={isDevelopa ? '!bg-cyan-500 hover:!bg-cyan-400 !text-black font-black uppercase tracking-wider' : ''}
-            >
-              {isDevelopa ? 'Access Engineering Portal' : 'Secure Login'}
-            </Button>
-          </form>
+        {resetDone && !resetSent && <p className="text-sm text-success" role="status">Your password was updated. Log in with the new one.</p>}
+        {resetSent && <p className="text-sm text-success">We sent a reset link to {email}. Check your inbox and spam folder.</p>}
+        {error && <p className="text-sm text-danger" role="alert">{error}</p>}
 
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-theme" />
-            </div>
-            <div className="relative flex justify-center text-[10px] font-black tracking-widest uppercase">
-              <span className="bg-card px-4 text-secondary">Or Continue With</span>
-            </div>
-          </div>
-
-          <SocialLoginButton onClick={handleGoogleLogin} loading={loading} label="Google Authentication" />
-
-          <p className="text-center text-xs text-secondary mt-8">
-            Don&apos;t have an account?{' '}
-            <a
-              href={isDevelopa ? '/register?brand=developa' : '/register'}
-              className={`${isDevelopa ? 'text-cyan-400 hover:text-cyan-300' : 'text-accent hover:text-accent-hover'} font-bold transition focus-ring rounded`}
-            >
-              {isDevelopa ? 'Create client account' : 'Create one'}
-            </a>
-          </p>
-        </Card>
-      </Shell>
-    </div>
+        <Button type="submit" size="lg" fullWidth loading={loading} loadingText="Logging in…">Log in</Button>
+      </form>
+    </AuthShell>
   );
 }

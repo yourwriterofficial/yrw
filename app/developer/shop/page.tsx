@@ -106,10 +106,11 @@ export default function DeveloperShopPage() {
             <Badge variant="info" className="mb-4">
               <ShoppingBag className="w-3 h-3 mr-1.5" /> Script Marketplace
             </Badge>
-            <h1 className="font-display italic font-medium text-2xl sm:text-3xl md:text-4xl mb-4">{settings.shop_title}</h1>
+            <h1 className="font-semibold text-2xl sm:text-3xl md:text-4xl mb-4">{settings.shop_title}</h1>
             <p className="text-secondary text-sm max-w-xl mx-auto px-2">{settings.shop_description}</p>
           </div>
 
+          {products.length > 0 && (
           <div className="flex flex-col md:flex-row gap-3 justify-center items-center mb-8 max-w-2xl mx-auto">
             <Input
               value={search}
@@ -127,13 +128,15 @@ export default function DeveloperShopPage() {
             />
           </div>
 
+          )}
+
           {categories.length > 1 && (
             <div className="flex gap-2 justify-center flex-wrap mb-10 px-2">
               {categories.map(c => (
                 <button
                   key={c}
                   onClick={() => setCategory(c)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition ${
+                  className={`px-4 py-2 rounded-full text-xs font-bold   border transition ${
                     category === c
                       ? 'bg-accent text-[var(--accent-foreground)] border-accent'
                       : 'bg-secondary border-theme text-secondary hover:border-strong'
@@ -148,6 +151,14 @@ export default function DeveloperShopPage() {
           {loading ? (
             <div className="flex justify-center py-16">
               <div className="w-10 h-10 border-4 border-info/20 border-t-info rounded-full animate-spin" />
+            </div>
+          ) : products.length === 0 ? (
+            <div className="max-w-xl mx-auto text-center border border-theme rounded-[28px] p-8 sm:p-10">
+              <h2 className="text-xl font-semibold">New scripts are on the way</h2>
+              <p className="text-secondary text-sm mt-2">
+                We are adding ready-made scripts and templates to the shop. If you need something specific built now, tell us and we will send a quote.
+              </p>
+              <Button href="/developer#quote" className="mt-6">Get a quote</Button>
             </div>
           ) : filteredProducts.length === 0 ? (
             <EmptyState

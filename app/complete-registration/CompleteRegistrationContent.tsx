@@ -92,11 +92,11 @@ export default function CompleteRegistrationContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-black text-primary mb-2 tracking-tight">Check Your Email</h2>
+            <h2 className="text-2xl font-semibold text-primary mb-2 tracking-tight">Check Your Email</h2>
             <p className="text-sm text-secondary mb-6 leading-relaxed">
               We&apos;ve sent a secure verification link to <strong className="text-primary">{email}</strong>. Please verify your email address to access your client dashboard.
             </p>
-            <p className="text-[10px] uppercase tracking-widest text-tertiary font-bold">Redirecting to login...</p>
+            <p className="text-[11px] text-tertiary font-bold">Redirecting to login...</p>
           </Card>
         </Shell>
       </div>
@@ -107,10 +107,10 @@ export default function CompleteRegistrationContent() {
     <div className="min-h-screen bg-primary flex items-center justify-center p-4">
       <Shell size="sm" className="w-full max-w-md">
         <Card elevation={2} padding="lg" className="w-full">
-          <div className="inline-block px-3 py-1 bg-success-bg text-success border border-success/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
+          <div className="inline-block px-3 py-1 bg-success-bg text-success border border-success/20 rounded-full text-[11px] font-semibold mb-4">
             Final Step
           </div>
-          <h1 className="text-2xl font-black text-primary mb-2 tracking-tight">Secure Your Account</h1>
+          <h1 className="text-2xl font-semibold text-primary mb-2 tracking-tight">Secure Your Account</h1>
           <p className="text-xs text-secondary leading-relaxed mb-8">
             Order <span className="text-accent font-bold">{orderId}</span> is confirmed in our system. Set a password below to track your project&apos;s progress.
           </p>

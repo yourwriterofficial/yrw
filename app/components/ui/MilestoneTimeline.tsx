@@ -65,12 +65,12 @@ export default function MilestoneTimeline({
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-secondary text-secondary">
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-secondary text-secondary">
                   {idx + 1} · {m.percentage}%
                 </span>
                 <span className="text-sm font-bold text-primary truncate">{m.name}</span>
                 {m.delivered && (
-                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-accent/10 text-accent border border-accent/20">
                     Work Delivered
                   </span>
                 )}
@@ -79,26 +79,26 @@ export default function MilestoneTimeline({
                 <p className="text-[11px] text-secondary mt-0.5">Trigger: {m.trigger}</p>
               )}
               {m.paid && m.paid_at && (
-                <p className="text-[10px] text-emerald-500 font-bold mt-0.5">
+                <p className="text-[11px] text-emerald-500 font-bold mt-0.5">
                   ✓ Paid {new Date(m.paid_at).toLocaleDateString()}
                 </p>
               )}
             </div>
 
             <div className="flex flex-col items-end gap-2 shrink-0">
-              <span className="text-sm font-black text-primary">{formatNaira(m.amount, currency)}</span>
+              <span className="text-sm font-semibold text-primary">{formatNaira(m.amount, currency)}</span>
               {m.paid ? (
-                <span className="text-[10px] font-black uppercase text-emerald-500">Paid ✓</span>
+                <span className="text-[11px] font-semibold text-emerald-500">Paid ✓</span>
               ) : isNext && onPay ? (
                 <button
                   onClick={() => onPay(idx)}
                   disabled={payingIndex === idx}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-amber-500 text-black hover:bg-amber-400 transition disabled:opacity-50 cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-amber-500 text-black hover:bg-amber-400 transition disabled:opacity-50 cursor-pointer"
                 >
                   {payingIndex === idx ? 'Connecting…' : 'Pay Now'}
                 </button>
               ) : locked ? (
-                <span className="text-[10px] font-black uppercase text-secondary">Locked</span>
+                <span className="text-[11px] font-semibold text-secondary">Locked</span>
               ) : null}
             </div>
           </div>

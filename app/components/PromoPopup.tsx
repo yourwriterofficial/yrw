@@ -81,7 +81,7 @@ export default function PromoPopup() {
               <img src={imageUrl} alt={ad.title} className="relative w-full h-full object-contain" />
             </div>
           ) : (
-            <div className="w-full aspect-[4/3] max-h-[38vh] flex items-center justify-center p-6 bg-emerald-500/10 text-center">
+            <div className="w-full aspect-[4/3] max-h-[38vh] flex items-center justify-center p-6 bg-accent/10 text-center">
               <div>
                 <h3 className="font-bold text-xl text-primary">{ad.title}</h3>
               </div>
@@ -90,7 +90,7 @@ export default function PromoPopup() {
           <div className="p-4 text-center">
             {imageUrl && <h3 className="font-bold text-primary mb-1">{ad.title}</h3>}
             {ad.cta_text && (
-              <span className="inline-block px-5 py-2 bg-emerald-500 text-black rounded-xl text-sm font-semibold">
+              <span className="inline-block px-5 py-2 bg-accent text-black rounded-xl text-sm font-semibold">
                 {ad.cta_text}
               </span>
             )}

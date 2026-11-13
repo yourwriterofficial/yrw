@@ -719,7 +719,7 @@ function DashboardContent() {
 
   const handleResetPassword = async () => {
     const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo: `${window.location.origin}/update-password`,
+      redirectTo: `${window.location.origin}/auth/confirm?next=/update-password`,
     });
     if (error) showToast(error.message, 'error');
     else showToast('Password reset email sent. Check your inbox.', 'success');
@@ -744,7 +744,7 @@ function DashboardContent() {
 
       {/* Admin Preview Banner */}
       {isAdminPreview && (
-        <div className="bg-warning text-black py-2 px-6 flex items-center justify-center gap-4 font-black text-xs uppercase tracking-widest mb-6 rounded-xl shadow-md">
+        <div className="bg-warning text-black py-2 px-6 flex items-center justify-center gap-4 font-semibold text-xs mb-6 rounded-xl shadow-md">
           <div className="flex items-center gap-2">
             <lucide.Eye className="w-4 h-4" /> Admin Preview Mode
           </div>
@@ -760,7 +760,7 @@ function DashboardContent() {
 
       {/* Temporary Password Advisory Banner */}
       {user?.user_metadata?.password_is_email === true && (
-        <div className="bg-warning/10 border border-warning/30 text-warning py-3.5 px-6 flex flex-col sm:flex-row items-center justify-between gap-4 font-bold text-xs uppercase tracking-wider mb-6 rounded-2xl shadow-sm animate-in slide-in-from-top duration-500">
+        <div className="bg-warning/10 border border-warning/30 text-warning py-3.5 px-6 flex flex-col sm:flex-row items-center justify-between gap-4 font-bold text-xs mb-6 rounded-2xl shadow-sm animate-in slide-in-from-top duration-500">
           <div className="flex items-center gap-3">
             <lucide.ShieldAlert className="w-5 h-5 shrink-0 text-warning" />
             <span className="leading-relaxed normal-case">
@@ -783,70 +783,50 @@ function DashboardContent() {
           {/* Row layout only from lg: at md the sidebar leaves ~480px, which can't
               fit the heading plus this shrink-0 date pill — the pill overflowed
               the viewport and got clipped. Stay stacked until there's real room. */}
-          <header className="mb-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-theme pb-8">
-            <div>
-              <h2 className="text-3xl font-black text-primary tracking-tight">Welcome back, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
-              <p className="text-secondary mt-1.5 text-xs font-semibold uppercase tracking-wider">
-                {isDevelopa ? 'Here is the current status of your software sprints, code deliverables & deployments.' : 'Here is the current status of your research pipeline.'}
-              </p>
-            </div>
-            <div className="text-xs font-bold text-secondary bg-secondary px-4 py-2.5 rounded-xl border border-theme max-w-xs shrink-0 select-none">
-              {isDevelopa ? 'Developa Engineering' : 'Client Portal'} · {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </div>
+          <header className="mb-8">
+            <h2 className="text-2xl font-bold tracking-tight">Hello, {profile?.full_name?.split(' ')[0] || 'there'}</h2>
+            <p className="text-secondary text-sm mt-1">
+              {activeOrders.length > 0
+                ? `You have ${activeOrders.length} ${activeOrders.length === 1 ? 'order' : 'orders'} in progress.`
+                : 'You have nothing in progress right now.'}
+            </p>
           </header>
 
-          {/* Latest Vault Upload notification */}
+          {/* One plain notice when a new file is waiting */}
           {latestUnviewedVaultFile && (
-            <div className="bg-gradient-to-r from-success/10 to-success/5 border border-success/25 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 mb-10 shadow-sm animate-in slide-in-from-top duration-500">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-success/10 rounded-xl flex items-center justify-center text-success border border-success/20 shrink-0">
-                  <lucide.FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-secondary font-black uppercase tracking-widest text-[9px]">New Vault Upload Available</p>
-                  <h4 className="text-sm font-bold text-primary mt-0.5">
-                    "{latestUnviewedVaultFile.file_name}" has been uploaded to your Secure Vault.
-                  </h4>
-                </div>
-              </div>
+            <div className="border border-theme rounded-lg bg-card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
+              <p className="text-sm">
+                <span className="font-semibold">A new file is ready:</span>{' '}
+                <span className="text-secondary">{latestUnviewedVaultFile.file_name}</span>
+              </p>
               <Button size="sm" onClick={() => setActiveTab('vault')} className="shrink-0">
-                Access Secure Vault
+                Open my files
               </Button>
             </div>
           )}
 
-          {/* Redesigned Quick Stats Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          {/* Three numbers, no decoration */}
+          <dl className="grid grid-cols-3 gap-3 mb-10">
             {[
-              { label: isDevelopa ? "Total Builds" : "Total Projects", value: orders.length, icon: lucide.Layers, color: "text-success", bg: "bg-success/[0.02]" },
-              { label: isDevelopa ? "Active Sprints" : "Active Pipelines", value: activeOrders.length, icon: lucide.Activity, color: "text-warning", bg: "bg-warning/[0.02]" },
-              { label: isDevelopa ? "Deployed / Completed" : "Completed Projects", value: completedOrders.length, icon: lucide.CheckCircle2, color: "text-accent", bg: "bg-accent/[0.02]" },
-              { label: isDevelopa ? "Code in Vault" : "In Secure Vault", value: vaultFiles.length, icon: lucide.Lock, color: "text-info", bg: "bg-info/[0.02]" }
-            ].map((stat, i) => {
-              const Icon = stat.icon;
-              return (
-                <div key={i} className="p-6 rounded-2xl border border-theme bg-card transition-all duration-300 hover:scale-[1.01] hover:shadow-lg relative overflow-hidden group select-none">
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-[10px] uppercase tracking-widest font-black text-secondary">{stat.label}</span>
-                    <div className={`p-2 rounded-xl ${stat.bg} border border-theme`}>
-                      <Icon className={`w-4 h-4 ${stat.color}`} />
-                    </div>
-                  </div>
-                  <div className="text-3xl font-black text-primary tracking-tight">{stat.value}</div>
-                  <div className="absolute -right-6 -bottom-6 w-16 h-16 rounded-full opacity-[0.02] bg-white pointer-events-none" />
-                </div>
-              );
-            })}
-          </div>
+              { label: 'In progress', value: activeOrders.length },
+              { label: 'Completed', value: completedOrders.length },
+              { label: 'Files ready', value: vaultFiles.length },
+            ].map((stat) => (
+              <div key={stat.label} className="border border-theme rounded-lg bg-card p-4">
+                <dt className="text-xs text-secondary">{stat.label}</dt>
+                <dd className="text-2xl font-bold mt-1">{stat.value}</dd>
+              </div>
+            ))}
+          </dl>
 
           {/* Recent Projects preview — full list lives on the My Orders tab */}
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black">{isDevelopa ? 'Recent Builds & Sprints' : 'Recent Projects'}</h3>
+              <h3 className="text-xl font-semibold">Recent orders</h3>
               <div className="flex items-center gap-2">
                 {orders.length > 0 && (
                   <Button variant="ghost" size="sm" onClick={() => setActiveTab('orders')}>
-                    {isDevelopa ? 'View All Builds' : 'View All Orders'}
+                    View all
                   </Button>
                 )}
                 <Button
@@ -855,7 +835,7 @@ function DashboardContent() {
                   icon={<lucide.Plus className="w-3 h-3" />}
                   onClick={() => router.push(isDevelopa ? '/dashboard/client/order/new/dev?brand=developa' : '/dashboard/client/order/new/academic')}
                 >
-                  {isDevelopa ? 'New Build' : 'New Order'}
+                  New order
                 </Button>
               </div>
             </div>
@@ -863,12 +843,12 @@ function DashboardContent() {
             {orders.length === 0 ? (
               <div className="empty-state">
                 <lucide.Inbox className="w-12 h-12 text-secondary mx-auto mb-4" />
-                <h4 className="text-lg font-bold text-primary mb-2">{isDevelopa ? 'No software builds yet' : 'No projects yet'}</h4>
+                <h4 className="text-lg font-bold text-primary mb-2">No orders yet</h4>
                 <p className="text-secondary text-sm mb-6 max-w-md mx-auto">
-                  {isDevelopa ? 'Your engineering workspace is empty. Submit a technical brief or scope a build to get started.' : 'Your workspace is empty. Submit a brief to get started with your first research project.'}
+                  When you place an order it will show up here, with its progress and payments.
                 </p>
                 <Button onClick={() => router.push(isDevelopa ? '/dashboard/client/order/new/dev?brand=developa' : '/dashboard/client/order/new/academic')}>
-                  {isDevelopa ? 'Scope First Build' : 'Place First Order'}
+                  Place an order
                 </Button>
               </div>
             ) : (
@@ -891,26 +871,26 @@ function DashboardContent() {
         <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black">{isDevelopa ? 'My Builds & Sprints' : 'My Orders'}</h3>
+              <h3 className="text-xl font-semibold">My orders</h3>
               <Button
                 variant="ghost"
                 size="sm"
                 icon={<lucide.Plus className="w-3 h-3" />}
                 onClick={() => router.push(isDevelopa ? '/dashboard/client/order/new/dev?brand=developa' : '/dashboard/client/order/new/academic')}
               >
-                {isDevelopa ? 'New Build' : 'New Order'}
+                New order
               </Button>
             </div>
 
             {orders.length === 0 ? (
               <div className="empty-state">
                 <lucide.Inbox className="w-12 h-12 text-secondary mx-auto mb-4" />
-                <h4 className="text-lg font-bold text-primary mb-2">{isDevelopa ? 'No software builds yet' : 'No projects yet'}</h4>
+                <h4 className="text-lg font-bold text-primary mb-2">No orders yet</h4>
                 <p className="text-secondary text-sm mb-6 max-w-md mx-auto">
-                  {isDevelopa ? 'Your engineering workspace is empty. Submit a technical brief to start your first build.' : 'Your workspace is empty. Submit a brief to get started with your first research project.'}
+                  When you place an order it will show up here, with its progress and payments.
                 </p>
                 <Button onClick={() => router.push(isDevelopa ? '/dashboard/client/order/new/dev?brand=developa' : '/dashboard/client/order/new/academic')}>
-                  {isDevelopa ? 'Scope First Build' : 'Place First Order'}
+                  Place an order
                 </Button>
               </div>
             ) : (
@@ -928,7 +908,7 @@ function DashboardContent() {
                 )}
                 {completedOrders.length > 0 && (
                   <>
-                    <h4 className="text-sm font-black uppercase tracking-widest text-secondary mb-4">Completed ({completedOrders.length})</h4>
+                    <h4 className="text-sm font-semibold text-secondary mb-4">Completed ({completedOrders.length})</h4>
                     <div className="space-y-4 opacity-90">
                       {completedOrders.map(order => <OrderCard
                         key={order['Order ID']}
@@ -950,8 +930,8 @@ function DashboardContent() {
       {activeTab === 'vault' && (
         <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
           <header className="mb-10">
-            <h2 className="text-3xl font-black text-primary flex items-center gap-3"><lucide.Lock className="text-success" /> Secure Vault</h2>
-            <p className="text-secondary mt-1">Encrypted storage for all your completed deliverables.</p>
+            <h2 className="text-3xl font-semibold text-primary flex items-center gap-3">My files</h2>
+            <p className="text-secondary mt-1">Your finished work. Files unlock once the balance for that order is paid.</p>
           </header>
           
           {vaultFiles.length === 0 ? (
@@ -977,13 +957,12 @@ function DashboardContent() {
                 const nextIdx = milestones.findIndex((m: any) => !m.paid);
                 const nextUnpaid = milestones[nextIdx];
                 return (
-                  <Card key={file.id} elevation={1} padding="none" interactive className="p-6 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><lucide.FileText className="w-24 h-24 text-secondary" /></div>
-                    <h4 className="font-bold text-lg mb-1 relative z-10 text-primary">{file.order_id}</h4>
-                    <p className="text-xs text-secondary mb-2 relative z-10">{file.file_name}</p>
-                    <p className="text-[10px] text-secondary mb-4 relative z-10">
-                      Uploaded: {new Date(file.uploaded_at).toLocaleDateString()}
-                      {isViewed && ` • Viewed: ${new Date(file.downloaded_at).toLocaleDateString()}`}
+                  <Card key={file.id} elevation={1} padding="none" className="p-5 relative">
+                    <h4 className="font-semibold text-base mb-1 text-primary">Order {file.order_id}</h4>
+                    <p className="text-sm text-secondary mb-1">{file.file_name}</p>
+                    <p className="text-xs text-secondary mb-4">
+                      Added {new Date(file.uploaded_at).toLocaleDateString('en-GB')}
+                      {isViewed && ` · Opened ${new Date(file.downloaded_at).toLocaleDateString('en-GB')}`}
                     </p>
 
                     {/* Milestone progress (custom orders) */}
@@ -1001,7 +980,7 @@ function DashboardContent() {
                     <div className="flex flex-col sm:flex-row gap-2 relative z-10">
                       {fullyPaid ? (
                         <Button fullWidth onClick={() => downloadFile(file.id)} variant="soft" color="success" size="md">
-                          <lucide.Download className="w-4 h-4" /> Download Package
+                          <lucide.Download className="w-4 h-4" /> Download
                         </Button>
                       ) : (
                         <Button
@@ -1077,13 +1056,13 @@ function DashboardContent() {
                       {/* Display active extra addons status */}
                       {fileAddonInfo.extra_addons && fileAddonInfo.extra_addons.length > 0 && (
                         <div className="space-y-1.5 pt-1">
-                          <p className="text-[10px] uppercase font-black text-secondary tracking-wider">Active Add-on Requests:</p>
+                          <p className="text-[11px] font-semibold text-secondary">Active Add-on Requests:</p>
                           {fileAddonInfo.extra_addons.map((a: any) => (
-                            <div key={a.id} className="flex justify-between items-center bg-secondary/30 p-2 rounded-lg border border-theme text-[10px]">
+                            <div key={a.id} className="flex justify-between items-center bg-secondary/30 p-2 rounded-lg border border-theme text-[11px]">
                               <span className="font-bold text-primary truncate max-w-[140px]">{a.name}</span>
                               <div className="flex items-center gap-2">
                                 {a.price && <span className="font-mono font-bold text-primary">{formatNaira(a.price)}</span>}
-                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-semibold   border ${
                                   a.status === 'PAID' ? 'bg-success/10 text-success border-success/20' :
                                   a.status === 'AWAITING_PAYMENT' ? 'bg-warning/10 text-warning border-warning/20' :
                                   'bg-accent/10 text-accent border-accent/20'
@@ -1121,10 +1100,8 @@ function DashboardContent() {
       {activeTab === 'wallet' && (
         <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
           <header className="mb-8">
-            <h2 className="text-3xl font-black text-primary flex items-center gap-3">
-              <lucide.Wallet className="text-success w-8 h-8" /> Wallet
-            </h2>
-            <p className="text-secondary mt-1 text-sm">Manage your balance and view transaction history.</p>
+            <h2 className="text-2xl font-bold tracking-tight">Wallet</h2>
+            <p className="text-secondary text-sm mt-1">Add money once, then pay for orders from your balance.</p>
           </header>
           <WalletPage embedded />
         </div>
@@ -1155,36 +1132,36 @@ function DashboardContent() {
       {activeTab === 'profile' && (
         <div className="animate-in fade-in duration-500 max-w-2xl mx-auto">
           <header className="mb-10">
-            <h2 className="text-3xl font-black text-primary">Profile Settings</h2>
-            <p className="text-secondary mt-1">Manage your personal information and account security.</p>
+            <h2 className="text-2xl font-bold tracking-tight">Account</h2>
+            <p className="text-secondary text-sm mt-1">Your details and sign-in settings.</p>
           </header>
           
           <Card padding="lg">
             <div className="flex items-center gap-6 mb-8 border-b border-theme pb-8">
-              <div className="w-20 h-20 rounded-full bg-success/20 border border-success/50 flex items-center justify-center text-success font-black text-2xl">
+              <div className="w-16 h-16 rounded-full bg-accent/10 border border-accent/30 flex items-center justify-center text-accent font-bold text-2xl">
                 {profile?.full_name?.charAt(0) || 'U'}
               </div>
               <div>
-                <h3 className="text-xl font-bold text-primary">{profile?.full_name}</h3>
-                <p className="text-secondary text-sm">Account Type: Client</p>
-                {renderBool(profile?.is_admin) && <span className="inline-block mt-2 px-2 py-1 bg-accent/20 text-accent text-[10px] font-black uppercase rounded-md">Admin</span>}
+                <h3 className="text-lg font-semibold text-primary">{profile?.full_name}</h3>
+                <p className="text-secondary text-sm">{user?.email}</p>
+                {renderBool(profile?.is_admin) && <span className="inline-block mt-2 px-2 py-1 bg-accent/20 text-accent text-[11px] font-semibold rounded-md">Admin</span>}
               </div>
             </div>
 
             <div className="space-y-6">
               <div>
-                <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Email Address</label>
+                <label className="text-[11px] font-bold text-secondary">Email Address</label>
                 <div className="p-3 bg-secondary border border-theme rounded-xl text-primary mt-1">{user?.email}</div>
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Change Email Address</label>
+                <label className="text-[11px] font-bold text-secondary">Change Email Address</label>
                 <div className="flex flex-col sm:flex-row gap-3 mt-2">
                   <input
                     type="email"
                     id="newEmail"
                     placeholder="newemail@example.com"
-                    className="flex-1 bg-secondary border border-theme rounded-xl px-4 py-2 text-sm focus:border-success outline-none text-primary"
+                    className="flex-1 bg-secondary border border-theme rounded-xl px-4 py-2 text-sm focus:border-accent outline-none text-primary"
                   />
                   <Button
                     size="sm"
@@ -1210,7 +1187,7 @@ function DashboardContent() {
               </div>
 
               <div className="pt-4 border-t border-theme">
-                <label className="text-[10px] font-bold text-secondary uppercase tracking-widest">Account ID</label>
+                <label className="text-[11px] font-bold text-secondary">Account ID</label>
                 <div className="p-3 bg-secondary border border-theme rounded-xl text-secondary font-mono text-xs mt-1">{user?.id}</div>
               </div>
 
@@ -1270,10 +1247,10 @@ function DashboardContent() {
             >
               <div className="p-5 md:p-6 border-b border-theme flex justify-between items-center bg-secondary">
                 <div>
-                  <h3 className="font-black text-lg text-primary flex items-center gap-2">
+                  <h3 className="font-semibold text-lg text-primary flex items-center gap-2">
                     {selectedOrderDetails['Order ID']}
                   </h3>
-                  <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${details.bgClass} ${details.colorClass} border ${details.borderClass}`}>
+                  <span className={`text-[11px] font-semibold   px-2 py-0.5 rounded-md ${details.bgClass} ${details.colorClass} border ${details.borderClass}`}>
                     {details.category}
                   </span>
                 </div>
@@ -1286,9 +1263,9 @@ function DashboardContent() {
                   <button
                     key={tab}
                     onClick={() => setInspectorTab(tab)}
-                    className={`flex-1 text-center py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                    className={`flex-1 text-center py-3 text-xs font-bold   border-b-2 transition-all cursor-pointer ${
                       inspectorTab === tab
-                        ? 'border-success text-success font-black'
+                        ? 'border-success text-success font-semibold'
                         : 'border-transparent text-secondary hover:text-primary'
                     }`}
                   >
@@ -1303,17 +1280,17 @@ function DashboardContent() {
                   <div className="space-y-6 animate-in fade-in duration-250">
                     <div className="space-y-4 text-xs">
                       <div>
-                        <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Topic / Objective</span>
+                        <span className="text-[11px] font-bold text-secondary block mb-1.5 ml-1">Topic / Objective</span>
                         <p className="text-sm bg-secondary p-3.5 rounded-xl border border-theme text-primary font-bold leading-relaxed">{selectedOrderDetails['Research Topic']}</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Deadline</span>
+                          <span className="text-[11px] font-bold text-secondary block mb-1.5 ml-1">Deadline</span>
                           <p className="p-3 bg-secondary/40 border border-theme rounded-xl text-primary font-bold">{formatDate(selectedOrderDetails['Deadline'])}</p>
                         </div>
                         <div>
-                          <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Service Tier</span>
+                          <span className="text-[11px] font-bold text-secondary block mb-1.5 ml-1">Service Tier</span>
                           <p className="p-3 bg-secondary/40 border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Service Tier'] || 'Custom Quote'}</p>
                         </div>
                       </div>
@@ -1321,11 +1298,11 @@ function DashboardContent() {
                       {selectedOrderDetails['Word Count'] && selectedOrderDetails['Word Count'] > 0 && (
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Word Count</span>
+                            <span className="text-[11px] font-bold text-secondary block mb-1.5 ml-1">Word Count</span>
                             <p className="p-3 bg-secondary/40 border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Word Count'].toLocaleString()} Words</p>
                           </div>
                           <div>
-                            <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Estimated Pages</span>
+                            <span className="text-[11px] font-bold text-secondary block mb-1.5 ml-1">Estimated Pages</span>
                             <p className="p-3 bg-secondary/40 border border-theme rounded-xl text-primary font-bold">{Math.ceil(selectedOrderDetails['Word Count'] / 275)} Pages</p>
                           </div>
                         </div>
@@ -1334,11 +1311,11 @@ function DashboardContent() {
                       {(selectedOrderDetails['Reference Style'] || selectedOrderDetails['Font Specification']) && (
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Reference Style</span>
+                            <span className="text-[11px] font-bold text-secondary block mb-1.5 ml-1">Reference Style</span>
                             <p className="p-3 bg-secondary/40 border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Reference Style'] || 'Standard'}</p>
                           </div>
                           <div>
-                            <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Font Preference</span>
+                            <span className="text-[11px] font-bold text-secondary block mb-1.5 ml-1">Font Preference</span>
                             <p className="p-3 bg-secondary/40 border border-theme rounded-xl text-primary font-bold">{selectedOrderDetails['Font Specification'] || 'Standard'}</p>
                           </div>
                         </div>
@@ -1346,7 +1323,7 @@ function DashboardContent() {
 
                       {selectedOrderDetails['Media Sync'] && (
                         <div>
-                          <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">External Storage Link</span>
+                          <span className="text-[11px] font-bold text-secondary block mb-1.5 ml-1">External Storage Link</span>
                           <a href={selectedOrderDetails['Media Sync']} target="_blank" rel="noopener noreferrer" className="p-3 bg-secondary/40 border border-theme rounded-xl text-info font-bold block truncate hover:underline">
                             <span className="inline-block mr-1">🔗</span> {selectedOrderDetails['Media Sync']}
                           </a>
@@ -1355,7 +1332,7 @@ function DashboardContent() {
 
                       {addonInfo.notes && (
                         <div>
-                          <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-1.5 ml-1">Client Notes & Instructions</span>
+                          <span className="text-[11px] font-bold text-secondary block mb-1.5 ml-1">Client Notes & Instructions</span>
                           <p className="bg-card p-4 rounded-xl border border-theme text-primary whitespace-pre-wrap leading-relaxed font-medium">{addonInfo.notes}</p>
                         </div>
                       )}
@@ -1363,7 +1340,7 @@ function DashboardContent() {
 
                     {/* EXTRA REQUIREMENTS */}
                     <div className="pt-6 border-t border-theme/60 space-y-4">
-                      <h4 className="text-xs font-black text-secondary uppercase tracking-widest flex items-center gap-1.5">
+                      <h4 className="text-xs font-semibold text-secondary flex items-center gap-1.5">
                         <lucide.PlusCircle className="w-4 h-4 text-success" /> Extra Requirements & Custom Add-ons
                       </h4>
                       
@@ -1375,9 +1352,9 @@ function DashboardContent() {
                               <div className="flex justify-between items-start">
                                 <div>
                                   <p className="font-bold text-primary">{a.name}</p>
-                                  <p className="text-[9px] text-secondary mt-1">Requested {formatDate(a.created_at)}</p>
+                                  <p className="text-[11px] text-secondary mt-1">Requested {formatDate(a.created_at)}</p>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-semibold   border ${
                                   a.status === 'PAID' ? 'bg-success/10 text-success border-success/20' :
                                   a.status === 'AWAITING_PAYMENT' ? 'bg-warning/10 text-warning border-warning/20' :
                                   'bg-accent/10 text-accent border-accent/20'
@@ -1387,9 +1364,9 @@ function DashboardContent() {
                               </div>
 
                               {a.status !== 'PENDING_QUOTE' && (
-                                <div className="flex justify-between items-center bg-primary p-2.5 rounded-lg border border-theme text-[10px]">
-                                  <span className="text-secondary font-bold font-black">Charge:</span>
-                                  <span className="font-black text-primary text-xs">{formatNaira(a.price)}</span>
+                                <div className="flex justify-between items-center bg-primary p-2.5 rounded-lg border border-theme text-[11px]">
+                                  <span className="text-secondary font-bold font-semibold">Charge:</span>
+                                  <span className="font-semibold text-primary text-xs">{formatNaira(a.price)}</span>
                                 </div>
                               )}
 
@@ -1423,7 +1400,7 @@ function DashboardContent() {
 
                       {/* Addon Request Form */}
                       <div className="bg-card border border-theme p-4 rounded-2xl space-y-3">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-secondary ml-1 font-bold">Request Extra Requirement</label>
+                        <label className="text-[11px] font-semibold text-secondary ml-1 font-bold">Request Extra Requirement</label>
                         <textarea 
                           placeholder="Enter details of your extra requirements (e.g. 'Add 5 slides presentation', 'Add SPSS output file' or custom software module)" 
                           value={newAddonName} 
@@ -1448,10 +1425,10 @@ function DashboardContent() {
                   <div className="space-y-6 animate-in fade-in duration-250">
                     <div className="bg-secondary p-4 rounded-xl border border-theme flex justify-between items-center text-xs">
                       <div>
-                        <span className="text-[10px] font-bold text-secondary uppercase tracking-widest block mb-0.5">Total Project Valuation</span>
-                        <span className="text-2xl font-black text-primary">{awaitingAdminApproval ? 'Pending...' : formatNaira(total)}</span>
+                        <span className="text-[11px] font-bold text-secondary block mb-0.5">Total Project Valuation</span>
+                        <span className="text-2xl font-semibold text-primary">{awaitingAdminApproval ? 'Pending...' : formatNaira(total)}</span>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold   ${
                         paid40 ? 'bg-success/10 text-success border border-success/20' : 'bg-warning/10 text-warning border border-warning/20'
                       }`}>
                         {paid40 ? 'Fully Settled' : paid60 ? 'Deposit Paid' : 'Awaiting Deposit'}
@@ -1460,7 +1437,7 @@ function DashboardContent() {
 
                     {orderMilestones.length > 0 && (
                       <div className="space-y-3">
-                        <h4 className="text-xs font-black text-secondary uppercase tracking-widest flex items-center gap-1.5">
+                        <h4 className="text-xs font-semibold text-secondary flex items-center gap-1.5">
                           <lucide.CreditCard className="w-4 h-4 text-accent" /> Milestone Breakdown
                         </h4>
                         
@@ -1468,11 +1445,11 @@ function DashboardContent() {
                           <div key={idx} className="bg-secondary/40 border border-theme rounded-xl p-4 flex justify-between items-center text-xs">
                             <div>
                               <p className="font-bold text-primary">{m.name} ({m.percentage}%)</p>
-                              <p className="text-[10px] text-secondary mt-1">Trigger: {m.trigger || 'Upon request'}</p>
+                              <p className="text-[11px] text-secondary mt-1">Trigger: {m.trigger || 'Upon request'}</p>
                             </div>
                             <div className="flex items-center gap-3">
-                              <span className="font-black text-primary font-mono">{formatNaira(m.amount)}</span>
-                              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                              <span className="font-semibold text-primary font-mono">{formatNaira(m.amount)}</span>
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-semibold   ${
                                 m.paid ? 'bg-success/10 text-success border border-success/20' : 'bg-danger/10 text-danger border border-danger/20'
                               }`}>
                                 {m.paid ? 'Paid' : 'Unpaid'}
@@ -1566,7 +1543,7 @@ function SidebarBtn({ active, onClick, icon, label, badge }: any) {
         {icon} <span>{label}</span>
       </div>
       {badge !== undefined && badge > 0 && (
-        <span className="px-2 py-0.5 bg-success text-black rounded-md text-[10px] font-black">{badge}</span>
+        <span className="px-2 py-0.5 bg-success text-black rounded-md text-[11px] font-semibold">{badge}</span>
       )}
     </button>
   );
@@ -1587,7 +1564,7 @@ function TimelineItem({ title, desc, date, done }: any) {
     <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
       <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-success bg-success/20 text-success shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow"><lucide.Check className="w-5 h-5"/></div>
       <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-success/30 bg-success/5">
-        <div className="flex justify-between mb-1"><span className="font-bold text-sm text-success">{title}</span><span className="text-[10px] text-secondary">{date}</span></div>
+        <div className="flex justify-between mb-1"><span className="font-bold text-sm text-success">{title}</span><span className="text-[11px] text-secondary">{date}</span></div>
         <div className="text-xs text-secondary">{desc}</div>
       </div>
     </div>
@@ -1633,7 +1610,7 @@ function MilestoneChips({ milestones, activeIndex }: { milestones: any[]; active
             <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
             <span className="font-bold text-primary truncate">{m.name}</span>
             <span className="text-secondary tabular-nums shrink-0">{formatNaira(m.amount)}</span>
-            <span className={`text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded shrink-0 ${pill}`}>
+            <span className={`text-[11px] font-semibold   px-1.5 py-0.5 rounded shrink-0 ${pill}`}>
               {m.paid ? 'Paid' : isNext ? 'Pay now' : m.trigger || 'Upcoming'}
             </span>
           </div>
@@ -1680,7 +1657,7 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
           <ToneIcon tone={status.tone} />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="font-black text-primary text-base leading-tight">{status.title}</h3>
+          <h3 className="font-semibold text-primary text-base leading-tight">{status.title}</h3>
           <p className="text-secondary text-xs sm:text-sm mt-0.5 leading-snug">{status.subtitle}</p>
         </div>
         {status.action && (
@@ -1697,8 +1674,8 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
       <div className="p-4 sm:p-5 space-y-3">
         <div className="flex items-end justify-between gap-3 flex-wrap">
           <div className="min-w-0">
-            <div className="text-[10px] font-bold text-secondary uppercase tracking-widest">Paid so far</div>
-            <div className="text-2xl font-black text-primary tabular-nums leading-tight">
+            <div className="text-[11px] font-bold text-secondary">Paid so far</div>
+            <div className="text-2xl font-semibold text-primary tabular-nums leading-tight">
               {awaitingQuote ? 'Pending quote' : (
                 <>
                   {formatNaira(collected)}
@@ -1708,8 +1685,8 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
             </div>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-[10px] font-bold text-secondary uppercase tracking-widest">Order</div>
-            <div className="font-mono font-black text-primary text-sm">{order['Order ID']}</div>
+            <div className="text-[11px] font-bold text-secondary">Order</div>
+            <div className="font-mono font-semibold text-primary text-sm">{order['Order ID']}</div>
           </div>
         </div>
 
@@ -1735,18 +1712,26 @@ function OrderCard({ order, handlePayment, processingPayment, openDetails }: any
           <div className="flex items-center gap-2 ml-auto">
             <button
               onClick={openDetails}
-              className="px-3 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer min-h-[38px]"
+              className="px-3 py-2 border border-theme hover:border-strong text-primary text-xs font-semibold rounded-lg transition cursor-pointer min-h-[38px]"
             >
-              <lucide.Activity className="w-3.5 h-3.5" /> Details
+              Details
             </button>
+            <a
+              href={`/invoice/${encodeURIComponent(order['Order ID'])}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 border border-theme hover:border-strong text-primary text-xs font-semibold rounded-lg transition min-h-[38px] flex items-center"
+            >
+              Invoice
+            </a>
             <button
               onClick={() => {
                 const text = `Hello, I need support for my ${details.label} order #${order['Order ID']}: "${order['Research Topic']}"`;
                 window.open(`https://wa.me/2348121443666?text=${encodeURIComponent(text)}`, '_blank');
               }}
-              className="px-3 py-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] text-xs font-bold rounded-lg transition flex items-center gap-1.5 border border-[#25D366]/20 cursor-pointer min-h-[38px]"
+              className="px-3 py-2 border border-theme hover:border-strong text-primary text-xs font-semibold rounded-lg transition cursor-pointer min-h-[38px]"
             >
-              <lucide.MessageCircle className="w-3.5 h-3.5" /> Support
+              Help
             </button>
           </div>
         </div>

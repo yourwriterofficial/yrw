@@ -15,6 +15,16 @@ export async function GET(request: NextRequest) {
   const token_hash = requestUrl.searchParams.get('token_hash');
   const type = requestUrl.searchParams.get('type') as EmailOtpType | null;
   const next = requestUrl.searchParams.get('next');
+  const code = requestUrl.searchParams.get('code');
+
+  // A link issued by the client-side flow arrives as ?code=. The /auth/callback
+  // route exchanges those, so hand it over rather than calling it "expired".
+  if (!token_hash && code) {
+    const handoff = new URL('/auth/callback', requestUrl.origin);
+    handoff.searchParams.set('code', code);
+    if (next) handoff.searchParams.set('next', next);
+    return NextResponse.redirect(handoff);
+  }
 
   if (token_hash && type) {
     const supabase = await createClient();
@@ -23,11 +33,13 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Only ever promote the bootstrap address. Never write is_admin: false here,
+        // or confirming any link would silently demote admins made in /admin/users.
         const isAdminEmail = user.email?.toLowerCase() === 'yourwriterofficial@gmail.com';
         await supabase.from('profiles').upsert({
           id: user.id,
           full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
-          is_admin: isAdminEmail,
+          ...(isAdminEmail ? { is_admin: true } : {}),
         });
       }
 
@@ -50,8 +62,12 @@ export async function GET(request: NextRequest) {
     console.error('Auth confirm error:', error);
   }
 
+  // An expired reset link lands on the set-password page, which offers a fresh link
+  // right there; other link types fall back to the login page with a message.
   const response = NextResponse.redirect(
-    `${requestUrl.origin}/login?message=Verification link expired or invalid. Please log in or request a new one.`
+    type === 'recovery'
+      ? `${requestUrl.origin}/update-password`
+      : `${requestUrl.origin}/login?message=Verification link expired or invalid. Please log in or request a new one.`
   );
   response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
   return response;

@@ -95,7 +95,7 @@ export default function ScriptsTab({ user }: { user: any }) {
   if (loading) {
     return (
       <div className="flex justify-center py-24">
-        <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-accent/20 border-t-cyan-500 rounded-full animate-spin" />
       </div>
     );
   }
@@ -105,8 +105,8 @@ export default function ScriptsTab({ user }: { user: any }) {
       {/* === MY SCRIPTS === */}
       <div>
         <header className="mb-10">
-          <h2 className="text-3xl font-black text-primary flex items-center gap-3">
-            <lucide.ShoppingBag className="text-cyan-500" /> My Scripts
+          <h2 className="text-3xl font-semibold text-primary flex items-center gap-3">
+            <lucide.ShoppingBag className="text-accent" /> My Scripts
           </h2>
           <p className="text-secondary mt-1">Every script you've purchased, downloadable anytime.</p>
         </header>
@@ -115,7 +115,8 @@ export default function ScriptsTab({ user }: { user: any }) {
           <div className="empty-state">
             <lucide.PackageOpen className="w-12 h-12 text-secondary mx-auto mb-4" />
             <h4 className="text-lg font-bold text-primary mb-2">No scripts yet</h4>
-            <p className="text-secondary text-sm mb-6 max-w-md mx-auto">Browse the script marketplace below to find ready-made source code.</p>
+            <p className="text-secondary text-sm mb-6 max-w-md mx-auto">Scripts you buy appear here, ready to download.</p>
+            <a href="/developer/shop" className="inline-flex items-center justify-center bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-medium text-sm px-6 h-10 rounded-full transition-colors">Browse the script shop</a>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -131,15 +132,15 @@ export default function ScriptsTab({ user }: { user: any }) {
                   )}
                 </div>
                 <div className="p-6 flex flex-col flex-1">
-                  <h3 className="text-lg font-black mb-1">{p.dev_products?.title || 'Script'}</h3>
-                  <p className="text-[10px] uppercase font-black tracking-widest text-secondary mb-3">{p.dev_products?.category}</p>
+                  <h3 className="text-lg font-semibold mb-1">{p.dev_products?.title || 'Script'}</h3>
+                  <p className="text-[11px] font-semibold text-secondary mb-3">{p.dev_products?.category}</p>
                   <p className="text-xs text-secondary leading-relaxed mb-4 flex-1">{p.dev_products?.description}</p>
                   <div className="flex items-center justify-between pt-4 border-t border-theme">
                     <span className="text-xs font-bold text-secondary">{naira(p.amount_paid)} · {p.download_count} downloads</span>
                     <button
                       onClick={() => download(p.product_id)}
                       disabled={downloadingId === p.product_id}
-                      className="bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black uppercase tracking-wider px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 disabled:opacity-50"
+                      className="bg-accent hover:bg-accent text-black text-xs font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 disabled:opacity-50"
                     >
                       <lucide.Download className="w-3.5 h-3.5" /> {downloadingId === p.product_id ? 'Preparing...' : 'Download'}
                     </button>
@@ -156,8 +157,8 @@ export default function ScriptsTab({ user }: { user: any }) {
         <div>
           <header className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
             <div>
-              <h2 className="text-xl font-black text-primary flex items-center gap-2">
-                <lucide.Store className="text-cyan-500 w-5 h-5" /> More From the Store
+              <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
+                <lucide.Store className="text-accent w-5 h-5" /> More From the Store
               </h2>
               <p className="text-secondary mt-1 text-sm">Ready-made scripts you haven't picked up yet.</p>
             </div>
@@ -167,7 +168,7 @@ export default function ScriptsTab({ user }: { user: any }) {
                   <button
                     key={c}
                     onClick={() => setCategory(c)}
-                    className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition ${category === c ? 'bg-cyan-500 text-black' : 'bg-secondary border border-theme text-secondary hover:border-cyan-500/50'}`}
+                    className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold   transition ${category === c ? 'bg-accent text-black' : 'bg-secondary border border-theme text-secondary hover:border-accent/50'}`}
                   >
                     {c === 'all' ? 'All' : c}
                   </button>
@@ -178,7 +179,7 @@ export default function ScriptsTab({ user }: { user: any }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAvailable.map(p => (
-              <div key={p.id} className="rounded-[24px] glass-panel overflow-hidden hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+              <div key={p.id} className="rounded-[24px] glass-panel overflow-hidden hover:border-accent/50 hover:-translate-y-1 transition-all duration-300 flex flex-col">
                 <div className="aspect-video bg-secondary relative overflow-hidden">
                   {p.preview_images?.[0] ? (
                     <Image src={previewUrl(p.preview_images[0])} alt={p.title} fill sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
@@ -187,25 +188,25 @@ export default function ScriptsTab({ user }: { user: any }) {
                       <lucide.Code2 className="w-10 h-10 opacity-30" />
                     </div>
                   )}
-                  <span className="absolute top-3 left-3 bg-black/60 backdrop-blur text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <span className="absolute top-3 left-3 bg-black/60 backdrop-blur text-white text-[11px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
                     <lucide.Tag className="w-2.5 h-2.5" /> {p.category}
                   </span>
                 </div>
                 <div className="p-5 flex flex-col flex-1">
-                  <h3 className="text-base font-black mb-2">{p.title}</h3>
+                  <h3 className="text-base font-semibold mb-2">{p.title}</h3>
                   <p className="text-xs text-secondary leading-relaxed mb-4 flex-1 line-clamp-2">{p.description}</p>
                   <div className="flex items-center justify-between pt-4 border-t border-theme gap-2">
-                    <span className="text-base font-black text-cyan-400">{naira(p.price)}</span>
+                    <span className="text-base font-semibold text-accent">{naira(p.price)}</span>
                     <div className="flex gap-2">
                       <a
                         href={`/developer/scripts/${p.slug}`}
-                        className="bg-white/5 hover:bg-white/10 border border-theme text-primary text-xs font-black uppercase tracking-wider px-3 py-2.5 rounded-xl transition flex items-center gap-1.5"
+                        className="bg-white/5 hover:bg-white/10 border border-theme text-primary text-xs font-semibold px-3 py-2.5 rounded-xl transition flex items-center gap-1.5"
                       >
                         <lucide.Eye className="w-3.5 h-3.5" />
                       </a>
                       <button
                         onClick={() => setBuyProduct(p)}
-                        className="bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black text-xs font-black uppercase tracking-wider px-4 py-2.5 rounded-xl transition flex items-center gap-1.5"
+                        className="bg-gradient-to-r from-accent to-accent hover:from-accent hover:to-accent text-black text-xs font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-1.5"
                       >
                         <lucide.Download className="w-3.5 h-3.5" /> Buy
                       </button>

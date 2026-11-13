@@ -17,7 +17,7 @@ export const SERVICE_ACCENTS: ServiceAccent[] = [
   {
     label: 'Academic Writing & Research',
     slug: 'academic',
-    href: '/academic-writing',
+    href: '/#academic',
     iconName: 'BookOpen',
     badge: 'Research Pipeline',
     color: 'text-emerald-500',
@@ -29,7 +29,7 @@ export const SERVICE_ACCENTS: ServiceAccent[] = [
   {
     label: 'Statistics & Fieldwork',
     slug: 'statistics',
-    href: '/statistics-fieldwork',
+    href: '/#statistics',
     iconName: 'LineChart',
     badge: 'Quantitative analysis',
     color: 'text-purple-500',
@@ -41,7 +41,7 @@ export const SERVICE_ACCENTS: ServiceAccent[] = [
   {
     label: 'Content & Creative Writing',
     slug: 'content',
-    href: '/content-writing',
+    href: '/#content',
     iconName: 'PenTool',
     badge: 'SaaS & Marketing Copy',
     color: 'text-rose-500',
@@ -53,7 +53,7 @@ export const SERVICE_ACCENTS: ServiceAccent[] = [
   {
     label: 'Executive CVs & Resumes',
     slug: 'resume',
-    href: '/resume-cv',
+    href: '/#resume',
     iconName: 'Briefcase',
     badge: 'Career acceleration',
     color: 'text-blue-500',

@@ -1,12 +1,11 @@
 import Link from 'next/link';
-import { Code2, GraduationCap, PenLine, FileText, LineChart } from 'lucide-react';
 
 const SERVICES = [
-  { href: '/academic-writing', label: 'Academic Writing', icon: GraduationCap, color: 'hover:text-emerald-500' },
-  { href: '/statistics-fieldwork', label: 'Statistics & Fieldwork', icon: LineChart, color: 'hover:text-purple-500' },
-  { href: '/content-writing', label: 'Content Writing', icon: PenLine, color: 'hover:text-rose-500' },
-  { href: '/resume-cv', label: 'Executive Resumes', icon: FileText, color: 'hover:text-blue-500' },
-  { href: '/developer', label: 'Software (developa.me)', icon: Code2, color: 'hover:text-cyan-500' },
+  { href: '/#academic', label: 'Academic writing' },
+  { href: '/#statistics', label: 'Statistics & fieldwork' },
+  { href: '/#content', label: 'Content writing' },
+  { href: '/#resume', label: 'CVs & resumes' },
+  { href: '/developer', label: 'Software (developa.me)' },
 ];
 
 export default function Footer() {
@@ -22,7 +21,7 @@ export default function Footer() {
               <span className="text-primary font-bold">ResearchWriter</span>
             </Link>
             <p className="text-xs text-secondary leading-relaxed max-w-xs">
-              Secure custom project pipeline scheduling for academic research, SPSS and math fieldwork, SEO creative copy, executive career documents, and bespoke software builds.
+              Academic writing, statistics and fieldwork, content writing, CVs and software, for clients across Nigeria.
             </p>
           </div>
 
@@ -31,8 +30,8 @@ export default function Footer() {
             <ul className="space-y-3 text-xs font-medium">
               {SERVICES.map((s) => (
                 <li key={s.href}>
-                  <Link href={s.href} className={`text-secondary ${s.color} transition-colors flex items-center gap-2`}>
-                    <s.icon className="w-3.5 h-3.5" /> {s.label}
+                  <Link href={s.href} className="text-secondary hover:text-primary transition-colors">
+                    {s.label}
                   </Link>
                 </li>
               ))}
@@ -52,19 +51,15 @@ export default function Footer() {
           <div>
             <h5 className="text-[11px] font-bold text-primary mb-4 uppercase tracking-widest">Account</h5>
             <ul className="space-y-3 text-xs font-medium">
-              <li><Link href="/login" className="text-secondary hover:text-primary transition-colors">Client Login</Link></li>
+              <li><Link href="/login" className="text-secondary hover:text-primary transition-colors">Log in</Link></li>
               <li><Link href="/register" className="text-secondary hover:text-primary transition-colors">Create account</Link></li>
-              <li><Link href="/dashboard/client" className="text-secondary hover:text-primary transition-colors">Dashboard Vault</Link></li>
+              <li><Link href="/dashboard/client" className="text-secondary hover:text-primary transition-colors">My dashboard</Link></li>
             </ul>
           </div>
         </div>
 
         <div className="py-6 flex flex-col sm:flex-row items-center justify-between text-xs text-secondary gap-4">
           <p>© {new Date().getFullYear()} ResearchWriter. All rights reserved.</p>
-          <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
-            <span className="text-[10px]">Direct Bank Escrow & Transfer</span>
-            <span className="text-[10px]">Distributed Vault Escrow</span>
-          </div>
         </div>
       </div>
     </footer>

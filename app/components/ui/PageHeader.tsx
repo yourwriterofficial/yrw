@@ -18,7 +18,7 @@ export default function PageHeader({ title, description, icon, actions, breadcru
       <div className="min-w-0">
         {items && items.length > 0 && <Breadcrumb items={items} className="mb-2" />}
         {!items && breadcrumb && (
-          <p className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">{breadcrumb}</p>
+          <p className="text-[11px] font-bold text-secondary mb-2">{breadcrumb}</p>
         )}
         <h1 className={`font-bold text-primary flex items-center gap-3 ${compact ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'}`}>
           {icon && <span className="text-accent">{icon}</span>}

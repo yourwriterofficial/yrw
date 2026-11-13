@@ -95,7 +95,7 @@ export function DataTable<T>({
               <div key={rowKey(row)} className="p-4 space-y-2">
                 {columns.map((col) => (
                   <div key={col.key} className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-secondary">{col.header}</span>
+                    <span className="text-[11px] font-bold text-secondary">{col.header}</span>
                     <span className="text-sm text-primary">{col.cell(row)}</span>
                   </div>
                 ))}

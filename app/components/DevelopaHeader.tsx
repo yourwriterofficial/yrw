@@ -99,13 +99,13 @@ export default function DevelopaHeader() {
             className="text-[15px] font-semibold tracking-tight flex items-center gap-2.5 select-none group"
             aria-label="developa.me home"
           >
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-mono font-bold text-xs group-hover:border-cyan-400/60 transition-colors">
-              <Terminal className="w-4 h-4 text-cyan-400" />
+            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/30 flex items-center justify-center text-accent font-mono font-bold text-xs group-hover:border-accent/60 transition-colors">
+              <Terminal className="w-4 h-4 text-accent" />
             </div>
             <div className="flex flex-col">
               <div className="flex items-baseline gap-0.5 leading-none">
                 <span className="text-primary font-black text-lg tracking-tight">developa</span>
-                <span className="text-cyan-400 font-bold text-sm tracking-tight">.me</span>
+                <span className="text-accent font-bold text-sm tracking-tight">.me</span>
               </div>
               <span className="text-[9px] font-mono text-secondary/70 tracking-wider">
                 an engineering division of ResearchWriter
@@ -119,7 +119,7 @@ export default function DevelopaHeader() {
               href="/developer#capabilities"
               className="hover:text-primary transition-colors flex items-center gap-1.5"
             >
-              <Code2 className="w-3.5 h-3.5 text-cyan-400" />
+              <Code2 className="w-3.5 h-3.5 text-accent" />
               Capabilities
             </Link>
 
@@ -127,7 +127,7 @@ export default function DevelopaHeader() {
               href="/developer/shop"
               className="hover:text-primary transition-colors flex items-center gap-1.5"
             >
-              <ShoppingBag className="w-3.5 h-3.5 text-cyan-400" />
+              <ShoppingBag className="w-3.5 h-3.5 text-accent" />
               Script Marketplace
             </Link>
 
@@ -135,7 +135,7 @@ export default function DevelopaHeader() {
               href="/developer#trust"
               className="hover:text-primary transition-colors flex items-center gap-1.5"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+              <ShieldCheck className="w-3.5 h-3.5 text-accent" />
               IP Transfer & Process
             </Link>
 
@@ -144,16 +144,16 @@ export default function DevelopaHeader() {
                 {isAdmin ? (
                   <Link
                     href="/admin/dev-shop"
-                    className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 transition-colors font-bold text-xs bg-cyan-500/10 border border-cyan-500/30 px-3 py-1.5 rounded-lg"
+                    className="flex items-center gap-1.5 text-accent hover:text-accent transition-colors font-bold text-xs bg-accent/10 border border-accent/30 px-3 py-1.5 rounded-lg"
                   >
                     <Cpu className="w-3.5 h-3.5" /> Dev Shop Admin
                   </Link>
                 ) : (
                   <Link
                     href="/dashboard/client?tab=scripts"
-                    className="flex items-center gap-1.5 text-primary hover:text-cyan-400 transition-colors"
+                    className="flex items-center gap-1.5 text-primary hover:text-accent transition-colors"
                   >
-                    <LayoutDashboard className="w-3.5 h-3.5 text-cyan-400" /> My Scripts
+                    <LayoutDashboard className="w-3.5 h-3.5 text-accent" /> My Scripts
                   </Link>
                 )}
                 <button
@@ -180,8 +180,8 @@ export default function DevelopaHeader() {
           <div className="hidden lg:flex items-center gap-3">
             <ThemeToggle compact />
             <Link
-              href="/order/dev"
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold text-xs tracking-wide px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-cyan-500/20 flex items-center gap-1.5"
+              href="/developer#quote"
+              className="bg-gradient-to-r from-accent to-accent hover:from-accent hover:to-accent text-black font-bold text-xs tracking-wide px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-accent/20 flex items-center gap-1.5"
             >
               <span>Start a Project</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -210,7 +210,7 @@ export default function DevelopaHeader() {
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-primary hover:bg-hover font-medium"
             >
-              <Code2 className="w-4 h-4 text-cyan-400" />
+              <Code2 className="w-4 h-4 text-accent" />
               Capabilities
             </Link>
             <Link
@@ -218,7 +218,7 @@ export default function DevelopaHeader() {
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-primary hover:bg-hover font-medium"
             >
-              <ShoppingBag className="w-4 h-4 text-cyan-400" />
+              <ShoppingBag className="w-4 h-4 text-accent" />
               Script Marketplace
             </Link>
             <Link
@@ -226,7 +226,7 @@ export default function DevelopaHeader() {
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-primary hover:bg-hover font-medium"
             >
-              <ShieldCheck className="w-4 h-4 text-cyan-400" />
+              <ShieldCheck className="w-4 h-4 text-accent" />
               IP Transfer & Milestones
             </Link>
 
@@ -237,7 +237,7 @@ export default function DevelopaHeader() {
                     <Link
                       href="/admin/dev-shop"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-cyan-400 font-bold bg-cyan-500/10"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-accent font-bold bg-accent/10"
                     >
                       <Cpu className="w-4 h-4" /> Dev Shop Admin
                     </Link>
@@ -247,7 +247,7 @@ export default function DevelopaHeader() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-primary hover:bg-hover font-medium"
                     >
-                      <LayoutDashboard className="w-4 h-4 text-cyan-400" /> My Scripts Dashboard
+                      <LayoutDashboard className="w-4 h-4 text-accent" /> My Scripts Dashboard
                     </Link>
                   )}
                   <button
@@ -271,9 +271,9 @@ export default function DevelopaHeader() {
               )}
 
               <Link
-                href="/order/dev"
+                href="/developer#quote"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full mt-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold text-xs py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm"
+                className="w-full mt-2 bg-gradient-to-r from-accent to-accent hover:from-accent hover:to-accent text-black font-bold text-xs py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm"
               >
                 <span>Start a Project</span>
                 <ArrowRight className="w-4 h-4" />

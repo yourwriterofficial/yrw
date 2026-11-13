@@ -130,7 +130,7 @@ export default function AffiliateTab({ user }: { user: any }) {
   if (loading) {
     return (
       <div className="flex justify-center py-24">
-        <div className="w-10 h-10 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-accent/20 border-t-purple-500 rounded-full animate-spin" />
       </div>
     );
   }
@@ -138,8 +138,8 @@ export default function AffiliateTab({ user }: { user: any }) {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <header>
-        <h2 className="text-3xl font-black text-primary flex items-center gap-3">
-          <lucide.Coins className="text-purple-500 w-8 h-8" /> Affiliate Program
+        <h2 className="text-3xl font-semibold text-primary flex items-center gap-3">
+          <lucide.Coins className="text-accent w-8 h-8" /> Affiliate Program
         </h2>
         <p className="text-secondary mt-1 text-sm">Share your link, earn commission on every order your referrals pay for.</p>
       </header>
@@ -147,36 +147,36 @@ export default function AffiliateTab({ user }: { user: any }) {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card padding="sm">
-          <span className="text-[10px] font-black uppercase tracking-wider text-secondary">Wallet Balance</span>
-          <h3 className="text-2xl font-black text-primary mt-1">{naira(walletBalance)}</h3>
+          <span className="text-[11px] font-semibold text-secondary">Wallet Balance</span>
+          <h3 className="text-2xl font-semibold text-primary mt-1">{naira(walletBalance)}</h3>
         </Card>
         <Card padding="sm">
-          <span className="text-[10px] font-black uppercase tracking-wider text-secondary">Total Earned</span>
-          <h3 className="text-2xl font-black text-emerald-500 mt-1">{naira(totalEarned)}</h3>
+          <span className="text-[11px] font-semibold text-secondary">Total Earned</span>
+          <h3 className="text-2xl font-semibold text-accent mt-1">{naira(totalEarned)}</h3>
         </Card>
         <Card padding="sm">
-          <span className="text-[10px] font-black uppercase tracking-wider text-secondary">People Referred</span>
-          <h3 className="text-2xl font-black text-primary mt-1">{totalReferred}</h3>
+          <span className="text-[11px] font-semibold text-secondary">People Referred</span>
+          <h3 className="text-2xl font-semibold text-primary mt-1">{totalReferred}</h3>
         </Card>
       </div>
 
       {/* Referral link + username */}
       <Card padding="lg" className="space-y-5">
-        <h3 className="text-sm font-black text-primary uppercase tracking-wider border-b border-theme pb-3">Your Referral Link</h3>
+        <h3 className="text-sm font-semibold text-primary border-b border-theme pb-3">Your Referral Link</h3>
 
         <div>
-          <label className="text-[10px] uppercase font-black text-secondary block mb-1.5">Username (also your referral code)</label>
+          <label className="text-[11px] font-semibold text-secondary block mb-1.5">Username (also your referral code)</label>
           <div className="flex gap-2">
             <input
               value={permalinkInput}
               onChange={e => setPermalinkInput(e.target.value.toLowerCase())}
-              className="flex-1 bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-bold focus:border-purple-500 outline-none"
+              className="flex-1 bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-bold focus:border-accent outline-none"
               placeholder="yourname"
             />
             <button
               onClick={saveUsername}
               disabled={savingUsername || slugifyPermalink(permalinkInput) === permalink}
-              className="px-4 py-2 bg-purple-500 hover:bg-purple-400 text-white font-black text-xs uppercase tracking-wider rounded-xl transition disabled:opacity-40"
+              className="px-4 py-2 bg-accent hover:bg-accent text-white font-semibold text-xs rounded-xl transition disabled:opacity-40"
             >
               {savingUsername ? '...' : 'Save'}
             </button>
@@ -185,10 +185,10 @@ export default function AffiliateTab({ user }: { user: any }) {
 
         {referralLink && (
           <div>
-            <label className="text-[10px] uppercase font-black text-secondary block mb-1.5">Share this link</label>
+            <label className="text-[11px] font-semibold text-secondary block mb-1.5">Share this link</label>
             <div className="flex gap-2">
               <input readOnly value={referralLink} className="flex-1 bg-secondary border border-theme rounded-xl p-3 text-xs text-primary font-mono" />
-              <Button variant="secondary" size="sm" className="shrink-0" onClick={copyLink} icon={copied ? <lucide.Check className="w-3.5 h-3.5 text-emerald-500" /> : <lucide.Copy className="w-3.5 h-3.5" />}>
+              <Button variant="secondary" size="sm" className="shrink-0" onClick={copyLink} icon={copied ? <lucide.Check className="w-3.5 h-3.5 text-accent" /> : <lucide.Copy className="w-3.5 h-3.5" />}>
                 {copied ? 'Copied' : 'Copy'}
               </Button>
             </div>
@@ -198,7 +198,7 @@ export default function AffiliateTab({ user }: { user: any }) {
 
       {/* Withdraw */}
       <Card padding="lg" className="space-y-4">
-        <h3 className="text-sm font-black text-primary uppercase tracking-wider border-b border-theme pb-3">Request a Payout</h3>
+        <h3 className="text-sm font-semibold text-primary border-b border-theme pb-3">Request a Payout</h3>
         <p className="text-xs text-secondary">Minimum withdrawal is {naira(minWithdrawal)}. Funds are deducted from your wallet immediately once requested.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input
@@ -206,31 +206,31 @@ export default function AffiliateTab({ user }: { user: any }) {
             value={amount}
             onChange={e => setAmount(e.target.value)}
             placeholder={`Amount (min ${naira(minWithdrawal)})`}
-            className="bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-purple-500 outline-none"
+            className="bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-accent outline-none"
           />
           <input
             value={bank}
             onChange={e => setBank(e.target.value)}
             placeholder="Bank name"
-            className="bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-purple-500 outline-none"
+            className="bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-accent outline-none"
           />
           <input
             value={accountNumber}
             onChange={e => setAccountNumber(e.target.value)}
             placeholder="Account number"
-            className="bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-purple-500 outline-none"
+            className="bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-accent outline-none"
           />
           <input
             value={accountName}
             onChange={e => setAccountName(e.target.value)}
             placeholder="Account name"
-            className="bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-purple-500 outline-none"
+            className="bg-secondary border border-theme rounded-xl p-3 text-sm text-primary focus:border-accent outline-none"
           />
         </div>
         <button
           onClick={requestWithdrawal}
           disabled={submitting}
-          className="w-full py-3 bg-purple-500 hover:bg-purple-400 text-white font-black uppercase text-xs tracking-wider rounded-xl transition disabled:opacity-50"
+          className="w-full py-3 bg-accent hover:bg-accent text-white font-semibold text-xs rounded-xl transition disabled:opacity-50"
         >
           {submitting ? 'Submitting...' : 'Request Withdrawal'}
         </button>
@@ -238,7 +238,7 @@ export default function AffiliateTab({ user }: { user: any }) {
 
       {/* History */}
       <Card padding="lg" className="space-y-4">
-        <h3 className="text-sm font-black text-primary uppercase tracking-wider border-b border-theme pb-3">Payout History</h3>
+        <h3 className="text-sm font-semibold text-primary border-b border-theme pb-3">Payout History</h3>
         {withdrawals.length === 0 ? (
           <div className="empty-state">
             <lucide.Wallet className="w-10 h-10 text-secondary mx-auto mb-3" />
@@ -249,11 +249,11 @@ export default function AffiliateTab({ user }: { user: any }) {
             {withdrawals.map(w => (
               <div key={w.id} className="flex justify-between items-center border-b border-theme py-3 last:border-0">
                 <div>
-                  <div className="font-black text-primary">{naira(w.amount)}</div>
-                  <div className="text-[10px] text-secondary">{new Date(w.requested_at).toLocaleString()}</div>
+                  <div className="font-semibold text-primary">{naira(w.amount)}</div>
+                  <div className="text-[11px] text-secondary">{new Date(w.requested_at).toLocaleString()}</div>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                  w.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400'
+                <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold  ${
+                  w.status === 'approved' ? 'bg-accent/10 text-accent'
                   : w.status === 'rejected' ? 'bg-red-500/10 text-red-400'
                   : 'bg-amber-500/10 text-amber-400'
                 }`}>

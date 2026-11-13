@@ -28,7 +28,7 @@ export function Table<T>({ columns, rows, rowKey, loading, empty, className = ''
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`py-3 px-4 text-[10px] font-black uppercase tracking-widest text-secondary whitespace-nowrap ${
+                className={`py-3 px-4 text-[11px] font-semibold   text-secondary whitespace-nowrap ${
                   col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'
                 }`}
                 style={col.width ? { width: col.width } : undefined}

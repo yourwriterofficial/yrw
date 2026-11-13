@@ -83,36 +83,36 @@ export default function BuyModal({ product, onClose, onPurchased }: { product: B
         >
           <X className="w-4 h-4" />
         </button>
-        <h3 className="text-lg sm:text-xl font-black mb-1 pr-8">{product.title}</h3>
+        <h3 className="text-lg sm:text-xl font-semibold mb-1 pr-8">{product.title}</h3>
         <p className="text-xs text-secondary mb-6">{product.category}</p>
 
         {isLoggedIn === false && (
           <div className="mb-4 space-y-1">
-            <label className="text-[10px] uppercase font-black text-secondary ml-1 block">Email Address</label>
+            <label className="text-[11px] font-semibold text-secondary ml-1 block">Email Address</label>
             <input
               type="email"
               value={guestEmail}
               onChange={e => setGuestEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full bg-secondary border border-theme p-3.5 rounded-xl text-sm text-primary focus:border-cyan-500 outline-none font-bold"
+              className="w-full bg-secondary border border-theme p-3.5 rounded-xl text-sm text-primary focus:border-accent outline-none font-bold"
             />
-            <p className="text-[9px] text-secondary ml-1">We'll set up a dashboard account for you — your scripts library lives there.</p>
+            <p className="text-[11px] text-secondary ml-1">We'll set up a dashboard account for you — your scripts library lives there.</p>
           </div>
         )}
 
         {msg && <p className="text-xs font-bold text-amber-500 mb-4">{msg}</p>}
 
-        <div className="bg-cyan-500/10 p-5 rounded-2xl border border-cyan-500/20 text-center mb-6">
-          <div className="text-3xl font-black text-cyan-400">{naira(product.price)}</div>
-          <p className="text-[9px] uppercase font-black text-secondary mt-1 tracking-widest">One-time purchase</p>
+        <div className="bg-accent/10 p-5 rounded-2xl border border-accent/20 text-center mb-6">
+          <div className="text-3xl font-semibold text-accent">{naira(product.price)}</div>
+          <p className="text-[11px] font-semibold text-secondary mt-1">One-time purchase</p>
         </div>
 
         <button
           onClick={purchase}
           disabled={busy}
-          className="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black font-black uppercase text-xs tracking-widest py-4 rounded-2xl transition disabled:opacity-50"
+          className="w-full font-bold text-sm py-3.5 rounded-xl transition disabled:opacity-50 bg-accent hover:bg-accent-hover text-[var(--accent-foreground)]"
         >
-          {busy ? 'Processing...' : 'Buy Now'}
+          {busy ? 'Processing...' : 'Buy now'}
         </button>
       </div>
 

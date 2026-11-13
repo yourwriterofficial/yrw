@@ -10,18 +10,18 @@ import ImpersonationBanner from './ImpersonationBanner';
 import { Menu, X, ArrowRight, ChevronDown, ShieldCheck, LayoutDashboard, LogOut, User, Code2, GraduationCap, PenLine, FileText, LineChart } from 'lucide-react';
 
 const SERVICE_LINKS: { href: string; label: string; icon: any; color: string; badge?: string }[] = [
-  { href: '/developer', label: 'Full Stack Development', icon: Code2, color: 'text-cyan-500 bg-cyan-500/10', badge: 'developa.me' },
-  { href: '/academic-writing', label: 'Academic Writing & Research', icon: GraduationCap, color: 'text-emerald-500 bg-emerald-500/10' },
-  { href: '/content-writing', label: 'Content & Creative Writing', icon: PenLine, color: 'text-rose-500 bg-rose-500/10' },
-  { href: '/resume-cv', label: 'Executive CVs & Resumes', icon: FileText, color: 'text-blue-500 bg-blue-500/10' },
-  { href: '/statistics-fieldwork', label: 'Statistics, Maths & Fieldwork', icon: LineChart, color: 'text-purple-500 bg-purple-500/10' },
+  { href: '/developer', label: 'Full Stack Development', icon: Code2, color: 'text-accent bg-accent/10', badge: 'developa.me' },
+  { href: '/#academic', label: 'Academic Writing & Research', icon: GraduationCap, color: 'text-accent bg-accent/10' },
+  { href: '/#content', label: 'Content & Creative Writing', icon: PenLine, color: 'text-accent bg-accent/10' },
+  { href: '/#resume', label: 'Executive CVs & Resumes', icon: FileText, color: 'text-accent bg-accent/10' },
+  { href: '/#statistics', label: 'Statistics, Maths & Fieldwork', icon: LineChart, color: 'text-accent bg-accent/10' },
 ];
 
 export default function Header({ projectsContext = false }: { projectsContext?: boolean }) {
   const router = useRouter();
   const servicesHref = projectsContext ? '/projects#services' : '/#services';
   const processHref = projectsContext ? '/projects#how-it-works' : '/#process';
-  const startHref = projectsContext ? '/projects#topics-grid' : '/#services';
+  const startHref = '/#quote';
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
@@ -87,12 +87,12 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
       <ImpersonationBanner />
       <header
         className={`fixed top-0 left-0 w-full z-50 transition-all duration-200 pt-safe ${
-          scrolled ? 'bg-primary/95 backdrop-blur-md border-b border-theme' : 'bg-transparent border-b border-transparent'
+          scrolled ? 'bg-primary border-b border-theme shadow-sm' : 'bg-primary border-b border-theme'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
           <Link href="/" className="text-[15px] font-semibold tracking-tight flex items-center gap-2 select-none group">
-            <div className="w-8 h-8 bg-card border border-theme rounded-lg flex items-center justify-center text-primary font-bold text-xs group-hover:border-accent transition-colors">
+            <div className="w-8 h-8 bg-accent text-[var(--accent-foreground)] rounded-lg flex items-center justify-center font-bold text-xs">
               RW
             </div>
             <span className="text-primary font-bold">ResearchWriter</span>
@@ -122,7 +122,7 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
                         <div className="flex-1 flex items-center justify-between gap-2">
                           <span>{s.label}</span>
                           {s.badge && (
-                            <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                            <span className="text-[10px] font-mono font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded border border-accent/20">
                               {s.badge}
                             </span>
                           )}
@@ -136,9 +136,6 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
 
             <Link href={user ? (isAdmin ? '/projects' : '/dashboard/client?tab=projects') : '/projects'} className="hover:text-primary transition-colors whitespace-nowrap">
               Ready-made projects
-            </Link>
-            <Link href="/advertise" className="hover:text-primary transition-colors whitespace-nowrap">
-              Advertise
             </Link>
             <Link href={processHref} className="hover:text-primary transition-colors whitespace-nowrap">
               How it works
@@ -162,9 +159,9 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
 
           <Link
             href={startHref}
-            className="hidden lg:inline-flex bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] px-5 py-2 rounded-full text-[13px] font-extrabold active:scale-[0.98] transition-all items-center gap-1.5"
+            className="hidden lg:inline-flex bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] px-5 py-2 rounded-full text-[13px] font-medium transition-colors items-center gap-1.5"
           >
-            Start a project <ArrowRight className="w-3.5 h-3.5" />
+            Get a quote
           </Link>
 
           <button
@@ -177,105 +174,64 @@ export default function Header({ projectsContext = false }: { projectsContext?: 
         </div>
 
         {mobileMenuOpen && (
-          <div className="lg:hidden fixed inset-0 z-[150] flex flex-col justify-end">
-            <div className="absolute inset-0 bg-black/60 transition-opacity duration-200" onClick={() => setMobileMenuOpen(false)} />
-            <div className="relative bg-card border-t border-theme rounded-t-2xl shadow-2xl max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-200 pb-8 pb-safe z-10 text-primary">
-              <div className="flex justify-center pt-3 pb-2 shrink-0">
-                <div className="w-10 h-1 rounded-full bg-border-strong" />
-              </div>
-
-              <div className="overflow-y-auto flex-1 px-5 sm:px-6 pt-2 space-y-5 select-none">
-                <div className="flex items-center justify-between border-b border-theme pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-secondary border border-theme flex items-center justify-center text-primary font-semibold text-sm">
-                      {user ? (user.email?.charAt(0).toUpperCase() || 'U') : 'G'}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-primary truncate max-w-[180px]">{user ? user.email?.split('@')[0] : 'Guest'}</h4>
-                      <p className="text-xs text-secondary">{user ? 'Signed in' : 'Browsing'}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="w-8 h-8 bg-secondary hover:bg-hover text-secondary rounded-full flex items-center justify-center transition-colors shrink-0"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-1 p-2.5 rounded-xl bg-secondary border border-theme text-xs font-medium text-primary transition-colors active:scale-[0.98] text-center">
-                    Home
-                  </Link>
-                  <Link href={user ? (isAdmin ? '/projects' : '/dashboard/client?tab=projects') : '/projects'} onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-1 p-2.5 rounded-xl bg-secondary border border-theme text-xs font-medium text-primary transition-colors active:scale-[0.98] text-center">
-                    Projects
-                  </Link>
-                  <Link href="/advertise" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-1 p-2.5 rounded-xl bg-secondary border border-theme text-xs font-medium text-primary transition-colors active:scale-[0.98] text-center">
-                    Advertise
-                  </Link>
-                </div>
-
-                <div className="bg-secondary border border-theme rounded-xl p-3 space-y-1">
-                  <p className="text-[11px] font-semibold text-secondary px-1 pb-1">Services</p>
-                  {SERVICE_LINKS.map((s) => {
-                    const Icon = s.icon;
-                    return (
-                      <Link
-                        key={s.href}
-                        href={s.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="group/item flex items-center justify-between p-2 rounded-lg transition-all duration-200 text-sm font-medium text-primary hover:bg-hover"
-                      >
-                        <span className="flex items-center gap-2.5">
-                          <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${s.color}`}>
-                            <Icon className="w-4 h-4" />
-                          </span>
-                          <span>{s.label}</span>
-                        </span>
-                        <div className="flex items-center gap-2">
-                          {s.badge && (
-                            <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
-                              {s.badge}
-                            </span>
-                          )}
-                          <ChevronDown className="w-4 h-4 text-secondary -rotate-90" />
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-
-                <div className="flex justify-between items-center bg-secondary border border-theme p-3 rounded-xl">
-                  <span className="text-sm text-secondary font-medium">Appearance</span>
-                  <ThemeToggle />
-                </div>
-
-                <div className="pt-1 space-y-2">
-                  {user ? (
-                    <>
-                      <Link href={isAdmin ? '/admin' : '/dashboard/client'} onClick={() => setMobileMenuOpen(false)} className="w-full flex items-center justify-center gap-2 py-3 bg-secondary hover:bg-hover border border-theme rounded-xl text-sm font-medium text-primary transition-colors active:scale-[0.98]">
-                        <LayoutDashboard className="w-4 h-4" /> Go to dashboard
-                      </Link>
-                      <button
-                        onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                        className="w-full flex items-center justify-center gap-2 py-3 bg-secondary hover:bg-hover border border-theme rounded-xl text-sm font-medium text-danger transition-colors active:scale-[0.98] cursor-pointer"
-                      >
-                        <LogOut className="w-4 h-4" /> Sign out
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="w-full flex items-center justify-center gap-2 py-3 bg-secondary hover:bg-hover border border-theme rounded-xl text-sm font-medium text-primary transition-colors active:scale-[0.98]">
-                        <User className="w-4 h-4" /> Log in
-                      </Link>
-                      <Link href={startHref} onClick={() => setMobileMenuOpen(false)} className="w-full py-3 bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] text-center font-extrabold rounded-xl text-sm block transition-colors active:scale-[0.98]">
-                        Start a project
-                      </Link>
-                    </>
-                  )}
-                </div>
-              </div>
+          <div className="lg:hidden fixed inset-0 z-[300] bg-primary text-primary flex flex-col animate-in fade-in duration-150">
+            <div className="h-16 px-4 sm:px-6 flex items-center justify-between shrink-0 border-b border-theme">
+              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="font-bold tracking-tight">ResearchWriter</Link>
+              <button onClick={() => setMobileMenuOpen(false)} aria-label="Close menu" className="p-2 -mr-2 text-secondary hover:text-primary">
+                <X className="w-5 h-5" />
+              </button>
             </div>
+
+            <nav className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 pb-28">
+              <Link
+                href={startHref}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block w-full text-center rounded-lg bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-semibold py-3 transition-colors"
+              >
+                Get a quote
+              </Link>
+
+              <p className="text-xs text-secondary mt-8 mb-1">Services</p>
+              <ul className="divide-y divide-theme border-y border-theme">
+                {SERVICE_LINKS.map((s) => (
+                  <li key={s.href}>
+                    <Link href={s.href} onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between py-3.5 text-[17px]">
+                      <span>{s.label}</span>
+                      <ChevronDown className="w-4 h-4 text-secondary -rotate-90" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+
+              <ul className="mt-6 divide-y divide-theme border-y border-theme">
+                <li><Link href="/projects" onClick={() => setMobileMenuOpen(false)} className="block py-3.5 text-[17px]">Ready-made projects</Link></li>
+                <li><Link href="/#process" onClick={() => setMobileMenuOpen(false)} className="block py-3.5 text-[17px]">How it works</Link></li>
+                <li><Link href="/#faq" onClick={() => setMobileMenuOpen(false)} className="block py-3.5 text-[17px]">Questions</Link></li>
+              </ul>
+
+              <div className="mt-8 flex items-center justify-between">
+                {user ? (
+                  <>
+                    <Link href={isAdmin ? '/admin' : '/dashboard/client'} onClick={() => setMobileMenuOpen(false)} className="font-semibold text-accent">
+                      My dashboard
+                    </Link>
+                    <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="text-sm text-secondary hover:text-primary">
+                      Log out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="font-semibold text-accent">Log in</Link>
+                    <Link href="/register" onClick={() => setMobileMenuOpen(false)} className="text-sm text-secondary hover:text-primary">Create account</Link>
+                  </>
+                )}
+              </div>
+
+              <div className="mt-8 flex items-center justify-between text-sm text-secondary">
+                <span>Appearance</span>
+                <ThemeToggle />
+              </div>
+            </nav>
           </div>
         )}
       </header>

@@ -23,6 +23,7 @@ import { Select } from '@/app/components/ui/Select';
 import { Textarea } from '@/app/components/ui/Textarea';
 import ManualPaymentModal from '@/app/components/ManualPaymentModal';
 import { BankDetails } from '@/lib/bankDetails';
+import { NIGERIAN_DEPARTMENTS } from '@/lib/departments';
 
 type Topic = {
   id: number;
@@ -59,90 +60,14 @@ type Cart = {
 const naira = (n: number) => '₦' + Math.round(n || 0).toLocaleString('en-NG');
 const PAGE_SIZE = 30;
 
-const NIGERIAN_DEPARTMENTS = [
-  "Accountancy / Accounting",
-  "Actuarial Science",
-  "Adult Education",
-  "Agricultural Economics",
-  "Agricultural Engineering",
-  "Agricultural Science",
-  "Anatomy",
-  "Animal Science",
-  "Applied Biochemistry",
-  "Applied Chemistry",
-  "Architecture",
-  "Banking and Finance",
-  "Biochemistry",
-  "Biological Sciences",
-  "Botany",
-  "Business Administration",
-  "Chemical Engineering",
-  "Chemistry",
-  "Civil Engineering",
-  "Civil Law",
-  "Common Law",
-  "Computer Engineering",
-  "Computer Science",
-  "Cooperative and Rural Development",
-  "Creative Arts",
-  "Dentistry",
-  "Economics",
-  "Educational Management",
-  "Electrical / Electronic Engineering",
-  "English Language",
-  "English and Literary Studies",
-  "Estate Management",
-  "Fine and Applied Arts",
-  "Fisheries and Aquaculture",
-  "Food Science and Technology",
-  "Forestry and Wildlife Management",
-  "Geography",
-  "Geology",
-  "Guidance and Counseling",
-  "History and International Studies",
-  "Industrial Chemistry",
-  "Industrial Relations and Personnel Management",
-  "Insurance",
-  "International Relations",
-  "Library and Information Science",
-  "Linguistics",
-  "Mass Communication",
-  "Mathematics",
-  "Mechanical Engineering",
-  "Mechatronics Engineering",
-  "Medical Laboratory Science",
-  "Medicine and Surgery",
-  "Microbiology",
-  "Music",
-  "Nursing Science",
-  "Optometry",
-  "Petroleum Engineering",
-  "Pharmacy",
-  "Philosophy",
-  "Physics",
-  "Physiology",
-  "Political Science",
-  "Public Administration",
-  "Public Health",
-  "Quantity Surveying",
-  "Radiography",
-  "Religious Studies",
-  "Sociology",
-  "Statistics",
-  "Surveying and Geoinformatics",
-  "Theatre Arts",
-  "Urban and Regional Planning",
-  "Veterinary Medicine",
-  "Zoology"
-];
 
 
 const LEVEL_BADGE: Record<string, string> = {
   OND: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
-  HND: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-  BSc: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  MSc: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  PhD: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  HND: 'bg-accent/10 text-accent border-accent/20',
+  BSc: 'bg-accent/10 text-accent border-accent/20',
+  MSc: 'bg-accent/10 text-accent border-accent/20',
+  PhD: 'bg-accent/10 text-accent border-accent/20',
 };
 
 const levelBadgeClass = (lvl: string) => LEVEL_BADGE[lvl] || LEVEL_BADGE.BSc;
@@ -332,9 +257,6 @@ export default function ProjectsPage() {
     setDept(selectedSearchDept);
     setLevel(selectedSearchLevel);
     
-    // Simulated loading delay for premium feel
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
     try {
       setDebounced(search.trim());
       setHasSearched(true);
@@ -345,6 +267,23 @@ export default function ProjectsPage() {
       setIsSearching(false);
     }
   };
+
+  // A search started on the home page arrives as ?topic=&dept=&level= and runs straight away.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const topic = (q.get('topic') || '').trim();
+    if (!topic) return;
+    const d = q.get('dept') || 'all';
+    const l = q.get('level') || 'all';
+    setSearch(topic);
+    setSelectedSearchDept(d);
+    setSelectedSearchLevel(l);
+    setDept(d);
+    setLevel(l);
+    setDebounced(topic);
+    setHasSearched(true);
+    window.history.replaceState({}, '', '/projects');
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -485,29 +424,37 @@ export default function ProjectsPage() {
   };
 
   const TopicCard = ({ t, highlightDiffs }: { t: Topic; highlightDiffs?: boolean }) => (
-    <Card padding="md" interactive className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 flex-wrap">
-        <Badge variant="success">{t.department}</Badge>
-        <Badge variant="default" className={levelBadgeClass(t.level)}>{t.level}</Badge>
-      </div>
-      <h3 className="text-sm font-bold leading-relaxed text-primary line-clamp-3">
+    <div className="g-card flex flex-col gap-3 p-5 hover:shadow-md transition-shadow">
+      <div className="text-xs text-secondary">{t.department} · {t.level}</div>
+      <h3 className="text-sm font-semibold leading-relaxed text-primary line-clamp-3">
         {highlightDiffs ? renderTitleWithDifferences(t.title) : t.title}
       </h3>
-      <div className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-secondary font-mono">
-        <span className="inline-flex items-center gap-1"><FileText className="w-3 h-3" /> {t.pages || '—'} pages</span>
-        <span className="inline-flex items-center gap-1"><ScrollText className="w-3 h-3" /> Ch. {t.chapters}</span>
-        <span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3" /> {t.year}</span>
-        <span className="inline-flex items-center gap-1"><Zap className="w-3 h-3" /> {t.format}</span>
+      <div className="text-xs text-secondary">
+        {[t.pages ? `${t.pages} pages` : null, t.chapters ? `Ch. ${t.chapters}` : null, t.year, t.format].filter(Boolean).join(' · ')}
       </div>
-      <div className="flex gap-2 mt-auto pt-1 flex-wrap">
-        <Button variant="secondary" size="sm" className="flex-1 min-w-[70px]" onClick={() => setPreview(t)}><Eye className="w-3.5 h-3.5" /> Preview</Button>
-        <Button variant="secondary" size="sm" className="whitespace-nowrap" onClick={() => copyPermalink(t.id, t.title)}>
-          {copiedId === t.id ? <><CheckCircle2 className="w-3.5 h-3.5" /> Copied</> : <><Share2 className="w-3.5 h-3.5" /> Share</>}
+      <div className="flex items-center gap-2 mt-auto pt-2 border-t border-theme">
+        <span className="font-semibold text-sm mr-auto">{naira(t.price)}</span>
+        <Button variant="ghost" size="sm" onClick={() => setPreview(t)}>Preview</Button>
+        <Button variant="ghost" size="sm" onClick={() => copyPermalink(t.id, t.title)}>
+          {copiedId === t.id ? 'Copied' : 'Share'}
         </Button>
-        <Button size="sm" className="flex-1 min-w-[90px]" onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) })}>Get · {naira(t.price)}</Button>
+        <Button size="sm" onClick={() => openCart({ topicId: t.id, department: t.department, level: t.level, title: t.title, basePrice: Number(t.price) })}>Buy</Button>
       </div>
-    </Card>
+    </div>
   );
+
+  // The delivery time quoted in the header badges ("Less than 7 Hours Delivery", "4-hour delivery"),
+  // reused so the "not found" message never promises a different time than the page does.
+  const deliveryPromise = (() => {
+    const list: string[] = Array.isArray(pageSettings.features) ? pageSettings.features : [];
+    const text = list.find((f) => /deliver/i.test(f) && /\d+\s*-?\s*hours?/i.test(f)) || '';
+    const n = text.match(/(\d+)\s*-?\s*hours?/i)?.[1];
+    const wh = list.find((f) => /working hours/i.test(f)) || '';
+    return {
+      hours: n ? `${/less than/i.test(text) ? 'under' : 'within'} ${n} hour${n === '1' ? '' : 's'}` : '',
+      workingHours: wh ? wh.replace(/^[^a-z]*working hours\s*/i, 'during working hours, ') : '',
+    };
+  })();
 
   const deptOptions = [{ value: 'all', label: 'All Departments' }, ...mergedDepts.map(d => ({ value: d, label: d }))];
   const levelOptions = [{ value: 'all', label: 'All Levels' }, ...LEVEL_OPTIONS];
@@ -516,36 +463,26 @@ export default function ProjectsPage() {
     <div className="min-h-screen bg-primary text-primary overflow-x-hidden">
       <Header projectsContext />
       {/* HERO */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-600 to-emerald-800 text-white">
-        <div className="absolute -top-16 -right-20 w-72 h-72 rounded-full bg-white/5 animate-blob" />
-        <div className="absolute -bottom-24 -left-16 w-96 h-96 rounded-full bg-white/[0.03] animate-blob animation-delay-2000" />
-        <Shell size="md" className="text-center pt-header-24 sm:pt-header-28 pb-12 relative z-10 space-y-6">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-2">
-            <BookOpen className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="font-display italic font-medium text-3xl md:text-4xl lg:text-5xl">
+      <section className="pt-header-24 sm:pt-header-28 pb-[var(--section-y)] text-center">
+        <Shell size="md" className="g-wrap-narrow">
+          <h1 className="g-h1">
             {pageSettings.hero_title}
           </h1>
-          <p className="text-sm md:text-base opacity-90 max-w-2xl mx-auto">
+          <p className="g-lead mt-5">
             {pageSettings.hero_description}
           </p>
-          <div className="flex gap-2 justify-center flex-wrap text-xs font-bold">
-            {Array.isArray(pageSettings.features) && pageSettings.features.map((f: string, i: number) => (
-              <Badge key={i} variant="default" className="bg-white/15 border-white/20 text-white">{f}</Badge>
-            ))}
-            <Badge variant="default" className="bg-white/15 border-white/20 text-white">
-              OND {naira(levelPrices.OND)} · HND {naira(levelPrices.HND)} · BSc {naira(levelPrices.BSc)} · MSc {naira(levelPrices.MSc)} · PhD {naira(levelPrices.PhD)}
-            </Badge>
-          </div>
-
+          <p className="text-sm text-secondary mt-4">
+            {Array.isArray(pageSettings.features) && pageSettings.features.length > 0 && <>{pageSettings.features.join(' · ')}<br /></>}
+            OND {naira(levelPrices.OND)} · HND {naira(levelPrices.HND)} · BSc {naira(levelPrices.BSc)} · MSc {naira(levelPrices.MSc)} · PhD {naira(levelPrices.PhD)}
+          </p>
           {/* DATABASE SEARCH CARD MOVED HERE */}
           {!hasSearched && !isSearching ? (
-            <div className="max-w-2xl mx-auto mt-6 text-left">
-              <Card padding="lg" elevation={3} className="text-primary">
-                <div className="text-center mb-6">
-                  <h2 className="text-xl font-bold text-primary">Database Search & Availability</h2>
+            <div className="mt-10 text-left">
+              <Card padding="lg" elevation={1} className="text-primary !rounded-[var(--radius-card)]">
+                <div className="mb-5">
+                  <h2 className="text-lg font-semibold text-primary">Check if your topic is available</h2>
                   <p className="text-xs text-secondary mt-1.5 leading-relaxed font-semibold">
-                    Place your full project topic below to search our database of 100,000+ completed projects and check instant availability.
+                    Type your full topic to search our database of ready-made projects.
                   </p>
                 </div>
 
@@ -580,20 +517,20 @@ export default function ProjectsPage() {
                     fullWidth
                     size="lg"
                   >
-                    Check Availability & Retrieve Material
+                    Check availability
                   </Button>
                 </div>
               </Card>
             </div>
           ) : hasSearched && !isSearching ? (
             loading ? (
-              <Card padding="lg" elevation={3} className="max-w-md mx-auto mt-6 text-center">
+              <Card padding="lg" elevation={1} className="mt-8 text-center">
                 <Loader2 className="w-10 h-10 animate-spin mx-auto text-accent mb-4" />
                 <h3 className="text-sm font-bold text-primary">Loading matching topics...</h3>
               </Card>
             ) : topics.length === 0 ? (
               /* NO DIRECT RESULTS - SHOW CUSTOM WRITEUP CARD HERE IN HERO */
-              <Card padding="lg" elevation={3} className="max-w-2xl mx-auto mt-6 text-center">
+              <Card padding="lg" elevation={1} className="mt-8 text-center">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-theme pb-4 text-left mb-6">
                   <div>
                     <h3 className="text-sm font-bold text-primary">Search Results</h3>
@@ -607,9 +544,11 @@ export default function ProjectsPage() {
                 <div className="w-14 h-14 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 className="w-7 h-7" />
                 </div>
-                <h4 className="text-lg font-bold text-primary mb-2">Custom Write-up Available!</h4>
-                <p className="text-xs text-secondary mb-6 leading-relaxed max-w-md mx-auto font-semibold">
-                  Our writers can prepare your custom topic as an original project with complete Chapters 1–5, structured layout, and full references.
+                <h4 className="text-lg font-bold text-primary mb-2">Not in the database? We can write it.</h4>
+                <p className="text-sm text-secondary mb-6 leading-relaxed max-w-md mx-auto">
+                  Your topic can be written and produced for you as an original project: Chapters 1–5, structured layout and references,
+                  {deliveryPromise.hours ? <> ready in <strong className="text-primary">{deliveryPromise.hours}</strong></> : ' delivered quickly'}
+                  {deliveryPromise.workingHours ? <> ({deliveryPromise.workingHours})</> : null}.
                 </p>
 
                 <Card padding="md" className="text-left space-y-4 max-w-lg mx-auto mb-6">
@@ -621,7 +560,7 @@ export default function ProjectsPage() {
                   <p className="text-xs font-bold text-primary leading-normal break-words">{search}</p>
                   <div className="border-t border-theme pt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <div>
-                      <span className="text-[10px] text-secondary uppercase font-bold block">Standard Cost</span>
+                      <span className="text-[11px] text-secondary font-bold block">Standard Cost</span>
                       <span className="text-sm font-mono font-bold text-success">{naira(getTopicPrice(selectedSearchLevel === 'all' ? 'BSc' : selectedSearchLevel, selectedSearchDept === 'all' ? 'General' : selectedSearchDept))}</span>
                     </div>
                     <Button
@@ -641,7 +580,7 @@ export default function ProjectsPage() {
               </Card>
             ) : (
               /* DIRECT MATCHES FOUND - SHOW THE COMPACT SEARCH RESULTS BANNER */
-              <Card padding="md" elevation={2} className="max-w-2xl mx-auto mt-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 text-left">
+              <Card padding="md" elevation={2} className="mt-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 text-left">
                 <div>
                   <h3 className="text-sm font-bold text-primary">Search Results</h3>
                   <p className="text-xs text-secondary mt-0.5">Availability results for: <span className="text-primary italic font-bold">"{search}"</span></p>
@@ -652,7 +591,7 @@ export default function ProjectsPage() {
               </Card>
             )
           ) : isSearching ? (
-            <Card padding="lg" elevation={3} className="max-w-md mx-auto mt-10 text-center">
+            <Card padding="lg" elevation={1} className="mt-8 text-center">
               <Loader2 className="w-10 h-10 animate-spin mx-auto text-accent mb-4" />
               <h3 className="text-sm font-bold text-primary">Scanning Project Database...</h3>
               <p className="text-xs text-secondary mt-1">Checking chapters, tables, and references availability for your topic.</p>
@@ -661,66 +600,46 @@ export default function ProjectsPage() {
         </Shell>
       </section>
 
-      {/* SERVICES (project-topics specific) */}
-      <section id="services" className="px-4 md:px-6 py-10 border-b border-theme">
-        <Shell size="lg">
-          <h2 className="text-lg md:text-xl font-bold text-primary text-center mb-6">What's Included With Every Topic</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card padding="lg" className="text-center">
-              <div className="w-10 h-10 rounded-xl bg-secondary border border-theme flex items-center justify-center mx-auto mb-3 text-accent">
-                <ScrollText className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-bold text-primary mb-1">Ready-made Chapters 1–5</h3>
-              <p className="text-xs text-secondary">Full academic material in MS Word, matched to your department and level.</p>
-            </Card>
-            <Card padding="lg" className="text-center">
-              <div className="w-10 h-10 rounded-xl bg-secondary border border-theme flex items-center justify-center mx-auto mb-3 text-warning">
-                <Puzzle className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-bold text-primary mb-1">Optional Add-ons</h3>
-              <p className="text-xs text-secondary">Extend any topic with extras like SPSS analysis, PowerPoint slides, or a location/case-study change.</p>
-            </Card>
-            <Card padding="lg" className="text-center">
-              <div className="w-10 h-10 rounded-xl bg-secondary border border-theme flex items-center justify-center mx-auto mb-3 text-info">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-bold text-primary mb-1">Secure Vault Delivery</h3>
-              <p className="text-xs text-secondary">Your material lands in your dashboard's Secure Vault, ready to download.</p>
-            </Card>
-          </div>
+      {/* WHAT YOU GET + HOW IT WORKS (ids kept for header anchors) */}
+      <section id="services" className="px-[var(--page-gutter)] py-[var(--section-y)] g-tonal !rounded-none">
+        <Shell size="md" className="g-wrap-narrow !px-0">
+          <h2 className="g-h2 mb-6">What you get with every topic</h2>
+          <ul className="space-y-3 text-sm">
+            <li><span className="font-semibold">Chapters 1–5 in MS Word.</span> <span className="text-secondary">Matched to your department and level.</span></li>
+            <li><span className="font-semibold">Optional extras.</span> <span className="text-secondary">SPSS analysis, PowerPoint slides, or a change of location or case study.</span></li>
+            <li><span className="font-semibold">Delivery to your dashboard.</span> <span className="text-secondary">Download it from your Secure Vault when it&apos;s ready.</span></li>
+          </ul>
         </Shell>
       </section>
 
-      {/* HOW IT WORKS (project-topics specific) */}
-      <section id="how-it-works" className="px-4 md:px-6 py-10 border-b border-theme bg-card/30">
-        <Shell size="lg">
-          <h2 className="text-lg md:text-xl font-bold text-primary text-center mb-6">How It Works</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <section id="how-it-works" className="px-[var(--page-gutter)] py-[var(--section-y)]">
+        <Shell size="md" className="g-wrap-narrow !px-0">
+          <h2 className="g-h2 mb-6">How it works</h2>
+          <ol className="space-y-3 text-sm">
             {[
-              { n: '1', label: 'Pick a Topic', desc: 'Browse or search 100,000+ ready-made topics.' },
-              { n: '2', label: 'Choose Add-ons', desc: 'Extend it with optional extras if you need them.' },
-              { n: '3', label: 'Pay Securely', desc: 'Checkout with card — no account required upfront.' },
-              { n: '4', label: 'Get Delivered', desc: 'Material lands in your Secure Vault within hours.' },
-            ].map(step => (
-              <Card key={step.n} padding="md" className="text-center">
-                <div className="w-9 h-9 mx-auto mb-2 rounded-full bg-accent text-[var(--accent-foreground)] font-black flex items-center justify-center text-sm">{step.n}</div>
-                <h4 className="text-xs font-bold text-primary mb-1">{step.label}</h4>
-                <p className="text-[11px] text-secondary leading-relaxed">{step.desc}</p>
-              </Card>
+              ['Pick a topic', 'Browse or search the database.'],
+              ['Choose add-ons', 'Only if you need them.'],
+              ['Pay', 'By bank transfer or card, with no account needed first.'],
+              ['Get your files', 'They land in your Secure Vault within hours.'],
+            ].map(([label, desc], i) => (
+              <li key={label} className="flex gap-3">
+                <span className="text-secondary font-mono w-5 shrink-0">{i + 1}.</span>
+                <span><span className="font-semibold">{label}.</span> <span className="text-secondary">{desc}</span></span>
+              </li>
             ))}
-          </div>
+          </ol>
         </Shell>
       </section>
 
       {/* DISCLAIMER */}
-      <div className="bg-[var(--warning-bg)] border-b border-warning/20 px-4 md:px-6 py-3">
-        <Shell size="lg" className="flex items-start gap-2 text-xs md:text-sm text-warning">
-          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+      <div className="px-[var(--page-gutter)] py-4">
+        <Shell size="lg" className="flex items-start gap-2 text-xs md:text-sm text-secondary">
+          
           <p>
             {pageSettings.disclaimer_text.includes("Use our main writing service") ? (
               <>
                 <strong>Please note:</strong> these are ready-made materials — we do <strong>not</strong> check or guarantee plagiarism/similarity or AI-detection levels on them. Purchasing simply means the project <strong>will be delivered</strong> as-is. Need a <strong>plagiarism-free, AI-free</strong> custom write-up? {' '}
-                <Link href="/order/academic" className="underline font-bold">Use our main writing service →</Link>
+                <Link href="/#academic" className="underline font-bold">Use our main writing service →</Link>
               </>
             ) : pageSettings.disclaimer_text}
           </p>
@@ -742,7 +661,7 @@ export default function ProjectsPage() {
 
           {msg && !cart && <div className="mb-4 text-xs font-bold text-danger bg-[var(--danger-bg)] border border-danger/20 rounded-xl p-3">{msg}</div>}
 
-          <div id="topics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+          <div id="topics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
             {topics.map(t => <TopicCard key={t.id} t={t} highlightDiffs />)}
           </div>
 
@@ -830,7 +749,7 @@ export default function ProjectsPage() {
             />
           ) : (
             <>
-              <div id="topics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div id="topics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {topics.map(t => <TopicCard key={t.id} t={t} />)}
               </div>
 
@@ -895,7 +814,7 @@ export default function ProjectsPage() {
               </div>
 
               <div>
-                <h4 className="text-[11px] font-black uppercase tracking-wider text-secondary mb-2">What's Included</h4>
+                <h4 className="text-[11px] font-semibold text-secondary mb-2">What's Included</h4>
                 <ul className="space-y-1.5">
                   {[
                     'Chapter 1 — Introduction, Background & Objectives',
@@ -945,11 +864,11 @@ export default function ProjectsPage() {
           <div className="bg-card border border-theme rounded-2xl max-w-lg w-full max-h-[88vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="p-6 space-y-4">
               <div className="flex justify-between items-start">
-                <h2 className="text-lg font-black text-primary">Complete Your Purchase</h2>
+                <h2 className="text-lg font-semibold text-primary">Complete Your Purchase</h2>
                 <button onClick={() => setCart(null)} className="text-secondary hover:text-primary"><lucide.X className="w-5 h-5" /></button>
               </div>
               <div className="bg-secondary border border-theme rounded-xl p-4">
-                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${levelBadgeClass(cart.level)}`}>{cart.level}</span>
+                <span className={`text-[11px] font-semibold  px-2 py-0.5 rounded border ${levelBadgeClass(cart.level)}`}>{cart.level}</span>
                 <p className="text-sm font-bold text-primary mt-2">{cart.title}</p>
                 <p className="text-[11px] text-secondary">Chapters 1–5 · MS Word · {naira(cart.basePrice)}</p>
                 <p className="text-[11px] font-bold text-success mt-1">{pageSettings.delivery_text}</p>
@@ -962,34 +881,34 @@ export default function ProjectsPage() {
 
               {isLoggedIn === false && (
                 <div>
-                  <label className="text-[10px] uppercase font-black text-secondary ml-1 block mb-1">Your Email (for receipt & vault access)</label>
+                  <label className="text-[11px] font-semibold text-secondary ml-1 block mb-1">Your Email (for receipt & vault access)</label>
                   <input
                     type="email"
                     value={guestEmail}
                     onChange={e => setGuestEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full bg-secondary border border-theme rounded-xl px-3 py-2.5 text-sm text-primary outline-none focus:border-emerald-500"
+                    className="w-full bg-secondary border border-theme rounded-xl px-3 py-2.5 text-sm text-primary outline-none focus:border-accent"
                   />
-                  <p className="text-[10px] text-secondary mt-1 font-semibold">An account will be created automatically using your email as your temporary password. You can change this later from your Profile.</p>
+                  <p className="text-[11px] text-secondary mt-1 font-semibold">An account will be created automatically using your email as your temporary password. You can change this later from your Profile.</p>
                 </div>
               )}
 
               {addons.length > 0 && (
                 <div>
-                  <p className="text-[11px] uppercase font-black text-secondary mb-2">Optional Add-ons</p>
+                  <p className="text-[11px] font-semibold text-secondary mb-2">Optional Add-ons</p>
                   <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
                     {addons
                       .filter(a => [13, 14, 5, 10].includes(Number(a.id)))
                       .map(a => {
                         const on = selectedAddons.has(a.id);
                         return (
-                          <div key={a.id} className={`p-3 rounded-xl border transition space-y-2 ${on ? 'border-emerald-500 bg-emerald-500/5' : 'border-theme bg-secondary'}`}>
+                          <div key={a.id} className={`p-3 rounded-xl border transition space-y-2 ${on ? 'border-accent bg-accent/5' : 'border-theme bg-secondary'}`}>
                             <button onClick={() => setSelectedAddons(s => { const n = new Set(s); n.has(a.id) ? n.delete(a.id) : n.add(a.id); return n; })} className="w-full text-left flex items-start gap-3">
-                              <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 ${on ? 'bg-emerald-500 border-emerald-500' : 'border-theme'}`}>{on && <lucide.Check className="w-3 h-3 text-black" />}</div>
+                              <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 ${on ? 'bg-accent border-accent' : 'border-theme'}`}>{on && <lucide.Check className="w-3 h-3 text-black" />}</div>
                               <div className="flex-1">
                                 <div className="flex justify-between gap-2">
                                   <span className="text-sm font-bold text-primary">{a.name}</span>
-                                  <span className="text-xs font-black text-emerald-500 shrink-0">
+                                  <span className="text-xs font-semibold text-accent shrink-0">
                                     {a.price_type === 'per_word' ? `₦${a.price}/word` : `+${naira(a.price)}`}
                                   </span>
                                 </div>
@@ -1012,9 +931,9 @@ export default function ProjectsPage() {
                                         const w = Math.max(100, Number(e.target.value) || 0);
                                         setAddonWords(prev => ({ ...prev, [a.id]: w }));
                                       }}
-                                      className="w-24 bg-card border border-theme rounded-md px-2 py-1 text-primary outline-none focus:border-emerald-500 font-mono text-center"
+                                      className="w-24 bg-card border border-theme rounded-md px-2 py-1 text-primary outline-none focus:border-accent font-mono text-center"
                                     />
-                                    <span className="text-emerald-500 font-bold ml-1">
+                                    <span className="text-accent font-bold ml-1">
                                       ➔ {naira((addonWords[a.id] || 1000) * a.price)}
                                     </span>
                                   </div>
@@ -1029,7 +948,7 @@ export default function ProjectsPage() {
                                       value={customLocation}
                                       onChange={e => setCustomLocation(e.target.value)}
                                       placeholder="e.g. Enugu State, University of Ibadan"
-                                      className="w-full bg-card border border-theme rounded-md px-2 py-1 text-primary outline-none focus:border-emerald-500"
+                                      className="w-full bg-card border border-theme rounded-md px-2 py-1 text-primary outline-none focus:border-accent"
                                     />
                                   </div>
                                 )}
@@ -1037,7 +956,7 @@ export default function ProjectsPage() {
                                 {/* If it has sub-features */}
                                 {Array.isArray(a.features) && a.features.length > 0 && (
                                   <div className="space-y-1">
-                                    <span className="text-secondary text-[10px] font-black uppercase tracking-wider block mb-1">Includes Features:</span>
+                                    <span className="text-secondary text-[11px] font-semibold block mb-1">Includes Features:</span>
                                     <div className="grid grid-cols-1 gap-1">
                                       {a.features.map((f, fi) => {
                                         const selected = (addonFeatures[a.id] || []).includes(f.name);
@@ -1053,7 +972,7 @@ export default function ProjectsPage() {
                                                   : current.filter(x => x !== f.name);
                                                 setAddonFeatures(prev => ({ ...prev, [a.id]: next }));
                                               }}
-                                              className="w-3.5 h-3.5 accent-emerald-500 shrink-0"
+                                              className="w-3.5 h-3.5 accent-accent shrink-0"
                                             />
                                             <span className="text-secondary text-[11px] flex-1">{f.name}</span>
                                             <span className="text-secondary font-bold text-[11px] shrink-0">+{naira(f.price)}</span>
@@ -1074,14 +993,14 @@ export default function ProjectsPage() {
 
               <div className="flex justify-between items-center border-t border-theme pt-3">
                 <span className="text-sm font-bold text-secondary">Total</span>
-                <span className="text-2xl font-black text-emerald-500">{naira(cartTotal())}</span>
+                <span className="text-2xl font-semibold text-accent">{naira(cartTotal())}</span>
               </div>
 
               <label className="flex items-start gap-2 cursor-pointer bg-secondary border border-theme rounded-xl p-3">
-                <input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="mt-0.5 w-4 h-4 accent-emerald-500 shrink-0" />
+                <input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="mt-0.5 w-4 h-4 accent-accent shrink-0" />
                 <span className="text-[11px] text-primary leading-relaxed">
                   {pageSettings.checkout_terms}
-                  <strong className="block mt-1.5 text-emerald-500 font-bold">
+                  <strong className="block mt-1.5 text-accent font-bold">
                     * AI-free and plagiarism-free revisions are only performed if you select the respective "No AI" or "No Plagiarism" add-ons above.
                   </strong>
                 </span>
@@ -1092,20 +1011,20 @@ export default function ProjectsPage() {
               <button
                 onClick={pay}
                 disabled={!acceptedTerms || busy || (isLoggedIn === false && !EMAIL_RE.test(guestEmail.trim()))}
-                className="w-full py-3 rounded-xl bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-black transition disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider text-xs"
+                className="w-full py-3 rounded-xl bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed text-xs"
               >
                 {busy
                   ? 'Redirecting to payment…'
                   : `Pay ${naira(cartTotal())} & Get Material`}
               </button>
-              <p className="text-[10px] text-secondary text-center">Payment is required before your order is created — unpaid attempts are never saved.</p>
+              <p className="text-[11px] text-secondary text-center">Payment is required before your order is created — unpaid attempts are never saved.</p>
             </div>
           </div>
         </div>
       )}
 
       <footer className="border-t border-theme py-8 text-center text-xs text-secondary">
-        <p>© {new Date().getFullYear()} YourResearchWriter · Working hours 8am–7pm · <Link href="/" className="text-emerald-500 hover:underline">Home</Link></p>
+        <p>© {new Date().getFullYear()} YourResearchWriter · Working hours 8am–7pm · <Link href="/" className="text-accent hover:underline">Home</Link></p>
       </footer>
 
       {manualModal.isOpen && manualModal.bankDetails && (

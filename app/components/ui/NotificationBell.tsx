@@ -175,7 +175,7 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
       >
         <lucide.Bell className={`w-5 h-5 ${unreadCount > 0 ? 'animate-[swing_2s_infinite_ease-in-out]' : ''}`} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-pulse border border-primary">
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[11px] font-semibold rounded-full flex items-center justify-center animate-pulse border border-primary">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -187,9 +187,9 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
           {/* Header */}
           <div className="p-4 bg-secondary border-b border-theme flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <span className="font-black text-sm text-primary">In-App Alerts</span>
+              <span className="font-semibold text-sm text-primary">In-App Alerts</span>
               {unreadCount > 0 && (
-                <span className="px-1.5 py-0.5 bg-red-500/10 text-red-400 text-[10px] font-black rounded">
+                <span className="px-1.5 py-0.5 bg-red-500/10 text-red-400 text-[11px] font-semibold rounded">
                   {unreadCount} new
                 </span>
               )}
@@ -198,7 +198,7 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
               <button
                 type="button"
                 onClick={handleMarkAllRead}
-                className="text-[10px] font-black uppercase text-purple-400 hover:text-purple-300 transition cursor-pointer"
+                className="text-[11px] font-semibold text-purple-400 hover:text-purple-300 transition cursor-pointer"
               >
                 Mark all read
               </button>
@@ -244,7 +244,7 @@ export default function NotificationBell({ isAdmin, userEmail, userId }: { isAdm
                           {n.message}
                         </p>
                       )}
-                      <div className="flex justify-between items-center text-[10px] text-secondary font-bold pt-1">
+                      <div className="flex justify-between items-center text-[11px] text-secondary font-bold pt-1">
                         <span>
                           {n.order_id
                             ? `#${n.order_id}`

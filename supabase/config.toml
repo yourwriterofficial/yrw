@@ -243,6 +243,12 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Password reset email. Its link goes through /auth/confirm (server-side verification),
+# so it works from any browser or device and returns to the site that requested it.
+[auth.email.template.recovery]
+subject = "Reset your password"
+content_path = "./supabase/templates/reset-password.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

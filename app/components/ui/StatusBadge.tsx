@@ -28,12 +28,12 @@ function getStatusStyle(status: string): string {
 export default function StatusBadge({ status, size = 'sm', dot, pulse }: StatusBadgeProps) {
   const sizeClass =
     size === 'md'
-      ? 'px-3 py-1 text-[10px]'
-      : 'px-2 py-0.5 text-[9px]';
+      ? 'px-3 py-1 text-[11px]'
+      : 'px-2 py-0.5 text-[11px]';
 
   return (
     <span
-      className={`inline-flex items-center rounded-md font-black uppercase tracking-widest border ${sizeClass} ${getStatusStyle(status)}`}
+      className={`inline-flex items-center rounded-md font-semibold   border ${sizeClass} ${getStatusStyle(status)}`}
     >
       {dot && (
         <span

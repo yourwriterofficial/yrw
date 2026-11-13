@@ -35,3 +35,15 @@ button and `{{ .Token }}`, so either route works.
 Send yourself one of each from the dashboard's preview, then check it in a
 mobile client and a desktop client. The layout is table-based with inline CSS
 because Gmail and Outlook strip `<style>` blocks and ignore flex/grid.
+
+
+## Password reset link (important)
+
+`reset-password.html` links to `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery`.
+The app passes `redirectTo = <its own origin>/auth/confirm?next=/update-password`, so the
+link verifies on the server (works from any browser or phone, not only the one that asked)
+and returns to the same site, local or live. It has no code box because the app has
+nowhere to enter one.
+
+**Authentication -> URL Configuration -> Redirect URLs** must include
+`<your origin>/auth/confirm` (and `http://localhost:3000/auth/confirm` for local testing).

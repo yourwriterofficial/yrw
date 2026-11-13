@@ -24,7 +24,7 @@ export function BillingDetailsFields({ companyName, setCompanyName, address, set
   return (
     <Card elevation={0} className="bg-secondary/30">
       <div className="space-y-4">
-        <div className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Billing & Company Details (Optional)</div>
+        <div className="text-[11px] font-semibold text-secondary ml-1">Billing & Company Details (Optional)</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Company Name"
@@ -79,7 +79,7 @@ export function PaymentStructureFields({
   return (
     <Card elevation={0}>
       <div className="space-y-4">
-        <label className="text-[10px] font-black uppercase text-secondary tracking-widest block ml-1">Payment Structure</label>
+        <label className="text-[11px] font-semibold text-secondary block ml-1">Payment Structure</label>
         <div className="flex flex-wrap gap-4">
           <label className="flex items-center gap-2 cursor-pointer text-primary font-bold text-sm">
             <input
@@ -155,7 +155,7 @@ export function PaymentStructureFields({
             </div>
 
             <Card elevation={0} className="bg-emerald-500/5 border border-theme overflow-x-auto">
-              <div className="flex justify-between font-black text-lg pb-2 border-b border-theme flex-wrap gap-2 text-primary">
+              <div className="flex justify-between font-semibold text-lg pb-2 border-b border-theme flex-wrap gap-2 text-primary">
                 <span>Total Project Cost</span>
                 <span className="text-emerald-500">₦{totalPrice.toLocaleString()}</span>
               </div>
@@ -171,7 +171,7 @@ export function PaymentStructureFields({
           </div>
         ) : (
           <Card elevation={0} className="bg-emerald-500/5 border border-theme overflow-x-auto">
-            <div className="flex justify-between font-black text-lg pb-2 border-b border-theme flex-wrap gap-2 text-primary">
+            <div className="flex justify-between font-semibold text-lg pb-2 border-b border-theme flex-wrap gap-2 text-primary">
               <span>Total Project Cost</span>
               <span className="text-emerald-500">₦{totalPrice.toLocaleString()}</span>
             </div>

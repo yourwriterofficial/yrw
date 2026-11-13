@@ -16,8 +16,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const wrapperClass = fullWidth ? 'w-full' : '';
     const inputClass = `
       input-box w-full placeholder:text-[var(--text-muted)]
-      ${iconLeft ? 'pl-11' : ''}
-      ${iconRight ? 'pr-11' : ''}
+      ${iconLeft ? 'has-icon-left' : ''}
+      ${iconRight ? 'has-icon-right' : ''}
       ${className}
     `;
 

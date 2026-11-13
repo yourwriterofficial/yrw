@@ -71,12 +71,12 @@ const TOUR_STEPS = [
 
 function accentClasses(accent: string) {
   const map: Record<string, { text: string; border: string; bg: string; solidBg: string; solidText: string }> = {
-    emerald: { text: 'text-emerald-500', border: 'border-emerald-500/30', bg: 'bg-emerald-500/10', solidBg: 'bg-emerald-500', solidText: 'text-black' },
-    amber: { text: 'text-amber-500', border: 'border-amber-500/30', bg: 'bg-amber-500/10', solidBg: 'bg-amber-500', solidText: 'text-black' },
-    cyan: { text: 'text-cyan-500', border: 'border-cyan-500/30', bg: 'bg-cyan-500/10', solidBg: 'bg-cyan-500', solidText: 'text-black' },
-    blue: { text: 'text-blue-500', border: 'border-blue-500/30', bg: 'bg-blue-500/10', solidBg: 'bg-blue-500', solidText: 'text-white' },
-    purple: { text: 'text-purple-500', border: 'border-purple-500/30', bg: 'bg-purple-500/10', solidBg: 'bg-purple-500', solidText: 'text-white' },
-    violet: { text: 'text-violet-500', border: 'border-violet-500/30', bg: 'bg-violet-500/10', solidBg: 'bg-violet-500', solidText: 'text-white' },
+    emerald: { text: 'text-accent', border: 'border-accent/30', bg: 'bg-accent/10', solidBg: 'bg-accent', solidText: 'text-white' },
+    amber: { text: 'text-amber-500', border: 'border-amber-500/30', bg: 'bg-amber-500/10', solidBg: 'bg-amber-500', solidText: 'text-white' },
+    cyan: { text: 'text-accent', border: 'border-accent/30', bg: 'bg-accent/10', solidBg: 'bg-accent', solidText: 'text-white' },
+    blue: { text: 'text-accent', border: 'border-accent/30', bg: 'bg-accent/10', solidBg: 'bg-accent', solidText: 'text-white' },
+    purple: { text: 'text-accent', border: 'border-accent/30', bg: 'bg-accent/10', solidBg: 'bg-accent', solidText: 'text-white' },
+    violet: { text: 'text-accent', border: 'border-accent/30', bg: 'bg-accent/10', solidBg: 'bg-accent', solidText: 'text-white' },
   };
   return map[accent] || map.emerald;
 }
@@ -913,9 +913,9 @@ export default function OrderAssistant() {
           onChange={e => setInputVal(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') onSubmit(); }}
           placeholder={placeholder}
-          className="flex-1 bg-card border border-theme rounded-xl px-3 py-2.5 text-sm text-primary outline-none focus:border-emerald-500 dark:[color-scheme:dark]"
+          className="flex-1 bg-card border border-theme rounded-xl px-3 py-2.5 text-sm text-primary outline-none focus:border-accent dark:[color-scheme:dark]"
         />
-        <button onClick={onSubmit} className={`px-4 rounded-xl text-xs font-black uppercase ${accent.solidBg} ${accent.solidText}`}>Send</button>
+        <button onClick={onSubmit} className={`px-4 rounded-xl text-xs font-semibold  ${accent.solidBg} ${accent.solidText}`}>Send</button>
       </div>
       {errorMsg && <p className="text-[11px] text-red-500 font-bold">{errorMsg}</p>}
     </div>
@@ -941,7 +941,7 @@ export default function OrderAssistant() {
     if (rows.length === 0) return null;
     return (
       <div className="border-t border-theme bg-secondary/60 px-3 py-2 max-h-24 overflow-y-auto custom-scrollbar shrink-0 space-y-1">
-        <p className="text-[9px] uppercase font-black tracking-widest text-secondary mb-1">
+        <p className="text-[11px] font-semibold text-secondary mb-1">
           {isDevelopa ? '⚡ Technical Build Specs' : '📝 Your Order Notes'}
         </p>
         {rows.map(([label, val]) => <TypewriterLine key={label + val} label={label} text={val} />)}
@@ -1037,10 +1037,10 @@ export default function OrderAssistant() {
               return (
                 <button key={p} onClick={() => pickPlan(p)} className={`flex items-center justify-between p-3 rounded-xl border border-theme bg-card hover:${accent.bg} transition text-left cursor-pointer`}>
                   <span>
-                    <span className="block text-sm font-black text-primary">{p} <span className="text-secondary font-normal text-[11px]">— ₦{planRates[p]}/word</span></span>
-                    <span className="block text-[10px] text-secondary">{planBlurb[p]}</span>
+                    <span className="block text-sm font-semibold text-primary">{p} <span className="text-secondary font-normal text-[11px]">— ₦{planRates[p]}/word</span></span>
+                    <span className="block text-[11px] text-secondary">{planBlurb[p]}</span>
                   </span>
-                  <span className="text-sm font-black text-emerald-500 shrink-0 ml-3">₦{price.toLocaleString()}</span>
+                  <span className="text-sm font-semibold text-accent shrink-0 ml-3">₦{price.toLocaleString()}</span>
                 </button>
               );
             })}
@@ -1075,10 +1075,10 @@ export default function OrderAssistant() {
         return (
           <div className="space-y-2">
             <div className="flex gap-2">
-              <input type="date" value={inputVal} min={minDeadlineStr()} onChange={e => setInputVal(e.target.value)} className="flex-1 bg-card border border-theme rounded-xl px-3 py-2.5 text-sm text-primary outline-none focus:border-emerald-500 dark:[color-scheme:dark]" />
-              <button onClick={submitDeadline} className={`px-4 rounded-xl text-xs font-black uppercase ${accent.solidBg} ${accent.solidText}`}>Set</button>
+              <input type="date" value={inputVal} min={minDeadlineStr()} onChange={e => setInputVal(e.target.value)} className="flex-1 bg-card border border-theme rounded-xl px-3 py-2.5 text-sm text-primary outline-none focus:border-accent dark:[color-scheme:dark]" />
+              <button onClick={submitDeadline} className={`px-4 rounded-xl text-xs font-semibold  ${accent.solidBg} ${accent.solidText}`}>Set</button>
             </div>
-            <p className="text-[10px] text-secondary">Earliest available date: {new Date(minDeadlineStr()).toLocaleDateString()} (2-week minimum).</p>
+            <p className="text-[11px] text-secondary">Earliest available date: {new Date(minDeadlineStr()).toLocaleDateString()} (2-week minimum).</p>
             {errorMsg && <p className="text-[11px] text-red-500 font-bold">{errorMsg}</p>}
           </div>
         );
@@ -1088,10 +1088,10 @@ export default function OrderAssistant() {
           <div className="space-y-3">
             <div className="max-h-28 overflow-y-auto bg-card border border-theme rounded-xl p-3 text-[11px] text-secondary leading-relaxed custom-scrollbar">{termsText}</div>
             <label className="flex items-start gap-2 cursor-pointer">
-              <input type="checkbox" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} className="mt-0.5 w-4 h-4 accent-emerald-500" />
+              <input type="checkbox" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} className="mt-0.5 w-4 h-4 accent-accent" />
               <span className="text-[11px] text-primary font-bold">I agree to the Terms of Service.</span>
             </label>
-            <button onClick={acceptTermsAndReview} disabled={!acceptTerms} className={`w-full py-2.5 rounded-xl text-xs font-black uppercase disabled:opacity-40 disabled:cursor-not-allowed ${accent.solidBg} ${accent.solidText}`}>Continue to Price Review</button>
+            <button onClick={acceptTermsAndReview} disabled={!acceptTerms} className={`w-full py-2.5 rounded-xl text-xs font-semibold  disabled:opacity-40 disabled:cursor-not-allowed ${accent.solidBg} ${accent.solidText}`}>Continue to Price Review</button>
           </div>
         );
 
@@ -1102,14 +1102,14 @@ export default function OrderAssistant() {
         return (
           <div className="space-y-3">
             <div className={`p-4 rounded-2xl border ${accent.border} ${accent.bg}`}>
-              <p className="text-[10px] uppercase font-black tracking-widest text-secondary">Estimated Total</p>
-              <p className={`text-3xl font-black ${accent.text}`}>₦{total.toLocaleString()}</p>
+              <p className="text-[11px] font-semibold text-secondary">Estimated Total</p>
+              <p className={`text-3xl font-semibold ${accent.text}`}>₦{total.toLocaleString()}</p>
               <div className="mt-2 pt-2 border-t border-theme text-[11px] text-secondary space-y-1">
                 <div className="flex justify-between"><span>60% Deposit (due now)</span><span className="text-primary font-bold">₦{deposit.toLocaleString()}</span></div>
                 <div className="flex justify-between"><span>40% Balance (on completion)</span><span className="text-primary font-bold">₦{balance.toLocaleString()}</span></div>
               </div>
               {isLoggedIn && walletBalance > 0 && (
-                <div className={`mt-2 pt-2 border-t border-theme text-[11px] ${walletBalance >= deposit ? 'text-emerald-500' : 'text-secondary'} font-bold flex items-center gap-1`}>
+                <div className={`mt-2 pt-2 border-t border-theme text-[11px] ${walletBalance >= deposit ? 'text-accent' : 'text-secondary'} font-bold flex items-center gap-1`}>
                   <Wallet className="w-3.5 h-3.5" /> Wallet balance: ₦{walletBalance.toLocaleString()}
                   {walletBalance >= deposit ? ' — covers your deposit!' : ''}
                 </div>
@@ -1117,8 +1117,8 @@ export default function OrderAssistant() {
             </div>
             <p className="text-xs text-secondary">Are you happy with this price, or would you like to propose what you can afford?</p>
             <div className="flex gap-2">
-              <button onClick={confirmPrice} className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase ${accent.solidBg} ${accent.solidText}`}>Yes, Submit Order</button>
-              <button onClick={declinePrice} className="flex-1 py-2.5 rounded-xl text-xs font-black uppercase bg-secondary border border-theme text-primary">Propose My Own Price</button>
+              <button onClick={confirmPrice} className={`flex-1 py-2.5 rounded-xl text-xs font-semibold  ${accent.solidBg} ${accent.solidText}`}>Yes, Submit Order</button>
+              <button onClick={declinePrice} className="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-secondary border border-theme text-primary">Propose My Own Price</button>
             </div>
           </div>
         );
@@ -1133,20 +1133,20 @@ export default function OrderAssistant() {
       case 'success':
         return (
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm"><CheckCircle2 className="w-5 h-5" /> Order {finalOrderId} created!</div>
+            <div className="flex items-center gap-2 text-accent font-bold text-sm"><CheckCircle2 className="w-5 h-5" /> Order {finalOrderId} created!</div>
             {wasNegotiated ? (
               <p className="text-xs text-secondary">Thanks! Our team will review your offer of ₦{proposedPrice.toLocaleString()} and get back to you via WhatsApp or email within 24 hours.</p>
             ) : depositPaidFromWallet ? (
-              <p className="text-xs text-emerald-500 font-bold">Deposit paid ✓ — we've started your project. Track it in your dashboard.</p>
+              <p className="text-xs text-accent font-bold">Deposit paid ✓ — we've started your project. Track it in your dashboard.</p>
             ) : (
               <>
                 <p className="text-xs text-secondary">Next: pay your ₦{finalDeposit.toLocaleString()} deposit to get started.</p>
                 {isLoggedIn && walletBalance >= finalDeposit && (
-                  <button onClick={payDepositFromWallet} disabled={walletPaying} className="w-full py-2.5 rounded-xl text-xs font-black uppercase bg-emerald-500 text-black hover:bg-emerald-400 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                  <button onClick={payDepositFromWallet} disabled={walletPaying} className="w-full py-2.5 rounded-xl text-xs font-semibold bg-accent text-black hover:bg-accent transition disabled:opacity-50 flex items-center justify-center gap-2">
                     <Wallet className="w-4 h-4" /> {walletPaying ? 'Paying…' : `Pay Deposit from Wallet (₦${finalDeposit.toLocaleString()})`}
                   </button>
                 )}
-                <button onClick={() => { setOpen(false); router.push(`/complete-registration?email=${encodeURIComponent(finalEmail)}&orderId=${finalOrderId}`); }} className={`w-full py-2.5 rounded-xl text-xs font-black uppercase ${accent.solidBg} ${accent.solidText}`}>{isLoggedIn && walletBalance >= finalDeposit ? 'Or Pay with Card' : 'Proceed to Payment'}</button>
+                <button onClick={() => { setOpen(false); router.push(`/complete-registration?email=${encodeURIComponent(finalEmail)}&orderId=${finalOrderId}`); }} className={`w-full py-2.5 rounded-xl text-xs font-semibold  ${accent.solidBg} ${accent.solidText}`}>{isLoggedIn && walletBalance >= finalDeposit ? 'Or Pay with Card' : 'Proceed to Payment'}</button>
               </>
             )}
             <button onClick={reset} className="w-full py-2 rounded-xl text-xs font-bold bg-secondary border border-theme text-primary">Start Another Order</button>
@@ -1154,7 +1154,7 @@ export default function OrderAssistant() {
         );
 
       case 'error':
-        return <button onClick={reset} className="w-full py-2.5 rounded-xl text-xs font-black uppercase bg-secondary border border-theme text-primary">Try Again</button>;
+        return <button onClick={reset} className="w-full py-2.5 rounded-xl text-xs font-semibold bg-secondary border border-theme text-primary">Try Again</button>;
 
       default:
         return null;
@@ -1176,15 +1176,15 @@ export default function OrderAssistant() {
       {!open && !tourActive && (
         <button
           onClick={openAssistant}
-          className={`fixed fab-bottom-safe left-6 z-50 flex items-center gap-2 pl-3 pr-4 py-3 rounded-full shadow-lg transition hover:brightness-110 ${
+          className={`print:hidden fixed fab-bottom-safe left-6 z-50 flex items-center gap-2 pl-3 pr-4 py-3 rounded-full shadow-lg transition hover:brightness-110 ${
             isDevelopa
-              ? 'bg-slate-900 border border-cyan-500/40 text-cyan-400 shadow-cyan-950/40'
-              : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
+              ? 'bg-slate-900 border border-accent/40 text-accent shadow-accent/40'
+              : 'bg-gradient-to-r from-accent to-accent text-white'
           }`}
           aria-label="Open order assistant"
         >
-          {isDevelopa ? <Terminal className="w-5 h-5 text-cyan-400" /> : <HelpCircle className="w-5 h-5" />}
-          <span className="text-xs font-black uppercase tracking-wide hidden sm:inline">
+          {isDevelopa ? <Terminal className="w-5 h-5 text-accent" /> : <HelpCircle className="w-5 h-5" />}
+          <span className="text-xs font-semibold hidden sm:inline">
             {isDevelopa ? 'Need Help Scoping?' : 'Need Help Ordering?'}
           </span>
         </button>
@@ -1194,12 +1194,12 @@ export default function OrderAssistant() {
         <div className="fixed fab-bottom-safe left-6 z-50 w-[92vw] max-w-sm bg-card border border-theme rounded-[24px] shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '82vh' }}>
           <div className={`flex items-center justify-between px-4 py-3 text-white shrink-0 ${
             isDevelopa
-              ? 'bg-slate-950 border-b border-cyan-500/20 text-slate-100'
-              : 'bg-gradient-to-r from-violet-600 to-indigo-600'
+              ? 'bg-slate-950 border-b border-accent/20 text-slate-100'
+              : 'bg-gradient-to-r from-accent to-accent'
           }`}>
             <div className="flex items-center gap-2">
-              {isDevelopa ? <Terminal className="w-4 h-4 text-cyan-400" /> : <HelpCircle className="w-4 h-4" />}
-              <span className="text-xs font-black uppercase tracking-wide">
+              {isDevelopa ? <Terminal className="w-4 h-4 text-accent" /> : <HelpCircle className="w-4 h-4" />}
+              <span className="text-xs font-semibold">
                 {isDevelopa ? 'Technical Scoping' : 'Order Assistant'}
               </span>
             </div>
@@ -1207,7 +1207,7 @@ export default function OrderAssistant() {
               <button
                 onClick={contactWriter}
                 title={isDevelopa ? 'Talk to Dev Lead on WhatsApp' : 'Contact Writer directly on WhatsApp'}
-                className="flex items-center gap-1 px-2 py-1.5 hover:bg-white/10 rounded-lg cursor-pointer text-[10px] font-black uppercase"
+                className="flex items-center gap-1 px-2 py-1.5 hover:bg-white/10 rounded-lg cursor-pointer text-[11px] font-semibold"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{isDevelopa ? 'Talk to Dev Lead' : 'Contact Writer'}</span>
@@ -1223,10 +1223,10 @@ export default function OrderAssistant() {
                 const link = m.text.replace('__PAY_LINK__', '');
                 return (
                   <div key={i} className="flex items-start gap-2">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isDevelopa ? 'bg-cyan-500/20 text-cyan-400' : 'bg-violet-500/20 text-violet-400'}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isDevelopa ? 'bg-accent/20 text-accent' : 'bg-accent/20 text-accent'}`}>
                       {isDevelopa ? <Terminal className="w-3.5 h-3.5" /> : <Headphones className="w-3.5 h-3.5" />}
                     </div>
-                    <a href={link} className="px-3 py-2 rounded-2xl text-xs font-black uppercase bg-emerald-500 text-black rounded-tl-sm">Pay Now →</a>
+                    <a href={link} className="px-3 py-2 rounded-2xl text-xs font-semibold bg-accent text-black rounded-tl-sm">Pay Now →</a>
                   </div>
                 );
               }
@@ -1234,7 +1234,7 @@ export default function OrderAssistant() {
                 <div key={i} className={`flex items-start gap-2 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
                     m.role === 'bot'
-                      ? (isDevelopa ? 'bg-cyan-500/20 text-cyan-400' : 'bg-violet-500/20 text-violet-400')
+                      ? (isDevelopa ? 'bg-accent/20 text-accent' : 'bg-accent/20 text-accent')
                       : 'bg-secondary text-secondary'
                   }`}>
                     {m.role === 'bot' ? (
@@ -1243,7 +1243,7 @@ export default function OrderAssistant() {
                       <UserIcon className="w-3.5 h-3.5" />
                     )}
                   </div>
-                  <div className={`px-3 py-2 rounded-2xl text-xs leading-relaxed max-w-[80%] whitespace-pre-line ${m.role === 'bot' ? 'bg-secondary text-primary rounded-tl-sm' : `${isDevelopa ? 'bg-cyan-500/10' : 'bg-emerald-500/10'} text-primary rounded-tr-sm`}`}>
+                  <div className={`px-3 py-2 rounded-2xl text-xs leading-relaxed max-w-[80%] whitespace-pre-line ${m.role === 'bot' ? 'bg-secondary text-primary rounded-tl-sm' : `${isDevelopa ? 'bg-accent/10' : 'bg-accent/10'} text-primary rounded-tr-sm`}`}>
                     {m.text}
                   </div>
                 </div>
@@ -1251,7 +1251,7 @@ export default function OrderAssistant() {
             })}
             {thinking && (
               <div className="flex items-center gap-2">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isDevelopa ? 'bg-cyan-500/20 text-cyan-400' : 'bg-violet-500/20 text-violet-400'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isDevelopa ? 'bg-accent/20 text-accent' : 'bg-accent/20 text-accent'}`}>
                   {isDevelopa ? <Terminal className="w-3.5 h-3.5" /> : <Headphones className="w-3.5 h-3.5" />}
                 </div>
                 <div className="px-3 py-2 rounded-2xl bg-secondary text-secondary text-xs">•••</div>
@@ -1276,8 +1276,8 @@ export default function OrderAssistant() {
               }}
             />
           )}
-          <div className="fixed z-[71] bottom-24 left-6 w-[90vw] max-w-sm bg-card border border-violet-500/40 rounded-2xl shadow-2xl p-4 space-y-3">
-            <div className="flex items-center gap-2 text-violet-400 font-black text-xs uppercase tracking-wide"><Compass className="w-4 h-4" /> Dashboard Tour ({tourStep + 1}/{TOUR_STEPS.length})</div>
+          <div className="fixed z-[71] bottom-24 left-6 w-[90vw] max-w-sm bg-card border border-accent/40 rounded-2xl shadow-2xl p-4 space-y-3">
+            <div className="flex items-center gap-2 text-accent font-semibold text-xs"><Compass className="w-4 h-4" /> Dashboard Tour ({tourStep + 1}/{TOUR_STEPS.length})</div>
             <p className="text-sm font-bold text-primary">{TOUR_STEPS[tourStep].title}</p>
             <p className="text-xs text-secondary">{TOUR_STEPS[tourStep].text}</p>
             <div className="flex gap-2">
@@ -1287,7 +1287,7 @@ export default function OrderAssistant() {
                   if (tourStep < TOUR_STEPS.length - 1) setTourStep(s => s + 1);
                   else { setTourActive(false); setOpen(true); setTimeout(() => { say("That's your dashboard! Anything else I can help with?"); setStep('quickMenu'); }, 200); }
                 }}
-                className="flex-1 px-3 py-2 rounded-xl text-xs font-black uppercase bg-violet-600 text-white"
+                className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold bg-accent text-white"
               >
                 {tourStep < TOUR_STEPS.length - 1 ? 'Next' : 'Finish Tour'}
               </button>

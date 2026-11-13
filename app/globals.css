@@ -36,9 +36,9 @@
   --text-muted: #404053;
 
   /* Status / accent */
-  --accent: #22c55e;
-  --accent-hover: #16a34a;
-  --accent-foreground: #000000;
+  --accent: #5b8def;
+  --accent-hover: #7aa3f3;
+  --accent-foreground: #08101f;
 
   /* Feedback colors */
   --success: #22c55e;
@@ -93,8 +93,8 @@
   --text-tertiary: #8a8a9c;
   --text-muted: #b8b8c8;
 
-  --accent: #16a34a;
-  --accent-hover: #15803d;
+  --accent: #1d4ed8;
+  --accent-hover: #1e40af;
   --accent-foreground: #ffffff;
 
   --success: #16a34a;
@@ -154,7 +154,6 @@ body {
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
   --radius-2xl: var(--radius-2xl);
-  --font-display: var(--font-display);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
@@ -477,3 +476,63 @@ textarea:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ==========================================================================
+   Shared design system: one set of rules for every page at every screen size.
+   Google / Material-style: rounded, tonal, pill controls, fluid type and spacing.
+   Pages use these instead of picking their own sizes, so phone, tablet and
+   desktop all follow the same scale.
+   ========================================================================== */
+:root {
+  --page-gutter: clamp(16px, 4vw, 32px);        /* side padding on every viewport */
+  --section-y: clamp(48px, 8vw, 88px);          /* vertical rhythm between sections */
+  --radius-card: clamp(20px, 3vw, 28px);
+  --radius-panel: clamp(24px, 4vw, 32px);
+}
+
+html body { font-family: var(--font-sans), 'Segoe UI', system-ui, -apple-system, Arial, sans-serif; }
+.g-font { font-family: var(--font-sans), 'Segoe UI', system-ui, -apple-system, Arial, sans-serif; }
+
+/* Tonal washes of the accent. Solid fallback first; color-mix() only where supported. */
+:root { --g-tonal: var(--bg-secondary); --g-tonal-strong: var(--bg-hover); }
+@supports (background: color-mix(in srgb, red 10%, blue)) {
+  :root {
+    --g-tonal: color-mix(in srgb, var(--accent) 7%, var(--bg-primary));
+    --g-tonal-strong: color-mix(in srgb, var(--accent) 14%, var(--bg-primary));
+  }
+}
+
+/* Containers */
+.g-wrap   { width: 100%; max-width: 1100px; margin-inline: auto; padding-inline: var(--page-gutter); }
+.g-wrap-narrow { width: 100%; max-width: 720px; margin-inline: auto; padding-inline: var(--page-gutter); }
+.g-wrap-wide   { width: 100%; max-width: 1280px; margin-inline: auto; padding-inline: var(--page-gutter); }
+.g-section { padding-block: var(--section-y); }
+
+/* Type scale (fluid, so it needs no per-breakpoint overrides) */
+.g-h1   { font-weight: 400; letter-spacing: -0.02em; line-height: 1.08; font-size: clamp(2rem, 1.2rem + 4vw, 3.75rem); }
+.g-h2   { font-weight: 400; letter-spacing: -0.015em; line-height: 1.15; font-size: clamp(1.625rem, 1.2rem + 2vw, 2.5rem); }
+.g-h3   { font-weight: 500; line-height: 1.25; font-size: clamp(1.125rem, 1rem + 0.6vw, 1.5rem); }
+.g-lead { color: var(--text-secondary); line-height: 1.6; font-size: clamp(1rem, 0.95rem + 0.4vw, 1.125rem); }
+
+/* Surfaces */
+.g-card   { border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--bg-card); }
+.g-tonal  { border-radius: var(--radius-panel); background: var(--g-tonal); }
+.g-tonal-strong { background: var(--g-tonal-strong); }
+
+/* Controls: the same shape everywhere */
+.input-box { border-radius: 14px; padding-block: 14px; padding-inline: 16px; }
+.input-box.has-icon-left  { padding-inline-start: 44px; }
+.input-box.has-icon-right { padding-inline-end: 44px; }
+select.input-box { padding-right: 12px; }
+input[type="submit"], form button[type="submit"] { border-radius: 9999px; }
+
+/* Anything wide must scroll inside itself, never push the page sideways */
+.g-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+img, svg, video { max-width: 100%; }
+
+/* Touch targets: at least 40px high on small screens */
+@media (max-width: 640px) {
+  .input-box { font-size: 16px; }   /* stops iOS zooming into focused fields */
+  button, [role="button"], a.btn { min-height: 40px; }
+}
+

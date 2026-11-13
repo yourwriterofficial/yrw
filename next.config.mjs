@@ -27,7 +27,18 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/custom-research', destination: '/statistics-fieldwork', permanent: true },
-      { source: '/order/custom', destination: '/order/statistics', permanent: true },
+      // The multi-step /order/* pages were replaced by the quote form on each service page.
+      { source: '/academic-writing', destination: '/#academic', permanent: true },
+      { source: '/content-writing', destination: '/#content', permanent: true },
+      { source: '/resume-cv', destination: '/#resume', permanent: true },
+      { source: '/statistics-fieldwork', destination: '/#statistics', permanent: true },
+      { source: '/order/custom', destination: '/#statistics', permanent: true },
+      { source: '/order/academic', destination: '/#academic', permanent: true },
+      { source: '/order/content', destination: '/#content', permanent: true },
+      { source: '/order/resume', destination: '/#resume', permanent: true },
+      { source: '/order/statistics', destination: '/#statistics', permanent: true },
+      { source: '/order/dev', destination: '/developer#quote', permanent: true },
+      { source: '/order', destination: '/#quote', permanent: true },
       { source: '/dashboard/client/order/new/custom', destination: '/dashboard/client/order/new/statistics', permanent: true },
     ];
   },

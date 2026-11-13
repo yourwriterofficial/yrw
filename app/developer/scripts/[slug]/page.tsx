@@ -52,9 +52,9 @@ export default function ScriptDetailPage() {
       <div className="min-h-screen bg-primary text-primary font-['Inter']">
         <DevelopaHeader />
         <div className="pt-header-40 pb-20 px-6 text-center">
-          <h1 className="text-2xl font-black mb-4">Script not found</h1>
+          <h1 className="text-2xl font-semibold mb-4">Script not found</h1>
           <p className="text-secondary text-sm mb-8">This script may have been removed or is no longer available.</p>
-          <Link href="/developer/shop" className="text-cyan-400 font-bold text-sm">← Back to the shop</Link>
+          <Link href="/developer/shop" className="text-accent font-bold text-sm">← Back to the shop</Link>
         </div>
       </div>
     );
@@ -63,16 +63,16 @@ export default function ScriptDetailPage() {
   if (!product) {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-accent/20 border-t-cyan-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-primary text-primary font-['Inter'] selection:bg-cyan-500/30 overflow-x-hidden">
+    <div className="min-h-screen bg-primary text-primary font-['Inter'] selection:bg-accent/30 overflow-x-hidden">
       <DevelopaHeader />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-header-28 sm:pt-header-32 pb-16 sm:pb-24">
-        <Link href="/developer/shop" className="inline-flex items-center gap-2 text-xs font-bold text-secondary hover:text-cyan-400 transition mb-6 sm:mb-8">
+      <div className="g-wrap-wide pt-header-28 sm:pt-header-32 pb-[var(--section-y)]">
+        <Link href="/developer/shop" className="inline-flex items-center gap-2 text-xs font-bold text-secondary hover:text-accent transition mb-6 sm:mb-8">
           <ArrowLeft className="w-4 h-4" /> Back to Scripts
         </Link>
 
@@ -94,7 +94,7 @@ export default function ScriptDetailPage() {
                   <button
                     key={i}
                     onClick={() => setActiveImage(i)}
-                    className={`relative shrink-0 w-24 aspect-video rounded-xl overflow-hidden border-2 transition ${activeImage === i ? 'border-cyan-500' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                    className={`relative shrink-0 w-24 aspect-video rounded-xl overflow-hidden border-2 transition ${activeImage === i ? 'border-accent' : 'border-transparent opacity-70 hover:opacity-100'}`}
                   >
                     <Image src={previewUrl(path)} alt="" fill sizes="96px" className="object-cover" />
                   </button>
@@ -105,26 +105,26 @@ export default function ScriptDetailPage() {
 
           {/* Info */}
           <div className="lg:col-span-2">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-3 py-1 rounded-full mb-4">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-accent/10 text-accent border border-accent/20 px-3 py-1 rounded-full mb-4">
               <Tag className="w-3 h-3" /> {product.category}
             </span>
-            <h1 className="text-2xl sm:text-3xl font-black mb-4">{product.title}</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold mb-4">{product.title}</h1>
             <p className="text-sm text-secondary leading-relaxed mb-6">{product.description}</p>
 
             {product.tech_stack?.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-6">
                 {product.tech_stack.map((t, i) => (
-                  <span key={i} className="text-[10px] font-bold uppercase tracking-wider bg-white/5 border border-theme px-2.5 py-1 rounded-full text-secondary">{t}</span>
+                  <span key={i} className="text-[11px] font-bold bg-white/5 border border-theme px-2.5 py-1 rounded-full text-secondary">{t}</span>
                 ))}
               </div>
             )}
 
             <div className="glass-panel rounded-2xl p-6 mb-6">
-              <div className="text-3xl font-black text-cyan-400 mb-1">{naira(product.price)}</div>
-              <p className="text-[10px] uppercase font-black text-secondary tracking-widest mb-5">One-time purchase</p>
+              <div className="text-3xl font-semibold text-accent mb-1">{naira(product.price)}</div>
+              <p className="text-[11px] font-semibold text-secondary mb-5">One-time purchase</p>
               <button
                 onClick={() => setBuying(true)}
-                className="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black font-black uppercase text-xs tracking-widest py-4 rounded-xl transition flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-accent to-accent hover:from-accent hover:to-accent text-black font-semibold text-xs py-4 rounded-xl transition flex items-center justify-center gap-2"
               >
                 <Download className="w-4 h-4" /> Buy Now
               </button>
@@ -132,8 +132,8 @@ export default function ScriptDetailPage() {
 
             {product.license_terms && (
               <div className="glass-panel rounded-2xl p-5">
-                <h3 className="text-xs font-black uppercase tracking-widest text-secondary mb-2 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-cyan-500" /> License Terms
+                <h3 className="text-xs font-semibold text-secondary mb-2 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-accent" /> License Terms
                 </h3>
                 <p className="text-xs text-secondary leading-relaxed">{product.license_terms}</p>
               </div>

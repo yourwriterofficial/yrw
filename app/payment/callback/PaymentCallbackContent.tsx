@@ -122,8 +122,8 @@ export default function PaymentCallbackContent() {
         
         {displayState === 'processing' && (
           <div className="flex flex-col items-center animate-in fade-in duration-300">
-            <Loader2 className="w-16 h-16 text-emerald-500 animate-spin mb-6" />
-            <h2 className="text-xl font-black text-primary tracking-tight mb-2">Verifying Transaction</h2>
+            <Loader2 className="w-16 h-16 text-accent animate-spin mb-6" />
+            <h2 className="text-xl font-semibold text-primary tracking-tight mb-2">Verifying Transaction</h2>
             <p className="text-xs text-secondary leading-relaxed">
               Please wait while we confirm your payment securely with the gateway. Do not close this window.
             </p>
@@ -132,14 +132,14 @@ export default function PaymentCallbackContent() {
 
         {displayState === 'success' && (
           <div className="flex flex-col items-center animate-in zoom-in duration-300">
-            <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mb-6">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+            <div className="w-16 h-16 bg-accent/10 border border-accent/20 rounded-2xl flex items-center justify-center mb-6">
+              <CheckCircle2 className="w-8 h-8 text-accent" />
             </div>
-            <h2 className="text-xl font-black text-primary tracking-tight mb-2">Payment Successful!</h2>
+            <h2 className="text-xl font-semibold text-primary tracking-tight mb-2">Payment Successful!</h2>
             <p className="text-xs text-secondary leading-relaxed mb-6">
               Your transaction has been securely cleared. Our system has updated your project vault.
             </p>
-            <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest animate-pulse">
+            <div className="text-[11px] font-semibold text-accent animate-pulse">
               Redirecting to dashboard...
             </div>
           </div>
@@ -150,14 +150,14 @@ export default function PaymentCallbackContent() {
             <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mb-6">
               <XCircle className="w-8 h-8 text-red-500" />
             </div>
-            <h2 className="text-xl font-black text-primary tracking-tight mb-2">Need Payment Help?</h2>
+            <h2 className="text-xl font-semibold text-primary tracking-tight mb-2">Need Payment Help?</h2>
             <p className="text-xs text-secondary leading-relaxed mb-6">
               If you completed a bank transfer, our operations team can verify your payment receipt immediately via WhatsApp.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 w-full">
               <button
                 onClick={() => window.open(`https://wa.me/2348121443666?text=${encodeURIComponent(`Hello Support, I transferred for Reference #${tx_ref || 'N/A'}. Please verify.`)}`, '_blank')}
-                className="flex-1 py-3 px-4 bg-[#25D366] hover:bg-[#20ba5a] text-black text-xs font-black uppercase tracking-wider rounded-xl transition"
+                className="flex-1 py-3 px-4 bg-[#25D366] hover:bg-[#20ba5a] text-black text-xs font-semibold rounded-xl transition"
               >
                 Confirm on WhatsApp
               </button>

@@ -3,17 +3,22 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
-import { Wallet, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import LoadingScreen from '@/app/components/ui/LoadingScreen';
 import { showToast } from '@/app/components/ui/Toast';
-import Card from '@/app/components/ui/Card';
 import Button from '@/app/components/ui/Button';
 import ManualPaymentModal from '@/app/components/ManualPaymentModal';
-
 import { getEffectiveUser } from '@/lib/impersonate';
 
-type WalletPageProps = {
-  embedded?: boolean;
+type WalletPageProps = { embedded?: boolean };
+
+const PRESETS = [5000, 10000, 20000, 50000, 100000];
+const naira = (n: number) => '₦' + Math.round(n || 0).toLocaleString('en-NG');
+
+const STATUS_LABEL: Record<string, string> = {
+  completed: 'Done',
+  success: 'Done',
+  pending: 'Waiting',
+  failed: 'Failed',
 };
 
 export default function WalletPage({ embedded = false }: WalletPageProps) {
@@ -21,216 +26,150 @@ export default function WalletPage({ embedded = false }: WalletPageProps) {
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [topUpAmount, setTopUpAmount] = useState(5000);
-  const [processing, setProcessing] = useState(false);
-  const [modalPayment, setModalPayment] = useState<{
-    isOpen: boolean;
-    reference: string;
-    amount: number;
-    bankDetails: any;
-  }>({
-    isOpen: false,
-    reference: '',
-    amount: 0,
-    bankDetails: null,
+  const [amount, setAmount] = useState(5000);
+  const [busy, setBusy] = useState(false);
+  const [modal, setModal] = useState<{ isOpen: boolean; reference: string; amount: number; bankDetails: any }>({
+    isOpen: false, reference: '', amount: 0, bankDetails: null,
   });
 
   const fetchWallet = async () => {
     const { user } = await getEffectiveUser();
-    if (!user) {
-      router.push('/login');
-      return;
-    }
+    if (!user) { router.push('/login'); return; }
 
-    const { data: wallet, error: walletError } = await supabase
-      .from('wallets')
-      .select('balance')
-      .eq('user_id', user.id)
-      .single();
-
-    if (walletError) {
-      setBalance(0);
-    } else {
-      setBalance(wallet?.balance || 0);
-    }
+    const { data: wallet, error: walletError } = await supabase.from('wallets').select('balance').eq('user_id', user.id).single();
+    setBalance(walletError ? 0 : wallet?.balance || 0);
 
     const { data: txns, error: txError } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (!txError) {
-      setTransactions(txns || []);
-    }
+      .from('transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50);
+    if (!txError) setTransactions(txns || []);
     setLoading(false);
   };
 
   useEffect(() => {
     fetchWallet();
-
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
       window.history.replaceState({}, '', embedded ? window.location.pathname : '/dashboard/client/wallet');
       fetchWallet();
       showToast('Wallet funded successfully!', 'success');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [embedded]);
 
-  const handleTopUp = async () => {
+  const payByBank = async () => {
     const { user } = await getEffectiveUser();
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
-    if (topUpAmount < 100) {
-      showToast('Minimum top-up is ₦100', 'error');
-      return;
-    }
-
-    setProcessing(true);
+    if (!user) { router.push('/login'); return; }
+    if (amount < 100) { showToast('The minimum top-up is ₦100.', 'error'); return; }
+    setBusy(true);
     try {
       const res = await fetch('/api/wallet/topup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          amount: topUpAmount,
-        }),
+        body: JSON.stringify({ userId: user.id, amount }),
       });
       const data = await res.json();
       if (data.manual_transfer && data.bankDetails) {
-        setModalPayment({
-          isOpen: true,
-          reference: data.reference,
-          amount: data.amount,
-          bankDetails: data.bankDetails,
-        });
-      } else if (data.authorization_url) {
-        window.location.href = data.authorization_url;
+        setModal({ isOpen: true, reference: data.reference, amount: data.amount, bankDetails: data.bankDetails });
       } else {
-        showToast(data.error || 'Failed to initialize payment', 'error');
+        showToast(data.error || 'Could not start the top-up.', 'error');
       }
     } catch {
       showToast('Network error. Please try again.', 'error');
-    } finally {
-      setProcessing(false);
     }
+    setBusy(false);
   };
 
-  if (loading) {
-    return <LoadingScreen label="Loading wallet..." fullScreen={!embedded} />;
-  }
+  if (loading) return <LoadingScreen label="Loading wallet..." fullScreen={!embedded} />;
 
   return (
-    <div className={`max-w-4xl mx-auto ${embedded ? '' : 'p-6 md:p-10'}`}>
+    <div className={`max-w-3xl mx-auto ${embedded ? '' : 'p-6 md:p-10'}`}>
       {!embedded && (
         <header className="mb-8">
-          <h1 className="text-3xl font-black text-primary flex items-center gap-3">
-            <Wallet className="w-8 h-8 text-emerald-500" />
-            My Wallet
-          </h1>
-          <p className="text-secondary text-sm mt-2">Fund your wallet for faster checkout on future orders.</p>
+          <h2 className="text-2xl font-bold tracking-tight">Wallet</h2>
+          <p className="text-secondary text-sm mt-1">Add money once, then pay for orders from your balance.</p>
         </header>
       )}
 
-      <div className="relative overflow-hidden glass-panel rounded-2xl border border-theme p-6 md:p-8 mb-8">
-        <div
-          className="absolute -right-10 -top-10 w-48 h-48 rounded-full opacity-[0.08] blur-3xl pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #10b981, transparent 70%)' }}
-        />
-        <p className="text-sm font-bold text-secondary uppercase tracking-widest relative z-10">Available Balance</p>
-        <p className="text-4xl md:text-5xl font-bold mt-1 text-primary relative z-10">₦{balance.toLocaleString('en-NG')}</p>
+      <div className="border border-theme rounded-lg bg-card p-6 mb-6">
+        <p className="text-xs text-secondary">Balance</p>
+        <p className="text-4xl font-bold mt-1">{naira(balance)}</p>
       </div>
 
-      <Card padding="lg" className="mb-8">
-        <h2 className="text-lg font-black text-primary mb-1">Add Funds</h2>
-        <p className="text-secondary text-xs mb-4">Select a preset amount or enter a custom value.</p>
-        <div className="flex flex-wrap gap-3 mb-6">
-          {[5000, 10000, 20000, 50000, 100000].map((amt) => (
+      <section className="border border-theme rounded-lg bg-card p-6 mb-8">
+        <h3 className="font-semibold">Add money</h3>
+        <div className="flex flex-wrap gap-2 mt-4">
+          {PRESETS.map((p) => (
             <button
-              key={amt}
+              key={p}
               type="button"
-              onClick={() => setTopUpAmount(amt)}
-              className={`px-5 py-2 rounded-xl font-bold transition ${
-                topUpAmount === amt
-                  ? 'bg-emerald-500 text-black'
-                  : 'bg-secondary border border-theme text-primary hover:border-emerald-500/50'
+              onClick={() => setAmount(p)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                amount === p ? 'bg-accent text-[var(--accent-foreground)] border-accent' : 'border-theme hover:border-strong'
               }`}
             >
-              ₦{amt.toLocaleString('en-NG')}
+              {naira(p)}
             </button>
           ))}
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="mt-4">
+          <label htmlFor="topup-amount" className="block text-sm font-medium mb-1.5">Amount (₦)</label>
           <input
+            id="topup-amount"
             type="number"
             min={100}
-            value={topUpAmount}
-            onChange={(e) => setTopUpAmount(Number(e.target.value))}
-            className="flex-1 bg-secondary border border-theme rounded-xl px-4 py-3 text-primary focus:border-emerald-500 outline-none"
-            placeholder="Custom amount (min ₦100)"
-            aria-label="Top-up amount"
+            value={amount}
+            onChange={(e) => setAmount(Number(e.target.value))}
+            className="input-box w-full sm:w-56"
           />
-          <Button onClick={handleTopUp} disabled={processing || topUpAmount < 100} loading={processing} className="whitespace-nowrap">
-            {processing ? 'Processing...' : 'Top Up via Bank Transfer'}
+        </div>
+
+        <div className="mt-5">
+          <Button onClick={payByBank} loading={busy} loadingText="Please wait…" disabled={busy || amount < 100}>
+            Pay by bank transfer
           </Button>
         </div>
-      </Card>
+        <p className="text-xs text-secondary mt-3">
+          You will see our account details and a reference. Your balance is updated once we confirm the transfer.
+        </p>
+      </section>
 
-      <Card padding="lg">
-        <h2 className="text-lg font-black text-primary mb-4">Transaction History</h2>
+      <section>
+        <h3 className="font-semibold mb-3">History</h3>
         {transactions.length === 0 ? (
-          <div className="empty-state">
-            <Wallet className="w-10 h-10 text-secondary mx-auto mb-3" />
-            <p className="text-secondary text-sm">No transactions yet. Top up your wallet to get started.</p>
-          </div>
+          <p className="text-sm text-secondary border border-dashed border-theme rounded-lg p-6 text-center">Nothing here yet.</p>
         ) : (
-          <div className="space-y-1">
-            {transactions.map((txn) => (
-              <div
-                key={txn.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-theme py-4 last:border-0"
-              >
-                <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg ${txn.type === 'deposit' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                    {txn.type === 'deposit' ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
+          <ul className="divide-y divide-theme border-y border-theme">
+            {transactions.map((t) => {
+              const money = t.type === 'deposit';
+              return (
+                <li key={t.id} className="py-3 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{money ? 'Wallet top-up' : 'Payment'}</p>
+                    <p className="text-xs text-secondary truncate">
+                      {new Date(t.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} · {t.reference}
+                    </p>
                   </div>
-                  <div>
-                    <div className="font-mono text-xs text-secondary">{txn.reference}</div>
-                    <div className="text-xs text-secondary">{new Date(txn.created_at).toLocaleString('en-GB')}</div>
+                  <div className="text-right shrink-0">
+                    <p className={`text-sm font-semibold ${money ? 'text-accent' : ''}`}>{money ? '+' : '−'} {naira(Number(t.amount))}</p>
+                    <p className="text-xs text-secondary">{STATUS_LABEL[String(t.status).toLowerCase()] || t.status}</p>
                   </div>
-                </div>
-                <div className="flex items-center gap-3 sm:text-right">
-                  <div className={`font-black ${txn.type === 'deposit' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    {txn.type === 'deposit' ? '+' : '-'} ₦{txn.amount.toLocaleString('en-NG')}
-                  </div>
-                  <span className="text-[10px] capitalize px-2 py-1 rounded-md bg-secondary border border-theme text-secondary font-bold">
-                    {txn.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
-      </Card>
+      </section>
 
-      {modalPayment.isOpen && modalPayment.bankDetails && (
+      {modal.isOpen && modal.bankDetails && (
         <ManualPaymentModal
-          isOpen={modalPayment.isOpen}
-          onClose={() => {
-            setModalPayment((prev) => ({ ...prev, isOpen: false }));
-            fetchWallet();
-          }}
-          reference={modalPayment.reference}
-          amount={modalPayment.amount}
-          bankDetails={modalPayment.bankDetails}
+          isOpen
+          onClose={() => { setModal((p) => ({ ...p, isOpen: false })); fetchWallet(); }}
+          reference={modal.reference}
+          amount={modal.amount}
+          bankDetails={modal.bankDetails}
           paymentType="WALLET_TOPUP"
-          title="Fund Wallet via Bank Transfer"
-          onSuccess={() => {
-            fetchWallet();
-          }}
+          title="Add money by bank transfer"
+          onSuccess={() => fetchWallet()}
         />
       )}
     </div>

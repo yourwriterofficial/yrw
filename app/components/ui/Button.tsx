@@ -21,12 +21,12 @@ interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'col
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-[var(--accent-foreground)] font-extrabold hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed shadow-sm',
-  secondary: 'bg-secondary text-primary font-bold border border-theme hover:bg-hover disabled:opacity-50 disabled:cursor-not-allowed',
-  outline: 'bg-transparent text-primary font-bold border border-theme hover:bg-hover disabled:opacity-50 disabled:cursor-not-allowed',
-  ghost: 'bg-transparent text-primary font-bold hover:bg-hover disabled:opacity-50 disabled:cursor-not-allowed',
-  soft: 'font-bold disabled:opacity-50 disabled:cursor-not-allowed',
-  danger: 'bg-[var(--danger-bg)] text-danger font-bold border border-danger/20 hover:bg-[color-mix(in_srgb,var(--danger)_20%,transparent)] disabled:opacity-50 disabled:cursor-not-allowed',
+  primary: 'bg-accent text-[var(--accent-foreground)] font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed shadow-sm',
+  secondary: 'bg-secondary text-primary font-medium border border-theme hover:bg-hover disabled:opacity-50 disabled:cursor-not-allowed',
+  outline: 'bg-transparent text-primary font-medium border border-theme hover:bg-hover disabled:opacity-50 disabled:cursor-not-allowed',
+  ghost: 'bg-transparent text-primary font-medium hover:bg-hover disabled:opacity-50 disabled:cursor-not-allowed',
+  soft: 'font-medium disabled:opacity-50 disabled:cursor-not-allowed',
+  danger: 'bg-[var(--danger-bg)] text-danger font-medium border border-danger/20 hover:bg-[color-mix(in_srgb,var(--danger)_20%,transparent)] disabled:opacity-50 disabled:cursor-not-allowed',
 };
 
 const SOFT_COLOR_CLASSES: Record<ButtonColor, string> = {
@@ -37,9 +37,9 @@ const SOFT_COLOR_CLASSES: Record<ButtonColor, string> = {
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-[11px] rounded-lg gap-1.5 h-8',
-  md: 'px-4 py-2 text-xs rounded-xl gap-2 h-10',
-  lg: 'px-6 py-2.5 text-sm rounded-xl gap-2 h-12',
+  sm: 'px-4 py-1.5 text-xs rounded-full gap-1.5 h-8',
+  md: 'px-5 py-2 text-sm rounded-full gap-2 h-10',
+  lg: 'px-7 py-2.5 text-sm rounded-full gap-2 h-12',
   icon: 'p-2 rounded-lg h-10 w-10',
 };
 
@@ -59,7 +59,7 @@ export default function Button({
   ...rest
 }: ButtonProps) {
   const variantClasses = variant === 'soft' ? `${VARIANT_CLASSES.soft} ${SOFT_COLOR_CLASSES[color]}` : VARIANT_CLASSES[variant];
-  const baseClasses = `inline-flex items-center justify-center uppercase tracking-wide transition focus-ring ${variantClasses} ${size === 'icon' ? SIZE_CLASSES.icon : SIZE_CLASSES[size]} ${fullWidth ? 'w-full' : ''} ${className}`;
+  const baseClasses = `inline-flex items-center justify-center transition focus-ring ${variantClasses} ${size === 'icon' ? SIZE_CLASSES.icon : SIZE_CLASSES[size]} ${fullWidth ? 'w-full' : ''} ${className}`;
   const content = loading ? (
     <>
       <Loader2 className="w-4 h-4 animate-spin" />

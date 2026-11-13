@@ -36,8 +36,8 @@ export default function StatCard({ label, value, color = 'text-primary', icon, t
           </div>
         )}
       </div>
-      <div className={`font-black truncate ${color} ${mini ? 'text-xl' : 'text-2xl md:text-3xl'}`}>{value}</div>
-      <div className="text-[10px] text-secondary uppercase tracking-widest font-bold mt-1">{label}</div>
+      <div className={`font-semibold break-words leading-tight ${color} ${mini || String(value).length > 8 ? 'text-xl' : 'text-2xl md:text-3xl'}`}>{value}</div>
+      <div className="text-[11px] text-secondary font-bold mt-1">{label}</div>
     </div>
   );
 }

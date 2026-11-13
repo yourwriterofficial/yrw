@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
         await supabase.from('profiles').upsert({
           id: user.id,
           full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
-          is_admin: isAdminEmail,
+          ...(isAdminEmail ? { is_admin: true } : {}),
         });
 
         if (refCode) {
@@ -58,10 +58,10 @@ export async function GET(request: NextRequest) {
         const brand = requestUrl.searchParams.get('brand');
         const isDevelopa = brand === 'developa' || (next && next.includes('brand=developa')) || requestUrl.hostname.includes('developa.me');
 
-        let redirectUrl = isAdminEmail
-          ? `${requestUrl.origin}/admin`
-          : next && next.startsWith('/')
-            ? `${requestUrl.origin}${next}`
+        let redirectUrl = next && next.startsWith('/')
+          ? `${requestUrl.origin}${next}`
+          : isAdminEmail
+            ? `${requestUrl.origin}/admin`
             : `${requestUrl.origin}/dashboard/client?verified=true`;
 
         if (!isAdminEmail && isDevelopa && !redirectUrl.includes('brand=developa')) {

@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import * as lucide from 'lucide-react';
 import ManualPaymentModal from '@/app/components/ManualPaymentModal';
+import PaymentQR from '@/app/components/PaymentQR';
 
 interface Milestone {
   name: string;
@@ -17,18 +17,7 @@ interface Milestone {
   trigger: string;
 }
 
-interface TimelineItem {
-  phase: string;
-  weeks: string;
-  deliverables: string;
-}
-
-interface DeliverableCategory {
-  category: string;
-  items: string[];
-}
-
-interface CustomInvoice {
+interface Invoice {
   id: string;
   invoice_number: string;
   client_name: string;
@@ -38,538 +27,309 @@ interface CustomInvoice {
   phone: string | null;
   project_title?: string | null;
   project_description?: string | null;
-  deliverables: DeliverableCategory[];
+  deliverables: { category: string; items: string[] }[];
   additional_services: string[];
-  timeline: TimelineItem[];
+  timeline: { phase: string; weeks: string; deliverables: string }[];
   exclusions: string[];
   terms: string[];
-  payment_structure_type: string;
+  payment_details?: { bank_name?: string; account_name?: string; account_number?: string } | null;
   total_amount: number;
   milestones: Milestone[];
   status: 'PENDING' | 'PARTIALLY_PAID' | 'PAID';
   created_at: string;
 }
 
-export default function PublicInvoicePage() {
-  const params = useParams();
+const naira = (n: number) => '₦' + Math.round(n || 0).toLocaleString('en-NG');
+const dateOf = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+function looksLikeSoftware(inv: Invoice | null, brandParam: string | null) {
+  if (brandParam === 'developa') return true;
+  if (!inv) return false;
+  const t = `${inv.project_title || ''} ${inv.company_name || ''}`.toLowerCase();
+  return inv.invoice_number?.startsWith('DEV') || /software|script|developa|full stack|mobile app|\bapi\b/.test(t) || (inv.timeline?.length ?? 0) > 0;
+}
+
+export default function InvoicePage() {
+  const { id: invoiceNumber } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const invoiceNumber = params?.id as string;
 
   const [loading, setLoading] = useState(true);
-  const [invoice, setInvoice] = useState<CustomInvoice | null>(null);
-  const [isDevelopa, setIsDevelopa] = useState(false);
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [contactEmail, setContactEmail] = useState('yourwriterofficial@gmail.com');
-  const [processingIndex, setProcessingIndex] = useState<number | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [manualModal, setManualModal] = useState<{
-    isOpen: boolean;
-    reference: string;
-    amount: number;
-    bankDetails: any;
-    milestoneIndex?: number;
-  }>({
-    isOpen: false,
-    reference: '',
-    amount: 0,
-    bankDetails: null,
+  const [origin, setOrigin] = useState('');
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [manualModal, setManualModal] = useState<{ isOpen: boolean; reference: string; amount: number; bankDetails: any; milestoneIndex?: number }>({
+    isOpen: false, reference: '', amount: 0, bankDetails: null,
   });
+
+  useEffect(() => { setOrigin(window.location.origin); }, []);
 
   useEffect(() => {
     if (!invoiceNumber) return;
-    const fetchInvoice = async () => {
+    (async () => {
       try {
         supabase.from('invoice_defaults').select('contact_email').eq('id', 1).maybeSingle()
-          .then(({ data: d }) => { if (d?.contact_email) setContactEmail(d.contact_email); });
-
+          .then(({ data }) => { if (data?.contact_email) setContactEmail(data.contact_email); });
         const res = await fetch(`/api/invoice/${encodeURIComponent(invoiceNumber)}`);
         const json = await res.json();
-
-        if (!res.ok || !json.invoice) {
-          setErrorMsg('Invoice or Receipt not found.');
-        } else {
-          setInvoice(json.invoice);
-        }
-      } catch (err: any) {
-        setErrorMsg('Error loading invoice details.');
+        if (!res.ok || !json.invoice) setError('Invoice not found.');
+        else setInvoice(json.invoice);
+      } catch {
+        setError('We could not load this invoice.');
       } finally {
         setLoading(false);
       }
-    };
-    fetchInvoice();
+    })();
   }, [invoiceNumber]);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const host = window.location.host.toLowerCase();
-      const brandParam = searchParams?.get('brand');
-      const savedBrand = localStorage.getItem('developa_brand');
-      const isDevDomain = host.includes('developa.me') || host.includes('developa.local');
-      const isDevQuery = brandParam === 'developa';
-      const isDevSaved = savedBrand === 'developa';
-
-      const isDevInvoice = !!(
-        invoice?.invoice_number?.startsWith('DEV') ||
-        invoice?.company_name?.toLowerCase().includes('developa') ||
-        invoice?.project_title?.toLowerCase().includes('software') ||
-        invoice?.project_title?.toLowerCase().includes('script') ||
-        invoice?.project_title?.toLowerCase().includes('developa') ||
-        invoice?.project_title?.toLowerCase().includes('full stack') ||
-        invoice?.project_title?.toLowerCase().includes('api') ||
-        invoice?.project_title?.toLowerCase().includes('mobile app') ||
-        (invoice?.timeline && invoice.timeline.length > 0)
-      );
-
-      setIsDevelopa(isDevDomain || isDevQuery || (isDevSaved && isDevInvoice) || isDevInvoice);
-    }
-  }, [searchParams, invoice]);
-
-  const handlePayMilestone = async (milestone: Milestone, index: number) => {
-    if (!invoice) return;
-    setProcessingIndex(index);
-    setErrorMsg('');
+  const payByTransfer = async (m: Milestone, index: number) => {
+    setBusy(`bank-${index}`);
+    setError('');
     try {
-      const response = await fetch('/api/paystack/create-invoice', {
+      const res = await fetch('/api/paystack/create-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: invoice.invoice_number,
-          amount: milestone.amount,
-          email: invoice.email,
-          name: invoice.client_name,
-          type: `INDEX-${index}`
-        })
+        body: JSON.stringify({ orderId: invoice!.invoice_number, amount: m.amount, email: invoice!.email, name: invoice!.client_name, type: `INDEX-${index}` }),
       });
-
-      const data = await response.json();
-      if (response.ok && data.manual_transfer) {
-        setManualModal({
-          isOpen: true,
-          reference: data.tx_ref,
-          amount: data.amount,
-          bankDetails: data.bankDetails,
-          milestoneIndex: index,
-        });
-      } else if (response.ok && data.paid_via_wallet) {
-        alert('Milestone successfully paid instantly using your wallet balance!');
+      const data = await res.json();
+      if (res.ok && data.manual_transfer) {
+        setManualModal({ isOpen: true, reference: data.tx_ref, amount: data.amount, bankDetails: data.bankDetails, milestoneIndex: index });
+      } else if (res.ok && data.paid_via_wallet) {
         window.location.reload();
-      } else if (response.ok && data.link) {
-        window.location.href = data.link;
+        return;
       } else {
-        setErrorMsg(data.error || 'Failed to initialize payment.');
+        setError(data.error || 'Could not start the payment.');
       }
-    } catch (err: any) {
-      setErrorMsg('Failed to connect to payment gateway.');
-    } finally {
-      setProcessingIndex(null);
+    } catch {
+      setError('Could not reach the payment service.');
     }
+    setBusy(null);
   };
 
-  if (loading) {
+  const copyLink = async (link: string) => {
+    try { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
+  };
+
+  if (loading) return <div className="min-h-screen bg-primary flex items-center justify-center text-secondary text-sm">Loading invoice…</div>;
+
+  if (!invoice) {
     return (
-      <div className="min-h-screen bg-primary flex flex-col items-center justify-center text-primary">
-        <div className="w-12 h-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mb-4"></div>
-        <p className="text-sm font-bold text-secondary uppercase tracking-widest">Loading invoice details...</p>
+      <div className="min-h-screen bg-primary text-primary flex flex-col items-center justify-center text-center p-6">
+        <h1 className="text-2xl font-bold">Invoice not found</h1>
+        <p className="text-secondary text-sm mt-2 max-w-sm">The link may be wrong, or the invoice was removed.</p>
+        <button onClick={() => router.push('/')} className="mt-5 text-accent font-semibold hover:underline text-sm">Go to the home page</button>
       </div>
     );
   }
 
-  if (errorMsg && !invoice) {
-    return (
-      <div className="min-h-screen bg-primary flex flex-col items-center justify-center text-center p-6">
-        <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center text-red-500 mb-6">
-          <lucide.AlertCircle className="w-8 h-8" />
-        </div>
-        <h2 className="text-2xl font-black text-primary tracking-tight mb-2">Invoice Not Found</h2>
-        <p className="text-secondary text-sm max-w-sm mb-6">The link might be broken or the invoice has been removed.</p>
-        <button onClick={() => router.push('/')} className="px-6 py-2.5 bg-secondary border border-theme text-primary font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-white/5 transition">
-          Go to Home
-        </button>
-      </div>
-    );
-  }
-
-  if (!invoice) return null;
-
+  const software = looksLikeSoftware(invoice, searchParams?.get('brand') ?? null);
+  const brand = software ? 'developa.me' : 'ResearchWriter';
   const milestones = invoice.milestones || [];
-  const allPaid = invoice.status === 'PAID' || milestones.every(m => m.paid);
-  const nextUnpaidIdx = milestones.findIndex(m => !m.paid);
+  const allPaid = invoice.status === 'PAID' || (milestones.length > 0 && milestones.every((m) => m.paid));
+  const nextUnpaid = milestones.findIndex((m) => !m.paid);
+  const paidTotal = milestones.filter((m) => m.paid).reduce((s, m) => s + Number(m.amount), 0);
+  const balance = Math.max(0, Number(invoice.total_amount) - paidTotal);
+  const bank = invoice.payment_details;
+  const linkFor = (i: number) => `${origin}/pay/${encodeURIComponent(invoice.invoice_number)}?m=${i}`;
+
+  const h = 'text-[11px] font-semibold uppercase tracking-wider text-neutral-500';
 
   return (
-    <div className="min-h-screen bg-primary text-primary py-12 px-4 sm:px-6 lg:px-8 print:bg-white print:text-black print:py-0 print:px-0">
-      
-      {/* Utility Bar (Hidden in Print) */}
-      <div className="max-w-4xl mx-auto mb-6 flex justify-between items-center print:hidden">
-        <button 
-          onClick={() => window.history.back()} 
-          className="flex items-center gap-2 text-xs font-bold text-secondary hover:text-primary transition"
-        >
-          <lucide.ArrowLeft className="w-4 h-4" /> Back
+    <div className="min-h-screen bg-primary py-8 px-4 print:bg-white print:p-0">
+      {/* Toolbar: screen only */}
+      <div className="max-w-3xl mx-auto mb-4 flex items-center justify-between print:hidden">
+        <button onClick={() => window.history.back()} className="text-sm text-secondary hover:text-primary">← Back</button>
+        <button onClick={() => window.print()} className="text-sm font-semibold rounded-lg border border-theme bg-card px-4 py-2 hover:border-strong">
+          Print or save as PDF
         </button>
-        <div className="flex gap-3">
-          <button 
-            onClick={() => window.print()} 
-            className="flex items-center gap-2 px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer"
-          >
-            <lucide.Printer className="w-4 h-4" /> Print / Save PDF
-          </button>
-        </div>
       </div>
 
-      {/* Main Invoice Container */}
-      <div className="max-w-4xl mx-auto bg-card border border-theme rounded-[32px] overflow-hidden shadow-2xl print:border-none print:shadow-none print:rounded-none">
-        
-        {/* Header Ribbon */}
-        <div className={`p-8 sm:p-12 border-b border-theme flex flex-col md:flex-row justify-between gap-6 relative ${
-          allPaid 
-            ? (isDevelopa ? 'bg-gradient-to-r from-cyan-600/10 via-cyan-600/5 to-transparent border-cyan-500/20' : 'bg-gradient-to-r from-emerald-600/10 via-emerald-600/5 to-transparent border-emerald-500/20')
-            : (isDevelopa ? 'bg-gradient-to-r from-cyan-600/10 via-blue-600/5 to-transparent' : 'bg-gradient-to-r from-purple-600/10 via-purple-600/5 to-transparent')
-        }`}>
-          
+      {/* The paper */}
+      <article className="max-w-3xl mx-auto bg-white text-neutral-900 rounded-lg border border-theme shadow-sm print:border-0 print:shadow-none print:rounded-none p-6 sm:p-10 print:p-0">
+        <header className="flex flex-col sm:flex-row sm:justify-between gap-4 pb-6 border-b border-neutral-200">
           <div>
-            <div className="flex items-center gap-4 mb-3">
-              <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${
-                allPaid 
-                  ? (isDevelopa ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20')
-                  : (isDevelopa ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-purple-500/10 text-purple-400 border-purple-500/20')
-              }`}>
-                {allPaid 
-                  ? (isDevelopa ? 'Developa Official Receipt' : 'Official Receipt') 
-                  : (isDevelopa ? 'Developa Software Agreement & Invoice' : 'Service Agreement & Invoice')}
-              </span>
-              <span className="text-secondary text-xs font-bold font-mono">
-                {invoice.invoice_number}
-              </span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-tight mb-2">
-              {invoice.project_title || (allPaid 
-                ? (isDevelopa ? 'Developa Payment Receipt' : 'Payment Receipt') 
-                : (isDevelopa ? 'Software Engineering Proposal & Invoice' : 'Project Proposal & Invoice'))}
-            </h1>
-            <p className="text-secondary text-sm">
-              {invoice.project_title ? (allPaid ? (isDevelopa ? 'Developa Official Receipt • ' : 'Payment Receipt • ') : (isDevelopa ? 'Developa Engineering Invoice • ' : 'Project Invoice • ')) : ''}Issued on {new Date(invoice.created_at).toLocaleDateString()}
+            <p className="text-xl font-bold tracking-tight" style={{ color: 'var(--accent)' }}>{brand}</p>
+            <p className="text-xs text-neutral-500 mt-1">{contactEmail} · Nigeria</p>
+          </div>
+          <div className="sm:text-right">
+            <p className="text-2xl font-bold tracking-tight">{allPaid ? 'Receipt' : 'Invoice'}</p>
+            <p className="text-sm text-neutral-600 mt-1 font-mono">{invoice.invoice_number}</p>
+            <p className="text-xs text-neutral-500">Issued {dateOf(invoice.created_at)}</p>
+          </div>
+        </header>
+
+        <section className="grid sm:grid-cols-2 gap-6 py-6 border-b border-neutral-200">
+          <div>
+            <p className={h}>Billed to</p>
+            <p className="font-semibold mt-1">{invoice.client_name}</p>
+            {invoice.company_name && <p className="text-sm text-neutral-600">{invoice.company_name}</p>}
+            <p className="text-sm text-neutral-600">{invoice.email}</p>
+            {invoice.phone && <p className="text-sm text-neutral-600">{invoice.phone}</p>}
+            {invoice.address && <p className="text-sm text-neutral-600">{invoice.address}</p>}
+          </div>
+          <div className="sm:text-right">
+            <p className={h}>Project</p>
+            <p className="font-semibold mt-1">{invoice.project_title || 'Project'}</p>
+            <p className={`${h} mt-4`}>Status</p>
+            <p className="font-semibold mt-1">
+              {allPaid ? 'Paid in full' : invoice.status === 'PARTIALLY_PAID' ? 'Part paid' : 'Awaiting payment'}
             </p>
           </div>
+        </section>
 
-          <div className="flex flex-col md:items-end justify-between text-left md:text-right">
-            <div>
-              <p className="text-xs uppercase font-black tracking-widest text-secondary mb-1">Total Project Budget</p>
-              <p className={`text-4xl font-black ${
-                allPaid 
-                  ? (isDevelopa ? 'text-cyan-400' : 'text-emerald-500') 
-                  : (isDevelopa ? 'text-cyan-400' : 'text-purple-500')
-              }`}>
-                ₦{invoice.total_amount.toLocaleString()}
-              </p>
-            </div>
-            {allPaid && (
-              <div className={`mt-4 inline-flex items-center gap-2 px-4 py-2 ${
-                isDevelopa ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-              } border rounded-full text-xs font-black uppercase tracking-wider`}>
-                <lucide.ShieldCheck className="w-4 h-4 animate-pulse" /> Fully Paid & Confirmed
-              </div>
-            )}
-          </div>
+        {invoice.project_description && (
+          <section className="py-6 border-b border-neutral-200">
+            <p className={h}>Description</p>
+            <p className="text-sm mt-2 whitespace-pre-line text-neutral-700">{invoice.project_description}</p>
+          </section>
+        )}
 
-          {/* Large stamp background for print */}
-          {allPaid && (
-            <div className={`absolute top-1/2 right-12 -translate-y-1/2 opacity-[0.03] pointer-events-none print:opacity-[0.08] select-none ${
-              isDevelopa ? 'text-cyan-500' : 'text-emerald-500'
-            } font-black text-9xl tracking-tighter uppercase rotate-12`}>
-              Paid
-            </div>
-          )}
-        </div>
-
-        <div className="p-8 sm:p-12 space-y-10">
-
-          {/* Error Message Box */}
-          {errorMsg && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl flex items-center gap-3 text-sm font-bold">
-              <lucide.AlertCircle className="w-5 h-5 shrink-0" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          {/* Client & Contractor Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-b border-theme pb-8">
-            <div className="space-y-4">
-              <h3 className="text-xs font-black uppercase text-secondary tracking-widest">Client / Bill To</h3>
-              <div className="space-y-2 text-sm">
-                <p className="font-black text-primary text-base">{invoice.client_name}</p>
-                {invoice.company_name && (
-                  <p className="text-secondary font-bold flex items-center gap-2">
-                    <lucide.Building className="w-4 h-4 text-secondary shrink-0" /> {invoice.company_name}
-                  </p>
-                )}
-                <p className="text-secondary font-medium flex items-center gap-2">
-                  <lucide.Mail className="w-4 h-4 text-secondary shrink-0" /> {invoice.email}
-                </p>
-                {invoice.phone && (
-                  <p className="text-secondary font-medium flex items-center gap-2">
-                    <lucide.Phone className="w-4 h-4 text-secondary shrink-0" /> {invoice.phone}
-                  </p>
-                )}
-                {invoice.address && (
-                  <p className="text-secondary font-medium flex items-center gap-2">
-                    <lucide.MapPin className="w-4 h-4 text-secondary shrink-0" /> {invoice.address}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-4 md:border-l md:border-theme md:pl-8">
-              <h3 className="text-xs font-black uppercase text-secondary tracking-widest">Contractor / Issuer</h3>
-              <div className="space-y-2 text-sm">
-                <p className="font-black text-primary text-base">
-                  {isDevelopa ? 'Developa Technologies' : 'YourResearchWriter'}
-                </p>
-                <p className="text-secondary font-medium flex items-center gap-2">
-                  <lucide.Building className="w-4 h-4 text-secondary shrink-0" />
-                  {isDevelopa ? 'Full-Stack Software, Web & Mobile Engineering' : 'Tech & Writing Services'}
-                </p>
-                <p className="text-secondary font-medium flex items-center gap-2">
-                  <lucide.Mail className="w-4 h-4 text-secondary shrink-0" />
-                  {contactEmail}
-                </p>
-                <p className="text-secondary font-medium flex items-center gap-2">
-                  <lucide.Globe className="w-4 h-4 text-secondary shrink-0" />
-                  {isDevelopa ? 'https://developa.me' : 'https://yourresearchwriter.com.ng'}
-                </p>
-                <p className="text-secondary font-medium flex items-center gap-2">
-                  <lucide.MapPin className="w-4 h-4 text-secondary shrink-0" /> Nigeria
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Scope of Deliverables */}
-          <div className="space-y-4">
-            <h3 className="text-xs font-black uppercase text-secondary tracking-widest flex items-center gap-2">
-              <lucide.FileText className={`w-4 h-4 ${isDevelopa ? 'text-cyan-400' : 'text-purple-400'}`} /> Scope of Work & Deliverables
-            </h3>
-            <div className="bg-secondary/40 border border-theme rounded-2xl p-6 space-y-5">
-              {invoice.deliverables && invoice.deliverables.length > 0 ? invoice.deliverables.map((cat, catIdx) => (
-                <div key={catIdx}>
-                  <p className={`text-xs font-black uppercase tracking-wider ${isDevelopa ? 'text-cyan-400' : 'text-purple-400'} mb-2`}>{cat.category}</p>
-                  <ul className="space-y-2 ml-1">
-                    {(cat.items || []).map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-3 text-sm text-primary font-bold">
-                        <lucide.Check className={`w-4 h-4 ${isDevelopa ? 'text-cyan-400' : 'text-purple-400'} mt-0.5 shrink-0`} />
-                        <span>{item}</span>
-                      </li>
-                    ))}
+        {invoice.deliverables?.length > 0 && (
+          <section className="py-6 border-b border-neutral-200">
+            <p className={h}>What is included</p>
+            <div className="mt-3 space-y-4">
+              {invoice.deliverables.map((cat, i) => (
+                <div key={i}>
+                  <p className="text-sm font-semibold">{cat.category}</p>
+                  <ul className="mt-1 text-sm text-neutral-700 list-disc pl-5 space-y-0.5">
+                    {(cat.items || []).map((item, j) => <li key={j}>{item}</li>)}
                   </ul>
                 </div>
-              )) : (
-                <p className="text-secondary text-sm">Standard system design & academic analysis deliverables.</p>
-              )}
+              ))}
             </div>
-          </div>
+          </section>
+        )}
 
-          {/* Additional Services Included */}
-          {invoice.additional_services && invoice.additional_services.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-xs font-black uppercase text-secondary tracking-widest flex items-center gap-2">
-                <lucide.PlusCircle className="w-4 h-4 text-emerald-400" /> Additional Services Included
-              </h3>
-              <div className="bg-secondary/20 border border-theme rounded-2xl p-6">
-                <ul className="space-y-2">
-                  {invoice.additional_services.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-secondary font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
+        {invoice.additional_services?.length > 0 && (
+          <section className="py-6 border-b border-neutral-200">
+            <p className={h}>Also included</p>
+            <ul className="mt-2 text-sm text-neutral-700 list-disc pl-5 space-y-0.5">
+              {invoice.additional_services.map((s, i) => <li key={i}>{s}</li>)}
+            </ul>
+          </section>
+        )}
 
-          {/* Sprints Timeline (If development type) */}
-          {invoice.timeline && invoice.timeline.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-xs font-black uppercase text-secondary tracking-widest flex items-center gap-2">
-                <lucide.Activity className="w-4 h-4 text-purple-400" /> Sprints & Delivery Schedule
-              </h3>
-              <div className="border border-theme rounded-2xl overflow-hidden">
-                <table className="w-full text-left text-xs sm:text-sm">
-                  <thead className="bg-secondary border-b border-theme text-secondary font-bold uppercase tracking-wider text-[10px]">
-                    <tr>
-                      <th className="p-4">Week(s)</th>
-                      <th className="p-4">Phase / Sprint</th>
-                      <th className="p-4">Key Scope / Output</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-theme text-primary font-bold">
-                    {invoice.timeline.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-white/5 transition-colors">
-                        <td className="p-4 text-purple-400">{item.weeks}</td>
-                        <td className="p-4 text-primary">{item.phase}</td>
-                        <td className="p-4 text-secondary font-medium">{item.deliverables}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+        {invoice.timeline?.length > 0 && (
+          <section className="py-6 border-b border-neutral-200">
+            <p className={h}>Schedule</p>
+            <table className="w-full text-sm mt-2">
+              <thead>
+                <tr className="text-left text-neutral-500 text-xs">
+                  <th className="py-1.5 pr-3 font-medium">When</th>
+                  <th className="py-1.5 pr-3 font-medium">Phase</th>
+                  <th className="py-1.5 font-medium">Output</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {invoice.timeline.map((t, i) => (
+                  <tr key={i}>
+                    <td className="py-2 pr-3 whitespace-nowrap">{t.weeks}</td>
+                    <td className="py-2 pr-3 font-medium">{t.phase}</td>
+                    <td className="py-2 text-neutral-600">{t.deliverables}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
 
-          {/* Exclusions */}
-          {invoice.exclusions && invoice.exclusions.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-xs font-black uppercase text-secondary tracking-widest flex items-center gap-2">
-                <lucide.AlertCircle className="w-4 h-4 text-amber-400" /> Exclusions / Out of Scope
-              </h3>
-              <div className="bg-secondary/20 border border-theme rounded-2xl p-6">
-                <ul className="space-y-2">
-                  {invoice.exclusions.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-secondary font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0"></span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
+        {/* Payment schedule */}
+        <section className="py-6 border-b border-neutral-200">
+          <p className={h}>Payments</p>
 
-          {/* Payment Milestones (interactive for guest) */}
-          <div className="space-y-4">
-            <h3 className="text-xs font-black uppercase text-secondary tracking-widest flex items-center gap-2">
-              <lucide.CreditCard className="w-4 h-4 text-purple-400" /> Payment Schedule & Milestones
-            </h3>
-            <div className="space-y-3">
-              {milestones.map((m, idx) => {
-                const isNextUnpaid = idx === nextUnpaidIdx;
-                return (
-                  <div 
-                    key={idx} 
-                    className={`border rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all duration-300 ${
-                      m.paid 
-                        ? 'bg-emerald-500/[0.02] border-emerald-500/20' 
-                        : isNextUnpaid
-                          ? 'bg-purple-500/[0.02] border-purple-500/30 shadow-lg shadow-purple-500/5'
-                          : 'bg-secondary/10 border-theme'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
-                          m.paid
-                            ? 'bg-emerald-500/10 text-emerald-400'
-                            : 'bg-secondary text-secondary'
-                        }`}>
-                          Milestone {idx + 1} ({m.percentage}%)
-                        </span>
-                        <p className="font-black text-primary text-sm sm:text-base">{m.name}</p>
-                      </div>
-                      <p className="text-xs text-secondary font-medium">Trigger: {m.trigger}</p>
-                      {m.paid_at && (
-                        <p className="text-[10px] text-emerald-500 font-bold">
-                          ✓ Paid via card reference on {new Date(m.paid_at).toLocaleDateString()} at {new Date(m.paid_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </p>
-                      )}
+          {error && <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md p-3 mt-3 print:hidden" role="alert">{error}</p>}
+
+          <div className="mt-3 divide-y divide-neutral-200 border-y border-neutral-200">
+            {milestones.map((m, i) => {
+              const isNext = !allPaid && i === nextUnpaid;
+              return (
+                <div key={i} className="py-4">
+                  <div className="flex justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-sm">{i + 1}. {m.name} <span className="text-neutral-500 font-normal">({m.percentage}%)</span></p>
+                      {m.trigger && <p className="text-xs text-neutral-500 mt-0.5">Due: {m.trigger}</p>}
+                      {m.paid && m.paid_at && <p className="text-xs text-neutral-500 mt-0.5">Paid on {dateOf(m.paid_at)}</p>}
                     </div>
-
-                    <div className="flex sm:flex-col items-end justify-between sm:justify-center w-full sm:w-auto gap-4">
-                      <div className="text-right">
-                        <p className="text-xs text-secondary font-bold">Amount</p>
-                        <p className="text-lg font-black text-primary">₦{m.amount.toLocaleString()}</p>
-                      </div>
-
-                      {!allPaid && isNextUnpaid && (
-                        <button
-                          onClick={() => handlePayMilestone(m, idx)}
-                          disabled={processingIndex !== null}
-                          className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition shadow-lg shadow-emerald-500/10 disabled:opacity-50 flex items-center gap-2 cursor-pointer print:hidden"
-                        >
-                          {processingIndex === idx ? (
-                            <>
-                              <div className="w-3.5 h-3.5 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
-                              Connecting...
-                            </>
-                          ) : (
-                            <>
-                              <lucide.CreditCard className="w-4 h-4" /> Pay Milestone
-                            </>
-                          )}
-                        </button>
-                      )}
-
-                      {!m.paid && !isNextUnpaid && (
-                        <span className="text-[10px] font-black uppercase tracking-wider text-secondary bg-secondary border border-theme px-3 py-1.5 rounded-lg cursor-not-allowed select-none">
-                          Locked
-                        </span>
-                      )}
+                    <div className="text-right shrink-0">
+                      <p className="font-semibold">{naira(m.amount)}</p>
+                      <p className={`text-xs mt-0.5 ${m.paid ? 'text-green-700 font-semibold' : 'text-neutral-500'}`}>{m.paid ? 'Paid' : isNext ? 'Due now' : 'Later'}</p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  {/* Payment link: on screen and on the printed copy */}
+                  {!m.paid && origin && (
+                    <div className="mt-3 flex gap-4 items-center rounded-md bg-neutral-50 border border-neutral-200 p-3">
+                      <PaymentQR value={linkFor(i)} size={84} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold">Pay this step</p>
+                        <p className="text-xs text-neutral-600 mt-0.5">Scan the code or open the link to see the bank details and reference.</p>
+                        <p className="text-xs font-mono break-all mt-1.5" style={{ color: 'var(--accent)' }}>{linkFor(i)}</p>
+                        {isNext && (
+                          <div className="flex flex-wrap gap-2 mt-2.5 print:hidden">
+                            <button
+                              onClick={() => payByTransfer(m, i)}
+                              disabled={busy !== null}
+                              className="text-sm font-semibold rounded-md px-4 py-2 text-white disabled:opacity-60"
+                              style={{ background: 'var(--accent)' }}
+                            >
+                              {busy === `bank-${i}` ? 'Please wait…' : 'Pay by bank transfer'}
+                            </button>
+                            <button onClick={() => copyLink(linkFor(i))} className="text-sm text-neutral-600 hover:text-neutral-900 px-2">
+                              {copied ? 'Copied' : 'Copy link'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
-          {/* Terms & Conditions */}
-          {invoice.terms && invoice.terms.length > 0 && (
-            <div className="space-y-4 pt-4 border-t border-theme">
-              <h3 className="text-xs font-black uppercase text-secondary tracking-widest">Agreement Terms & Conditions</h3>
-              <ol className="text-secondary text-xs leading-relaxed bg-secondary/10 p-5 rounded-2xl border border-theme font-medium space-y-2 list-decimal list-inside">
-                {invoice.terms.map((term, idx) => (
-                  <li key={idx}>{term}</li>
-                ))}
-              </ol>
-            </div>
-          )}
-
-          {/* Signatures & Execution Section */}
-          <div className="pt-8 border-t border-theme grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="border border-theme rounded-2xl p-6 bg-secondary/10 text-center relative overflow-hidden">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-secondary mb-8">Client Acceptance</h4>
-              {allPaid ? (
-                <div className="space-y-2">
-                  <p className="text-emerald-400 font-black text-lg tracking-tight font-serif italic">Digitally Signed & Accepted</p>
-                  <p className="text-[10px] text-secondary font-bold">Client Email: {invoice.email}</p>
-                  <p className="text-[9px] text-secondary uppercase font-mono">Date: {new Date(invoice.created_at).toLocaleDateString()}</p>
-                </div>
-              ) : (
-                <div className="py-4 text-xs text-secondary font-bold">
-                  Awaiting sign-off via initial deposit payment
-                </div>
-              )}
-            </div>
-
-            <div className="border border-theme rounded-2xl p-6 bg-secondary/10 text-center relative overflow-hidden">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-secondary mb-8">
-                {isDevelopa ? 'Developa Engineering Leadership' : 'YourWriter Management'}
-              </h4>
-              {allPaid ? (
-                <div className="space-y-2">
-                  <p className={`${isDevelopa ? 'text-cyan-400' : 'text-emerald-400'} font-black text-lg tracking-tight font-serif italic`}>
-                    Verified & Execution Released
-                  </p>
-                  <p className="text-[10px] text-secondary font-bold">
-                    Signee: {isDevelopa ? 'Principal Software Architect' : 'Lead Architect'}
-                  </p>
-                  <p className="text-[9px] text-secondary uppercase font-mono">Status: COMPLETED / RECEIPT GENERATED</p>
-                </div>
-              ) : (
-                <div className="space-y-2 py-2">
-                  <p className={`${isDevelopa ? 'text-cyan-400' : 'text-purple-400'} font-bold text-xs`}>Awaiting Initial Deposit</p>
-                  <p className="text-[10px] text-secondary">
-                    {isDevelopa ? 'Bank Preset: Developa Software Engineering' : 'Bank Preset: YourWriter Dev & Consulting'}
-                  </p>
-                </div>
-              )}
-            </div>
+          <div className="mt-4 ml-auto max-w-xs text-sm space-y-1">
+            <div className="flex justify-between"><span className="text-neutral-600">Total</span><span className="font-semibold">{naira(invoice.total_amount)}</span></div>
+            <div className="flex justify-between"><span className="text-neutral-600">Paid</span><span>{naira(paidTotal)}</span></div>
+            <div className="flex justify-between border-t border-neutral-200 pt-1"><span className="font-semibold">Balance</span><span className="font-bold">{naira(balance)}</span></div>
           </div>
+        </section>
 
-        </div>
-      </div>
+        {!allPaid && bank?.account_number && (
+          <section className="py-6 border-b border-neutral-200">
+            <p className={h}>Bank transfer</p>
+            <p className="text-sm mt-2">
+              {bank.bank_name} · {bank.account_name} · <span className="font-mono font-semibold">{bank.account_number}</span>
+            </p>
+            <p className="text-xs text-neutral-500 mt-1">Use <span className="font-mono">{invoice.invoice_number}</span> as the payment reference, then send us the receipt.</p>
+          </section>
+        )}
+
+        {invoice.exclusions?.length > 0 && (
+          <section className="py-6 border-b border-neutral-200">
+            <p className={h}>Not included</p>
+            <ul className="mt-2 text-sm text-neutral-700 list-disc pl-5 space-y-0.5">
+              {invoice.exclusions.map((e, i) => <li key={i}>{e}</li>)}
+            </ul>
+          </section>
+        )}
+
+        {invoice.terms?.length > 0 && (
+          <section className="pt-6">
+            <p className={h}>Terms</p>
+            <ol className="mt-2 text-xs text-neutral-600 list-decimal pl-5 space-y-1">
+              {invoice.terms.map((t, i) => <li key={i}>{t}</li>)}
+            </ol>
+          </section>
+        )}
+      </article>
 
       {manualModal.isOpen && manualModal.bankDetails && (
         <ManualPaymentModal
-          isOpen={manualModal.isOpen}
-          onClose={() => setManualModal((prev) => ({ ...prev, isOpen: false }))}
+          isOpen
+          onClose={() => setManualModal((p) => ({ ...p, isOpen: false }))}
           reference={manualModal.reference}
           amount={manualModal.amount}
           bankDetails={manualModal.bankDetails}
@@ -577,10 +337,8 @@ export default function PublicInvoicePage() {
           invoiceId={invoice.invoice_number}
           milestoneIndex={manualModal.milestoneIndex}
           paymentType="CUSTOM_INVOICE"
-          title={isDevelopa ? `Developa Milestone - ${invoice.invoice_number}` : `Milestone Payment - ${invoice.invoice_number}`}
-          onSuccess={() => {
-            alert('Transfer proof submitted. Once verified by our team, this invoice will be updated.');
-          }}
+          title={`Payment for invoice ${invoice.invoice_number}`}
+          onSuccess={() => alert('Transfer proof submitted. We will update this invoice once it is confirmed.')}
         />
       )}
     </div>

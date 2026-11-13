@@ -6,13 +6,13 @@ type LoadingScreenProps = {
 
 const ACCENT_CLASSES: Record<'emerald' | 'purple' | 'brand', string> = {
   emerald: 'border-success/20 border-t-success',
-  purple: 'border-purple-500/20 border-t-purple-500',
+  purple: 'border-accent/20 border-t-purple-500',
   brand: 'border-brand-500/20 border-t-brand-500',
 };
 
 const ACCENT_TEXT_CLASSES: Record<'emerald' | 'purple' | 'brand', string> = {
   emerald: 'text-success',
-  purple: 'text-purple-500',
+  purple: 'text-accent',
   brand: 'text-brand-500',
 };
 

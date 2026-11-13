@@ -42,7 +42,7 @@ export default function SelectServicePage() {
           <ArrowRight className="w-4 h-4 rotate-180" /> Back to Dashboard
         </Link>
         <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-black text-primary mb-4">What would you like to order?</h1>
+          <h1 className="text-3xl md:text-4xl font-semibold text-primary mb-4">What would you like to order?</h1>
           <p className="text-secondary">Your account details will be pre‑filled automatically.</p>
           <p className="text-xs text-emerald-400 mt-2">Logged in as: {profile?.full_name || user.email}</p>
         </div>
@@ -54,7 +54,7 @@ export default function SelectServicePage() {
             <div className="w-12 h-12 md:w-14 md:h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-6 border border-emerald-500/20">
               <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
             </div>
-            <h3 className="text-lg md:text-xl font-black mb-3 break-words text-primary">Standard Academic Research</h3>
+            <h3 className="text-lg md:text-xl font-semibold mb-3 break-words text-primary">Standard Academic Research</h3>
             <p className="text-xs md:text-sm text-secondary mb-6 leading-relaxed break-words">Essays, term papers, dissertations – with automated volume discounts and plagiarism checks.</p>
             <ul className="space-y-2 text-xs font-medium text-secondary">
               <li className="flex items-center gap-2 break-words">✅ Instant dynamic quotes</li>
@@ -68,7 +68,7 @@ export default function SelectServicePage() {
             <div className="w-12 h-12 md:w-14 md:h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-6 border border-purple-500/20">
               <LineChart className="w-5 h-5 md:w-6 md:h-6 text-purple-400" />
             </div>
-            <h3 className="text-lg md:text-xl font-black mb-3 break-words text-primary">Statistics, Maths, Financial & Fieldwork</h3>
+            <h3 className="text-lg md:text-xl font-semibold mb-3 break-words text-primary">Statistics, Maths, Financial & Fieldwork</h3>
             <p className="text-xs md:text-sm text-secondary mb-6 leading-relaxed break-words">SPSS analysis, mathematical modelling, financial computation – custom add‑ons available.</p>
             <ul className="space-y-2 text-xs font-medium text-secondary">
               <li className="flex items-center gap-2 break-words">✅ Add‑on toggles (Slides, Data)</li>
@@ -82,7 +82,7 @@ export default function SelectServicePage() {
             <div className="w-12 h-12 md:w-14 md:h-14 bg-rose-500/10 rounded-2xl flex items-center justify-center mb-6 border border-rose-500/20">
               <PenTool className="w-5 h-5 md:w-6 md:h-6 text-rose-400" />
             </div>
-            <h3 className="text-lg md:text-xl font-black mb-3 break-words text-primary">Content & Creative Writing</h3>
+            <h3 className="text-lg md:text-xl font-semibold mb-3 break-words text-primary">Content & Creative Writing</h3>
             <p className="text-xs md:text-sm text-secondary mb-6 leading-relaxed break-words">SEO articles, eBooks, web copy – tailored tone and style.</p>
             <ul className="space-y-2 text-xs font-medium text-secondary">
               <li className="flex items-center gap-2 break-words">✅ SEO‑optimized structuring</li>
@@ -96,7 +96,7 @@ export default function SelectServicePage() {
             <div className="w-12 h-12 md:w-14 md:h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/20">
               <Briefcase className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
             </div>
-            <h3 className="text-lg md:text-xl font-black mb-3 break-words text-primary">Executive CVs & Resumes</h3>
+            <h3 className="text-lg md:text-xl font-semibold mb-3 break-words text-primary">Executive CVs & Resumes</h3>
             <p className="text-xs md:text-sm text-secondary mb-6 leading-relaxed break-words">ATS‑friendly resumes, cover letters, LinkedIn optimization.</p>
             <ul className="space-y-2 text-xs font-medium text-secondary">
               <li className="flex items-center gap-2 break-words">✅ ATS compatibility</li>
@@ -110,7 +110,7 @@ export default function SelectServicePage() {
             <div className="w-12 h-12 md:w-14 md:h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-6 border border-emerald-500/20">
               <Library className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
             </div>
-            <h3 className="text-lg md:text-xl font-black mb-3 break-words text-primary">Ready-made Project Materials</h3>
+            <h3 className="text-lg md:text-xl font-semibold mb-3 break-words text-primary">Ready-made Project Materials</h3>
             <p className="text-xs md:text-sm text-secondary mb-6 leading-relaxed break-words">Browse 100,000+ ready-made topics across every department — instant pricing, delivered to your vault.</p>
             <ul className="space-y-2 text-xs font-medium text-secondary">
               <li className="flex items-center gap-2 break-words">✅ Chapters 1–5, MS Word</li>
@@ -124,7 +124,7 @@ export default function SelectServicePage() {
             <div className="w-12 h-12 md:w-14 md:h-14 bg-cyan-500/10 rounded-2xl flex items-center justify-center mb-6 border border-cyan-500/20">
               <Terminal className="w-5 h-5 md:w-6 md:h-6 text-cyan-400" />
             </div>
-            <h3 className="text-lg md:text-xl font-black mb-3 break-words text-primary">Full Stack & Custom Software</h3>
+            <h3 className="text-lg md:text-xl font-semibold mb-3 break-words text-primary">Full Stack & Custom Software</h3>
             <p className="text-xs md:text-sm text-secondary mb-6 leading-relaxed break-words">Web apps, database design, MVP prototyping, API integrations.</p>
             <ul className="space-y-2 text-xs font-medium text-secondary">
               <li className="flex items-center gap-2 break-words">✅ Database, payments & CI/CD add-ons</li>
