@@ -34,6 +34,95 @@ function normalizePages(pages: unknown): string[] {
   return Array.isArray(p) ? p : [];
 }
 
+const AD_CACHE_TTL_MS = 60_000;
+const adCache = new Map<string, { expiresAt: number; items: ActiveAd[] }>();
+const adInflight = new Map<string, Promise<ActiveAd[]>>();
+
+async function loadActiveAdsForPosition(position?: string): Promise<ActiveAd[]> {
+  const key = position || '__all__';
+  const cached = adCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.items;
+  }
+
+  const pending = adInflight.get(key);
+  if (pending) return pending;
+
+  const req = (async () => {
+    try {
+      let adsQuery = supabase
+        .from('ads')
+        .select('*')
+        .eq('is_active', true)
+        .order('priority', { ascending: true });
+      if (position) adsQuery = adsQuery.eq('position', position);
+
+      let purchasesQuery = supabase
+        .from('user_ad_purchases')
+        .select('*')
+        .eq('status', 'approved')
+        .eq('is_boost', false)
+        .is('paused_at', null);
+      if (position) purchasesQuery = purchasesQuery.eq('position', position);
+
+      const [adsRes, purchasesRes] = await Promise.all([adsQuery, purchasesQuery]);
+
+      const rawAds = adsRes.error ? [] : (adsRes.data || []);
+      const rawPurchases = purchasesRes.error ? [] : (purchasesRes.data || []);
+
+      const now = new Date();
+
+      const fromAds: ActiveAd[] = rawAds
+        .filter(ad => {
+          if (ad.start_date && new Date(ad.start_date) > now) return false;
+          if (ad.end_date && new Date(ad.end_date) < now) return false;
+          return true;
+        })
+        .map(ad => ({
+          ...ad,
+          pages: normalizePages(ad.pages),
+          source: 'ads' as const,
+        }));
+
+      const fromPurchases: ActiveAd[] = rawPurchases
+        .filter(p => {
+          if (p.starts_at && new Date(p.starts_at) > now) return false;
+          if (p.ends_at && new Date(p.ends_at) < now) return false;
+          return true;
+        })
+        .map(p => ({
+          id: p.id,
+          title: p.title,
+          image_url: p.image_url,
+          image_mobile_url: p.image_mobile_url,
+          link_url: p.link_url,
+          cta_text: p.cta_text,
+          start_date: p.starts_at,
+          end_date: p.ends_at,
+          position: p.position,
+          pages: normalizePages(p.pages),
+          priority: 100,
+          is_active: true,
+          is_dismissible: false,
+          autoplay_speed: 5,
+          impressions: p.impressions || 0,
+          clicks: p.clicks || 0,
+          created_at: p.created_at,
+          source: 'user_ad_purchases' as const,
+        }));
+
+      const items = [...fromAds, ...fromPurchases];
+      adCache.set(key, { expiresAt: Date.now() + AD_CACHE_TTL_MS, items });
+      return items;
+    } finally {
+      adInflight.delete(key);
+    }
+  })();
+
+  adInflight.set(key, req);
+  return req;
+}
+
 export function useActiveAds(position?: string, page?: string) {
   const [ads, setAds] = useState<ActiveAd[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -44,68 +133,8 @@ export function useActiveAds(position?: string, page?: string) {
     async function fetchAds() {
       try {
         setLoading(true);
-        let adsQuery = supabase
-          .from('ads')
-          .select('*')
-          .eq('is_active', true)
-          .order('priority', { ascending: true });
-        if (position) adsQuery = adsQuery.eq('position', position);
-
-        let purchasesQuery = supabase
-          .from('user_ad_purchases')
-          .select('*')
-          .eq('status', 'approved')
-          .eq('is_boost', false)
-          .is('paused_at', null);
-        if (position) purchasesQuery = purchasesQuery.eq('position', position);
-
-        const [adsRes, purchasesRes] = await Promise.all([adsQuery, purchasesQuery]);
-
-        const rawAds = adsRes.error ? [] : (adsRes.data || []);
-        const rawPurchases = purchasesRes.error ? [] : (purchasesRes.data || []);
-
-        const now = new Date();
-
-        const fromAds: ActiveAd[] = rawAds
-          .filter(ad => {
-            if (ad.start_date && new Date(ad.start_date) > now) return false;
-            if (ad.end_date && new Date(ad.end_date) < now) return false;
-            return true;
-          })
-          .map(ad => ({
-            ...ad,
-            pages: normalizePages(ad.pages),
-            source: 'ads' as const,
-          }));
-
-        const fromPurchases: ActiveAd[] = rawPurchases
-          .filter(p => {
-            if (p.starts_at && new Date(p.starts_at) > now) return false;
-            if (p.ends_at && new Date(p.ends_at) < now) return false;
-            return true;
-          })
-          .map(p => ({
-            id: p.id,
-            title: p.title,
-            image_url: p.image_url,
-            image_mobile_url: p.image_mobile_url,
-            link_url: p.link_url,
-            cta_text: p.cta_text,
-            start_date: p.starts_at,
-            end_date: p.ends_at,
-            position: p.position,
-            pages: normalizePages(p.pages),
-            priority: 100,
-            is_active: true,
-            is_dismissible: false,
-            autoplay_speed: 5,
-            impressions: p.impressions || 0,
-            clicks: p.clicks || 0,
-            created_at: p.created_at,
-            source: 'user_ad_purchases' as const,
-          }));
-
-        const combined = [...fromAds, ...fromPurchases].filter(ad => {
+        const items = await loadActiveAdsForPosition(position);
+        const combined = items.filter(ad => {
           if (page === 'landing' && ad.source === 'user_ad_purchases') return false;
           return pageMatches(ad.position, ad.pages, page);
         });

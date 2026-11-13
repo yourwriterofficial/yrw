@@ -31,10 +31,16 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: 'Developa SaaS',
+    items: [
+      { href: '/admin/developa-sites', label: 'SaaS Stores & Sites', icon: lucide.Globe },
+      { href: '/admin/dev-shop', label: 'Script Shop', icon: lucide.ShoppingBag },
+    ],
+  },
+  {
     label: 'Catalog',
     items: [
       { href: '/admin/projects', label: 'Project Topics', icon: lucide.BookOpen },
-      { href: '/admin/dev-shop', label: 'Dev Shop', icon: lucide.ShoppingBag },
       { href: '/admin/promos', label: 'Promo Codes', icon: lucide.Tag },
       { href: '/admin/ads', label: 'Ads', icon: lucide.Megaphone },
     ],

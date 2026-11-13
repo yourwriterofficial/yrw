@@ -59,7 +59,10 @@ export async function GET(request: Request) {
       data = selectData;
     }
 
-    return NextResponse.json({ topics: data || [], total: count || 0 });
+    return NextResponse.json(
+      { topics: data || [], total: count || 0 },
+      { headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300' } }
+    );
   } catch (err: any) {
     console.error('GET /api/projects/topics failed:', err);
     return NextResponse.json({ error: err.message || 'Failed to load topics' }, { status: 500 });
