@@ -84,6 +84,11 @@ export default function ProductDetailModal({
 
     let active = true;
     setLoadingReviews(true);
+    fetch(`/api/forums/${encodeURIComponent(site.slug)}/analytics`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: `/product/${product.id}`, product_id: product.id }),
+    }).catch(() => {});
     fetch(`/api/forums/${encodeURIComponent(site.slug)}/reviews?productId=${encodeURIComponent(product.id)}`, { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => {

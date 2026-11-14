@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { FORUM_ACCENTS } from '@/lib/forums';
 import { planFor } from '@/lib/plans';
 import { jsonFetch, type Site } from '../types';
+import StaffPanel from './StaffPanel';
 
 export default function SettingsTab({ site, reload, goToPlan }: { site: Site; reload: () => Promise<void>; goToPlan: () => void }) {
   const [f, setF] = useState({
@@ -80,7 +81,8 @@ export default function SettingsTab({ site, reload, goToPlan }: { site: Site; re
   );
 
   return (
-    <form onSubmit={save} className="max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-6">
+    <form onSubmit={save} className="space-y-6">
       <section className="g-card p-5 space-y-4">
         <h3 className="font-medium">About your site</h3>
         <Field id="s-name" label="Name"><input id="s-name" required minLength={2} value={f.name} onChange={(e) => set('name', e.target.value)} className="input-box w-full" /></Field>
@@ -204,15 +206,17 @@ export default function SettingsTab({ site, reload, goToPlan }: { site: Site; re
           <input type="checkbox" checked={f.weekly_backup_email} onChange={(e) => set('weekly_backup_email', e.target.checked)} className="w-4 h-4" />
           Email me a weekly JSON backup of products and orders
         </label>
-        <div className="pt-2">
-          <a
-            href={`/api/forums/${encodeURIComponent(site.slug)}/export`}
-            download
-            className="inline-flex items-center px-4 h-10 rounded-full border border-theme hover:bg-hover text-xs font-medium"
-          >
-            Download store backup (JSON)
-          </a>
-        </div>
+        {(!site.my_role || site.my_role === 'owner') && (
+          <div className="pt-2">
+            <a
+              href={`/api/forums/${encodeURIComponent(site.slug)}/export`}
+              download
+              className="inline-flex items-center px-4 h-10 rounded-full border border-theme hover:bg-hover text-xs font-medium"
+            >
+              Download store backup (JSON)
+            </a>
+          </div>
+        )}
       </section>
 
       <div className="flex items-center gap-4">
@@ -220,5 +224,7 @@ export default function SettingsTab({ site, reload, goToPlan }: { site: Site; re
         {msg && <p className={`text-sm ${msg.ok ? 'text-success' : 'text-danger'}`} role="status">{msg.text}</p>}
       </div>
     </form>
+    {(!site.my_role || site.my_role === 'owner') && <StaffPanel site={site} goToPlan={goToPlan} />}
+    </div>
   );
 }

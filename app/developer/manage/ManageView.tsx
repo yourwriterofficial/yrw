@@ -19,6 +19,7 @@ import PlanTab from './tabs/PlanTab';
 import SettingsTab from './tabs/SettingsTab';
 import StoreQrCard from './StoreQrCard';
 import CartsLeftCard from './CartsLeftCard';
+import AnalyticsCard from './AnalyticsCard';
 
 type TabKey = 'overview' | 'products' | 'orders' | 'customers' | 'community' | 'coupons' | 'shipping' | 'domain' | 'plan' | 'settings';
 
@@ -82,10 +83,20 @@ export default function ManageView() {
   const reload = useCallback(async () => { await loadSite(slug); }, [loadSite, slug]);
 
   const site = detail?.forum;
-  const visibleTabs = useMemo(
-    () => TABS.filter((t) => (!t.storeOnly || site?.site_mode !== 'forum') && (!t.forumOnly || site?.site_mode !== 'store')),
-    [site?.site_mode]
-  );
+  const visibleTabs = useMemo(() => {
+    const modeFiltered = TABS.filter(
+      (t) => (!t.storeOnly || site?.site_mode !== 'forum') && (!t.forumOnly || site?.site_mode !== 'store')
+    );
+    const role = site?.my_role;
+    if (!role || role === 'owner') return modeFiltered;
+    if (role === 'packer') return modeFiltered.filter((t) => t.key === 'overview' || t.key === 'orders');
+    if (role === 'support') {
+      return modeFiltered.filter(
+        (t) => t.key === 'overview' || t.key === 'orders' || t.key === 'customers' || t.key === 'community'
+      );
+    }
+    return modeFiltered.filter((t) => t.key !== 'domain' && t.key !== 'plan');
+  }, [site?.site_mode, site?.my_role]);
   useEffect(() => { if (site && !visibleTabs.some((t) => t.key === tab)) setTab('overview'); }, [site, visibleTabs, tab]);
 
   const shell = (inner: React.ReactNode) => (
@@ -153,6 +164,9 @@ export default function ManageView() {
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${tier === 'free' ? 'bg-secondary text-secondary' : 'bg-accent text-[var(--accent-foreground)]'}`}>
                 {PLANS[tier].name}{tier !== 'free' && left !== null && left > 0 ? ` · ${left}d left` : ''}
               </span>
+              {site.my_role && site.my_role !== 'owner' && (
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-secondary text-secondary capitalize">{site.my_role}</span>
+              )}
               {!site.is_public && <span className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--warning-bg)] text-warning">Hidden</span>}
               <a href={`/forums/${site.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium px-4 h-9 inline-flex items-center rounded-full border border-theme hover:bg-hover">View site</a>
             </div>
@@ -244,6 +258,7 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          <AnalyticsCard site={site} goToPlan={() => go('plan')} />
           {isStore && (
             <section className="g-card p-5">
               <div className="flex items-center justify-between mb-3">

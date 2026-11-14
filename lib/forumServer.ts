@@ -143,6 +143,44 @@ export async function requireSiteAccess(slug: string, allowedRoles: SiteRole[] =
   return { user, role: staffRole, site: fullSite } as const;
 }
 
+/** Resolves a signed-in user's role on a site (`owner`, staff role, or null) without HTTP responses. */
+export async function resolveUserSiteRole(
+  siteId: string,
+  ownerId: string,
+  planTier: string | null | undefined,
+  planExpiresAt: string | null | undefined,
+  userId: string | undefined,
+  userEmail: string | undefined
+): Promise<SiteRole | null> {
+  if (!userId) return null;
+  if (ownerId === userId) return 'owner';
+  if (!planFor(planTier, planExpiresAt).staffAccounts) return null;
+
+  const { data: byUid } = await supabaseAdmin
+    .from('site_staff')
+    .select('id, role')
+    .eq('site_id', siteId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (byUid?.role) return byUid.role as SiteRole;
+
+  const email = (userEmail || '').toLowerCase().trim();
+  if (!email) return null;
+  const { data: byEmail } = await supabaseAdmin
+    .from('site_staff')
+    .select('id, role, user_id')
+    .eq('site_id', siteId)
+    .eq('email', email)
+    .maybeSingle();
+  if (byEmail?.role) {
+    if (!byEmail.user_id) {
+      await supabaseAdmin.from('site_staff').update({ user_id: userId }).eq('id', byEmail.id);
+    }
+    return byEmail.role as SiteRole;
+  }
+  return null;
+}
+
 /** Resolves the signed-in user and the site they own (or manager/staff if permitted), or error response. */
 export async function requireOwnedSite(slug: string, allowedRoles: SiteRole[] = ['owner', 'manager']) {
   return requireSiteAccess(slug, allowedRoles);

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { resolveAuthorNames, supabaseAdmin, readExtendedSite, readSeo, readSiteTools } from '@/lib/forumServer';
+import { resolveAuthorNames, resolveUserSiteRole, requireSiteAccess, supabaseAdmin, readExtendedSite, readSeo, readSiteTools } from '@/lib/forumServer';
 
 const SITE_SELECT =
   'id, slug, name, description, owner_id, is_public, accent_color, member_count, thread_count, created_at, site_mode, template_id, hero_headline, hero_subheadline, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions, plan_tier, custom_domain, custom_domain_verified, hide_branding, logo_url';
@@ -95,9 +95,19 @@ export async function GET(
     const { data: { user } } = await supabase.auth.getUser();
 
     const isOwner = !!user && forum.owner_id === user.id;
-    let isMember = isOwner;
+    const extEarly = await readExtendedSite(forum.id);
+    const myRole = await resolveUserSiteRole(
+      forum.id,
+      forum.owner_id,
+      forum.plan_tier,
+      extEarly?.plan_expires_at,
+      user?.id,
+      user?.email
+    );
+    const canManageCatalog = myRole === 'owner' || myRole === 'manager';
+    let isMember = !!myRole;
 
-    if (user && !isOwner) {
+    if (user && !isMember) {
       const { data: memberRow } = await supabaseAdmin
         .from('forum_members')
         .select('role')
@@ -129,14 +139,14 @@ export async function GET(
               // digital_url is the paid download. Only the owner gets it here; buyers get it from
               // their paid order (see the orders endpoint).
               .select(
-                isOwner
+                canManageCatalog
                   ? 'id, site_id, title, description, category, product_type, price, compare_at_price, image_url, digital_url, stock_qty, is_active, sort_order, created_at'
                   : 'id, site_id, title, description, category, product_type, price, compare_at_price, image_url, stock_qty, is_active, sort_order, created_at'
               )
               .eq('site_id', forum.id)
               .order('sort_order', { ascending: true })
               .order('created_at', { ascending: false });
-            if (!isOwner) pq = pq.eq('is_active', true);
+            if (!canManageCatalog) pq = pq.eq('is_active', true);
             return pq;
           })(),
     ]);
@@ -152,8 +162,8 @@ export async function GET(
     }));
 
     // New-migration data, read tolerantly so stores keep working before it is applied.
-    const [ext, seo, tools, extraProdRes, variantsRes, reviewsRes, shippingZonesRes] = await Promise.all([
-      readExtendedSite(forum.id),
+    const ext = extEarly;
+    const [seo, tools, extraProdRes, variantsRes, reviewsRes, shippingZonesRes] = await Promise.all([
       readSeo(forum.id),
       readSiteTools(forum.id),
       forum.site_mode === 'forum'
@@ -170,7 +180,7 @@ export async function GET(
               .select('id, site_id, product_id, label, options, price, stock_qty, sku, sort_order, is_active')
               .eq('site_id', forum.id)
               .order('sort_order', { ascending: true });
-            if (!isOwner) vq = vq.eq('is_active', true);
+            if (!canManageCatalog) vq = vq.eq('is_active', true);
             return vq;
           })(),
       forum.site_mode === 'forum'
@@ -259,6 +269,7 @@ export async function GET(
       weekly_backup_email: tools.weekly_backup_email,
       verified: tools.verified,
       verified_at: tools.verified_at,
+      ...(myRole ? { my_role: myRole } : {}),
       custom_domain: (forum as Record<string, unknown>).custom_domain ?? null,
       custom_domain_verified: (forum as Record<string, unknown>).custom_domain_verified ?? false,
       plan_tier: (forum as Record<string, unknown>).plan_tier ?? 'free',
@@ -286,25 +297,10 @@ export async function PATCH(
 ) {
   try {
     const { slug } = await context.params;
-    const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: forum } = await supabaseAdmin
-      .from('forums')
-      .select('id, owner_id, plan_tier')
-      .eq('slug', slug.toLowerCase().trim())
-      .maybeSingle();
-
-    if (!forum) {
-      return NextResponse.json({ error: 'Site not found' }, { status: 404 });
-    }
-    if (forum.owner_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    const extra = await readExtendedSite(forum.id);
+    const access = await requireSiteAccess(slug, ['owner', 'manager']);
+    if ('error' in access) return access.error;
+    const forum = access.site;
+    const extra = forum;
 
     const body = await request.json().catch(() => null);
     const parsed = updateForumSchema.safeParse(body);

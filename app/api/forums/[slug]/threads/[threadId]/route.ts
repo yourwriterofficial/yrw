@@ -171,7 +171,7 @@ export async function PATCH(
 ) {
   const { slug, threadId } = await context.params;
   const { requireOwnedSite } = await import('@/lib/forumServer');
-  const r = await requireOwnedSite(slug);
+  const r = await requireOwnedSite(slug, ['owner', 'manager', 'support']);
   if ('error' in r) return r.error;
   const body = await request.json().catch(() => null);
   const updates: Record<string, boolean> = {};
@@ -190,7 +190,7 @@ export async function DELETE(
 ) {
   const { slug, threadId } = await context.params;
   const { requireOwnedSite } = await import('@/lib/forumServer');
-  const r = await requireOwnedSite(slug);
+  const r = await requireOwnedSite(slug, ['owner', 'manager', 'support']);
   if ('error' in r) return r.error;
   await supabaseAdmin.from('forum_posts').delete().eq('thread_id', threadId).eq('forum_id', r.site.id);
   await supabaseAdmin.from('forum_threads').delete().eq('id', threadId).eq('forum_id', r.site.id);

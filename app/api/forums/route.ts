@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { supabaseAdmin } from '@/lib/forumServer';
+import { readExtendedSite, supabaseAdmin } from '@/lib/forumServer';
 import { FORUM_ACCENTS, normalizeForumSlug, validateForumSlug } from '@/lib/forums';
+import { planFor } from '@/lib/plans';
 import { getTemplateById } from '@/lib/siteTemplates';
 import { overLimit } from '@/lib/rateLimit';
 
@@ -64,9 +65,43 @@ export async function GET(request: Request) {
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      const verifiedMap = await readVerifiedMap((data || []).map((r) => r.id));
-      const enriched = (data || []).map((row) => ({
+      const owned = (data || []).map((r) => ({ ...r, _role: 'owner' as string }));
+      const ownedIds = new Set(owned.map((r) => r.id));
+
+      // Include stores/communities where the user is an invited Business-plan staff member
+      const userEmail = (user.email || '').toLowerCase().trim();
+      const staffFilter = userEmail ? `user_id.eq.${user.id},email.eq.${userEmail}` : `user_id.eq.${user.id}`;
+      const { data: staffRows } = await supabaseAdmin
+        .from('site_staff')
+        .select('site_id, role')
+        .or(staffFilter);
+
+      const extraStaff: typeof owned = [];
+      if (staffRows && staffRows.length > 0) {
+        const roleBySite = new Map<string, string>();
+        for (const sr of staffRows) {
+          if (!ownedIds.has(sr.site_id)) roleBySite.set(sr.site_id, sr.role);
+        }
+        const extraIds = Array.from(roleBySite.keys());
+        if (extraIds.length > 0) {
+          const { data: sharedSites } = await supabaseAdmin
+            .from('forums')
+            .select(SITE_SELECT)
+            .in('id', extraIds);
+          for (const row of sharedSites || []) {
+            const ext = await readExtendedSite(row.id);
+            if (planFor((row as { plan_tier?: string }).plan_tier, ext?.plan_expires_at).staffAccounts) {
+              extraStaff.push({ ...row, _role: roleBySite.get(row.id) || 'support' });
+            }
+          }
+        }
+      }
+
+      const combined = [...owned, ...extraStaff];
+      const verifiedMap = await readVerifiedMap(combined.map((r) => r.id));
+      const enriched = combined.map((row) => ({
         ...row,
+        my_role: row._role,
         verified: verifiedMap.get(row.id) ?? false,
         custom_domain: (row as Record<string, unknown>).custom_domain ?? null,
         custom_domain_verified: (row as Record<string, unknown>).custom_domain_verified ?? false,

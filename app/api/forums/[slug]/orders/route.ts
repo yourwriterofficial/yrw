@@ -310,7 +310,7 @@ export async function POST(
                 email: buyerEmailLower,
                 name: xss(parsed.data.buyer_name),
                 phone: xss(parsed.data.buyer_phone),
-                source: 'checkout',
+                source: 'order',
                 marketing_consent: true,
                 unsubscribed_at: null,
                 unsubscribe_token: crypto.randomBytes(18).toString('hex'),

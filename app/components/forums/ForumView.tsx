@@ -87,6 +87,19 @@ export default function ForumView({ slug }: { slug: string }) {
     return () => { active = false; };
   }, [loadForum]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    fetch(`/api/forums/${encodeURIComponent(slug)}/analytics`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path: window.location.pathname,
+        referrer: document.referrer || '',
+        utm_source: params.get('utm_source') || '',
+      }),
+    }).catch(() => {});
+  }, [slug]);
+
   const handleJoinToggle = async () => {
     setJoining(true);
     try {
