@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
+import { getSupabaseSecretKey } from '../_shared/keys.ts';
 
 Deno.serve(async () => {
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    getSupabaseSecretKey()
   );
 
   const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();

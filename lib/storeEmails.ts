@@ -1,4 +1,4 @@
-import { sendSystemEmail } from './emailService';
+import { sendSiteEmail as sendSystemEmail } from './siteMailer';
 import { emailShell } from './emailTemplates';
 import { formatMoney } from './forums';
 import { siteUrl } from './siteUrl';

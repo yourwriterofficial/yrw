@@ -1,4 +1,5 @@
 import { planFor, effectiveTier, PLANS } from '@/lib/plans';
+import { canUseTheme } from '@/lib/themeCatalog';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
@@ -382,7 +383,14 @@ export async function PATCH(
     }
     if (parsed.data.is_public !== undefined) updates.is_public = parsed.data.is_public;
     if (parsed.data.site_mode !== undefined) updates.site_mode = parsed.data.site_mode;
-    if (parsed.data.template_id !== undefined) updates.template_id = parsed.data.template_id;
+    if (parsed.data.template_id !== undefined) {
+      const { data: current } = await supabaseAdmin.from('forums').select('template_id').eq('id', forum.id).maybeSingle();
+      if (current?.template_id !== parsed.data.template_id) {
+        const themeCheck = await canUseTheme(access.user.id, parsed.data.template_id);
+        if (!themeCheck.ok) return NextResponse.json({ error: themeCheck.reason }, { status: 402 });
+      }
+      updates.template_id = parsed.data.template_id;
+    }
     // Custom domains are managed through /domain (they must be DNS-verified), not here.
     if (parsed.data.hide_branding !== undefined) {
       const plan = planFor(forum.plan_tier, (extra as { plan_expires_at?: string | null } | null)?.plan_expires_at);

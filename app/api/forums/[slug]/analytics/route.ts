@@ -59,7 +59,7 @@ export async function POST(
     const sessionHash = crypto
       .createHash('sha256')
       // The secret makes the hash impossible to reverse by trying every possible IP address.
-      .update(`${process.env.ANALYTICS_SALT || process.env.SUPABASE_SERVICE_ROLE_KEY || ''}|${ip}|${ua}|${todayUtc}|${site.id}`)
+      .update(`${process.env.ANALYTICS_SALT || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || ''}|${ip}|${ua}|${todayUtc}|${site.id}`)
       .digest('hex')
       .slice(0, 24);
 

@@ -31,6 +31,11 @@ export interface PlanDefinition {
   paidMemberships: boolean;
   bookings: boolean;
   prioritySupport: boolean;
+  maxSites: number;           // how many sites one account can run
+  adSpace: boolean;           // sell banner space on your own site
+  directMessages: boolean;    // buyers can chat with the seller inside the site
+  pushNotifications: boolean; // phone alerts for new orders and order updates
+  appInstall: boolean;        // each site can be installed on a phone like an app
   highlights: string[];
 }
 
@@ -61,7 +66,12 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     paidMemberships: false,
     bookings: false,
     prioritySupport: false,
-    highlights: ['Your own yourname.developa.me address', 'Up to 10 products', 'Orders by bank transfer or pay on delivery', 'Community forum'],
+    maxSites: 1,
+    adSpace: false,
+    directMessages: false,
+    pushNotifications: false,
+    appInstall: true,
+    highlights: ['1 site on your own yourname.developa.me address', 'Up to 10 products', 'Orders by bank transfer or pay on delivery', 'Installable as a phone app'],
   },
   pro: {
     tier: 'pro',
@@ -89,7 +99,12 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     paidMemberships: false,
     bookings: false,
     prioritySupport: false,
-    highlights: ['Your own domain (yourbrand.com)', 'Unlimited products & variants', 'Discount coupons & shipping zones', 'No "Powered by Developa" and no platform ads'],
+    maxSites: 4,
+    adSpace: true,
+    directMessages: true,
+    pushNotifications: true,
+    appInstall: true,
+    highlights: ['Up to 4 sites on one account', 'Your own domain (yourbrand.com)', 'Unlimited products & variants', 'Sell ad space, chat with buyers, push alerts', 'No "Powered by Developa" and no platform ads'],
   },
   business: {
     tier: 'business',
@@ -117,7 +132,12 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     paidMemberships: true,
     bookings: true,
     prioritySupport: true,
-    highlights: ['Everything in Pro', 'Staff accounts with roles', 'Paid memberships & booking slots', 'Priority support on WhatsApp'],
+    maxSites: 8,
+    adSpace: true,
+    directMessages: true,
+    pushNotifications: true,
+    appInstall: true,
+    highlights: ['Up to 8 sites on one account', 'Everything in Pro', 'Staff accounts with roles', 'Paid memberships & booking slots', 'Priority support on WhatsApp'],
   },
 };
 

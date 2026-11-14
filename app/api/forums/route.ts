@@ -7,6 +7,8 @@ import { FORUM_ACCENTS, normalizeForumSlug, validateForumSlug } from '@/lib/foru
 import { planFor } from '@/lib/plans';
 import { getTemplateById } from '@/lib/siteTemplates';
 import { TRIAL_DAYS, TRIAL_TIER } from '@/lib/plans';
+import { canUseTheme } from '@/lib/themeCatalog';
+import { maxSitesFor } from '@/lib/siteLimits';
 import { overLimit } from '@/lib/rateLimit';
 
 const allowedAccents = new Set<string>(FORUM_ACCENTS.map((a) => a.value));
@@ -18,7 +20,6 @@ const SITE_SELECT =
 const PUBLIC_LIST_SELECT =
   'id, slug, name, description, owner_id, is_public, accent_color, member_count, thread_count, created_at, site_mode, template_id, hero_headline, hero_subheadline, currency, whatsapp_number';
 
-const MAX_SITES_PER_USER = 5;
 
 async function readVerifiedMap(ids: string[]): Promise<Map<string, boolean>> {
   const map = new Map<string, boolean>();
@@ -184,8 +185,13 @@ export async function POST(request: Request) {
       .from('forums')
       .select('id', { count: 'exact', head: true })
       .eq('owner_id', user.id);
-    if ((owned ?? 0) >= MAX_SITES_PER_USER) {
-      return NextResponse.json({ error: `You can run up to ${MAX_SITES_PER_USER} sites per account.` }, { status: 403 });
+    const { limit } = await maxSitesFor(user.id);
+    if ((owned ?? 0) >= limit) {
+      return NextResponse.json({
+        error: limit === 1
+          ? 'The free plan includes 1 site. Upgrade to Pro for 4 sites or Business for 8.'
+          : `Your plan includes ${limit} sites. Upgrade to Business for 8.`,
+      }, { status: 403 });
     }
 
     const { data: existing } = await supabaseAdmin
@@ -198,6 +204,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `${slug}.developa.me is already taken.` }, { status: 409 });
     }
 
+    const themeCheck = await canUseTheme(user.id, parsed.data.template_id);
+    if (!themeCheck.ok) {
+      return NextResponse.json({ error: themeCheck.reason, premium_price: themeCheck.price }, { status: 402 });
+    }
     const template = getTemplateById(parsed.data.template_id);
     const siteMode = parsed.data.site_mode || template.site_mode;
     const accent = parsed.data.accent_color && allowedAccents.has(parsed.data.accent_color)
@@ -252,15 +262,20 @@ export async function POST(request: Request) {
       await supabaseAdmin.from('site_products').insert(productRows);
     }
 
-    // Seed welcome thread if template includes one
-    if (siteMode !== 'store' && template.sample_thread) {
-      await supabaseAdmin.from('forum_threads').insert({
-        forum_id: created.id,
-        author_id: user.id,
-        title: template.sample_thread.title,
-        body: template.sample_thread.body,
-        is_pinned: true,
-      });
+    // Seed starter posts if the template includes them
+    if (siteMode !== 'store') {
+      const starters = template.sample_threads ?? (template.sample_thread ? [template.sample_thread] : []);
+      if (starters.length > 0) {
+        await supabaseAdmin.from('forum_threads').insert(
+          starters.map((t, idx) => ({
+            forum_id: created.id,
+            author_id: user.id,
+            title: t.title,
+            body: t.body,
+            is_pinned: idx === 0,
+          }))
+        );
+      }
     }
 
     // First site: Pro free for a few days. It lapses on its own (effectiveTier), so nothing has to clean it up.

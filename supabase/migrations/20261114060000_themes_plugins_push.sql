@@ -56,3 +56,50 @@ alter table public.site_push_subscriptions enable row level security;   -- serve
 alter table public.forums
   add column if not exists prune_warned_at timestamptz,
   add column if not exists prune_final_warned_at timestamptz;
+
+-- 6. Ad space: owners sell banner slots on their own site -----------------------------------------
+create table if not exists public.site_ad_slots (
+  id          uuid primary key default gen_random_uuid(),
+  site_id     uuid not null references public.forums (id) on delete cascade,
+  name        text not null,
+  placement   text not null default 'banner' check (placement in ('banner', 'sidebar', 'footer')),
+  price_ngn   integer not null check (price_ngn >= 0),
+  days        integer not null default 30 check (days between 1 and 365),
+  description text not null default '',
+  is_active   boolean not null default true,
+  created_at  timestamptz not null default now()
+);
+create index if not exists site_ad_slots_site_idx on public.site_ad_slots (site_id);
+alter table public.site_ad_slots enable row level security;
+
+create table if not exists public.site_ad_bookings (
+  id              uuid primary key default gen_random_uuid(),
+  slot_id         uuid not null references public.site_ad_slots (id) on delete cascade,
+  site_id         uuid not null references public.forums (id) on delete cascade,
+  advertiser_name text not null,
+  advertiser_email text not null,
+  advertiser_phone text not null default '',
+  title           text not null,
+  link_url        text not null default '',
+  image_url       text not null default '',
+  reference       text not null,
+  status          text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'expired')),
+  starts_at       timestamptz,
+  ends_at         timestamptz,
+  created_at      timestamptz not null default now()
+);
+create index if not exists site_ad_bookings_site_idx on public.site_ad_bookings (site_id, status);
+alter table public.site_ad_bookings enable row level security;
+
+-- 7. Buyer to seller chat -------------------------------------------------------------------------
+create table if not exists public.site_messages (
+  id         uuid primary key default gen_random_uuid(),
+  site_id    uuid not null references public.forums (id) on delete cascade,
+  buyer_id   uuid not null references auth.users (id) on delete cascade,
+  sender     text not null check (sender in ('buyer', 'owner')),
+  body       text not null check (char_length(body) between 1 and 2000),
+  read_at    timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists site_messages_thread_idx on public.site_messages (site_id, buyer_id, created_at);
+alter table public.site_messages enable row level security;   -- served only through the server

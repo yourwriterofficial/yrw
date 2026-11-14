@@ -5,7 +5,7 @@ let adminClient: SupabaseClient | null = null;
 function getAdminClient(): SupabaseClient | null {
   if (adminClient) return adminClient;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   adminClient = createServiceClient(url, key);
   return adminClient;

@@ -3,7 +3,7 @@ import { sendSystemEmail } from './emailService';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)!
 );
 
 export type NotificationType = 'order_update' | 'payment' | 'vault_delivery' | 'admin_message' | 'promotion' | 'system';
@@ -168,10 +168,14 @@ export async function notifyUser(params: NotifyParams): Promise<NotifyResult> {
   if (pushAllowed) {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const serviceKey = (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)!;
+      const pushHeaders: Record<string, string> = { 'Content-Type': 'application/json', apikey: serviceKey };
+      if (!serviceKey.startsWith('sb_')) {
+        pushHeaders.Authorization = `Bearer ${serviceKey}`;
+      }
       await fetch(`${supabaseUrl}/functions/v1/send-push`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}`, apikey: serviceKey },
+        headers: pushHeaders,
         body: JSON.stringify({
           user_ids: [userId],
           title,

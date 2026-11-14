@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { getSupabaseSecretKey } from '../_shared/keys.ts';
 
-const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+const supabase = createClient(Deno.env.get('SUPABASE_URL')!, getSupabaseSecretKey());
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
 /**

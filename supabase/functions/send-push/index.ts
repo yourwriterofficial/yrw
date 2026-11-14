@@ -2,9 +2,10 @@
 // Called internally after inserting a row into `notifications` (see lib/notify.ts).
 // Payload: { user_ids: string[], title: string, body: string, url?: string, tag?: string, notification_type?: 'order_update'|'payment'|'vault_delivery'|'admin_message'|'promotion'|'system' }
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getSupabaseSecretKey } from '../_shared/keys.ts';
 
 const SUPABASE_URL        = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SUPABASE_SERVICE_KEY = getSupabaseSecretKey();
 
 let VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')!;
 if (!VAPID_PUBLIC_KEY || VAPID_PUBLIC_KEY.length !== 87) {

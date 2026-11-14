@@ -16,9 +16,17 @@ async function resolveVapidPublicKey(): Promise<string> {
     _vapidKeyPromise = (async () => {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+        const publishableKey = (
+          process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+          ''
+        ).trim();
+        const headers: Record<string, string> = { apikey: publishableKey };
+        if (publishableKey && !publishableKey.startsWith('sb_')) {
+          headers.Authorization = `Bearer ${publishableKey}`;
+        }
         const res = await fetch(`${supabaseUrl}/functions/v1/vapid-key`, {
-          headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+          headers,
         });
         if (!res.ok) throw new Error('Failed to fetch VAPID key');
         const { publicKey } = await res.json() as { publicKey: string };

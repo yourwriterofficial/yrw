@@ -20,12 +20,13 @@ import BookingsTab from './tabs/BookingsTab';
 import MembershipsTab from './tabs/MembershipsTab';
 import DomainTab from './tabs/DomainTab';
 import PlanTab from './tabs/PlanTab';
+import AdSpaceTab from './tabs/AdSpaceTab';
 import SettingsTab from './tabs/SettingsTab';
 import StoreQrCard from './StoreQrCard';
 import CartsLeftCard from './CartsLeftCard';
 import AnalyticsCard from './AnalyticsCard';
 
-type TabKey = 'overview' | 'products' | 'orders' | 'customers' | 'bookings' | 'community' | 'memberships' | 'coupons' | 'shipping' | 'domain' | 'plan' | 'settings';
+type TabKey = 'overview' | 'products' | 'orders' | 'customers' | 'bookings' | 'community' | 'memberships' | 'coupons' | 'shipping' | 'adspace' | 'domain' | 'plan' | 'settings';
 
 const TABS: { key: TabKey; label: string; storeOnly?: boolean; forumOnly?: boolean }[] = [
   { key: 'overview', label: 'Overview' },
@@ -37,6 +38,7 @@ const TABS: { key: TabKey; label: string; storeOnly?: boolean; forumOnly?: boole
   { key: 'memberships', label: 'Memberships', forumOnly: true },
   { key: 'coupons', label: 'Coupons', storeOnly: true },
   { key: 'shipping', label: 'Delivery', storeOnly: true },
+  { key: 'adspace', label: 'Ad space' },
   { key: 'domain', label: 'Domain' },
   { key: 'plan', label: 'Plan' },
   { key: 'settings', label: 'Settings' },
@@ -217,6 +219,7 @@ export default function ManageView() {
           {activeTab === 'memberships' && <MembershipsTab site={site} goToPlan={() => setTab('plan')} />}
           {activeTab === 'coupons' && <CouponsTab site={site} goToPlan={() => setTab('plan')} />}
           {activeTab === 'shipping' && <ShippingTab site={site} reload={reload} goToPlan={() => setTab('plan')} />}
+          {activeTab === 'adspace' && <AdSpaceTab site={site} goToPlan={() => setTab('plan')} />}
           {activeTab === 'domain' && <DomainTab site={site} goToPlan={() => setTab('plan')} />}
           {activeTab === 'plan' && <PlanTab site={site} />}
           {activeTab === 'settings' && <SettingsTab key={site.slug + (site.name || '')} site={site} reload={reload} goToPlan={() => setTab('plan')} />}

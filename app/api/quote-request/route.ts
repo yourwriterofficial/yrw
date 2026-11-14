@@ -4,7 +4,7 @@ import { notifyAdmins } from '@/lib/notify';
 import { sendSystemEmail } from '@/lib/emailService';
 import { emailShell } from '@/lib/emailTemplates';
 
-const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)!);
 
 const SERVICES: Record<string, string> = {
   academic: 'Academic Writing & Research',

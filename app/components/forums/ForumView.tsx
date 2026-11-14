@@ -8,6 +8,9 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import Button from '@/app/components/ui/Button';
 import StorefrontView from '@/app/components/forums/StorefrontView';
+import SiteAdSpace from '@/app/components/forums/SiteAdSpace';
+import ThreadListThemes, { FORUM_LAYOUTS } from '@/app/components/forums/ThreadListThemes';
+import { getTemplateById } from '@/lib/siteTemplates';
 import StoreManagerModal from '@/app/components/forums/StoreManagerModal';
 import ForumMembershipModal, {
   type MyMembershipStatus,
@@ -182,6 +185,7 @@ export default function ForumView({ slug }: { slug: string }) {
           </div>
         )}
       {ads.filter((a) => a.placement === 'banner').slice(0, 1).map((a) => <AdStrip key={a.id} ad={a} />)}
+      <div className="max-w-6xl mx-auto px-4"><SiteAdSpace slug={slug} placement="banner" /></div>
 
       {/* Store Owner Toolbar */}
       {isOwner && (
@@ -382,6 +386,13 @@ export default function ForumView({ slug }: { slug: string }) {
                     <div className="bg-card border border-theme rounded-2xl p-8 text-center text-sm text-secondary">
                       No discussions yet. Start the first thread above.
                     </div>
+                  ) : FORUM_LAYOUTS.includes(getTemplateById(forum.template_id).layout_style) ? (
+                    <ThreadListThemes
+                      threads={threads}
+                      layout={getTemplateById(forum.template_id).layout_style}
+                      accent={forum.accent_color || getTemplateById(forum.template_id).accent_color}
+                      threadHref={threadHref}
+                    />
                   ) : (
                     threads.map((t) => (
                       <Link
@@ -441,6 +452,7 @@ export default function ForumView({ slug }: { slug: string }) {
         )}
       </main>
 
+      <div className="max-w-6xl mx-auto px-4"><SiteAdSpace slug={slug} placement="footer" /></div>
       {ads.filter((a) => a.placement === 'footer').slice(0, 1).map((a) => <AdStrip key={a.id} ad={a} />)}
 
       {forum && (() => {

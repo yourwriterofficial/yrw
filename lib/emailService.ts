@@ -3,10 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Use Service Role for backend logging bypassing RLS
+// Use Secret / Service Role key for backend logging bypassing RLS
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)!
 );
 
 export async function sendSystemEmail(params: {
