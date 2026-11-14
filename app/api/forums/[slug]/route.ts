@@ -111,7 +111,7 @@ export async function GET(
     }));
 
     // New-migration data, read tolerantly so stores keep working before it is applied.
-    const [ext, seo, tools, extraProdRes, variantsRes] = await Promise.all([
+    const [ext, seo, tools, extraProdRes, variantsRes, reviewsRes] = await Promise.all([
       readExtendedSite(forum.id),
       readSeo(forum.id),
       readSiteTools(forum.id),
@@ -132,6 +132,13 @@ export async function GET(
             if (!isOwner) vq = vq.eq('is_active', true);
             return vq;
           })(),
+      forum.site_mode === 'forum'
+        ? Promise.resolve({ data: null })
+        : supabaseAdmin
+            .from('site_reviews')
+            .select('product_id, rating')
+            .eq('site_id', forum.id)
+            .eq('is_visible', true),
     ]);
 
     const prodExtraMap = new Map<string, { image_urls?: string[]; variant_options?: string[]; low_stock_at?: number }>();
@@ -144,6 +151,13 @@ export async function GET(
       list.push(v);
       variantsByProd.set(v.product_id, list);
     }
+    const ratingsByProd = new Map<string, { sum: number; count: number }>();
+    for (const rv of (reviewsRes.data as { product_id: string; rating: number }[] | null) || []) {
+      const prev = ratingsByProd.get(rv.product_id) || { sum: 0, count: 0 };
+      prev.sum += Number(rv.rating) || 0;
+      prev.count += 1;
+      ratingsByProd.set(rv.product_id, prev);
+    }
 
     const enrichedProducts = (productsRes.data || []).map((p) => {
       const prod = p as unknown as { id: string; image_url?: string };
@@ -151,12 +165,15 @@ export async function GET(
       const urls = extra?.image_urls && extra.image_urls.length > 0
         ? extra.image_urls
         : prod.image_url ? [prod.image_url] : [];
+      const rStat = ratingsByProd.get(prod.id);
       return {
         ...prod,
         image_urls: urls,
         variant_options: extra?.variant_options || [],
         variants: variantsByProd.get(prod.id) || [],
         low_stock_at: extra?.low_stock_at ?? 3,
+        rating_count: rStat?.count || 0,
+        rating_avg: rStat && rStat.count > 0 ? Math.round((rStat.sum / rStat.count) * 10) / 10 : undefined,
       };
     });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Search, Download, Printer } from 'lucide-react';
+import { X, Search, Download, Printer, Star } from 'lucide-react';
 import { formatMoney, type ForumSummary, type SiteOrder } from '@/lib/forums';
 import { planFor } from '@/lib/plans';
 
@@ -35,8 +35,45 @@ export default function OrderTrackingModal({
   const [error, setError] = useState('');
   const [order, setOrder] = useState<SiteOrder | null>(null);
   const [downloads, setDownloads] = useState<{ title: string; url: string }[]>([]);
+  const [reviewingPid, setReviewingPid] = useState<string | null>(null);
+  const [revRating, setRevRating] = useState(5);
+  const [revBody, setRevBody] = useState('');
+  const [revBusy, setRevBusy] = useState(false);
+  const [revMsg, setRevMsg] = useState('');
+  const [reviewedPids, setReviewedPids] = useState<Record<string, boolean>>({});
   const currency = site.currency || 'NGN';
   const plan = planFor(site.plan_tier);
+
+  const postReview = async (e: React.FormEvent, productId: string) => {
+    e.preventDefault();
+    if (!order) return;
+    setRevBusy(true);
+    setRevMsg('');
+    try {
+      const res = await fetch(`/api/forums/${encodeURIComponent(site.slug)}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: productId,
+          order_code: order.order_code,
+          email: email.trim().toLowerCase(),
+          rating: revRating,
+          body: revBody.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setRevMsg(data.error || 'Could not submit review.');
+      } else {
+        setReviewedPids((prev) => ({ ...prev, [productId]: true }));
+        setReviewingPid(null);
+        setRevBody('');
+      }
+    } catch {
+      setRevMsg('Could not reach the server.');
+    }
+    setRevBusy(false);
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -198,6 +235,67 @@ export default function OrderTrackingModal({
               >
                 <Printer className="w-3.5 h-3.5" /> Print or save receipt (PDF)
               </a>
+            )}
+
+            {order.payment_status === 'paid' && plan.reviews && (
+              <div className="pt-3 border-t border-theme space-y-2.5">
+                <p className="text-xs font-semibold text-primary">Rate items from this order</p>
+                {Array.from(new Map(order.items.filter((i) => i.product_id).map((i) => [i.product_id!, i])).values()).map((it) => {
+                  const pid = it.product_id!;
+                  const done = !!reviewedPids[pid];
+                  return (
+                    <div key={pid} className="text-xs space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-secondary">{it.title}</span>
+                        {done ? (
+                          <span className="text-success font-medium shrink-0">Reviewed</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => { setReviewingPid(reviewingPid === pid ? null : pid); setRevMsg(''); }}
+                            className="px-3 min-h-9 rounded-full border border-theme hover:bg-hover font-medium shrink-0 cursor-pointer"
+                          >
+                            {reviewingPid === pid ? 'Cancel' : 'Leave a review'}
+                          </button>
+                        )}
+                      </div>
+                      {reviewingPid === pid && !done && (
+                        <form onSubmit={(e) => postReview(e, pid)} className="p-3 rounded-xl bg-secondary/40 border border-theme space-y-2">
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <button
+                                key={n}
+                                type="button"
+                                onClick={() => setRevRating(n)}
+                                aria-label={`${n} stars`}
+                                className="w-9 h-9 rounded-full hover:bg-hover flex items-center justify-center cursor-pointer"
+                              >
+                                <Star className={`w-4 h-4 ${n <= revRating ? 'fill-amber-400 text-amber-400' : 'text-secondary/40'}`} />
+                              </button>
+                            ))}
+                          </div>
+                          <textarea
+                            rows={2}
+                            maxLength={1500}
+                            value={revBody}
+                            onChange={(e) => setRevBody(e.target.value)}
+                            placeholder="Share a quick comment (optional)"
+                            className="input-box w-full text-xs"
+                          />
+                          {revMsg && <p className="text-danger">{revMsg}</p>}
+                          <button
+                            type="submit"
+                            disabled={revBusy}
+                            className="min-h-9 px-4 rounded-full bg-accent text-[var(--accent-foreground)] font-semibold disabled:opacity-50 cursor-pointer"
+                          >
+                            {revBusy ? 'Saving…' : 'Submit review'}
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}

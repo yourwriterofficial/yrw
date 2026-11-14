@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  ShoppingCart, Plus, Package, Download, Briefcase, Flame, ShieldCheck, Truck, Zap, Tag, MessageCircle, Share2, Check,
+  ShoppingCart, Plus, Package, Download, Briefcase, Flame, ShieldCheck, Truck, Zap, Tag, MessageCircle, Share2, Check, Star,
 } from 'lucide-react';
 import { formatMoney, type ForumSummary, type SiteProduct } from '@/lib/forums';
 import type { StoreLayoutStyle } from '@/lib/siteTemplates';
@@ -163,6 +163,14 @@ export function StoreProductCard({
     } catch {}
   };
 
+  const ratingChip = (product.rating_count || 0) > 0 ? (
+    <p className="inline-flex items-center gap-1 text-[11px] text-secondary mt-1">
+      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+      <span className="font-semibold text-primary">{Number(product.rating_avg || 0).toFixed(1)}</span>
+      <span>({product.rating_count})</span>
+    </p>
+  ) : null;
+
   const quickActions = (
     <div className="flex items-center gap-2 pt-1.5">
       {waHref && (
@@ -211,6 +219,7 @@ export function StoreProductCard({
           <button type="button" onClick={() => onOpen(product)} className="text-left w-full cursor-pointer">
             <p className="text-[10px] font-semibold text-secondary uppercase">{product.category}</p>
             <h3 className="font-bold text-sm text-primary line-clamp-2 leading-snug hover:text-[#f68b1e] transition-colors">{product.title}</h3>
+            {ratingChip}
           </button>
           <div className="space-y-2 pt-1">
             <div>
@@ -255,6 +264,7 @@ export function StoreProductCard({
         <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
           <button type="button" onClick={() => onOpen(product)} className="text-left w-full cursor-pointer">
             <h3 className="font-bold text-xs sm:text-sm text-primary line-clamp-2 hover:text-[#fb7701] transition-colors">{product.title}</h3>
+            {ratingChip}
             {product.stock_qty !== null && product.stock_qty > 0 && product.stock_qty <= 10 && (
               <p className="text-[10px] font-bold text-[#fb7701] mt-0.5 flex items-center gap-1">
                 <Flame className="w-3 h-3" /> Almost sold out · {product.stock_qty} left
@@ -309,6 +319,7 @@ export function StoreProductCard({
             <span className="text-[11px] text-secondary">{product.category}</span>
           </div>
           <h3 className="font-bold text-primary text-base leading-snug hover:text-accent transition-colors">{product.title}</h3>
+          {ratingChip}
           {product.description && <p className="text-xs text-secondary line-clamp-2">{product.description}</p>}
         </button>
 

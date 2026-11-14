@@ -6,6 +6,7 @@ import { formatMoney, type SiteProduct } from '@/lib/forums';
 import { planFor } from '@/lib/plans';
 import { jsonFetch, type Site } from '../types';
 import VariantEditorModal from './VariantEditorModal';
+import ReviewsPanel from './ReviewsPanel';
 
 const BLANK = {
   title: '',
@@ -284,6 +285,7 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
           onSaved={reload}
         />
       )}
+      <ReviewsPanel site={site} products={products} />
     </div>
   );
 }
