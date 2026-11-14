@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { createSecureOrder } from '@/app/actions/createOrder';
@@ -249,6 +249,16 @@ export default function OrderAssistant() {
 
 
   const [isDevelopa, setIsDevelopa] = useState(false);
+  // The assistant belongs to the writing agency's own site. It must never appear on developa.me
+  // (a website builder), on a seller's store, or on a seller's own domain.
+  const agencyHost = useSyncExternalStore(
+    () => () => {},
+    () => {
+      const host = window.location.hostname;
+      return host.includes('yourresearchwriter') || host === 'localhost' || host === '127.0.0.1';
+    },
+    () => false
+  );
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1166,6 +1176,10 @@ export default function OrderAssistant() {
   // sidebar, and this bottom-left FAB lands squarely on top of Sign Out, making
   // it unclickable. The portal has its own Helpdesk chat and a New Order nav item.
   if (
+    !agencyHost ||
+    isDevelopa ||
+    pathname?.startsWith('/developer') ||
+    pathname?.startsWith('/forums') ||
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/projects') ||
     pathname?.startsWith('/dashboard')
