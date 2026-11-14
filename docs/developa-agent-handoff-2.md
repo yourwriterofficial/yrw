@@ -1,6 +1,6 @@
 # Agent hand-off 2: what to do after commit baddf94
 
-Read `docs/developa-agent-todo.md` first for the code rules and the review checklist. Work on a branch, make small commits with clear messages, and stop when each package is done so it can be reviewed. Never print or commit secrets. Run `npx tsc --noEmit` and `npx eslint` on every file you touch and report the real results, including anything you could not check.
+Read `docs/developa-agent-todo.md` first for the code rules and the review checklist. Work on a branch, make small commits with clear messages, and stop when each package is done so it can be reviewed and tested by the reviewer. Never print or commit secrets. Run `npx tsc --noEmit` and `npx eslint` on every file you touch and report the real results, including anything you could not check.
 
 ## A. Database (do first, nothing below works without it)
 
@@ -9,21 +9,11 @@ Read `docs/developa-agent-todo.md` first for the code rules and the review check
 3. Check that deleting a `forums` row cascades to products, orders, threads, members, coupons, ad slots, bookings, messages and push subscriptions (the clean-up job relies on it). List any table that would be left behind.
 4. Report anything that failed. Do not edit the migration without telling the reviewer.
 
-## B. Test what was built (use a throwaway test site, delete everything after)
+## B. Testing is done by the reviewer, not by you
 
-Use the test account that is also an admin. For a second person (buyer, advertiser), ask the founder to sign in or use a second test account.
+The reviewer (Claude) runs the acceptance tests on the throwaway test site: plan limits and billing periods, themes and premium gating, forum layouts, ad space, chat, plugin switches, the PWA and phone alerts, the clean-up job and email. You do not run these.
 
-1. **Plans and limits:** a new account can create 1 site and is refused the second with the upgrade message; after recording a payment for a Pro site the limit becomes 4; Business gives 8. Confirm the 3-day trial does not raise the limit. Confirm the trial starts on the first site only and is not repeated after deleting and recreating.
-2. **Billing periods:** the pricing section, the Plan tab and the WhatsApp upgrade message show the same totals (Pro 6 months 40,500, 1 year 72,000; Business 6 months 108,000, 1 year 192,000).
-3. **Themes:** every theme in the picker previews without errors on desktop and phone width; a premium theme cannot be used to create a site until it is paid (the API must return 402 even if the page is bypassed); buy request creates one pending row; founder approval unlocks it; changing the template on an existing site is also blocked for unpaid premium themes; the founder can set a price, set 0, and switch a theme off.
-4. **Forum layouts:** create one site each from the board, newspaper, feed, microblog and reels themes, post a thread and confirm the layout renders with 0, 1, 2 and 6 posts and with a very long title.
-5. **Ad space:** Free plan cannot create slots (403) and the public endpoint returns nothing; Pro can create a slot; a visitor can book it; the owner gets an email; approving starts the run; the ad shows in the right place; an expired booking stops showing.
-6. **Chat:** Free site shows no chat button; Pro shows it; a buyer message reaches the owner inbox and the owner email; the reply reaches the buyer by email and in the chat window; turning the plugin off hides it and the API refuses.
-7. **Plugins tab:** locked items show the right plan; switches save; the switches change behaviour (chat, ad space, install, phone alerts). Run `pluginMatchesPlan()` from `lib/plugins.ts` and report any mismatch with `lib/plans.ts`.
-8. **PWA and phone alerts:** the manifest and icon routes return valid output for a normal slug, a subdomain host and a custom domain; the site installs on Android Chrome; the order alert reaches the owner's phone after generating VAPID keys with the founder; a buyer alert is not possible yet (see D).
-9. **Clean-up job:** call `/api/cron/developa-daily` with the cron secret against a test site whose owner last signed in more than 5 months ago (set the date in the database for the test only). Confirm the first warning, the 7-day warning, that signing in cancels it, that a site with orders is skipped, that a paid site is skipped, and that deletion only happens 3 or more days after the final warning. Never run it against real sites with edited dates.
-10. **Email:** with the Apps Script mailer URL and secret set, an order email goes through the script; with them unset, or when the script says its quota is used, it falls back to the normal service and the buyer still gets one email (not two).
-11. Write the results into section 7 of `docs/developa-agent-todo.md` with pass or fail for each line.
+What you do for testing: after applying the migration in section A, tell the reviewer exactly what was applied and what you verified, so testing can start. Fix any defect the reviewer reports, add a test-friendly way to reproduce it if needed, and write nothing into the review log for tests you did not run yourself.
 
 ## C. Fix and harden
 
@@ -66,6 +56,6 @@ Use the test account that is also an admin. For a second person (buyer, advertis
 
 - Migration (if any) as a new file, applied and verified.
 - Code type-checks and lints clean for touched files.
-- Tested with a throwaway site and all test data removed.
+- Handed to the reviewer for testing (you only check that it compiles and that your own change works).
 - Review log entry added to `docs/developa-agent-todo.md`.
 - Small commits, no unrelated files, no secrets.
