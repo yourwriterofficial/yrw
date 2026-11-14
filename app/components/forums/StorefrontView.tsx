@@ -125,6 +125,32 @@ export default function StorefrontView({
   }, [plan.shippingZones, hasPhysical, deliveryMethod, site.pickup_address, deliveryState, cartTotal, discount, zones]);
   const payable = Math.max(0, cartTotal - discount + shippingCalc.fee);
 
+  useEffect(() => {
+    if (!plan.abandonedCarts || !cartOpen || placedOrder || cart.length === 0) return;
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail.trim());
+    const phoneOk = buyerPhone.trim().length >= 7;
+    if (!emailOk && !phoneOk) return;
+    const timer = setTimeout(() => {
+      fetch(`/api/forums/${encodeURIComponent(site.slug)}/carts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailOk ? buyerEmail.trim().toLowerCase() : '',
+          phone: buyerPhone.trim(),
+          buyer_name: buyerName.trim(),
+          items: cart.map((c) => ({
+            product_id: c.product.id,
+            title: c.variant ? `${c.product.title} (${c.variant.label})` : c.product.title,
+            qty: c.qty,
+            price: Number(c.variant ? c.variant.price : c.product.price),
+          })),
+          total: payable,
+        }),
+      }).catch(() => {});
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [plan.abandonedCarts, cartOpen, placedOrder, cart, buyerEmail, buyerPhone, buyerName, payable, site.slug]);
+
   const applyCoupon = async () => {
     setCouponMsg('');
     if (!couponInput.trim()) return;
@@ -517,6 +543,11 @@ export default function StorefrontView({
                       className="w-full px-3 py-2 rounded-xl bg-card border border-theme text-xs"
                     />
                   </div>
+                  {plan.abandonedCarts && (
+                    <p className="text-[11px] text-secondary">
+                      Your cart is saved briefly while you check out so we can remind you if you step away.
+                    </p>
+                  )}
                   {deliveryMethod === 'delivery' && (
                     <>
                       {plan.shippingZones && hasPhysical && zones.length > 0 && (

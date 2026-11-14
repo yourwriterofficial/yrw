@@ -17,6 +17,7 @@ import DomainTab from './tabs/DomainTab';
 import PlanTab from './tabs/PlanTab';
 import SettingsTab from './tabs/SettingsTab';
 import StoreQrCard from './StoreQrCard';
+import CartsLeftCard from './CartsLeftCard';
 
 type TabKey = 'overview' | 'products' | 'orders' | 'community' | 'coupons' | 'shipping' | 'domain' | 'plan' | 'settings';
 
@@ -285,6 +286,7 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
             >{copied ? 'Copied' : 'Copy link'}</button>
           </section>
           {isStore && <StoreQrCard site={site} />}
+          {isStore && <CartsLeftCard site={site} goToPlan={() => go('plan')} />}
           <section className="g-card p-5">
             <h3 className="font-medium">Getting started <span className="text-secondary font-normal text-sm">{doneCount}/{steps.length}</span></h3>
             <ul className="mt-3 space-y-2 text-sm">

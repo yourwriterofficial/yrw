@@ -207,14 +207,16 @@ export async function adjustStock(
       const next = Number(row.stock_qty) + delta;
       if (next < 0) return false;
       const { data: updated } = await supabaseAdmin
-        .from('site_product_variants')
+        .from('site_products')
         .update({ stock_qty: next })
-        .eq('id', variantId)
-        .eq('product_id', productId)
+        .eq('id', productId)
         .eq('site_id', siteId)
         .eq('stock_qty', row.stock_qty)
         .select('id');
-      if (updated && updated.length > 0) return true;
+      if (updated && updated.length > 0) {
+        if (delta < 0) maybeAlertLowStock(siteId, productId, next).catch(() => {});
+        return true;
+      }
     }
     return false;
   }
@@ -237,9 +239,63 @@ export async function adjustStock(
       .eq('site_id', siteId)
       .eq('stock_qty', row.stock_qty)
       .select('id');
-    if (updated && updated.length > 0) return true;
+    if (updated && updated.length > 0) {
+      if (delta < 0) maybeAlertLowStock(siteId, productId, next).catch(() => {});
+      return true;
+    }
   }
   return false;
+}
+
+async function maybeAlertLowStock(siteId: string, productId: string | number, currentQty: number) {
+  const { data: prod } = await supabaseAdmin
+    .from('site_products')
+    .select('id, title, low_stock_at, low_stock_alerted_at')
+    .eq('id', productId)
+    .eq('site_id', siteId)
+    .maybeSingle();
+  if (!prod) return;
+  const threshold = Number((prod as { low_stock_at?: number }).low_stock_at ?? 3);
+  if (currentQty > threshold) return;
+  const lastAlert = (prod as { low_stock_alerted_at?: string | null }).low_stock_alerted_at;
+  if (lastAlert && Date.now() - new Date(lastAlert).getTime() < 24 * 60 * 60 * 1000) return;
+
+  const { data: site } = await supabaseAdmin
+    .from('forums')
+    .select('id, slug, name, owner_id, plan_tier')
+    .eq('id', siteId)
+    .maybeSingle();
+  if (!site) return;
+
+  const [ext, tools] = await Promise.all([readExtendedSite(siteId), readSiteTools(siteId)]);
+  const plan = planFor(site.plan_tier, ext?.plan_expires_at);
+  if (!plan.lowStockAlerts || !tools.summary_email) return;
+
+  const { data: ownerData } = await supabaseAdmin.auth.admin.getUserById(site.owner_id);
+  const to = ownerData?.user?.email;
+  if (!to) return;
+
+  const { sendSystemEmail } = await import('@/lib/emailService');
+  const { emailShell } = await import('@/lib/emailTemplates');
+  const { siteUrl } = await import('@/lib/siteUrl');
+  const esc = (v: unknown) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const url = `${siteUrl()}/developer/manage?slug=${encodeURIComponent(site.slug)}&tab=products`;
+  const sent = await sendSystemEmail({
+    to,
+    subject: `${site.name}: low stock on "${prod.title}" (${currentQty} left)`,
+    html: emailShell(
+      `<h2>Low stock alert</h2><p><strong>${esc(prod.title)}</strong> on <strong>${esc(site.name)}</strong> now has <strong>${currentQty}</strong> left in stock.</p>`,
+      'Update inventory',
+      url,
+      'developa'
+    ),
+  }).catch(() => false);
+  if (sent) {
+    await supabaseAdmin
+      .from('site_products')
+      .update({ low_stock_alerted_at: new Date().toISOString() })
+      .eq('id', productId);
+  }
 }
 
 /** Takes stock for every item (variant or product), or none: rolls back on failure. */

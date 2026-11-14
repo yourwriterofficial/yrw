@@ -5,6 +5,7 @@ import { formatMoney, type SiteOrder } from '@/lib/forums';
 import { waLink } from '@/lib/phone';
 import { planFor } from '@/lib/plans';
 import { jsonFetch, type Site } from '../types';
+import OrderRefundModal from './OrderRefundModal';
 
 const PAY_FILTERS = [
   { value: 'all', label: 'All' },
@@ -25,12 +26,16 @@ const PAY_TONE: Record<string, string> = {
 export default function OrdersTab({ site, orders, reload }: { site: Site; orders: SiteOrder[]; reload: () => Promise<void> }) {
   const [filter, setFilter] = useState<(typeof PAY_FILTERS)[number]['value']>('all');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [noteOpenId, setNoteOpenId] = useState<string | null>(null);
+  const [refundOrder, setRefundOrder] = useState<SiteOrder | null>(null);
   const [error, setError] = useState('');
+  const plan = planFor(site.plan_tier, site.plan_expires_at);
 
   const shown = useMemo(() => orders.filter((o) => filter === 'all' || o.payment_status === filter), [orders, filter]);
   const count = (v: string) => (v === 'all' ? orders.length : orders.filter((o) => o.payment_status === v).length);
 
-  const patch = async (o: SiteOrder, body: Partial<Pick<SiteOrder, 'payment_status' | 'fulfillment_status'>>) => {
+  const patch = async (o: SiteOrder, body: Partial<Pick<SiteOrder, 'payment_status' | 'fulfillment_status' | 'internal_note'>>) => {
     setBusyId(o.id);
     setError('');
     const r = await jsonFetch(`/api/forums/${site.slug}/orders/${o.id}`, { method: 'PATCH', body });
@@ -85,6 +90,10 @@ export default function OrdersTab({ site, orders, reload }: { site: Site; orders
                     {o.payment_reference && <> · reference <span className="font-mono text-primary">{o.payment_reference}</span></>}
                   </p>
                   {o.payment_proof_note && <p className="text-secondary">Note: {o.payment_proof_note}</p>}
+                  {o.internal_note && <p className="text-xs px-3 py-1.5 rounded-lg bg-secondary/40 text-primary">Private note: {o.internal_note}</p>}
+                  {Number(o.refunded_amount || 0) > 0 && (
+                    <p className="text-xs text-warning font-medium">Refunded: {formatMoney(Number(o.refunded_amount), site.currency)}</p>
+                  )}
                   {o.delivery_method === 'pickup' ? (
                     <p className="text-secondary">Store pickup selected</p>
                   ) : (
@@ -124,6 +133,25 @@ export default function OrdersTab({ site, orders, reload }: { site: Site; orders
                       Receipt
                     </a>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNoteOpenId(noteOpenId === o.id ? null : o.id);
+                      setNoteDrafts((d) => ({ ...d, [o.id]: d[o.id] ?? (o.internal_note || '') }));
+                    }}
+                    className="text-sm px-4 h-9 rounded-full border border-theme hover:bg-hover text-primary"
+                  >
+                    Private note
+                  </button>
+                  {plan.refundsLog && (
+                    <button
+                      type="button"
+                      onClick={() => setRefundOrder(o)}
+                      className="text-sm px-4 h-9 rounded-full border border-theme hover:bg-hover text-primary"
+                    >
+                      Refund / Return
+                    </button>
+                  )}
                   <label className="text-sm text-secondary ml-auto flex items-center gap-2">
                     Delivery
                     <select
@@ -140,10 +168,37 @@ export default function OrdersTab({ site, orders, reload }: { site: Site; orders
                     </select>
                   </label>
                 </div>
+                {noteOpenId === o.id && (
+                  <div className="mt-3 pt-3 border-t border-theme flex flex-wrap gap-2">
+                    <input
+                      value={noteDrafts[o.id] ?? ''}
+                      onChange={(e) => setNoteDrafts((d) => ({ ...d, [o.id]: e.target.value }))}
+                      placeholder="Private staff note (never shown to the buyer)"
+                      maxLength={1000}
+                      className="input-box flex-1 min-w-[200px] text-sm"
+                    />
+                    <button
+                      type="button"
+                      disabled={busyId === o.id}
+                      onClick={async () => { await patch(o, { internal_note: noteDrafts[o.id] ?? '' }); setNoteOpenId(null); }}
+                      className="h-9 px-4 rounded-full bg-accent text-[var(--accent-foreground)] text-xs font-medium disabled:opacity-50"
+                    >
+                      Save note
+                    </button>
+                  </div>
+                )}
               </li>
             );
           })}
         </ul>
+      )}
+      {refundOrder && (
+        <OrderRefundModal
+          site={site}
+          order={refundOrder}
+          onClose={() => setRefundOrder(null)}
+          onDone={reload}
+        />
       )}
     </div>
   );

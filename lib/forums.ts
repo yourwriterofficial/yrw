@@ -143,7 +143,33 @@ export interface SiteOrder {
   fulfillment_status: 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled';
   internal_note?: string;
   refunded_amount?: number;
+  marketing_consent?: boolean;
   created_at: string;
+}
+
+export interface SiteOrderEvent {
+  id: string;
+  order_id: string;
+  site_id: string;
+  kind: 'refund' | 'return' | 'note';
+  amount: number;
+  note: string;
+  stock_returned: boolean;
+  created_at: string;
+}
+
+export interface SiteCartLead {
+  id: string;
+  site_id: string;
+  buyer_name: string;
+  email: string;
+  phone: string;
+  items: { product_id?: string; title: string; qty: number; price: number }[];
+  total: number;
+  status?: 'open' | 'converted' | 'unsubscribed';
+  reminder_count?: number;
+  updated_at?: string;
+  created_at?: string;
 }
 
 export function formatMoney(amount: number, currency = 'NGN'): string {

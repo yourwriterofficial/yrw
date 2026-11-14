@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
-import { createClient as createServerClient } from '@/lib/supabase/server';
-import { supabaseAdmin, downloadsForOrder, releaseStock } from '@/lib/forumServer';
+import { supabaseAdmin, downloadsForOrder, releaseStock, requireSiteAccess } from '@/lib/forumServer';
 import { emailOrderUpdate } from '@/lib/storeEmails';
 
 const updateOrderSchema = z.object({
@@ -10,6 +9,7 @@ const updateOrderSchema = z.object({
   fulfillment_status: z.enum(['pending', 'processing', 'shipped', 'completed', 'cancelled']).optional(),
   payment_reference: z.string().trim().max(120).optional(),
   payment_proof_note: z.string().trim().max(400).optional(),
+  internal_note: z.string().trim().max(1000).optional(),
 });
 
 export async function PATCH(
@@ -18,18 +18,16 @@ export async function PATCH(
 ) {
   try {
     const { slug, orderId } = await context.params;
-    const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const access = await requireSiteAccess(slug, ['owner', 'manager', 'packer', 'support']);
+    if ('error' in access) return access.error;
 
     const { data: site } = await supabaseAdmin
       .from('forums')
       .select('id, slug, owner_id, name, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions')
-      .eq('slug', slug.toLowerCase().trim())
+      .eq('id', access.site.id)
       .maybeSingle();
 
     if (!site) return NextResponse.json({ error: 'Store not found' }, { status: 404 });
-    if (site.owner_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const raw = await request.json();
     const parsed = updateOrderSchema.safeParse(raw);
@@ -37,11 +35,19 @@ export async function PATCH(
       return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid update' }, { status: 400 });
     }
 
+    if (access.role === 'packer' && (parsed.data.payment_status !== undefined || parsed.data.payment_reference !== undefined || parsed.data.payment_proof_note !== undefined)) {
+      return NextResponse.json({ error: 'Packers can update delivery status and notes only.' }, { status: 403 });
+    }
+    if (access.role === 'support' && (parsed.data.payment_status !== undefined || parsed.data.fulfillment_status !== undefined)) {
+      return NextResponse.json({ error: 'Support staff can edit private order notes only.' }, { status: 403 });
+    }
+
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (parsed.data.payment_status !== undefined) updates.payment_status = parsed.data.payment_status;
     if (parsed.data.fulfillment_status !== undefined) updates.fulfillment_status = parsed.data.fulfillment_status;
     if (parsed.data.payment_reference !== undefined) updates.payment_reference = xss(parsed.data.payment_reference);
     if (parsed.data.payment_proof_note !== undefined) updates.payment_proof_note = xss(parsed.data.payment_proof_note);
+    if (parsed.data.internal_note !== undefined) updates.internal_note = xss(parsed.data.internal_note);
 
     const { data: before } = await supabaseAdmin
       .from('site_orders')
@@ -58,7 +64,12 @@ export async function PATCH(
       .select('*')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (/column .*internal_note.* does not exist/i.test(error.message)) {
+        return NextResponse.json({ error: 'Private notes need the latest database update first.' }, { status: 503 });
+      }
+      throw error;
+    }
 
     // A cancelled order, or a rejected payment, frees its items again. Only the first time it
     // enters that state, so repeating the action cannot add stock twice.

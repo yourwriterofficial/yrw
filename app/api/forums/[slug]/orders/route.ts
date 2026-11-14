@@ -1,5 +1,5 @@
 import { findUsableCoupon, discountFor } from '@/lib/coupons';
-import { downloadsForOrder, readExtendedSite, readSiteTools, reserveStock, releaseStock } from '@/lib/forumServer';
+import { downloadsForOrder, readExtendedSite, readSiteTools, requireSiteAccess, reserveStock, releaseStock } from '@/lib/forumServer';
 import { emailOrderReceived } from '@/lib/storeEmails';
 import { computeShipping, type ShippingZoneRow } from '@/lib/shipping';
 import { planFor } from '@/lib/plans';
@@ -76,11 +76,8 @@ export async function GET(
       return NextResponse.json({ order: publicOrder, downloads });
     }
 
-    const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || site.owner_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const access = await requireSiteAccess(slug, ['owner', 'manager', 'packer', 'support']);
+    if ('error' in access) return access.error;
 
     const { data: orders, error } = await supabaseAdmin
       .from('site_orders')
@@ -287,6 +284,19 @@ export async function POST(
     if (insertErr) {
       await releaseStock(site.id, orderItems);
       throw insertErr;
+    }
+
+    // Mark any matching abandoned cart as converted (best-effort; silent if table not yet migrated).
+    const buyerEmailLower = parsed.data.buyer_email.trim().toLowerCase();
+    if (buyerEmailLower) {
+      Promise.resolve(
+        supabaseAdmin
+          .from('site_carts')
+          .update({ status: 'converted', updated_at: new Date().toISOString() })
+          .eq('site_id', site.id)
+          .eq('email', buyerEmailLower)
+          .eq('status', 'open')
+      ).catch(() => {});
     }
 
     emailOrderReceived(site, {
