@@ -1,0 +1,207 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { X, Search, Download, Printer } from 'lucide-react';
+import { formatMoney, type ForumSummary, type SiteOrder } from '@/lib/forums';
+import { planFor } from '@/lib/plans';
+
+const PAY_LABEL: Record<string, string> = {
+  pending: 'Awaiting payment',
+  proof_submitted: 'Payment being checked',
+  paid: 'Paid',
+  rejected: 'Payment not confirmed',
+};
+
+const SHIP_LABEL: Record<string, string> = {
+  pending: 'Not started',
+  processing: 'Being prepared',
+  shipped: 'On its way',
+  completed: 'Delivered',
+  cancelled: 'Cancelled',
+};
+
+export default function OrderTrackingModal({
+  site,
+  initialCode = '',
+  onClose,
+}: {
+  site: ForumSummary;
+  initialCode?: string;
+  onClose: () => void;
+}) {
+  const [code, setCode] = useState(initialCode);
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [order, setOrder] = useState<SiteOrder | null>(null);
+  const [downloads, setDownloads] = useState<{ title: string; url: string }[]>([]);
+  const currency = site.currency || 'NGN';
+  const plan = planFor(site.plan_tier);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const lookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setOrder(null);
+    setDownloads([]);
+    setBusy(true);
+    try {
+      const qs = new URLSearchParams({ code: code.trim(), email: email.trim().toLowerCase() });
+      const res = await fetch(`/api/forums/${encodeURIComponent(site.slug)}/orders?${qs.toString()}`, { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.order) {
+        setError(res.status === 429 ? (data.error || 'Too many attempts. Please wait.') : 'Order not found. Check your order code and email address.');
+      } else {
+        setOrder(data.order);
+        setDownloads(data.downloads || []);
+      }
+    } catch {
+      setError('Could not reach the server. Please try again.');
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="track-order-title"
+    >
+      <div
+        className="w-full sm:max-w-lg bg-primary border border-theme rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto shadow-2xl p-5 sm:p-6 space-y-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-theme pb-3">
+          <div>
+            <h2 id="track-order-title" className="g-h3">Track your order</h2>
+            <p className="text-xs text-secondary mt-0.5">Enter your order code and the email used at checkout.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close order tracker"
+            className="w-10 h-10 rounded-full hover:bg-hover flex items-center justify-center text-secondary hover:text-primary"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={lookup} className="space-y-3">
+          <div>
+            <label htmlFor="track-code" className="block text-sm font-medium mb-1">Order code</label>
+            <input
+              id="track-code"
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="ORD-XXXXXX"
+              className="input-box w-full font-mono text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="track-email" className="block text-sm font-medium mb-1">Email address</label>
+            <input
+              id="track-email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="input-box w-full text-sm"
+            />
+          </div>
+          {error && <p className="text-sm text-danger" role="alert">{error}</p>}
+          <button
+            type="submit"
+            disabled={busy}
+            className="w-full min-h-11 rounded-full bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] text-sm font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+          >
+            <Search className="w-4 h-4" />
+            {busy ? 'Checking…' : 'Check order status'}
+          </button>
+        </form>
+
+        {order && (
+          <div className="g-card p-4 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-mono font-bold text-sm">{order.order_code}</p>
+                <p className="text-xs text-secondary">{new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+              </div>
+              <p className="font-bold text-base">{formatMoney(order.total_amount, currency)}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 text-xs">
+              <div className="p-3 rounded-xl bg-secondary/40 border border-theme">
+                <p className="text-secondary">Payment</p>
+                <p className="font-semibold text-primary mt-0.5">{PAY_LABEL[order.payment_status] || order.payment_status}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-secondary/40 border border-theme">
+                <p className="text-secondary">Delivery</p>
+                <p className="font-semibold text-primary mt-0.5">{SHIP_LABEL[order.fulfillment_status] || order.fulfillment_status}</p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 text-sm border-t border-theme pt-3">
+              {order.items.map((it, idx) => (
+                <div key={idx} className="flex justify-between gap-2 text-xs">
+                  <span>{it.qty} × {it.title}</span>
+                  <span className="text-secondary shrink-0">{formatMoney(Number(it.price) * it.qty, currency)}</span>
+                </div>
+              ))}
+              {Number(order.discount_amount || 0) > 0 && (
+                <div className="flex justify-between gap-2 text-xs text-success">
+                  <span>Discount{order.coupon_code ? ` (${order.coupon_code})` : ''}</span>
+                  <span>-{formatMoney(Number(order.discount_amount), currency)}</span>
+                </div>
+              )}
+              {Number(order.shipping_fee || 0) > 0 && (
+                <div className="flex justify-between gap-2 text-xs text-secondary">
+                  <span>Delivery{order.shipping_zone ? ` (${order.shipping_zone})` : ''}</span>
+                  <span>{formatMoney(Number(order.shipping_fee), currency)}</span>
+                </div>
+              )}
+            </div>
+
+            {order.payment_status === 'paid' && downloads.length > 0 && (
+              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
+                <p className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                  <Download className="w-3.5 h-3.5" /> Your digital downloads
+                </p>
+                <ul className="space-y-1.5 text-xs">
+                  {downloads.map((d, idx) => (
+                    <li key={idx}>
+                      <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-accent font-medium hover:underline break-all">
+                        Download {d.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {plan.receipts && (
+              <a
+                href={`/receipt/${encodeURIComponent(order.order_code)}?slug=${encodeURIComponent(site.slug)}&email=${encodeURIComponent(email.trim().toLowerCase())}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full min-h-10 px-4 py-2 rounded-full border border-theme hover:bg-hover text-xs font-medium inline-flex items-center justify-center gap-2"
+              >
+                <Printer className="w-3.5 h-3.5" /> Print or save receipt (PDF)
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

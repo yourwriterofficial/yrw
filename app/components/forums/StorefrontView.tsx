@@ -3,7 +3,7 @@
 import { waNumber } from '@/lib/phone';
 import { useState, useMemo, useEffect } from 'react';
 import {
-  ShoppingCart, Plus, Minus, Trash2, Search,
+  ShoppingCart, Plus, Minus, Trash2, Search, Package,
   CheckCircle2, Copy, Check, X, Landmark, Truck, MessageCircle,
 } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
@@ -11,6 +11,7 @@ import { formatMoney, type ForumSummary, type ProductVariant, type SiteOrder, ty
 import { getTemplateById } from '@/lib/siteTemplates';
 import { StorefrontHeroAndTrust, StoreProductCard } from '@/app/components/forums/StorefrontThemes';
 import ProductDetailModal from '@/app/components/forums/ProductDetailModal';
+import OrderTrackingModal from '@/app/components/forums/OrderTrackingModal';
 
 interface CartEntry {
   key: string;
@@ -51,14 +52,23 @@ export default function StorefrontView({
   const [placedOrder, setPlacedOrder] = useState<SiteOrder | null>(null);
   const [copiedAcct, setCopiedAcct] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<SiteProduct | null>(null);
+  const [trackOpen, setTrackOpen] = useState(false);
+  const [trackInitialCode, setTrackInitialCode] = useState('');
 
   const visibleProducts = useMemo(() => products.filter((p) => p.is_active), [products]);
 
   useEffect(() => {
-    const pid = new URLSearchParams(window.location.search).get('product');
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get('product');
     if (pid && visibleProducts.length > 0) {
       const match = visibleProducts.find((p) => p.id === pid);
       if (match) setSelectedProduct(match);
+    }
+    const orderParam = params.get('order');
+    const trackParam = params.get('track');
+    if (orderParam || trackParam === '1') {
+      if (orderParam) setTrackInitialCode(orderParam.trim().toUpperCase());
+      setTrackOpen(true);
     }
   }, [visibleProducts]);
 
@@ -221,8 +231,8 @@ export default function StorefrontView({
           ))}
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <div className="relative flex-1 sm:w-56">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="relative flex-1 min-w-[140px] sm:w-56">
             <Search className="w-3.5 h-3.5 text-secondary absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -246,6 +256,13 @@ export default function StorefrontView({
           <label className="hidden md:flex items-center gap-1.5 text-xs text-secondary whitespace-nowrap">
             <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="w-3.5 h-3.5" /> In stock
           </label>
+          <Button
+            variant="ghost"
+            onClick={() => setTrackOpen(true)}
+            icon={<Package className="w-4 h-4" />}
+          >
+            Track order
+          </Button>
           <Button
             variant="primary"
             onClick={() => setCartOpen(true)}
@@ -290,6 +307,14 @@ export default function StorefrontView({
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
           onAddToCart={addToCart}
+        />
+      )}
+
+      {trackOpen && (
+        <OrderTrackingModal
+          site={site}
+          initialCode={trackInitialCode}
+          onClose={() => setTrackOpen(false)}
         />
       )}
 

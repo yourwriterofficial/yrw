@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { formatMoney, type SiteOrder } from '@/lib/forums';
 import { waLink } from '@/lib/phone';
+import { planFor } from '@/lib/plans';
 import { jsonFetch, type Site } from '../types';
 
 const PAY_FILTERS = [
@@ -102,6 +103,16 @@ export default function OrdersTab({ site, orders, reload }: { site: Site; orders
                     <button disabled={busyId === o.id} onClick={() => patch(o, { payment_status: 'rejected' })} className="text-sm px-4 h-9 rounded-full border border-theme text-danger disabled:opacity-50">
                       Reject payment
                     </button>
+                  )}
+                  {planFor(site.plan_tier, site.plan_expires_at).receipts && (
+                    <a
+                      href={`/receipt/${encodeURIComponent(o.order_code)}?slug=${encodeURIComponent(site.slug)}&email=${encodeURIComponent(o.buyer_email)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm px-4 h-9 rounded-full border border-theme hover:bg-hover inline-flex items-center text-primary"
+                    >
+                      Receipt
+                    </a>
                   )}
                   <label className="text-sm text-secondary ml-auto flex items-center gap-2">
                     Delivery

@@ -47,12 +47,18 @@ function contactLine(site: StoreInfo) {
 }
 
 const storeLink = (site: StoreInfo) => `${siteUrl()}/forums/${site.slug}`;
+const trackLink = (site: StoreInfo, order: OrderInfo) =>
+  `${storeLink(site)}?order=${encodeURIComponent(order.order_code)}`;
+const receiptLink = (site: StoreInfo, order: OrderInfo) =>
+  `${siteUrl()}/receipt/${encodeURIComponent(order.order_code)}?slug=${encodeURIComponent(site.slug)}&email=${encodeURIComponent(order.buyer_email)}`;
 
 function send(order: OrderInfo, subject: string, body: string, site: StoreInfo) {
+  const track = trackLink(site, order);
+  const trackNote = `<p style="font-size:13px;margin-top:12px">Track this order any time: <a href="${esc(track)}">${esc(order.order_code)}</a></p>`;
   return sendSystemEmail({
     to: order.buyer_email,
     subject: `${site.name}: ${subject} (${order.order_code})`,
-    html: emailShell(body, `Open ${site.name}`, storeLink(site), 'developa'),
+    html: emailShell(`${body}${trackNote}`, 'Track order', track, 'developa'),
   });
 }
 
@@ -94,7 +100,8 @@ export async function emailOrderUpdate(
     const dl = downloads.length
       ? `<p><strong>Your downloads</strong></p><ul style="padding-left:18px">${downloads.map((d) => `<li><a href="${esc(d.url)}">${esc(d.title)}</a></li>`).join('')}</ul>`
       : '';
-    return send(order, 'payment confirmed', `<h2>Payment confirmed</h2><p>Hi ${first}, ${esc(site.name)} confirmed your payment for order <strong>${esc(order.order_code)}</strong>. Thank you!</p>${itemsHtml(order, cur)}${dl}${contactLine(site)}`, site);
+    const rcpt = `<p><a href="${esc(receiptLink(site, order))}">View or print receipt (PDF)</a></p>`;
+    return send(order, 'payment confirmed', `<h2>Payment confirmed</h2><p>Hi ${first}, ${esc(site.name)} confirmed your payment for order <strong>${esc(order.order_code)}</strong>. Thank you!</p>${itemsHtml(order, cur)}${dl}${rcpt}${contactLine(site)}`, site);
   }
   if (change.payment === 'rejected') {
     return send(order, 'we could not confirm your payment', `<h2>Payment not confirmed</h2><p>Hi ${first}, ${esc(site.name)} could not confirm the payment for order <strong>${esc(order.order_code)}</strong>. Please check the transfer and contact the store.</p>${contactLine(site)}`, site);
