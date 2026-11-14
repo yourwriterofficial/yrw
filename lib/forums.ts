@@ -62,6 +62,14 @@ export interface ForumSummary {
   pickup_address?: string;
   summary_email?: boolean;
   weekly_backup_email?: boolean;
+  shipping_zones?: {
+    id: string;
+    name: string;
+    states: string[];
+    fee: number;
+    free_over: number | null;
+    is_active: boolean;
+  }[];
 }
 
 export interface ProductVariant {

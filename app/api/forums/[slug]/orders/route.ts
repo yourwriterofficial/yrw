@@ -1,6 +1,8 @@
 import { findUsableCoupon, discountFor } from '@/lib/coupons';
-import { downloadsForOrder, reserveStock, releaseStock } from '@/lib/forumServer';
+import { downloadsForOrder, readExtendedSite, readSiteTools, reserveStock, releaseStock } from '@/lib/forumServer';
 import { emailOrderReceived } from '@/lib/storeEmails';
+import { computeShipping, type ShippingZoneRow } from '@/lib/shipping';
+import { planFor } from '@/lib/plans';
 import { overLimit, clientIp } from '@/lib/rateLimit';
 import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
@@ -15,6 +17,8 @@ const createOrderSchema = z.object({
   buyer_email: z.string().trim().email('Valid email is required').max(150),
   buyer_phone: z.string().trim().min(5, 'Phone or WhatsApp number is required').max(30),
   delivery_address: z.string().trim().max(400).optional().default(''),
+  delivery_method: z.enum(['delivery', 'pickup']).optional().default('delivery'),
+  delivery_state: z.string().trim().max(60).optional().default(''),
   notes: z.string().trim().max(500).optional().default(''),
   payment_method: z.enum(['manual_transfer', 'pay_on_delivery']).default('manual_transfer'),
   payment_reference: z.string().trim().max(120).optional().default(''),
@@ -101,7 +105,7 @@ export async function POST(
     const { slug } = await context.params;
     const { data: site } = await supabaseAdmin
       .from('forums')
-      .select('id, slug, site_mode, owner_id, name, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions')
+      .select('id, slug, site_mode, owner_id, name, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions, plan_tier')
       .eq('slug', slug.toLowerCase().trim())
       .maybeSingle();
 
@@ -198,7 +202,34 @@ export async function POST(
         couponUsed = { id: coupon.id, code: coupon.code, used_count: coupon.used_count };
       }
     }
-    const grandTotal = Math.max(0, subtotal - discount);
+    const extSite = await readExtendedSite(site.id);
+    const plan = planFor((site as { plan_tier?: string }).plan_tier, extSite?.plan_expires_at);
+    const hasPhysical = orderItems.some((i) => i.product_type === 'physical');
+    let shippingFee = 0;
+    let shippingZone = '';
+    let resolvedMethod: 'delivery' | 'pickup' = 'delivery';
+    if (plan.shippingZones && hasPhysical) {
+      const [{ data: zonesData }, toolsData] = await Promise.all([
+        supabaseAdmin
+          .from('site_shipping_zones')
+          .select('id, name, states, fee, free_over, is_active')
+          .eq('site_id', site.id)
+          .eq('is_active', true),
+        readSiteTools(site.id),
+      ]);
+      const zones = (zonesData as ShippingZoneRow[] | null) || [];
+      resolvedMethod = parsed.data.delivery_method === 'pickup' && toolsData.pickup_address ? 'pickup' : 'delivery';
+      const calc = computeShipping({
+        deliveryMethod: resolvedMethod,
+        state: parsed.data.delivery_state,
+        subtotalAfterDiscount: Math.max(0, subtotal - discount),
+        zones,
+      });
+      shippingFee = calc.fee;
+      shippingZone = calc.zoneName;
+    }
+
+    const grandTotal = Math.max(0, subtotal - discount + shippingFee);
 
     // Take the stock now so the last item cannot be sold twice. It is returned if saving fails.
     const reserved = await reserveStock(site.id, orderItems);
@@ -211,29 +242,47 @@ export async function POST(
     const orderCode = `ORD-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
     const hasProof = parsed.data.payment_method === 'manual_transfer' && !!parsed.data.payment_reference.trim();
 
-    const { data: order, error: insertErr } = await supabaseAdmin
+    const baseInsert = {
+      order_code: orderCode,
+      site_id: site.id,
+      buyer_id: user?.id || null,
+      buyer_name: xss(parsed.data.buyer_name),
+      buyer_email: xss(parsed.data.buyer_email.toLowerCase()),
+      buyer_phone: xss(parsed.data.buyer_phone),
+      delivery_address: xss(parsed.data.delivery_address),
+      notes: xss(parsed.data.notes),
+      items: orderItems,
+      subtotal,
+      total_amount: grandTotal,
+      ...(couponUsed ? { coupon_code: couponUsed.code, discount_amount: discount } : {}),
+      payment_method: parsed.data.payment_method,
+      payment_reference: xss(parsed.data.payment_reference),
+      payment_proof_note: xss(parsed.data.payment_proof_note),
+      payment_status: hasProof ? 'proof_submitted' : 'pending',
+      fulfillment_status: 'pending',
+    };
+
+    let { data: order, error: insertErr } = await supabaseAdmin
       .from('site_orders')
       .insert({
-        order_code: orderCode,
-        site_id: site.id,
-        buyer_id: user?.id || null,
-        buyer_name: xss(parsed.data.buyer_name),
-        buyer_email: xss(parsed.data.buyer_email.toLowerCase()),
-        buyer_phone: xss(parsed.data.buyer_phone),
-        delivery_address: xss(parsed.data.delivery_address),
-        notes: xss(parsed.data.notes),
-        items: orderItems,
-        subtotal,
-        total_amount: grandTotal,
-        ...(couponUsed ? { coupon_code: couponUsed.code, discount_amount: discount } : {}),
-        payment_method: parsed.data.payment_method,
-        payment_reference: xss(parsed.data.payment_reference),
-        payment_proof_note: xss(parsed.data.payment_proof_note),
-        payment_status: hasProof ? 'proof_submitted' : 'pending',
-        fulfillment_status: 'pending',
+        ...baseInsert,
+        shipping_fee: shippingFee,
+        shipping_zone: xss(shippingZone),
+        delivery_method: resolvedMethod,
+        delivery_state: xss(parsed.data.delivery_state),
       })
       .select('*')
       .single();
+
+    if (insertErr && /column .* does not exist/i.test(insertErr.message)) {
+      const retry = await supabaseAdmin
+        .from('site_orders')
+        .insert({ ...baseInsert, total_amount: Math.max(0, subtotal - discount) })
+        .select('*')
+        .single();
+      order = retry.data;
+      insertErr = retry.error;
+    }
 
     if (insertErr) {
       await releaseStock(site.id, orderItems);
@@ -249,6 +298,10 @@ export async function POST(
       payment_status: order.payment_status,
       fulfillment_status: order.fulfillment_status,
       items: order.items,
+      shipping_fee: shippingFee,
+      shipping_zone: shippingZone,
+      delivery_method: resolvedMethod,
+      delivery_state: parsed.data.delivery_state,
     }).catch((e) => console.warn('Buyer confirmation email failed:', e));
 
     if (couponUsed) {

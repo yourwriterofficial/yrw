@@ -28,14 +28,23 @@ interface OrderInfo {
   payment_status: string;
   fulfillment_status: string;
   items: { title: string; qty: number; price: number }[];
+  shipping_fee?: number;
+  shipping_zone?: string;
+  delivery_method?: string;
+  delivery_state?: string;
 }
 
 const esc = (v: unknown) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 function itemsHtml(order: OrderInfo, currency: string) {
+  const shipLine = order.delivery_method === 'pickup'
+    ? '<p style="margin:6px 0"><strong>Method:</strong> Store pickup</p>'
+    : Number(order.shipping_fee || 0) > 0
+    ? `<p style="margin:6px 0"><strong>Delivery${order.shipping_zone ? ` (${esc(order.shipping_zone)})` : ''}:</strong> ${esc(formatMoney(Number(order.shipping_fee), currency))}</p>`
+    : '';
   return `<ul style="padding-left:18px;margin:12px 0">${order.items
     .map((i) => `<li>${esc(i.qty)} × ${esc(i.title)} <span style="color:#71717a">(${esc(formatMoney(i.price, currency))})</span></li>`)
-    .join('')}</ul><p><strong>Total: ${esc(formatMoney(order.total_amount, currency))}</strong></p>`;
+    .join('')}</ul>${shipLine}<p><strong>Total: ${esc(formatMoney(order.total_amount, currency))}</strong></p>`;
 }
 
 function contactLine(site: StoreInfo) {

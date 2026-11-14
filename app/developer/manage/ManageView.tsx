@@ -12,12 +12,13 @@ import ProductsTab from './tabs/ProductsTab';
 import OrdersTab from './tabs/OrdersTab';
 import CommunityTab from './tabs/CommunityTab';
 import CouponsTab from './tabs/CouponsTab';
+import ShippingTab from './tabs/ShippingTab';
 import DomainTab from './tabs/DomainTab';
 import PlanTab from './tabs/PlanTab';
 import SettingsTab from './tabs/SettingsTab';
 import StoreQrCard from './StoreQrCard';
 
-type TabKey = 'overview' | 'products' | 'orders' | 'community' | 'coupons' | 'domain' | 'plan' | 'settings';
+type TabKey = 'overview' | 'products' | 'orders' | 'community' | 'coupons' | 'shipping' | 'domain' | 'plan' | 'settings';
 
 const TABS: { key: TabKey; label: string; storeOnly?: boolean; forumOnly?: boolean }[] = [
   { key: 'overview', label: 'Overview' },
@@ -25,6 +26,7 @@ const TABS: { key: TabKey; label: string; storeOnly?: boolean; forumOnly?: boole
   { key: 'orders', label: 'Orders', storeOnly: true },
   { key: 'community', label: 'Community', forumOnly: true },
   { key: 'coupons', label: 'Coupons', storeOnly: true },
+  { key: 'shipping', label: 'Delivery', storeOnly: true },
   { key: 'domain', label: 'Domain' },
   { key: 'plan', label: 'Plan' },
   { key: 'settings', label: 'Settings' },
@@ -170,6 +172,7 @@ export default function ManageView() {
           {tab === 'orders' && <OrdersTab site={site} orders={orders} reload={reload} />}
           {tab === 'community' && <CommunityTab site={site} threads={detail!.threads} reload={reload} />}
           {tab === 'coupons' && <CouponsTab site={site} goToPlan={() => setTab('plan')} />}
+          {tab === 'shipping' && <ShippingTab site={site} reload={reload} goToPlan={() => setTab('plan')} />}
           {tab === 'domain' && <DomainTab site={site} goToPlan={() => setTab('plan')} />}
           {tab === 'plan' && <PlanTab site={site} />}
           {tab === 'settings' && <SettingsTab key={site.slug + (site.name || '')} site={site} reload={reload} goToPlan={() => setTab('plan')} />}

@@ -152,7 +152,7 @@ export async function GET(
     }));
 
     // New-migration data, read tolerantly so stores keep working before it is applied.
-    const [ext, seo, tools, extraProdRes, variantsRes, reviewsRes] = await Promise.all([
+    const [ext, seo, tools, extraProdRes, variantsRes, reviewsRes, shippingZonesRes] = await Promise.all([
       readExtendedSite(forum.id),
       readSeo(forum.id),
       readSiteTools(forum.id),
@@ -180,6 +180,14 @@ export async function GET(
             .select('product_id, rating')
             .eq('site_id', forum.id)
             .eq('is_visible', true),
+      forum.site_mode === 'forum'
+        ? Promise.resolve({ data: null })
+        : supabaseAdmin
+            .from('site_shipping_zones')
+            .select('id, name, states, fee, free_over, is_active')
+            .eq('site_id', forum.id)
+            .eq('is_active', true)
+            .order('created_at', { ascending: true }),
     ]);
 
     const prodExtraMap = new Map<string, { image_urls?: string[]; variant_options?: string[]; low_stock_at?: number }>();
@@ -246,6 +254,7 @@ export async function GET(
       page_contact_note: tools.page_contact_note,
       social_links: tools.social_links,
       pickup_address: tools.pickup_address,
+      shipping_zones: PLANS[tier].shippingZones ? (shippingZonesRes.data || []) : [],
       summary_email: tools.summary_email,
       weekly_backup_email: tools.weekly_backup_email,
       verified: tools.verified,

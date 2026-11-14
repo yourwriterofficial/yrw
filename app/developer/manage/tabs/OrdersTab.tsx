@@ -85,7 +85,17 @@ export default function OrdersTab({ site, orders, reload }: { site: Site; orders
                     {o.payment_reference && <> · reference <span className="font-mono text-primary">{o.payment_reference}</span></>}
                   </p>
                   {o.payment_proof_note && <p className="text-secondary">Note: {o.payment_proof_note}</p>}
-                  {o.delivery_address && <p className="text-secondary">Deliver to: {o.delivery_address}</p>}
+                  {o.delivery_method === 'pickup' ? (
+                    <p className="text-secondary">Store pickup selected</p>
+                  ) : (
+                    (o.delivery_address || o.delivery_state || Number(o.shipping_fee || 0) > 0) && (
+                      <p className="text-secondary">
+                        Deliver{o.delivery_state ? ` (${o.delivery_state}${o.shipping_zone ? ` · ${o.shipping_zone}` : ''})` : ''}
+                        {o.delivery_address ? `: ${o.delivery_address}` : ''}
+                        {Number(o.shipping_fee || 0) > 0 ? ` · Fee: ${formatMoney(Number(o.shipping_fee), site.currency)}` : ''}
+                      </p>
+                    )
+                  )}
                   {o.notes && <p className="text-secondary">Buyer note: {o.notes}</p>}
                   <p className="flex flex-wrap gap-x-4">
                     {o.buyer_phone && <span className="text-secondary">{o.buyer_phone}</span>}

@@ -9,6 +9,8 @@ import {
 import Button from '@/app/components/ui/Button';
 import { formatMoney, type ForumSummary, type ProductVariant, type SiteOrder, type SiteProduct } from '@/lib/forums';
 import { getTemplateById } from '@/lib/siteTemplates';
+import { NIGERIAN_STATES, computeShipping } from '@/lib/shipping';
+import { planFor } from '@/lib/plans';
 import { StorefrontHeroAndTrust, StoreProductCard } from '@/app/components/forums/StorefrontThemes';
 import ProductDetailModal from '@/app/components/forums/ProductDetailModal';
 import OrderTrackingModal from '@/app/components/forums/OrderTrackingModal';
@@ -42,6 +44,8 @@ export default function StorefrontView({
   const [buyerName, setBuyerName] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
+  const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
+  const [deliveryState, setDeliveryState] = useState('Lagos');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'manual_transfer' | 'pay_on_delivery'>('manual_transfer');
@@ -107,7 +111,19 @@ export default function StorefrontView({
   );
   // The discount shown here is a preview; the server recalculates it when the order is placed.
   const discount = coupon ? Math.min(coupon.discount, cartTotal) : 0;
-  const payable = Math.max(0, cartTotal - discount);
+  const plan = planFor(site.plan_tier);
+  const zones = site.shipping_zones || [];
+  const hasPhysical = cart.some((c) => c.product.product_type === 'physical');
+  const shippingCalc = useMemo(() => {
+    if (!plan.shippingZones || !hasPhysical) return { fee: 0, zoneName: '', freeDeliveryApplied: false };
+    return computeShipping({
+      deliveryMethod: deliveryMethod === 'pickup' && site.pickup_address ? 'pickup' : 'delivery',
+      state: deliveryState,
+      subtotalAfterDiscount: Math.max(0, cartTotal - discount),
+      zones,
+    });
+  }, [plan.shippingZones, hasPhysical, deliveryMethod, site.pickup_address, deliveryState, cartTotal, discount, zones]);
+  const payable = Math.max(0, cartTotal - discount + shippingCalc.fee);
 
   const applyCoupon = async () => {
     setCouponMsg('');
@@ -168,6 +184,8 @@ export default function StorefrontView({
           buyer_name: buyerName,
           buyer_email: buyerEmail,
           buyer_phone: buyerPhone,
+          delivery_method: deliveryMethod,
+          delivery_state: deliveryState,
           delivery_address: deliveryAddress,
           notes,
           payment_method: paymentMethod,
@@ -421,13 +439,58 @@ export default function StorefrontView({
                   {coupon && <p className="text-xs text-success">Code {coupon.code} applied: {formatMoney(discount, currency)} off</p>}
                 </div>
 
-                <div className="flex items-center justify-between font-black text-base pt-2 border-t border-theme">
-                  <span>Total</span>
-                  <span>{formatMoney(payable, currency)}</span>
+                <div className="space-y-1.5 pt-2 border-t border-theme text-xs">
+                  {hasPhysical && plan.shippingZones && (deliveryMethod === 'pickup' || zones.length > 0) && (
+                    <div className="flex items-center justify-between text-secondary">
+                      <span>
+                        {deliveryMethod === 'pickup'
+                          ? 'Store pickup'
+                          : shippingCalc.zoneName
+                          ? `Delivery (${shippingCalc.zoneName})`
+                          : 'Delivery'}
+                      </span>
+                      <span>
+                        {deliveryMethod === 'pickup' || shippingCalc.freeDeliveryApplied
+                          ? <span className="text-success font-medium">Free</span>
+                          : formatMoney(shippingCalc.fee, currency)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between font-black text-base pt-1">
+                    <span>Total</span>
+                    <span>{formatMoney(payable, currency)}</span>
+                  </div>
                 </div>
 
                 <form onSubmit={handleCheckout} className="space-y-3 pt-2 border-t border-theme">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-secondary">Customer & Delivery</h4>
+                  {plan.shippingZones && hasPhysical && site.pickup_address && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryMethod('delivery')}
+                        className={`py-2 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+                          deliveryMethod === 'delivery' ? 'border-accent bg-accent/10 text-accent' : 'border-theme bg-card text-secondary'
+                        }`}
+                      >
+                        Deliver to me
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryMethod('pickup')}
+                        className={`py-2 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+                          deliveryMethod === 'pickup' ? 'border-accent bg-accent/10 text-accent' : 'border-theme bg-card text-secondary'
+                        }`}
+                      >
+                        Store pickup (Free)
+                      </button>
+                    </div>
+                  )}
+                  {deliveryMethod === 'pickup' && site.pickup_address && (
+                    <p className="text-xs text-secondary p-2.5 rounded-xl bg-card border border-theme">
+                      Pickup location: <span className="text-primary font-medium">{site.pickup_address}</span>
+                    </p>
+                  )}
                   <input
                     type="text"
                     required
@@ -454,13 +517,29 @@ export default function StorefrontView({
                       className="w-full px-3 py-2 rounded-xl bg-card border border-theme text-xs"
                     />
                   </div>
-                  <input
-                    type="text"
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    placeholder="Delivery Address (for physical items)"
-                    className="w-full px-3 py-2 rounded-xl bg-card border border-theme text-xs"
-                  />
+                  {deliveryMethod === 'delivery' && (
+                    <>
+                      {plan.shippingZones && hasPhysical && zones.length > 0 && (
+                        <select
+                          value={deliveryState}
+                          onChange={(e) => setDeliveryState(e.target.value)}
+                          aria-label="Delivery state"
+                          className="w-full px-3 py-2 rounded-xl bg-card border border-theme text-xs"
+                        >
+                          {NIGERIAN_STATES.map((st) => (
+                            <option key={st} value={st}>{st}</option>
+                          ))}
+                        </select>
+                      )}
+                      <input
+                        type="text"
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        placeholder="Delivery Address (for physical items)"
+                        className="w-full px-3 py-2 rounded-xl bg-card border border-theme text-xs"
+                      />
+                    </>
+                  )}
                   <input
                     type="text"
                     value={notes}
