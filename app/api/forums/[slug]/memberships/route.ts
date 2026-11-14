@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { readExtendedSite, requireSiteAccess, resolveAuthorNames, resolveUserSiteRole, supabaseAdmin } from '@/lib/forumServer';
+import {
+  isMissingRelationError,
+  readExtendedSite,
+  requireSiteAccess,
+  resolveAuthorNames,
+  resolveUserSiteRole,
+  supabaseAdmin,
+} from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 import { sendSystemEmail } from '@/lib/emailService';
 import { emailShell } from '@/lib/emailTemplates';
@@ -51,7 +58,7 @@ export async function GET(
       .order('price', { ascending: true });
 
     if (tiersErr) {
-      if (/relation .*site_membership_tiers.* does not exist/i.test(tiersErr.message)) {
+      if (isMissingRelationError(tiersErr)) {
         return NextResponse.json({ tiers: [], myMembership: null, memberships: [], tableMissing: true });
       }
       throw tiersErr;
@@ -137,7 +144,7 @@ export async function POST(
         .select('*')
         .single();
       if (error) {
-        if (/relation .*site_membership_tiers.* does not exist/i.test(error.message)) {
+        if (isMissingRelationError(error)) {
           return NextResponse.json({ error: 'Memberships need the latest database update first.' }, { status: 503 });
         }
         throw error;
@@ -196,7 +203,7 @@ export async function POST(
       .single();
 
     if (error) {
-      if (/relation .*site_memberships.* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ error: 'Memberships need the latest database update first.' }, { status: 503 });
       }
       throw error;

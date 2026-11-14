@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { overLimit, clientIp } from '@/lib/rateLimit';
-import { readExtendedSite, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingRelationError, readExtendedSite, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 
 const createSchema = z.object({
@@ -65,7 +65,7 @@ export async function GET(
 
     const { data: rows, error } = await q;
     if (error) {
-      if (/relation .*site_reviews.* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ reviews: [], tableMissing: true });
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -149,7 +149,7 @@ export async function POST(
       .single();
 
     if (error) {
-      if (/relation .*site_reviews.* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ error: 'Reviews require the latest database update first.' }, { status: 503 });
       }
       if (error.code === '23505') {
@@ -193,7 +193,7 @@ export async function PATCH(
       .maybeSingle();
 
     if (error) {
-      if (/relation .*site_reviews.* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ error: 'Reviews require the latest database update first.' }, { status: 503 });
       }
       return NextResponse.json({ error: error.message }, { status: 500 });

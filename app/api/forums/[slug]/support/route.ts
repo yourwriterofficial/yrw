@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
-import { requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingRelationError, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 import { sendSystemEmail } from '@/lib/emailService';
 import { emailShell } from '@/lib/emailTemplates';
@@ -33,7 +33,7 @@ export async function GET(
       .limit(20);
 
     if (error) {
-      if (/relation .*site_support_requests.* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ requests: [], tableMissing: true });
       }
       throw error;
@@ -79,7 +79,7 @@ export async function POST(
       .single();
 
     if (error) {
-      if (/relation .*site_support_requests.* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ error: 'Priority support needs the latest database update first.' }, { status: 503 });
       }
       throw error;

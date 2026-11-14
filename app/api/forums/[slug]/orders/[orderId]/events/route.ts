@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
-import { releaseStock, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingColumnError, isMissingRelationError, releaseStock, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 
 const createEventSchema = z.object({
@@ -28,7 +28,7 @@ export async function GET(
       .order('created_at', { ascending: false });
 
     if (error) {
-      if (/relation .*site_order_events.* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ events: [], tableMissing: true });
       }
       throw error;
@@ -68,7 +68,7 @@ export async function POST(
       .maybeSingle();
 
     if (orderErr) {
-      if (/column .*refunded_amount.* does not exist/i.test(orderErr.message)) {
+      if (isMissingColumnError(orderErr)) {
         return NextResponse.json({ error: 'Refund logging needs the latest database update first.' }, { status: 503 });
       }
       throw orderErr;
@@ -96,7 +96,7 @@ export async function POST(
       .single();
 
     if (insErr) {
-      if (/relation .*site_order_events.* does not exist/i.test(insErr.message)) {
+      if (isMissingRelationError(insErr)) {
         return NextResponse.json({ error: 'Refund logging needs the latest database update first.' }, { status: 503 });
       }
       throw insErr;

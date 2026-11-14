@@ -9,6 +9,24 @@ export const supabaseAdmin = createServiceClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
+type PgErrorLike = { code?: string; message?: string } | null | undefined;
+
+/** Matches both raw Postgres (`42P01`) and PostgREST schema-cache (`PGRST205`) missing-table errors. */
+export function isMissingRelationError(err: PgErrorLike): boolean {
+  if (!err) return false;
+  if (err.code === '42P01' || err.code === 'PGRST205') return true;
+  const msg = err.message || '';
+  return /relation .* does not exist/i.test(msg) || /Could not find the table .* in the schema cache/i.test(msg);
+}
+
+/** Matches both raw Postgres (`42703`) and PostgREST schema-cache (`PGRST204`) missing-column errors. */
+export function isMissingColumnError(err: PgErrorLike): boolean {
+  if (!err) return false;
+  if (err.code === '42703' || err.code === 'PGRST204') return true;
+  const msg = err.message || '';
+  return /column .* does not exist/i.test(msg) || /Could not find the .* column .* in the schema cache/i.test(msg);
+}
+
 /**
  * Batch-resolves display names from `profiles` for a set of user IDs,
  * falling back to `'Member'` when no name is set.

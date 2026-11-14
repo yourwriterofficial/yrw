@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { overLimit, clientIp } from '@/lib/rateLimit';
-import { readExtendedSite, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingRelationError, readExtendedSite, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 
 const saveCartSchema = z.object({
@@ -47,7 +47,7 @@ export async function GET(
       .limit(100);
 
     if (error) {
-      if (/relation .*site_carts.* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ carts: [], tableMissing: true });
       }
       throw error;
@@ -107,7 +107,7 @@ export async function POST(
         .eq('status', 'unsubscribed')
         .limit(1)
         .maybeSingle();
-      if (unsubErr && /relation .*site_carts.* does not exist/i.test(unsubErr.message)) {
+      if (isMissingRelationError(unsubErr)) {
         return NextResponse.json({ ok: true });
       }
       if (unsub) return NextResponse.json({ ok: true });

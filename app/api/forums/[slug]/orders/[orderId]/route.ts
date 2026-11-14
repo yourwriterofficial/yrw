@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
-import { supabaseAdmin, downloadsForOrder, releaseStock, requireSiteAccess } from '@/lib/forumServer';
+import { supabaseAdmin, downloadsForOrder, isMissingColumnError, releaseStock, requireSiteAccess } from '@/lib/forumServer';
 import { emailOrderUpdate } from '@/lib/storeEmails';
 
 const updateOrderSchema = z.object({
@@ -65,7 +65,7 @@ export async function PATCH(
       .single();
 
     if (error) {
-      if (/column .*internal_note.* does not exist/i.test(error.message)) {
+      if (isMissingColumnError(error)) {
         return NextResponse.json({ error: 'Private notes need the latest database update first.' }, { status: 503 });
       }
       throw error;

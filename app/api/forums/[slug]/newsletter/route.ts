@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
-import { requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingRelationError, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 import { sendSystemEmail } from '@/lib/emailService';
 import { emailShell } from '@/lib/emailTemplates';
@@ -42,7 +42,7 @@ export async function GET(
         .is('unsubscribed_at', null),
     ]);
 
-    if (logsRes.error && /relation .*site_newsletters.* does not exist/i.test(logsRes.error.message)) {
+    if (isMissingRelationError(logsRes.error)) {
       return NextResponse.json({
         newsletters: [],
         sentThisMonth: 0,
@@ -95,7 +95,7 @@ export async function POST(
       .eq('site_id', access.site.id)
       .eq('month_key', monthKey);
 
-    if (cntErr && /relation .*site_newsletters.* does not exist/i.test(cntErr.message)) {
+    if (isMissingRelationError(cntErr)) {
       return NextResponse.json({ error: 'Newsletters need the latest database update first.' }, { status: 503 });
     }
     const usedEmails = (monthLogs || []).reduce((sum, row) => sum + (Number(row.sent_count) || 0), 0);
@@ -113,7 +113,7 @@ export async function POST(
       .limit(Math.min(500, remainingQuota));
 
     if (subErr) {
-      if (/relation .*site_subscribers.* does not exist/i.test(subErr.message)) {
+      if (isMissingRelationError(subErr)) {
         return NextResponse.json({ error: 'Subscribers require the latest database update first.' }, { status: 503 });
       }
       throw subErr;

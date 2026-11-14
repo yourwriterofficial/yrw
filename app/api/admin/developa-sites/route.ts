@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { supabaseAdmin, resolveAuthorNames } from '@/lib/forumServer';
+import { supabaseAdmin, resolveAuthorNames, isMissingColumnError } from '@/lib/forumServer';
 import { PLANS } from '@/lib/plans';
 
 async function verifyAdmin() {
@@ -89,7 +89,7 @@ export async function PATCH(request: Request) {
       .single();
 
     if (error) {
-      if (/column .*verified.* does not exist/i.test(error.message)) {
+      if (isMissingColumnError(error)) {
         return NextResponse.json({ error: 'Seller verification requires the latest database migration first.' }, { status: 503 });
       }
       throw error;

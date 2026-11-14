@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { overLimit, clientIp } from '@/lib/rateLimit';
-import { downloadsForOrder, readExtendedSite, supabaseAdmin } from '@/lib/forumServer';
+import { downloadsForOrder, isMissingColumnError, readExtendedSite, supabaseAdmin } from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 
 export async function GET(
@@ -36,7 +36,7 @@ export async function GET(
     if (siteIdFilter) q = q.eq('site_id', siteIdFilter);
 
     const { data: order, error } = await q.maybeSingle();
-    if (error && /column .* does not exist/i.test(error.message)) {
+    if (isMissingColumnError(error)) {
       let fq = supabaseAdmin
         .from('site_orders')
         .select('id, order_code, site_id, buyer_name, buyer_email, buyer_phone, delivery_address, items, subtotal, total_amount, payment_method, payment_status, fulfillment_status, coupon_code, discount_amount, created_at')

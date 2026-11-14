@@ -1,5 +1,5 @@
 import { findUsableCoupon, discountFor } from '@/lib/coupons';
-import { downloadsForOrder, readExtendedSite, readSiteTools, requireSiteAccess, reserveStock, releaseStock } from '@/lib/forumServer';
+import { downloadsForOrder, isMissingColumnError, readExtendedSite, readSiteTools, requireSiteAccess, reserveStock, releaseStock } from '@/lib/forumServer';
 import { emailOrderReceived } from '@/lib/storeEmails';
 import { computeShipping, type ShippingZoneRow } from '@/lib/shipping';
 import { planFor } from '@/lib/plans';
@@ -273,7 +273,7 @@ export async function POST(
       .select('*')
       .single();
 
-    if (insertErr && /column .* does not exist/i.test(insertErr.message)) {
+    if (isMissingColumnError(insertErr)) {
       const retry = await supabaseAdmin
         .from('site_orders')
         .insert({ ...baseInsert, total_amount: Math.max(0, subtotal - discount) })

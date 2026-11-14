@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { planFor } from '@/lib/plans';
-import { requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingColumnError, isMissingRelationError, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 
 const variantSchema = z.object({
   id: z.string().uuid().optional(),
@@ -38,7 +38,7 @@ export async function GET(
       .order('created_at', { ascending: true });
 
     if (error) {
-      if (/relation .* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ variants: [], needs_update: true });
       }
       throw error;
@@ -98,7 +98,7 @@ export async function POST(
       .single();
 
     if (error) {
-      if (/relation .* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ error: 'Product variants need the latest database update first.' }, { status: 503 });
       }
       throw error;
@@ -144,7 +144,7 @@ export async function PUT(
       .update({ variant_options: cleanOptionNames })
       .eq('id', productId)
       .eq('site_id', access.site.id);
-    if (prodErr && /column .* does not exist/i.test(prodErr.message)) {
+    if (isMissingColumnError(prodErr)) {
       return NextResponse.json({ error: 'Product variants need the latest database update first.' }, { status: 503 });
     }
 
@@ -154,7 +154,7 @@ export async function PUT(
       .eq('product_id', productId)
       .eq('site_id', access.site.id);
     if (exErr) {
-      if (/relation .* does not exist/i.test(exErr.message)) {
+      if (isMissingRelationError(exErr)) {
         return NextResponse.json({ error: 'Product variants need the latest database update first.' }, { status: 503 });
       }
       throw exErr;

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { readExtendedSite, resolveAuthorNames, resolveUserSiteRole, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingColumnError, readExtendedSite, resolveAuthorNames, resolveUserSiteRole, supabaseAdmin } from '@/lib/forumServer';
 
 const createThreadSchema = z.object({
   title: z.string().trim().min(3, 'Title must be at least 3 characters').max(160),
@@ -74,7 +74,7 @@ export async function POST(
           .select(threadSelect)
           .single();
 
-    if (threadResult.error && wantsGated && /column .*is_members_only.* does not exist/i.test(threadResult.error.message)) {
+    if (wantsGated && isMissingColumnError(threadResult.error)) {
       threadResult = await supabaseAdmin
         .from('forum_threads')
         .insert(baseThread)

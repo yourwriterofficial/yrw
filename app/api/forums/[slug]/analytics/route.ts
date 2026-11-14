@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingRelationError, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 import { clientIp, overLimit } from '@/lib/rateLimit';
 
@@ -113,7 +113,7 @@ export async function GET(
         .eq('site_id', access.site.id),
     ]);
 
-    if (visitsRes.error && /relation .*site_visits.* does not exist/i.test(visitsRes.error.message)) {
+    if (isMissingRelationError(visitsRes.error)) {
       return NextResponse.json({
         tableMissing: true,
         views7d: 0,

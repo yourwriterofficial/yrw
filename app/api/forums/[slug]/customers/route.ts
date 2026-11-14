@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
-import { requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingRelationError, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 
 function csvEscape(v: unknown): string {
@@ -188,7 +188,7 @@ export async function POST(
       .single();
 
     if (error) {
-      if (/relation .*site_subscribers.* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ error: 'Customer lists need the latest database update first.' }, { status: 503 });
       }
       throw error;

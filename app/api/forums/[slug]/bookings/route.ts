@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
-import { readExtendedSite, requireSiteAccess, resolveUserSiteRole, supabaseAdmin } from '@/lib/forumServer';
+import {
+  isMissingRelationError,
+  readExtendedSite,
+  requireSiteAccess,
+  resolveUserSiteRole,
+  supabaseAdmin,
+} from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 import { clientIp, overLimit } from '@/lib/rateLimit';
 import { createClient as createServerClient } from '@/lib/supabase/server';
@@ -59,7 +65,7 @@ export async function GET(
       .order('created_at', { ascending: true });
 
     if (svcErr) {
-      if (/relation .*site_booking_services.* does not exist/i.test(svcErr.message)) {
+      if (isMissingRelationError(svcErr)) {
         return NextResponse.json({ services: [], takenSlots: [], bookings: [], tableMissing: true });
       }
       throw svcErr;
@@ -140,7 +146,7 @@ export async function POST(
         .select('*')
         .single();
       if (error) {
-        if (/relation .*site_booking_services.* does not exist/i.test(error.message)) {
+        if (isMissingRelationError(error)) {
           return NextResponse.json({ error: 'Bookings need the latest database update first.' }, { status: 503 });
         }
         throw error;
@@ -199,7 +205,7 @@ export async function POST(
       if (error.code === '23505' || /duplicate key/i.test(error.message)) {
         return NextResponse.json({ error: 'That time slot was just booked. Please pick another time.' }, { status: 409 });
       }
-      if (/relation .*site_bookings.* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ error: 'Bookings need the latest database update first.' }, { status: 503 });
       }
       throw error;

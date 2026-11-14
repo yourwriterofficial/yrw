@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
-import { isPlatformAdmin, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingRelationError, isPlatformAdmin, supabaseAdmin } from '@/lib/forumServer';
 import { sendSystemEmail } from '@/lib/emailService';
 import { emailShell } from '@/lib/emailTemplates';
 import { siteUrl } from '@/lib/siteUrl';
@@ -28,7 +28,7 @@ export async function GET() {
       .limit(100);
 
     if (error) {
-      if (/relation .*site_support_requests.* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ requests: [], needs_update: true });
       }
       throw error;

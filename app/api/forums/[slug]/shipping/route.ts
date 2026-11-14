@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
-import { readExtendedSite, readSiteTools, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingColumnError, isMissingRelationError, readExtendedSite, readSiteTools, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 
 const zoneSchema = z.object({
@@ -48,7 +48,7 @@ export async function GET(
         .order('created_at', { ascending: true }),
     ]);
 
-    if (zonesRes.error && /relation .*site_shipping_zones.* does not exist/i.test(zonesRes.error.message)) {
+    if (isMissingRelationError(zonesRes.error)) {
       return NextResponse.json({ zones: [], pickup_address: tools.pickup_address, tableMissing: true });
     }
     if (zonesRes.error) throw zonesRes.error;
@@ -91,7 +91,7 @@ export async function PUT(
         .from('forums')
         .update({ pickup_address: xss(parsed.data.pickup_address) })
         .eq('id', access.site.id);
-      if (pickErr && /column .*pickup_address.* does not exist/i.test(pickErr.message)) {
+      if (isMissingColumnError(pickErr)) {
         return NextResponse.json({ error: 'Store pickup needs the latest database update first.' }, { status: 503 });
       }
       if (pickErr) throw pickErr;
@@ -102,7 +102,7 @@ export async function PUT(
       .delete()
       .eq('site_id', access.site.id);
     if (delErr) {
-      if (/relation .*site_shipping_zones.* does not exist/i.test(delErr.message)) {
+      if (isMissingRelationError(delErr)) {
         return NextResponse.json({ error: 'Delivery zones need the latest database update first.' }, { status: 503 });
       }
       throw delErr;

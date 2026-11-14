@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingRelationError, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 import { sendSystemEmail } from '@/lib/emailService';
 import { emailShell } from '@/lib/emailTemplates';
@@ -37,7 +37,7 @@ export async function GET(
       .order('created_at', { ascending: true });
 
     if (error) {
-      if (/relation .*site_staff.* does not exist/i.test(error.message)) {
+      if (isMissingRelationError(error)) {
         return NextResponse.json({ staff: [], tableMissing: true });
       }
       throw error;
@@ -80,7 +80,7 @@ export async function POST(
       .eq('site_id', access.site.id);
 
     if (countErr) {
-      if (/relation .*site_staff.* does not exist/i.test(countErr.message)) {
+      if (isMissingRelationError(countErr)) {
         return NextResponse.json({ error: 'Staff accounts need the latest database update first.' }, { status: 503 });
       }
       throw countErr;

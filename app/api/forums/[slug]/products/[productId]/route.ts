@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { planFor } from '@/lib/plans';
-import { requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+import { isMissingColumnError, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 
 const httpsUrlSchema = z
   .string()
@@ -82,7 +82,7 @@ export async function PATCH(
       .select('*')
       .single();
 
-    if (error && /column .* does not exist/i.test(error.message)) {
+    if (isMissingColumnError(error)) {
       if (urlsCount > 1) {
         return NextResponse.json({ error: 'Multiple product photos need the latest database update first.' }, { status: 503 });
       }
