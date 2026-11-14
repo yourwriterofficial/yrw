@@ -25,6 +25,20 @@ export default function SettingsTab({ site, reload, goToPlan }: { site: Site; re
     seo_description: site.seo_description || '',
     is_public: site.is_public,
     hide_branding: !!site.hide_branding,
+    page_about: site.page_about || '',
+    page_delivery: site.page_delivery || '',
+    page_returns: site.page_returns || '',
+    page_contact_note: site.page_contact_note || '',
+    summary_email: site.summary_email ?? true,
+    weekly_backup_email: site.weekly_backup_email ?? false,
+    social_links: {
+      instagram: site.social_links?.instagram || '',
+      tiktok: site.social_links?.tiktok || '',
+      facebook: site.social_links?.facebook || '',
+      x: site.social_links?.x || '',
+      youtube: site.social_links?.youtube || '',
+      website: site.social_links?.website || '',
+    },
   });
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -144,6 +158,53 @@ export default function SettingsTab({ site, reload, goToPlan }: { site: Site; re
           <Field id="s-instr" label="Payment instructions"><textarea id="s-instr" rows={2} maxLength={400} value={f.payment_instructions} onChange={(e) => set('payment_instructions', e.target.value)} placeholder="Send the exact amount, then add your order code as the reference." className="input-box w-full" /></Field>
         </section>
       )}
+
+      <section className="g-card p-6 space-y-4">
+        <h3 className="font-medium">Store pages & policies</h3>
+        <p className="text-sm text-secondary">Any section you fill in appears in your storefront footer.</p>
+        <Field id="s-about" label="About us"><textarea id="s-about" rows={3} maxLength={3000} value={f.page_about} onChange={(e) => set('page_about', e.target.value)} placeholder="Who we are, what we make, and where we ship from." className="input-box w-full" /></Field>
+        <Field id="s-deliv" label="Delivery details"><textarea id="s-deliv" rows={2} maxLength={3000} value={f.page_delivery} onChange={(e) => set('page_delivery', e.target.value)} placeholder="Same-day Lagos dispatch before 2pm; 2-4 days nationwide." className="input-box w-full" /></Field>
+        <Field id="s-ret" label="Returns & exchanges"><textarea id="s-ret" rows={2} maxLength={3000} value={f.page_returns} onChange={(e) => set('page_returns', e.target.value)} placeholder="Unworn items accepted within 7 days of delivery." className="input-box w-full" /></Field>
+        <Field id="s-contact-note" label="Contact hours & address note"><textarea id="s-contact-note" rows={2} maxLength={3000} value={f.page_contact_note} onChange={(e) => set('page_contact_note', e.target.value)} placeholder="Open Mon-Sat 9am-6pm · Lekki Phase 1, Lagos" className="input-box w-full" /></Field>
+      </section>
+
+      <section className="g-card p-6 space-y-4">
+        <h3 className="font-medium">Social links</h3>
+        <p className="text-sm text-secondary">Paste a handle (like @myshop) or a full https:// link.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {([
+            ['instagram', 'Instagram', '@yourbrand'],
+            ['tiktok', 'TikTok', '@yourbrand'],
+            ['facebook', 'Facebook', 'https://facebook.com/yourbrand'],
+            ['x', 'X (Twitter)', '@yourbrand'],
+            ['youtube', 'YouTube', '@yourchannel'],
+            ['website', 'Website', 'https://yourbrand.com'],
+          ] as const).map(([key, label, ph]) => (
+            <Field key={key} id={`s-soc-${key}`} label={label}>
+              <input
+                id={`s-soc-${key}`}
+                value={f.social_links[key]}
+                onChange={(e) => set('social_links', { ...f.social_links, [key]: e.target.value })}
+                placeholder={ph}
+                maxLength={200}
+                className="input-box w-full"
+              />
+            </Field>
+          ))}
+        </div>
+      </section>
+
+      <section className="g-card p-6 space-y-3">
+        <h3 className="font-medium">Email reports</h3>
+        <label className="flex items-center gap-3 text-sm">
+          <input type="checkbox" checked={f.summary_email} onChange={(e) => set('summary_email', e.target.checked)} className="w-4 h-4" />
+          Send daily store summary & low-stock alerts to my email (Pro & Business)
+        </label>
+        <label className="flex items-center gap-3 text-sm">
+          <input type="checkbox" checked={f.weekly_backup_email} onChange={(e) => set('weekly_backup_email', e.target.checked)} className="w-4 h-4" />
+          Email me a weekly JSON backup of products and orders
+        </label>
+      </section>
 
       <div className="flex items-center gap-4">
         <button type="submit" disabled={busy || uploading} className="bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-medium text-sm px-7 h-11 rounded-full disabled:opacity-50">{busy ? 'Saving…' : 'Save changes'}</button>

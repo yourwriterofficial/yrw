@@ -15,6 +15,7 @@ import CouponsTab from './tabs/CouponsTab';
 import DomainTab from './tabs/DomainTab';
 import PlanTab from './tabs/PlanTab';
 import SettingsTab from './tabs/SettingsTab';
+import StoreQrCard from './StoreQrCard';
 
 type TabKey = 'overview' | 'products' | 'orders' | 'community' | 'coupons' | 'domain' | 'plan' | 'settings';
 
@@ -280,6 +281,7 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
               className="mt-3 text-sm font-medium px-4 h-9 rounded-full border border-theme hover:bg-hover"
             >{copied ? 'Copied' : 'Copy link'}</button>
           </section>
+          {isStore && <StoreQrCard site={site} />}
           <section className="g-card p-5">
             <h3 className="font-medium">Getting started <span className="text-secondary font-normal text-sm">{doneCount}/{steps.length}</span></h3>
             <ul className="mt-3 space-y-2 text-sm">

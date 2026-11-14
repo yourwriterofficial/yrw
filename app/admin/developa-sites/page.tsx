@@ -120,6 +120,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
 function SitesTab({ sites, reload, flash }: { sites: AdminSiteRow[]; reload: () => Promise<void>; flash: (ok: boolean, t: string) => void }) {
   const [query, setQuery] = useState('');
   const [paying, setPaying] = useState<AdminSiteRow | null>(null);
+  const [verifying, setVerifying] = useState<AdminSiteRow | null>(null);
   const shown = sites.filter((s) => !query.trim() || [s.name, s.slug, s.owner_name, s.custom_domain || ''].some((v) => v.toLowerCase().includes(query.trim().toLowerCase())));
 
   const patch = async (s: AdminSiteRow, body: Record<string, unknown>, okText: string) => {
@@ -144,7 +145,11 @@ function SitesTab({ sites, reload, flash }: { sites: AdminSiteRow[]; reload: () 
                 return (
                   <tr key={s.id}>
                     <td className="p-3.5">
-                      <p className="font-medium">{s.name} {!s.is_public && <span className="text-xs text-warning font-normal">· hidden</span>}</p>
+                      <p className="font-medium">
+                        {s.name}{' '}
+                        {s.verified && <span className="text-xs text-success font-medium">· Verified seller</span>}
+                        {!s.is_public && <span className="text-xs text-warning font-normal">· hidden</span>}
+                      </p>
                       <a href={`/forums/${s.slug}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-accent hover:underline">{s.slug}.developa.me</a>
                     </td>
                     <td className="p-3.5 text-secondary">{s.owner_name}</td>
@@ -167,6 +172,11 @@ function SitesTab({ sites, reload, flash }: { sites: AdminSiteRow[]; reload: () 
                       <div className="flex flex-wrap gap-1 justify-end">
                         <button onClick={() => setPaying(s)} className="px-3 h-8 rounded-full bg-accent text-[var(--accent-foreground)] text-xs font-medium">Record payment</button>
                         {s.plan_tier !== 'free' && <button onClick={() => patch(s, { plan_tier: 'free', plan_expires_at: null }, `${s.name} moved to Starter`)} className="px-3 h-8 rounded-full border border-theme text-xs">Set Starter</button>}
+                        {s.verified ? (
+                          <button onClick={() => patch(s, { verified: false }, `${s.name} verification removed`)} className="px-3 h-8 rounded-full border border-theme text-xs">Unverify</button>
+                        ) : (
+                          <button onClick={() => setVerifying(s)} className="px-3 h-8 rounded-full border border-theme text-xs">Verify seller</button>
+                        )}
                         {s.custom_domain && !s.custom_domain_verified && <button onClick={() => patch(s, { custom_domain_verified: true }, 'Domain marked verified')} className="px-3 h-8 rounded-full border border-theme text-xs">Verify domain</button>}
                         <button onClick={() => patch(s, { is_public: !s.is_public }, s.is_public ? `${s.name} hidden` : `${s.name} is live`)} className="px-3 h-8 rounded-full border border-theme text-xs">{s.is_public ? 'Hide' : 'Show'}</button>
                       </div>
@@ -179,6 +189,56 @@ function SitesTab({ sites, reload, flash }: { sites: AdminSiteRow[]; reload: () 
         </div>
       )}
       {paying && <PaymentModal site={paying} onClose={() => setPaying(null)} onDone={async (t) => { setPaying(null); flash(true, t); await reload(); }} flash={flash} />}
+      {verifying && (
+        <VerifySellerModal
+          site={verifying}
+          onClose={() => setVerifying(null)}
+          onConfirm={async () => {
+            const target = verifying;
+            setVerifying(null);
+            await patch(target, { verified: true }, `${target.name} marked as Verified seller`);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function VerifySellerModal({ site, onClose, onConfirm }: { site: AdminSiteRow; onClose: () => void; onConfirm: () => Promise<void> }) {
+  const [checks, setChecks] = useState({ products: site.total_products > 0, contact: !!site.whatsapp_number, clean: false });
+  const [busy, setBusy] = useState(false);
+  const ready = checks.products && checks.contact && checks.clean;
+  return (
+    <div className="fixed inset-0 z-[300] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="g-card p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+        <h3 className="g-h3">Verify seller: {site.name}</h3>
+        <p className="text-sm text-secondary">Confirm the manual checklist before showing the Verified seller badge on this storefront:</p>
+        <div className="space-y-2.5 text-sm">
+          <label className="flex items-center gap-3">
+            <input type="checkbox" checked={checks.products} onChange={(e) => setChecks((c) => ({ ...c, products: e.target.checked }))} className="w-4 h-4" />
+            <span>Active products listed ({site.total_products} found)</span>
+          </label>
+          <label className="flex items-center gap-3">
+            <input type="checkbox" checked={checks.contact} onChange={(e) => setChecks((c) => ({ ...c, contact: e.target.checked }))} className="w-4 h-4" />
+            <span>Working WhatsApp or contact details ({site.whatsapp_number || 'check manually'})</span>
+          </label>
+          <label className="flex items-center gap-3">
+            <input type="checkbox" checked={checks.clean} onChange={(e) => setChecks((c) => ({ ...c, clean: e.target.checked }))} className="w-4 h-4" />
+            <span>No scam reports or prohibited items</span>
+          </label>
+        </div>
+        <div className="flex justify-end gap-2 pt-2">
+          <button type="button" onClick={onClose} className="h-10 px-4 rounded-full border border-theme text-sm">Cancel</button>
+          <button
+            type="button"
+            disabled={!ready || busy}
+            onClick={async () => { setBusy(true); await onConfirm(); setBusy(false); }}
+            className="h-10 px-5 rounded-full bg-accent text-[var(--accent-foreground)] text-sm font-medium disabled:opacity-50"
+          >
+            {busy ? 'Saving…' : 'Mark verified'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

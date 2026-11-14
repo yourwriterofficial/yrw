@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  MessageSquare, Users, Plus, Pin, Lock, UserPlus, Check, Settings, ShoppingBag,
+  MessageSquare, Users, Plus, Pin, Lock, UserPlus, Check, Settings, ShoppingBag, ShieldCheck, X,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Button from '@/app/components/ui/Button';
@@ -39,6 +39,7 @@ export default function ForumView({ slug }: { slug: string }) {
   const [products, setProducts] = useState<SiteProduct[]>([]);
   const [activeTab, setActiveTab] = useState<'store' | 'forum'>('forum');
   const [managerOpen, setManagerOpen] = useState(false);
+  const [infoPageModal, setInfoPageModal] = useState<{ title: string; body: string } | null>(null);
   const [isMember, setIsMember] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -192,6 +193,11 @@ export default function ForumView({ slug }: { slug: string }) {
                       style={{ backgroundColor: forum.accent_color || '#06b6d4' }}
                     />
                     <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{forum.name}</h1>
+                    {forum.verified && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[11px] font-semibold">
+                        <ShieldCheck className="w-3.5 h-3.5" /> Verified seller
+                      </span>
+                    )}
                     {!forum.is_public && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-semibold">
                         <Lock className="w-3 h-3" /> Private
@@ -364,20 +370,94 @@ export default function ForumView({ slug }: { slug: string }) {
 
       {ads.filter((a) => a.placement === 'footer').slice(0, 1).map((a) => <AdStrip key={a.id} ad={a} />)}
 
-      {/* Powered by Developa Footer. Hiding it is a paid feature, so it is enforced here too. */}
-      {!(forum?.hide_branding && (forum as unknown as { plan_effective?: string })?.plan_effective !== 'free') && (
-        <footer className="w-full border-t border-theme py-6 text-center text-xs text-secondary bg-card/40">
-          <span>Powered by </span>
-          <a
-            href="https://developa.me"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-bold text-accent hover:underline"
-          >
-            Developa
-          </a>
-          <span className="text-secondary/60"> · Launch your store in seconds</span>
-        </footer>
+      {forum && (() => {
+        const infoPages = [
+          { title: 'About', body: forum.page_about?.trim() || '' },
+          { title: 'Delivery', body: forum.page_delivery?.trim() || '' },
+          { title: 'Returns', body: forum.page_returns?.trim() || '' },
+          { title: 'Contact', body: forum.page_contact_note?.trim() || '' },
+        ].filter((p) => p.body.length > 0);
+        const socialEntries = ([
+          ['Instagram', forum.social_links?.instagram],
+          ['TikTok', forum.social_links?.tiktok],
+          ['Facebook', forum.social_links?.facebook],
+          ['X', forum.social_links?.x],
+          ['YouTube', forum.social_links?.youtube],
+          ['Website', forum.social_links?.website],
+        ] as const).filter(([, url]) => typeof url === 'string' && /^https:\/\//i.test(url));
+        const showPowered = !(forum.hide_branding && (forum as unknown as { plan_effective?: string }).plan_effective !== 'free');
+        if (infoPages.length === 0 && socialEntries.length === 0 && !showPowered) return null;
+        return (
+          <footer className="w-full border-t border-theme py-6 px-4 text-center text-xs text-secondary bg-card/40 space-y-3">
+            {infoPages.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                {infoPages.map((p) => (
+                  <button
+                    key={p.title}
+                    type="button"
+                    onClick={() => setInfoPageModal(p)}
+                    className="hover:text-primary font-medium underline-offset-4 hover:underline min-h-9 px-2 cursor-pointer"
+                  >
+                    {p.title}
+                  </button>
+                ))}
+              </div>
+            )}
+            {socialEntries.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                {socialEntries.map(([label, url]) => (
+                  <a
+                    key={label}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent hover:underline font-medium min-h-9 inline-flex items-center px-1"
+                  >
+                    {label}
+                  </a>
+                ))}
+              </div>
+            )}
+            {showPowered && (
+              <div>
+                <span>Powered by </span>
+                <a
+                  href="https://developa.me"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-accent hover:underline"
+                >
+                  Developa
+                </a>
+                <span className="text-secondary/60"> · Launch your store in seconds</span>
+              </div>
+            )}
+          </footer>
+        );
+      })()}
+
+      {infoPageModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setInfoPageModal(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="g-card p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-theme pb-3">
+              <h2 className="g-h3">{infoPageModal.title}</h2>
+              <button
+                type="button"
+                onClick={() => setInfoPageModal(null)}
+                aria-label="Close"
+                className="w-10 h-10 rounded-full hover:bg-hover flex items-center justify-center text-secondary hover:text-primary"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-primary whitespace-pre-line leading-relaxed">{infoPageModal.body}</p>
+          </div>
+        </div>
       )}
     </div>
   );

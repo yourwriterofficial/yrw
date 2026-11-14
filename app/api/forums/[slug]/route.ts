@@ -8,6 +8,39 @@ import { resolveAuthorNames, supabaseAdmin, readExtendedSite, readSeo, readSiteT
 const SITE_SELECT =
   'id, slug, name, description, owner_id, is_public, accent_color, member_count, thread_count, created_at, site_mode, template_id, hero_headline, hero_subheadline, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions, plan_tier, custom_domain, custom_domain_verified, hide_branding, logo_url';
 
+const socialLinksSchema = z.object({
+  instagram: z.string().trim().max(200).optional(),
+  tiktok: z.string().trim().max(200).optional(),
+  facebook: z.string().trim().max(200).optional(),
+  x: z.string().trim().max(200).optional(),
+  youtube: z.string().trim().max(200).optional(),
+  website: z.string().trim().max(200).optional(),
+}).optional();
+
+function normalizeSocialUrl(platform: keyof NonNullable<z.infer<typeof socialLinksSchema>>, raw?: string): string {
+  const val = (raw || '').trim();
+  if (!val) return '';
+  if (/^https:\/\//i.test(val)) {
+    try {
+      const u = new URL(val);
+      return u.protocol === 'https:' ? u.toString() : '';
+    } catch {
+      return '';
+    }
+  }
+  if (/^[a-z]+:/i.test(val) || /\s/.test(val)) return '';
+  const handle = val.replace(/^@+/, '').replace(/^\/+/, '');
+  if (!handle) return '';
+  switch (platform) {
+    case 'instagram': return `https://instagram.com/${handle}`;
+    case 'tiktok': return `https://tiktok.com/@${handle}`;
+    case 'facebook': return `https://facebook.com/${handle}`;
+    case 'x': return `https://x.com/${handle}`;
+    case 'youtube': return `https://youtube.com/@${handle}`;
+    case 'website': return handle.includes('.') ? `https://${handle}` : '';
+  }
+}
+
 const updateForumSchema = z.object({
   name: z.string().trim().min(2).max(80).optional(),
   description: z.string().trim().max(300).optional(),
@@ -29,6 +62,14 @@ const updateForumSchema = z.object({
   bank_account_number: z.string().trim().max(30).optional(),
   bank_account_name: z.string().trim().max(80).optional(),
   payment_instructions: z.string().trim().max(400).optional(),
+  page_about: z.string().trim().max(3000).optional(),
+  page_delivery: z.string().trim().max(3000).optional(),
+  page_returns: z.string().trim().max(3000).optional(),
+  page_contact_note: z.string().trim().max(3000).optional(),
+  pickup_address: z.string().trim().max(400).optional(),
+  summary_email: z.boolean().optional(),
+  weekly_backup_email: z.boolean().optional(),
+  social_links: socialLinksSchema,
 });
 
 export async function GET(
@@ -307,6 +348,27 @@ export async function PATCH(
       if (annErr) return NextResponse.json({ error: 'The announcement bar needs the latest database update first.' }, { status: 503 });
     }
     if (parsed.data.currency !== undefined) updates.currency = parsed.data.currency;
+
+    const toolUpdates: Record<string, unknown> = {};
+    for (const k of ['page_about', 'page_delivery', 'page_returns', 'page_contact_note', 'pickup_address'] as const) {
+      if (parsed.data[k] !== undefined) toolUpdates[k] = xss(parsed.data[k]!);
+    }
+    if (parsed.data.summary_email !== undefined) toolUpdates.summary_email = parsed.data.summary_email;
+    if (parsed.data.weekly_backup_email !== undefined) toolUpdates.weekly_backup_email = parsed.data.weekly_backup_email;
+    if (parsed.data.social_links !== undefined) {
+      const cleanedLinks: Record<string, string> = {};
+      for (const platform of ['instagram', 'tiktok', 'facebook', 'x', 'youtube', 'website'] as const) {
+        const normalizedUrl = normalizeSocialUrl(platform, parsed.data.social_links[platform]);
+        if (normalizedUrl) cleanedLinks[platform] = normalizedUrl;
+      }
+      toolUpdates.social_links = cleanedLinks;
+    }
+    if (Object.keys(toolUpdates).length > 0) {
+      const { error: toolErr } = await supabaseAdmin.from('forums').update(toolUpdates).eq('id', forum.id);
+      if (toolErr) {
+        return NextResponse.json({ error: 'Store pages and social links need the latest database update first.' }, { status: 503 });
+      }
+    }
 
     const { data: updated, error } = await supabaseAdmin
       .from('forums')

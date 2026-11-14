@@ -65,7 +65,7 @@ export async function PATCH(request: Request) {
     const isAdmin = await verifyAdmin();
     if (!isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { id, is_public, plan_tier, custom_domain_verified, plan_expires_at } = await request.json();
+    const { id, is_public, plan_tier, custom_domain_verified, plan_expires_at, verified } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing site id' }, { status: 400 });
 
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -76,6 +76,10 @@ export async function PATCH(request: Request) {
     }
     if (plan_expires_at !== undefined) updates.plan_expires_at = plan_expires_at;
     if (custom_domain_verified !== undefined) updates.custom_domain_verified = custom_domain_verified;
+    if (typeof verified === 'boolean') {
+      updates.verified = verified;
+      updates.verified_at = verified ? new Date().toISOString() : null;
+    }
 
     const { data: updated, error } = await supabaseAdmin
       .from('forums')
@@ -84,7 +88,12 @@ export async function PATCH(request: Request) {
       .select('*')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (/column .*verified.* does not exist/i.test(error.message)) {
+        return NextResponse.json({ error: 'Seller verification requires the latest database migration first.' }, { status: 503 });
+      }
+      throw error;
+    }
     return NextResponse.json({ site: updated });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to update site';

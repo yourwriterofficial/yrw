@@ -18,6 +18,17 @@ const PUBLIC_LIST_SELECT =
 
 const MAX_SITES_PER_USER = 5;
 
+async function readVerifiedMap(ids: string[]): Promise<Map<string, boolean>> {
+  const map = new Map<string, boolean>();
+  if (ids.length === 0) return map;
+  const { data, error } = await supabaseAdmin.from('forums').select('id, verified').in('id', ids);
+  if (error || !data) return map;
+  for (const row of data as { id: string; verified?: boolean }[]) {
+    map.set(row.id, !!row.verified);
+  }
+  return map;
+}
+
 const createForumSchema = z.object({
   slug: z.string().min(3).max(32),
   name: z.string().trim().min(2, 'Name must be at least 2 characters').max(80),
@@ -53,8 +64,10 @@ export async function GET(request: Request) {
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
+      const verifiedMap = await readVerifiedMap((data || []).map((r) => r.id));
       const enriched = (data || []).map((row) => ({
         ...row,
+        verified: verifiedMap.get(row.id) ?? false,
         custom_domain: (row as Record<string, unknown>).custom_domain ?? null,
         custom_domain_verified: (row as Record<string, unknown>).custom_domain_verified ?? false,
         plan_tier: (row as Record<string, unknown>).plan_tier ?? 'free',
@@ -86,8 +99,10 @@ export async function GET(request: Request) {
     const { data, error } = await query;
     if (error) throw error;
 
+    const verifiedMap = await readVerifiedMap((data || []).map((r) => r.id));
     const enriched = (data || []).map((row) => ({
       ...row,
+      verified: verifiedMap.get(row.id) ?? false,
       custom_domain: (row as Record<string, unknown>).custom_domain ?? null,
       custom_domain_verified: (row as Record<string, unknown>).custom_domain_verified ?? false,
       plan_tier: (row as Record<string, unknown>).plan_tier ?? 'free',

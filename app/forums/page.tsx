@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { MessageSquare, Users, Search, ExternalLink } from 'lucide-react';
+import { MessageSquare, Users, Search, ExternalLink, ShieldCheck } from 'lucide-react';
 import DevelopaHeader from '@/app/components/DevelopaHeader';
 import CreateForumForm from '@/app/components/forums/CreateForumForm';
 import { type ForumSummary, getForumHref } from '@/lib/forums';
@@ -99,6 +99,11 @@ export default function ForumsDirectoryPage() {
                           <h3 className="font-bold text-primary truncate group-hover:text-cyan-400 transition-colors">
                             {f.name}
                           </h3>
+                          {f.verified && (
+                            <span title="Verified seller" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold shrink-0">
+                              <ShieldCheck className="w-3 h-3" /> Verified
+                            </span>
+                          )}
                         </div>
                         {isExternal && <ExternalLink className="w-3.5 h-3.5 text-secondary shrink-0" />}
                       </div>
