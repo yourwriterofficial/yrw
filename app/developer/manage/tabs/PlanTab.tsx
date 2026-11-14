@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PLANS, daysLeft, effectiveTier, type PlanTier } from '@/lib/plans';
+import { PLANS, BILLING_PERIODS, priceForPeriod, PRUNE_NOTICE, daysLeft, effectiveTier, type PlanTier } from '@/lib/plans';
 import { waLink } from '@/lib/phone';
 import { FOUNDER_WA, jsonFetch, type Site } from '../types';
 
@@ -27,6 +27,7 @@ export default function PlanTab({ site }: { site: Site }) {
   const [message, setMessage] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState(site.whatsapp_number || '');
   const [busy, setBusy] = useState(false);
+  const [months, setMonths] = useState(1);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function PlanTab({ site }: { site: Site }) {
   };
 
   const upgrade = (to: PlanTier) =>
-    waLink(FOUNDER_WA, `Hello, I want to upgrade my developa site "${site.name}" (${site.slug}.developa.me) to the ${PLANS[to].name} plan (${naira(PLANS[to].priceNgn)} per month).`);
+    waLink(FOUNDER_WA, `Hello, I want to upgrade my developa site "${site.name}" (${site.slug}.developa.me) to the ${PLANS[to].name} plan for ${months} ${months === 1 ? 'month' : 'months'} (${naira(priceForPeriod(to, months))}).`);
   const priorityWa = waLink(FOUNDER_WA, `Priority Business support (${site.name} / ${site.slug}.developa.me): `);
 
   return (
@@ -77,6 +78,15 @@ export default function PlanTab({ site }: { site: Site }) {
         {lapsed && <p className="text-sm text-warning mt-1">Your {PLANS[site.plan_tier].name} plan has ended, so the site is back on Starter. Renew to bring your domain and Pro features back.</p>}
       </div>
 
+      <div className="flex w-fit rounded-full g-tonal-strong p-1 text-sm font-medium" role="tablist" aria-label="Billing period">
+        {BILLING_PERIODS.map((b) => (
+          <button key={b.months} type="button" role="tab" aria-selected={months === b.months} onClick={() => setMonths(b.months)}
+            className={`px-4 py-2 rounded-full transition ${months === b.months ? 'bg-card shadow-sm text-primary' : 'text-secondary'}`}>
+            {b.label}{b.discountPct > 0 && <span className="ml-1.5 text-xs text-accent">save {b.discountPct}%</span>}
+          </button>
+        ))}
+      </div>
+
       <div className="grid md:grid-cols-3 gap-4">
         {(['free', 'pro', 'business'] as PlanTier[]).map((t) => {
           const p = PLANS[t];
@@ -85,7 +95,8 @@ export default function PlanTab({ site }: { site: Site }) {
           return (
             <div key={t} className={`g-card p-5 flex flex-col ${current ? 'ring-2 ring-[var(--accent)]' : ''}`}>
               <p className="font-medium">{p.name} {current && <span className="text-xs text-accent font-medium ml-1">Current</span>}</p>
-              <p className="text-2xl font-medium mt-2">{p.priceNgn === 0 ? 'Free' : naira(p.priceNgn)}{p.priceNgn > 0 && <span className="text-sm text-secondary font-normal"> / month</span>}</p>
+              <p className="text-2xl font-medium mt-2">{p.priceNgn === 0 ? 'Free' : naira(Math.round(priceForPeriod(t, months) / months))}{p.priceNgn > 0 && <span className="text-sm text-secondary font-normal"> / month</span>}</p>
+              {p.priceNgn > 0 && months > 1 && <p className="text-xs text-secondary mt-1">{naira(priceForPeriod(t, months))} for {months} months</p>}
               <ul className="mt-4 space-y-2 text-sm text-secondary flex-1">
                 {p.highlights.map((h) => <li key={h}>· {h}</li>)}
               </ul>
@@ -102,6 +113,7 @@ export default function PlanTab({ site }: { site: Site }) {
         })}
       </div>
       <p className="text-sm text-secondary">Upgrades are confirmed by us after your payment, usually within a few hours. Your plan switches on as soon as we record it.</p>
+      {tier === 'free' && <p className="text-sm text-warning">{PRUNE_NOTICE}</p>}
 
       <section className="g-card p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">

@@ -8,6 +8,7 @@ import DevelopaFooter from '@/app/components/DevelopaFooter';
 import { formatMoney, type ForumThread, type SiteOrder, type SiteProduct } from '@/lib/forums';
 import { PLANS, daysLeft, effectiveTier } from '@/lib/plans';
 import { itemLabels } from '@/lib/siteTemplates';
+import { PRUNE_NOTICE } from '@/lib/plans';
 import { jsonFetch, type Site } from './types';
 import ProductsTab from './tabs/ProductsTab';
 import OrdersTab from './tabs/OrdersTab';
@@ -337,6 +338,7 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
                 {detail.products.length} of {PLANS.free.maxProducts} free {itemLabels(site.template_id)[1].toLowerCase()} used.
                 Pro gives you unlimited items, your own domain, coupons, delivery zones and no platform ads for {'₦'}{PLANS.pro.priceNgn.toLocaleString('en-NG')} a month.
               </p>
+              <p className="text-xs text-secondary mt-2">{PRUNE_NOTICE}</p>
               <button onClick={() => go('plan')} className="mt-3 text-sm font-medium px-5 h-10 rounded-full bg-accent text-[var(--accent-foreground)] hover:bg-accent-hover">See plans</button>
             </section>
           )}

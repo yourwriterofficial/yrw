@@ -6,6 +6,7 @@ import { formatMoney } from '@/lib/forums';
 import { sendSystemEmail } from '@/lib/emailService';
 import { emailShell } from '@/lib/emailTemplates';
 import { siteUrl } from '@/lib/siteUrl';
+import { runPrune } from '@/lib/pruneSites';
 
 export const maxDuration = 60;
 
@@ -322,7 +323,9 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({ ok: true, stats });
+    const prune = await runPrune(now).catch(() => null);
+
+    return NextResponse.json({ ok: true, stats, prune });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Cron failed' }, { status: 500 });
   }

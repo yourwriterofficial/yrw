@@ -6,6 +6,7 @@ import { readExtendedSite, supabaseAdmin } from '@/lib/forumServer';
 import { FORUM_ACCENTS, normalizeForumSlug, validateForumSlug } from '@/lib/forums';
 import { planFor } from '@/lib/plans';
 import { getTemplateById } from '@/lib/siteTemplates';
+import { TRIAL_DAYS, TRIAL_TIER } from '@/lib/plans';
 import { overLimit } from '@/lib/rateLimit';
 
 const allowedAccents = new Set<string>(FORUM_ACCENTS.map((a) => a.value));
@@ -262,7 +263,27 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({ forum: created }, { status: 201 });
+    // First site: Pro free for a few days. It lapses on its own (effectiveTier), so nothing has to clean it up.
+    let trialDays = 0;
+    try {
+      const { data: u } = await supabaseAdmin.auth.admin.getUserById(user.id);
+      const used = (u?.user?.app_metadata as { developa_trial_used?: boolean } | undefined)?.developa_trial_used;
+      if (!used) {
+        const expires = new Date(Date.now() + TRIAL_DAYS * 86_400_000).toISOString();
+        const { error: trialErr } = await supabaseAdmin
+          .from('forums')
+          .update({ plan_tier: TRIAL_TIER, plan_expires_at: expires })
+          .eq('id', created.id);
+        if (!trialErr) {
+          trialDays = TRIAL_DAYS;
+          await supabaseAdmin.auth.admin.updateUserById(user.id, { app_metadata: { ...(u?.user?.app_metadata || {}), developa_trial_used: true } });
+        }
+      }
+    } catch {
+      // A failed trial must never stop the site being created.
+    }
+
+    return NextResponse.json({ forum: created, trial_days: trialDays }, { status: 201 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to create site';
     return NextResponse.json({ error: message }, { status: 500 });

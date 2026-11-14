@@ -386,6 +386,84 @@ export function StoreProductCard({
     );
   }
 
+  if (layoutStyle === 'shopify') {
+    return (
+      <div className="group flex flex-col">
+        <button type="button" onClick={() => onOpen(product)} className="relative block w-full cursor-pointer overflow-hidden bg-secondary/20">
+          {product.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={product.image_url} alt={product.title} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
+          ) : (
+            <div className="w-full aspect-square flex items-center justify-center"><Icon className="w-10 h-10 text-secondary/40" /></div>
+          )}
+          {pct && <span className="absolute top-2 left-2 px-2.5 py-1 bg-primary text-primary text-[11px] font-medium border border-theme rounded-full">Sale</span>}
+          {outOfStock && <span className="absolute top-2 right-2 px-2.5 py-1 bg-primary text-secondary text-[11px] font-medium border border-theme rounded-full">Sold out</span>}
+        </button>
+        <button type="button" onClick={() => onOpen(product)} className="text-center mt-3 cursor-pointer">
+          <h3 className="text-sm text-primary group-hover:underline underline-offset-4">{product.title}</h3>
+          <p className="text-sm text-secondary mt-1">
+            {formatMoney(product.price, currency)}
+            {product.compare_at_price && product.compare_at_price > product.price && (
+              <span className="line-through ml-2 text-xs">{formatMoney(product.compare_at_price, currency)}</span>
+            )}
+          </p>
+        </button>
+        <button
+          type="button"
+          disabled={outOfStock}
+          onClick={() => onAdd(product)}
+          className="mt-3 w-full min-h-11 border border-[var(--text-primary)] text-primary hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] disabled:opacity-40 text-sm transition cursor-pointer"
+        >
+          {outOfStock ? 'Sold out' : 'Add to cart'}
+        </button>
+      </div>
+    );
+  }
+
+  if (layoutStyle === 'selar') {
+    return (
+      <div className="bg-card border border-theme rounded-2xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition">
+        <button type="button" onClick={() => onOpen(product)} className="relative block w-full cursor-pointer">
+          {product.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={product.image_url} alt={product.title} className="w-full aspect-[16/10] object-cover bg-secondary/20" />
+          ) : (
+            <div className="w-full aspect-[16/10] flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${site.accent_color || '#2563eb'}40, ${site.accent_color || '#2563eb'}10)` }}>
+              <Icon className="w-10 h-10 text-secondary/50" />
+            </div>
+          )}
+          <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-card/95 text-[11px] font-medium text-primary">
+            <Icon className="w-3 h-3" /> {product.product_type === 'digital' ? 'Instant access' : label}
+          </span>
+          {pct && <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-accent text-[var(--accent-foreground)] text-[11px] font-semibold">{pct}% off</span>}
+        </button>
+        <div className="p-4 flex flex-col gap-2 flex-1">
+          <button type="button" onClick={() => onOpen(product)} className="text-left cursor-pointer">
+            <h3 className="font-semibold text-primary leading-snug">{product.title}</h3>
+            {product.description && <p className="text-sm text-secondary line-clamp-2 mt-1">{product.description}</p>}
+            {ratingChip}
+          </button>
+          <div className="mt-auto pt-2">
+            <p className="mb-2">
+              <span className="text-xl font-bold text-primary">{formatMoney(product.price, currency)}</span>
+              {product.compare_at_price && product.compare_at_price > product.price && (
+                <span className="text-sm text-secondary line-through ml-2">{formatMoney(product.compare_at_price, currency)}</span>
+              )}
+            </p>
+            <button
+              type="button"
+              disabled={outOfStock}
+              onClick={() => onAdd(product)}
+              className="w-full min-h-11 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-50 text-[var(--accent-foreground)] text-sm font-semibold cursor-pointer"
+            >
+              {outOfStock ? 'Unavailable' : product.product_type === 'digital' ? 'Get it now' : 'Buy now'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Standard clean card
   return (
     <div className="bg-card border border-theme rounded-2xl overflow-hidden flex flex-col justify-between">

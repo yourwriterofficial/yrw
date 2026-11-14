@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  Check, LogOut, ExternalLink, ArrowRight, Store, MessageSquare, Sparkles,
+  Check, LogOut, ExternalLink, ArrowRight, Store, MessageSquare,
   MousePointerClick, Palette, Rocket, Settings2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
@@ -11,7 +11,7 @@ import CreateForumForm from '@/app/components/forums/CreateForumForm';
 import DevelopaHeader from '@/app/components/DevelopaHeader';
 import DevelopaFooter from '@/app/components/DevelopaFooter';
 import { getForumHref, type ForumSummary } from '@/lib/forums';
-import { PLANS, type PlanTier } from '@/lib/plans';
+import { PLANS, BILLING_PERIODS, priceForPeriod, TRIAL_DAYS, PRUNE_NOTICE, type PlanTier } from '@/lib/plans';
 import { SITE_TEMPLATES } from '@/lib/siteTemplates';
 
 export default function CreatePortalView() {
@@ -24,6 +24,7 @@ export default function CreatePortalView() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
   const [host, setHost] = useState('');
+  const [months, setMonths] = useState(1);
 
   const loadMySites = useCallback(async () => {
     try {
@@ -123,7 +124,7 @@ export default function CreatePortalView() {
       <section className="g-section pb-10 sm:pb-14">
         <div className="g-wrap text-center">
           <p className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full g-tonal-strong text-xs sm:text-sm font-medium text-accent mb-6">
-            <Sparkles className="w-4 h-4" /> No coding. No designer. Free to start.
+            No coding. No designer. {TRIAL_DAYS} days of Pro free.
           </p>
           <h1 className="g-h1 max-w-3xl mx-auto">Create a website without coding experience</h1>
           <p className="g-lead max-w-xl mx-auto mt-5">
@@ -140,7 +141,7 @@ export default function CreatePortalView() {
       </section>
 
       {/* Templates */}
-      <section className="pb-10 sm:pb-14">
+      <section id="templates" className="pb-10 sm:pb-14">
         <div className="g-wrap">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {SITE_TEMPLATES.slice(0, 4).map((t) => (
@@ -260,7 +261,21 @@ export default function CreatePortalView() {
       <section id="plans" className="g-section pt-0">
         <div className="g-wrap">
           <h2 className="g-h2 text-center">Simple pricing</h2>
-          <p className="g-lead text-center mt-3">Start free. Upgrade only when your shop grows.</p>
+          <p className="g-lead text-center mt-3">Start free, with {TRIAL_DAYS} days of Pro to try everything. Pay for longer and pay less.</p>
+          <div className="mt-6 mx-auto flex w-fit rounded-full g-tonal-strong p-1 text-sm font-medium" role="tablist" aria-label="Billing period">
+            {BILLING_PERIODS.map((b) => (
+              <button
+                key={b.months}
+                type="button"
+                role="tab"
+                aria-selected={months === b.months}
+                onClick={() => setMonths(b.months)}
+                className={`px-4 sm:px-5 py-2 rounded-full transition ${months === b.months ? 'bg-card shadow-sm text-primary' : 'text-secondary'}`}
+              >
+                {b.label}{b.discountPct > 0 && <span className="ml-1.5 text-xs text-accent">save {b.discountPct}%</span>}
+              </button>
+            ))}
+          </div>
           <div className="grid md:grid-cols-3 gap-4 sm:gap-6 mt-10">
             {tiers.map((t) => {
               const p = PLANS[t];
@@ -269,9 +284,12 @@ export default function CreatePortalView() {
                 <div key={t} className={`g-card p-6 sm:p-7 flex flex-col ${featured ? 'ring-2 ring-[var(--accent)]' : ''}`}>
                   <h3 className="g-h3">{p.name}</h3>
                   <p className="mt-3">
-                    <span className="text-3xl sm:text-4xl font-normal">{p.priceNgn === 0 ? 'Free' : naira(p.priceNgn)}</span>
+                    <span className="text-3xl sm:text-4xl font-normal">{p.priceNgn === 0 ? 'Free' : naira(Math.round(priceForPeriod(t, months) / months))}</span>
                     {p.priceNgn > 0 && <span className="text-sm text-secondary"> / month</span>}
                   </p>
+                  {p.priceNgn > 0 && months > 1 && (
+                    <p className="text-xs text-secondary mt-1">{naira(priceForPeriod(t, months))} billed for {months} months</p>
+                  )}
                   <ul className="mt-5 space-y-2.5 text-sm flex-1">
                     {p.highlights.map((h) => (
                       <li key={h} className="flex gap-2.5"><Check className="w-4 h-4 text-accent mt-0.5 shrink-0" /><span>{h}</span></li>
@@ -285,6 +303,7 @@ export default function CreatePortalView() {
             })}
           </div>
           <p className="text-xs text-secondary text-center mt-6">Paid plans are paid by bank transfer and activated by our team. We take no commission on your sales.</p>
+          <p className="text-xs text-secondary text-center mt-2 max-w-xl mx-auto">{PRUNE_NOTICE}</p>
         </div>
       </section>
 

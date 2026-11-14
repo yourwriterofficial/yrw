@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Globe, Lock, Plus, ArrowRight, ShoppingBag, MessageSquare, Sparkles } from 'lucide-react';
+import { Globe, Lock, Plus, ArrowRight, ShoppingBag, MessageSquare, Layers } from 'lucide-react';
 import { FORUM_ACCENTS, normalizeForumSlug, validateForumSlug, getForumHref } from '@/lib/forums';
 import { SITE_TEMPLATES, TEMPLATE_GROUPS, getTemplateById, templateGroup, type TemplateGroup } from '@/lib/siteTemplates';
 import Button from '@/app/components/ui/Button';
@@ -143,7 +143,7 @@ export default function CreateForumForm({ onCreated }: Props) {
                     {tpl.site_mode === 'store' ? (
                       <><ShoppingBag className="w-2.5 h-2.5 text-emerald-400" /> Store</>
                     ) : tpl.site_mode === 'both' ? (
-                      <><Sparkles className="w-2.5 h-2.5 text-amber-400" /> Both</>
+                      <><Layers className="w-2.5 h-2.5 text-amber-400" /> Both</>
                     ) : (
                       <><MessageSquare className="w-2.5 h-2.5 text-accent" /> Forum</>
                     )}

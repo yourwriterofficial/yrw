@@ -152,3 +152,27 @@ export function normalizeDomain(input: string): string | null {
   if (blocked.some((b) => d === b || d.endsWith('.' + b))) return null;
   return d;
 }
+
+/** Longer plans cost less per month. Prices are set here and nowhere else. */
+export interface BillingPeriod { months: number; label: string; discountPct: number }
+export const BILLING_PERIODS: BillingPeriod[] = [
+  { months: 1, label: 'Monthly', discountPct: 0 },
+  { months: 6, label: '6 months', discountPct: 10 },
+  { months: 12, label: '1 year', discountPct: 20 },
+];
+
+/** Total to pay for a paid plan over a number of months, with the period discount applied. */
+export function priceForPeriod(tier: PlanTier, months: number): number {
+  const base = PLANS[tier].priceNgn;
+  const period = BILLING_PERIODS.find((p) => p.months === months) ?? BILLING_PERIODS[0];
+  return Math.round((base * period.months * (100 - period.discountPct)) / 100 / 100) * 100;
+}
+
+/** Everyone's first site starts with the Pro plan free for a few days. */
+export const TRIAL_DAYS = 3;
+export const TRIAL_TIER: PlanTier = 'pro';
+
+/** Free sites that nobody signs in to are removed. Owners are warned twice first. */
+export const PRUNE_AFTER_MONTHS = 6;
+export const PRUNE_WARN_DAYS: [number, number] = [30, 7];
+export const PRUNE_NOTICE = `Free sites with no sign-in or orders for ${PRUNE_AFTER_MONTHS} months are deleted. We email you twice before that, and signing in or upgrading keeps your site.`;

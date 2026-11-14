@@ -1,12 +1,16 @@
 export type SiteMode = 'forum' | 'store' | 'both';
 export type ProductType = 'physical' | 'digital' | 'service';
-export type StoreLayoutStyle = 'standard' | 'jumia' | 'temu' | 'portfolio' | 'classified';
-export type TemplateGroup = 'sell' | 'showcase' | 'community';
+export type StoreLayoutStyle = 'standard' | 'jumia' | 'temu' | 'portfolio' | 'classified' | 'shopify' | 'selar';
+export type TemplateGroup = 'sell' | 'showcase' | 'community' | 'shopify' | 'selar' | 'wordpress' | 'premium';
 
 export const TEMPLATE_GROUPS: { key: TemplateGroup; label: string }[] = [
   { key: 'sell', label: 'Sell products' },
   { key: 'showcase', label: 'Portfolio and services' },
   { key: 'community', label: 'Blog and community' },
+  { key: 'premium', label: 'Premium' },
+  { key: 'shopify', label: 'Shopify style' },
+  { key: 'selar', label: 'Selar style' },
+  { key: 'wordpress', label: 'WordPress style' },
 ];
 
 export interface SiteTemplateProduct {
@@ -27,6 +31,8 @@ export interface SiteTemplate {
   layout_style: StoreLayoutStyle;
   /** Which tab of the template picker it shows under. Defaults from the site type. */
   group?: TemplateGroup;
+  /** Default price in naira to use this theme. 0 or missing means free. The founder can override it in the admin. */
+  price_ngn?: number;
   /** What the owner's items are called: [singular, plural]. Defaults to Product/Products. */
   item_label?: [string, string];
   accent_color: string;
@@ -289,6 +295,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'photographer-studio',
+    price_ngn: 8000,
     label: 'Photography & Video Studio',
     group: 'showcase',
     item_label: ['Package', 'Packages'],
@@ -406,6 +413,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'creator-studio',
+    price_ngn: 15000,
     label: 'Creator & Video Studio (Tees Digital Space style)',
     group: 'showcase',
     item_label: ['Rate', 'Production rates'],
@@ -435,6 +443,195 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     sample_products: [
       { title: 'Regular ticket', description: 'General entry. Show your order code at the door.', category: 'Tickets', product_type: 'service', price: 5000, stock_qty: 200 },
       { title: 'VIP ticket', description: 'Front seating, a drink and a meet-and-greet.', category: 'Tickets', product_type: 'service', price: 20000, stock_qty: 40 },
+    ],
+  },
+  {
+    id: 'shopify-clean',
+    label: 'Clean Store (Shopify style)',
+    group: 'shopify',
+    item_label: ['Product', 'Products'],
+    tagline: 'Airy, image-first shop with centred titles and a calm look.',
+    site_mode: 'store',
+    layout_style: 'shopify',
+    accent_color: '#111827',
+    hero_headline: 'Made well. Made to last.',
+    hero_subheadline: 'Shop the collection and get it delivered to your door.',
+    sample_products: [
+      { title: 'Everyday linen shirt', description: 'Breathable, relaxed fit. Available in four colours.', category: 'Clothing', product_type: 'physical', price: 18500 },
+      { title: 'Leather crossbody bag', description: 'Hand-stitched with a brass clasp.', category: 'Bags', product_type: 'physical', price: 42000 },
+      { title: 'Scented soy candle', description: 'Slow-burning, 40 hours.', category: 'Home', product_type: 'physical', price: 9500 },
+      { title: 'Ankara tote', description: 'Bold print, roomy and washable.', category: 'Bags', product_type: 'physical', price: 12000 },
+    ],
+  },
+  {
+    id: 'shopify-fashion',
+    price_ngn: 10000,
+    label: 'Fashion Lookbook (Shopify style)',
+    group: 'shopify',
+    item_label: ['Piece', 'Pieces'],
+    tagline: 'Large photos and minimal text for clothing, shoes and accessories.',
+    site_mode: 'store',
+    layout_style: 'shopify',
+    accent_color: '#be123c',
+    hero_headline: 'The new season is here.',
+    hero_subheadline: 'Limited pieces. Order yours before they are gone.',
+    sample_products: [
+      { title: 'Satin slip dress', description: 'Midi length, adjustable straps.', category: 'Dresses', product_type: 'physical', price: 28000, stock_qty: 12 },
+      { title: 'Tailored two-piece set', description: 'Structured blazer and wide-leg trousers.', category: 'Sets', product_type: 'physical', price: 55000, stock_qty: 8 },
+      { title: 'Block heel sandals', description: 'Comfortable all-day wear.', category: 'Shoes', product_type: 'physical', price: 24000, stock_qty: 15 },
+    ],
+  },
+  {
+    id: 'selar-creator',
+    label: 'Digital Creator Store (Selar style)',
+    group: 'selar',
+    item_label: ['Product', 'Products'],
+    tagline: 'Sell ebooks, templates, presets and downloads with a big buy button.',
+    site_mode: 'store',
+    layout_style: 'selar',
+    accent_color: '#2563eb',
+    hero_headline: 'Everything you need to start, in one download.',
+    hero_subheadline: 'Pay once and get instant access to your files after confirmation.',
+    sample_products: [
+      { title: 'Budget planner (PDF and Excel)', description: 'Monthly and yearly planner with a debt tracker.', category: 'Templates', product_type: 'digital', price: 3500 },
+      { title: 'Lightroom preset pack (12 presets)', description: 'Warm tones that work on phone and desktop.', category: 'Presets', product_type: 'digital', price: 7000, compare_at_price: 12000 },
+      { title: 'How to start a small business (ebook)', description: '120 pages of practical steps and checklists.', category: 'Ebooks', product_type: 'digital', price: 4500 },
+    ],
+  },
+  {
+    id: 'selar-course',
+    price_ngn: 10000,
+    label: 'Courses & Coaching (Selar style)',
+    group: 'selar',
+    item_label: ['Course', 'Courses'],
+    tagline: 'Sell courses, memberships and coaching calls with a community space.',
+    site_mode: 'both',
+    layout_style: 'selar',
+    accent_color: '#7c3aed',
+    hero_headline: 'Learn from someone who has done it.',
+    hero_subheadline: 'Join a course, book a call or become a member.',
+    sample_products: [
+      { title: 'Video editing masterclass', description: '24 lessons from beginner to paid gigs.', category: 'Courses', product_type: 'digital', price: 20000, compare_at_price: 35000 },
+      { title: '1-on-1 coaching call (45 min)', description: 'Get feedback on your plan and next steps.', category: 'Coaching', product_type: 'service', price: 15000 },
+    ],
+    sample_thread: { title: 'Welcome, start here', body: 'Introduce yourself and tell us the one thing you want to learn this month.' },
+  },
+  {
+    id: 'wp-business',
+    label: 'Business Website (WordPress style)',
+    group: 'wordpress',
+    item_label: ['Service', 'Services'],
+    tagline: 'A company site with services, prices and a clear call to action.',
+    site_mode: 'store',
+    layout_style: 'portfolio',
+    accent_color: '#1d4ed8',
+    hero_headline: 'Trusted by growing businesses.',
+    hero_subheadline: 'See what we offer and request a service today.',
+    sample_products: [
+      { title: 'Business registration (CAC)', description: 'We handle the paperwork and give you your certificate.', category: 'Compliance', product_type: 'service', price: 45000 },
+      { title: 'Bookkeeping, monthly', description: 'Records, reports and tax reminders.', category: 'Accounting', product_type: 'service', price: 30000 },
+      { title: 'Company profile and logo', description: 'A professional profile and brand mark.', category: 'Branding', product_type: 'service', price: 70000 },
+    ],
+  },
+  {
+    id: 'wp-blog',
+    label: 'Personal Blog (WordPress style)',
+    group: 'wordpress',
+    item_label: ['Post', 'Posts'],
+    tagline: 'Write about anything. Readers can comment and follow along.',
+    site_mode: 'forum',
+    layout_style: 'standard',
+    accent_color: '#0e7490',
+    hero_headline: 'Notes from my corner of the internet.',
+    hero_subheadline: 'New posts every week.',
+    sample_products: [],
+    sample_thread: { title: 'Hello world', body: 'This is your first post. Edit it, delete it, then start writing.' },
+  },
+  {
+    id: 'wp-magazine',
+    label: 'News & Magazine (WordPress style)',
+    group: 'wordpress',
+    item_label: ['Story', 'Stories'],
+    tagline: 'A publication with pinned headlines and reader discussion.',
+    site_mode: 'forum',
+    layout_style: 'standard',
+    accent_color: '#b91c1c',
+    hero_headline: 'What is happening, explained.',
+    hero_subheadline: 'Top stories, analysis and your comments.',
+    sample_products: [],
+    sample_thread: { title: 'Top story: your headline goes here', body: 'Pin your most important story so every visitor sees it first.' },
+  },
+  {
+    id: 'premium-agency',
+    label: 'Premium Agency & Studio',
+    price_ngn: 25000,
+    group: 'premium',
+    item_label: ['Service', 'Services'],
+    tagline: 'A polished agency site with packages, case-study style cards and booking.',
+    site_mode: 'store',
+    layout_style: 'portfolio',
+    accent_color: '#0f172a',
+    hero_headline: 'We build brands people remember.',
+    hero_subheadline: 'Strategy, design and content under one roof. Choose a package or talk to us.',
+    sample_products: [
+      { title: 'Brand strategy sprint', description: 'Two weeks to define your positioning, voice and visuals.', category: 'Strategy', product_type: 'service', price: 350000 },
+      { title: 'Launch campaign', description: 'Landing page, ads creative and a 30-day content calendar.', category: 'Campaigns', product_type: 'service', price: 600000 },
+      { title: 'Monthly creative retainer', description: 'A dedicated team on call for your content needs.', category: 'Retainers', product_type: 'service', price: 250000 },
+    ],
+  },
+  {
+    id: 'premium-luxury',
+    label: 'Premium Luxury Boutique',
+    price_ngn: 20000,
+    group: 'premium',
+    item_label: ['Piece', 'Pieces'],
+    tagline: 'A refined, minimal look for jewellery, fragrance and high-end fashion.',
+    site_mode: 'store',
+    layout_style: 'shopify',
+    accent_color: '#92400e',
+    hero_headline: 'Quiet luxury, delivered.',
+    hero_subheadline: 'Small batches. Careful packaging. Free gift wrapping on every order.',
+    sample_products: [
+      { title: 'Gold-plated link bracelet', description: 'Hypoallergenic, tarnish resistant.', category: 'Jewellery', product_type: 'physical', price: 38000, stock_qty: 20 },
+      { title: 'Oud and amber perfume (50ml)', description: 'Long-lasting, unisex.', category: 'Fragrance', product_type: 'physical', price: 65000, stock_qty: 15 },
+      { title: 'Silk scarf', description: 'Hand-rolled edges, printed in Lagos.', category: 'Accessories', product_type: 'physical', price: 27000, stock_qty: 25 },
+    ],
+  },
+  {
+    id: 'premium-marketplace',
+    label: 'Premium Multi-Category Marketplace',
+    price_ngn: 30000,
+    group: 'premium',
+    item_label: ['Listing', 'Listings'],
+    tagline: 'A busy marketplace with category sidebar, flash-sale banner and seller contact.',
+    site_mode: 'both',
+    layout_style: 'jumia',
+    accent_color: '#e11d48',
+    hero_headline: 'Everything you need, one place.',
+    hero_subheadline: 'Shop deals by category and chat with sellers directly.',
+    sample_products: [
+      { title: 'Wireless earbuds', description: '24-hour battery, noise reduction.', category: 'Electronics', product_type: 'physical', price: 14500, compare_at_price: 22000 },
+      { title: 'Non-stick cookware set (7 pieces)', description: 'Durable and easy to clean.', category: 'Home', product_type: 'physical', price: 32000, compare_at_price: 45000 },
+      { title: 'Men sneakers', description: 'Lightweight, sizes 40 to 45.', category: 'Fashion', product_type: 'physical', price: 18000 },
+    ],
+    sample_thread: { title: 'Seller and buyer guide', body: 'Read this before you buy or sell. Stay safe and keep every chat on the platform.' },
+  },
+  {
+    id: 'premium-restaurant',
+    label: 'Premium Restaurant & Catering',
+    price_ngn: 15000,
+    group: 'premium',
+    item_label: ['Menu item', 'Menu'],
+    tagline: 'Menu with photos, categories, catering packages and table or event booking.',
+    site_mode: 'store',
+    layout_style: 'selar',
+    accent_color: '#b45309',
+    hero_headline: 'Taste you will come back for.',
+    hero_subheadline: 'Order for delivery, reserve a table or book us for your event.',
+    sample_products: [
+      { title: 'Signature party jollof tray (serves 10)', description: 'Smoky party jollof with chicken and plantain.', category: 'Catering', product_type: 'physical', price: 45000 },
+      { title: 'Chef tasting menu (per person)', description: 'Five courses with a drink pairing.', category: 'Dining', product_type: 'service', price: 18000 },
+      { title: 'Small chops platter', description: 'Spring rolls, samosa, puff puff and peppered gizzard.', category: 'Catering', product_type: 'physical', price: 25000 },
     ],
   },
 ];
