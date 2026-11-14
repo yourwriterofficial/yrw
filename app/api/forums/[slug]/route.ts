@@ -292,7 +292,8 @@ export async function GET(
       seo_description: seo.seo_description,
       announcement: ext?.announcement ?? '',
       announcement_active: ext?.announcement_active ?? false,
-      plan_expires_at: ext?.plan_expires_at ?? null,
+      // The plan end date is for the owner and their staff only; visitors only need the effective plan below.
+      ...(myRole ? { plan_expires_at: ext?.plan_expires_at ?? null } : {}),
       plan_effective: tier,
       page_about: tools.page_about,
       page_delivery: tools.page_delivery,
