@@ -111,7 +111,7 @@ export async function GET(
     }));
 
     // New-migration data, read tolerantly so stores keep working before it is applied.
-    const [ext, seo, tools, extraProdRes] = await Promise.all([
+    const [ext, seo, tools, extraProdRes, variantsRes] = await Promise.all([
       readExtendedSite(forum.id),
       readSeo(forum.id),
       readSiteTools(forum.id),
@@ -121,11 +121,28 @@ export async function GET(
             .from('site_products')
             .select('id, image_urls, variant_options, low_stock_at')
             .eq('site_id', forum.id),
+      forum.site_mode === 'forum'
+        ? Promise.resolve({ data: null })
+        : (() => {
+            let vq = supabaseAdmin
+              .from('site_product_variants')
+              .select('id, site_id, product_id, label, options, price, stock_qty, sku, sort_order, is_active')
+              .eq('site_id', forum.id)
+              .order('sort_order', { ascending: true });
+            if (!isOwner) vq = vq.eq('is_active', true);
+            return vq;
+          })(),
     ]);
 
     const prodExtraMap = new Map<string, { image_urls?: string[]; variant_options?: string[]; low_stock_at?: number }>();
     for (const row of (extraProdRes.data as { id: string; image_urls?: string[]; variant_options?: string[]; low_stock_at?: number }[] | null) || []) {
       prodExtraMap.set(row.id, row);
+    }
+    const variantsByProd = new Map<string, unknown[]>();
+    for (const v of (variantsRes.data as { product_id: string }[] | null) || []) {
+      const list = variantsByProd.get(v.product_id) || [];
+      list.push(v);
+      variantsByProd.set(v.product_id, list);
     }
 
     const enrichedProducts = (productsRes.data || []).map((p) => {
@@ -138,6 +155,7 @@ export async function GET(
         ...prod,
         image_urls: urls,
         variant_options: extra?.variant_options || [],
+        variants: variantsByProd.get(prod.id) || [],
         low_stock_at: extra?.low_stock_at ?? 3,
       };
     });

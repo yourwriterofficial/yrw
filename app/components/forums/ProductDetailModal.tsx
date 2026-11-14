@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, ShoppingCart, MessageCircle, Share2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
-import { formatMoney, type ForumSummary, type SiteProduct } from '@/lib/forums';
+import { formatMoney, type ForumSummary, type ProductVariant, type SiteProduct } from '@/lib/forums';
 import { waLink } from '@/lib/phone';
 
 export function buildProductShareUrl(slug: string, productId: string): string {
@@ -36,18 +36,27 @@ export default function ProductDetailModal({
   site: ForumSummary;
   product: SiteProduct;
   onClose: () => void;
-  onAddToCart: (product: SiteProduct) => void;
+  onAddToCart: (product: SiteProduct, variant?: ProductVariant) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [photoIdx, setPhotoIdx] = useState(0);
+  const activeVariants = (product.variants || []).filter((v) => v.is_active);
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(activeVariants[0]?.id || '');
+  const selectedVariant = activeVariants.find((v) => v.id === selectedVariantId) || activeVariants[0];
+
   const images = productImages(product);
   const currency = site.currency || 'NGN';
-  const outOfStock = product.stock_qty !== null && product.stock_qty <= 0;
-  const waHref = buildProductWaHref(site, product);
+  const effectivePrice = selectedVariant ? Number(selectedVariant.price) : Number(product.price);
+  const effectiveStock = selectedVariant ? selectedVariant.stock_qty : product.stock_qty;
+  const outOfStock = effectiveStock !== null && effectiveStock <= 0;
+  const waHref = buildProductWaHref(site, product, effectivePrice);
 
   useEffect(() => {
     setPhotoIdx(0);
-  }, [product.id]);
+    const list = (product.variants || []).filter((v) => v.is_active);
+    const firstInStock = list.find((v) => v.stock_qty === null || v.stock_qty > 0) || list[0];
+    setSelectedVariantId(firstInStock?.id || '');
+  }, [product]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -152,18 +161,47 @@ export default function ProductDetailModal({
               {product.title}
             </h2>
             <div className="flex flex-wrap items-baseline gap-3">
-              <span className="text-2xl font-black text-primary">{formatMoney(product.price, currency)}</span>
-              {product.compare_at_price && Number(product.compare_at_price) > Number(product.price) && (
+              <span className="text-2xl font-black text-primary">{formatMoney(effectivePrice, currency)}</span>
+              {!selectedVariant && product.compare_at_price && Number(product.compare_at_price) > Number(product.price) && (
                 <span className="text-sm text-secondary line-through">
                   {formatMoney(product.compare_at_price, currency)}
                 </span>
               )}
-              {product.stock_qty !== null && (
+              {effectiveStock !== null && (
                 <span className={`text-xs font-medium ${outOfStock ? 'text-danger' : 'text-secondary'}`}>
-                  {outOfStock ? 'Out of stock' : `${product.stock_qty} in stock`}
+                  {outOfStock ? 'Sold out' : `${effectiveStock} in stock`}
                 </span>
               )}
             </div>
+            {activeVariants.length > 0 && (
+              <div className="pt-2 space-y-2">
+                <p className="text-xs font-medium text-secondary">
+                  {(product.variant_options && product.variant_options.length > 0) ? product.variant_options.join(' / ') : 'Choose option'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {activeVariants.map((v) => {
+                    const soldOut = v.stock_qty !== null && v.stock_qty <= 0;
+                    const chosen = selectedVariant?.id === v.id;
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => setSelectedVariantId(v.id)}
+                        className={`min-h-10 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition cursor-pointer ${
+                          chosen
+                            ? 'bg-accent text-[var(--accent-foreground)] border-accent'
+                            : soldOut
+                            ? 'border-theme text-secondary opacity-55 line-through'
+                            : 'border-theme bg-card text-primary hover:bg-hover'
+                        }`}
+                      >
+                        {v.label}{soldOut ? ' (sold out)' : ''}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {product.description && (
               <p className="text-sm text-secondary whitespace-pre-line leading-relaxed pt-1">{product.description}</p>
             )}
@@ -173,7 +211,7 @@ export default function ProductDetailModal({
             <button
               type="button"
               disabled={outOfStock}
-              onClick={() => { onAddToCart(product); onClose(); }}
+              onClick={() => { onAddToCart(product, selectedVariant); onClose(); }}
               className="flex-1 min-h-11 px-5 py-2.5 rounded-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-[var(--accent-foreground)] text-sm font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
             >
               <ShoppingCart className="w-4 h-4" />

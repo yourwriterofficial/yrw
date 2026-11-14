@@ -7,13 +7,15 @@ import {
   CheckCircle2, Copy, Check, X, Landmark, Truck, MessageCircle,
 } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
-import { formatMoney, type ForumSummary, type SiteOrder, type SiteProduct } from '@/lib/forums';
+import { formatMoney, type ForumSummary, type ProductVariant, type SiteOrder, type SiteProduct } from '@/lib/forums';
 import { getTemplateById } from '@/lib/siteTemplates';
 import { StorefrontHeroAndTrust, StoreProductCard } from '@/app/components/forums/StorefrontThemes';
 import ProductDetailModal from '@/app/components/forums/ProductDetailModal';
 
 interface CartEntry {
+  key: string;
   product: SiteProduct;
+  variant?: ProductVariant;
   qty: number;
 }
 
@@ -89,7 +91,10 @@ export default function StorefrontView({
   const clearFilters = () => { setCategory('All'); setSearch(''); setSort('featured'); setInStockOnly(false); };
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
-  const cartTotal = cart.reduce((sum, item) => sum + Number(item.product.price) * item.qty, 0);
+  const cartTotal = cart.reduce(
+    (sum, item) => sum + Number(item.variant ? item.variant.price : item.product.price) * item.qty,
+    0
+  );
   // The discount shown here is a preview; the server recalculates it when the order is placed.
   const discount = coupon ? Math.min(coupon.discount, cartTotal) : 0;
   const payable = Math.max(0, cartTotal - discount);
@@ -109,22 +114,27 @@ export default function StorefrontView({
     } catch { setCouponMsg('Could not check the code. Try again.'); }
   };
 
-  const addToCart = (product: SiteProduct) => {
+  const addToCart = (product: SiteProduct, variant?: ProductVariant) => {
+    if (!variant && (product.variants || []).some((v) => v.is_active)) {
+      setSelectedProduct(product);
+      return;
+    }
+    const key = `${product.id}:${variant?.id || ''}`;
     setPlacedOrder(null);
     setCart((prev) => {
-      const existing = prev.find((i) => i.product.id === product.id);
+      const existing = prev.find((i) => i.key === key);
       if (existing) {
-        return prev.map((i) => (i.product.id === product.id ? { ...i, qty: i.qty + 1 } : i));
+        return prev.map((i) => (i.key === key ? { ...i, qty: i.qty + 1 } : i));
       }
-      return [...prev, { product, qty: 1 }];
+      return [...prev, { key, product, variant, qty: 1 }];
     });
     setCartOpen(true);
   };
 
-  const updateQty = (productId: string, delta: number) => {
+  const updateQty = (key: string, delta: number) => {
     setCart((prev) =>
       prev
-        .map((i) => (i.product.id === productId ? { ...i, qty: i.qty + delta } : i))
+        .map((i) => (i.key === key ? { ...i, qty: i.qty + delta } : i))
         .filter((i) => i.qty > 0)
     );
   };
@@ -153,7 +163,11 @@ export default function StorefrontView({
           payment_method: paymentMethod,
           payment_reference: paymentRef,
           payment_proof_note: proofNote,
-          items: cart.map((c) => ({ product_id: c.product.id, qty: c.qty })),
+          items: cart.map((c) => ({
+            product_id: c.product.id,
+            ...(c.variant ? { variant_id: c.variant.id } : {}),
+            qty: c.qty,
+          })),
           coupon_code: coupon?.code || '',
         }),
       });
@@ -340,26 +354,31 @@ export default function StorefrontView({
             ) : (
               <>
                 <div className="space-y-2.5">
-                  {cart.map(({ product, qty }) => (
-                    <div key={product.id} className="p-3 rounded-xl bg-card border border-theme flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold truncate">{product.title}</p>
-                        <p className="text-xs text-secondary">{formatMoney(product.price, currency)} each</p>
+                  {cart.map(({ key, product, variant, qty }) => {
+                    const unitPrice = variant ? Number(variant.price) : Number(product.price);
+                    return (
+                      <div key={key} className="p-3 rounded-xl bg-card border border-theme flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold truncate">
+                            {product.title}{variant ? ` · ${variant.label}` : ''}
+                          </p>
+                          <p className="text-xs text-secondary">{formatMoney(unitPrice, currency)} each</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button type="button" onClick={() => updateQty(key, -1)} className="p-1 rounded bg-primary border border-theme">
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="text-xs font-bold w-5 text-center">{qty}</span>
+                          <button type="button" onClick={() => updateQty(key, 1)} className="p-1 rounded bg-primary border border-theme">
+                            <Plus className="w-3 h-3" />
+                          </button>
+                          <button type="button" onClick={() => updateQty(key, -qty)} className="p-1 text-danger ml-1">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button type="button" onClick={() => updateQty(product.id, -1)} className="p-1 rounded bg-primary border border-theme">
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="text-xs font-bold w-5 text-center">{qty}</span>
-                        <button type="button" onClick={() => updateQty(product.id, 1)} className="p-1 rounded bg-primary border border-theme">
-                          <Plus className="w-3 h-3" />
-                        </button>
-                        <button type="button" onClick={() => updateQty(product.id, -qty)} className="p-1 text-danger ml-1">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="pt-2 border-t border-theme space-y-2">

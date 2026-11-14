@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { formatMoney, type SiteProduct } from '@/lib/forums';
 import { planFor } from '@/lib/plans';
 import { jsonFetch, type Site } from '../types';
+import VariantEditorModal from './VariantEditorModal';
 
 const BLANK = {
   title: '',
@@ -27,6 +28,7 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
   const [msg, setMsg] = useState('');
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('All');
+  const [variantProduct, setVariantProduct] = useState<SiteProduct | null>(null);
 
   const plan = planFor(site.plan_tier, site.plan_expires_at);
   const atLimit = plan.maxProducts !== null && products.length >= plan.maxProducts && !editing;
@@ -260,10 +262,12 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
                   {formatMoney(p.price, site.currency)} · {p.product_type}
                   {p.stock_qty != null && ` · ${p.stock_qty} in stock`}
                   {photoCount > 1 && ` · ${photoCount} photos`}
+                  {(p.variants?.length ?? 0) > 0 && ` · ${p.variants!.length} variants`}
                   {!p.is_active && ' · hidden'}
                 </p>
               </div>
-              <div className="flex gap-1 shrink-0 text-sm">
+              <div className="flex flex-wrap gap-1 shrink-0 text-sm">
+                <button onClick={() => setVariantProduct(p)} className="px-3 h-9 rounded-full hover:bg-hover font-medium">Variants</button>
                 <button onClick={() => edit(p)} className="px-3 h-9 rounded-full hover:bg-hover text-accent font-medium">Edit</button>
                 <button onClick={() => toggle(p)} className="px-3 h-9 rounded-full hover:bg-hover">{p.is_active ? 'Hide' : 'Show'}</button>
                 <button onClick={() => remove(p)} className="px-3 h-9 rounded-full hover:bg-hover text-danger">Delete</button>
@@ -272,6 +276,14 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
           );
         })}
       </div>
+      {variantProduct && (
+        <VariantEditorModal
+          site={site}
+          product={variantProduct}
+          onClose={() => setVariantProduct(null)}
+          onSaved={reload}
+        />
+      )}
     </div>
   );
 }

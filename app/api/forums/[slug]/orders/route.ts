@@ -23,6 +23,7 @@ const createOrderSchema = z.object({
     .array(
       z.object({
         product_id: z.string().uuid(),
+        variant_id: z.string().uuid().optional(),
         qty: z.number().int().min(1).max(99),
       })
     )
@@ -122,6 +123,23 @@ export async function POST(
     if (prodErr) throw prodErr;
 
     const productMap = new Map((dbProducts || []).map((p) => [p.id, p]));
+    const variantIds = parsed.data.items.map((i) => i.variant_id).filter(Boolean) as string[];
+    const variantMap = new Map<string, { id: string; product_id: string; label: string; price: number; stock_qty: number | null; is_active: boolean }>();
+    if (variantIds.length > 0) {
+      const { data: dbVariants, error: varErr } = await supabaseAdmin
+        .from('site_product_variants')
+        .select('id, product_id, label, price, stock_qty, is_active')
+        .eq('site_id', site.id)
+        .eq('is_active', true)
+        .in('id', variantIds);
+      if (varErr) {
+        return NextResponse.json({ error: 'Selected product options are not available yet.' }, { status: 400 });
+      }
+      for (const v of dbVariants || []) {
+        variantMap.set(v.id as string, v as { id: string; product_id: string; label: string; price: number; stock_qty: number | null; is_active: boolean });
+      }
+    }
+
     const orderItems = [];
     let subtotal = 0;
 
@@ -130,14 +148,32 @@ export async function POST(
       if (!prod) {
         return NextResponse.json({ error: 'One or more products are no longer available.' }, { status: 400 });
       }
-      if (prod.stock_qty !== null && prod.stock_qty < reqItem.qty) {
-        return NextResponse.json({ error: `Not enough stock for "${prod.title}".` }, { status: 400 });
+      let linePrice = Number(prod.price);
+      let title = prod.title;
+      let variantId: string | undefined;
+      let variantLabel: string | undefined;
+      let stockCheck = prod.stock_qty;
+
+      if (reqItem.variant_id) {
+        const variant = variantMap.get(reqItem.variant_id);
+        if (!variant || variant.product_id !== prod.id) {
+          return NextResponse.json({ error: `The chosen option for "${prod.title}" is no longer available.` }, { status: 400 });
+        }
+        linePrice = Number(variant.price);
+        variantId = variant.id;
+        variantLabel = variant.label;
+        title = `${prod.title} (${variant.label})`;
+        stockCheck = variant.stock_qty;
       }
-      const linePrice = Number(prod.price);
+
+      if (stockCheck !== null && stockCheck < reqItem.qty) {
+        return NextResponse.json({ error: `Not enough stock for "${title}".` }, { status: 400 });
+      }
       subtotal += linePrice * reqItem.qty;
       orderItems.push({
         product_id: prod.id,
-        title: prod.title,
+        ...(variantId ? { variant_id: variantId, variant_label: variantLabel } : {}),
+        title,
         product_type: prod.product_type,
         price: linePrice,
         qty: reqItem.qty,
