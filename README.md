@@ -1,5 +1,12 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Documentation
+
+Project plans and implementation guides live in [`docs/`](./docs):
+
+- [`docs/developa-feature-roadmap.md`](./docs/developa-feature-roadmap.md) — approved 60-feature split across Starter, Pro, and Business plans, plus payout architecture notes.
+- [`docs/developa-agent-todo.md`](./docs/developa-agent-todo.md) — ordered work packages, code conventions, and review hand-off checklist.
+
 ## Getting Started
 
 First, run the development server:
