@@ -1,7 +1,7 @@
 'use client';
 
 import { waNumber } from '@/lib/phone';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   ShoppingCart, Plus, Minus, Trash2, Search,
   CheckCircle2, Copy, Check, X, Landmark, Truck, MessageCircle,
@@ -10,6 +10,7 @@ import Button from '@/app/components/ui/Button';
 import { formatMoney, type ForumSummary, type SiteOrder, type SiteProduct } from '@/lib/forums';
 import { getTemplateById } from '@/lib/siteTemplates';
 import { StorefrontHeroAndTrust, StoreProductCard } from '@/app/components/forums/StorefrontThemes';
+import ProductDetailModal from '@/app/components/forums/ProductDetailModal';
 
 interface CartEntry {
   product: SiteProduct;
@@ -47,8 +48,17 @@ export default function StorefrontView({
   const [checkoutError, setCheckoutError] = useState('');
   const [placedOrder, setPlacedOrder] = useState<SiteOrder | null>(null);
   const [copiedAcct, setCopiedAcct] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<SiteProduct | null>(null);
 
   const visibleProducts = useMemo(() => products.filter((p) => p.is_active), [products]);
+
+  useEffect(() => {
+    const pid = new URLSearchParams(window.location.search).get('product');
+    if (pid && visibleProducts.length > 0) {
+      const match = visibleProducts.find((p) => p.id === pid);
+      if (match) setSelectedProduct(match);
+    }
+  }, [visibleProducts]);
 
   const categories = useMemo(() => {
     const set = new Set<string>(['All']);
@@ -249,13 +259,24 @@ export default function StorefrontView({
           {filtered.map((p) => (
             <StoreProductCard
               key={p.id}
+              site={site}
               product={p}
               currency={currency}
               layoutStyle={layoutStyle}
               onAdd={addToCart}
+              onOpen={setSelectedProduct}
             />
           ))}
         </div>
+      )}
+
+      {selectedProduct && (
+        <ProductDetailModal
+          site={site}
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onAddToCart={addToCart}
+        />
       )}
 
       {/* Cart & Checkout Slide-over Drawer */}

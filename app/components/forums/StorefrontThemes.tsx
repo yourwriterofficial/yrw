@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import {
-  ShoppingCart, Plus, Package, Download, Briefcase, Flame, ShieldCheck, Truck, Zap, Tag,
+  ShoppingCart, Plus, Package, Download, Briefcase, Flame, ShieldCheck, Truck, Zap, Tag, MessageCircle, Share2, Check,
 } from 'lucide-react';
 import { formatMoney, type ForumSummary, type SiteProduct } from '@/lib/forums';
 import type { StoreLayoutStyle } from '@/lib/siteTemplates';
+import { buildProductShareUrl, buildProductWaHref } from '@/app/components/forums/ProductDetailModal';
 
 function discountPercent(price: number, compareAt: number | null): number | null {
   if (!compareAt || compareAt <= price) return null;
@@ -131,25 +133,68 @@ export function StorefrontHeroAndTrust({
 }
 
 export function StoreProductCard({
+  site,
   product,
   currency,
   layoutStyle,
   onAdd,
+  onOpen,
 }: {
+  site: ForumSummary;
   product: SiteProduct;
   currency: string;
   layoutStyle: StoreLayoutStyle;
   onAdd: (p: SiteProduct) => void;
+  onOpen: (p: SiteProduct) => void;
 }) {
+  const [copied, setCopied] = useState(false);
   const { label, Icon } = typeMeta(product.product_type);
   const pct = discountPercent(Number(product.price), product.compare_at_price ? Number(product.compare_at_price) : null);
   const outOfStock = product.stock_qty !== null && product.stock_qty <= 0;
+  const waHref = buildProductWaHref(site, product);
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = buildProductShareUrl(site.slug, product.id);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {}
+  };
+
+  const quickActions = (
+    <div className="flex items-center gap-2 pt-1.5">
+      {waHref && (
+        <a
+          href={waHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="flex-1 min-h-9 px-2.5 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[11px] font-semibold inline-flex items-center justify-center gap-1 transition truncate"
+        >
+          <MessageCircle className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Ask on WhatsApp</span>
+        </a>
+      )}
+      <button
+        type="button"
+        onClick={handleShare}
+        aria-label={`Share ${product.title}`}
+        className="min-h-9 px-2.5 py-1.5 rounded-lg border border-theme hover:bg-hover text-secondary hover:text-primary text-[11px] font-medium inline-flex items-center justify-center gap-1 transition cursor-pointer shrink-0"
+      >
+        {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Share2 className="w-3.5 h-3.5" />}
+        <span>{copied ? 'Copied' : 'Share'}</span>
+      </button>
+    </div>
+  );
 
   if (layoutStyle === 'jumia') {
     return (
       <div className="bg-card border border-theme hover:border-[#f68b1e]/60 rounded-xl overflow-hidden flex flex-col justify-between transition group">
-        <div className="relative">
+        <button type="button" onClick={() => onOpen(product)} className="relative text-left w-full cursor-pointer">
           {product.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={product.image_url} alt={product.title} className="w-full h-40 object-cover bg-secondary/20" />
           ) : (
             <div className="w-full h-36 bg-secondary/20 flex items-center justify-center">
@@ -161,12 +206,12 @@ export function StoreProductCard({
               -{pct}%
             </span>
           )}
-        </div>
+        </button>
         <div className="p-3.5 space-y-2 flex-1 flex flex-col justify-between">
-          <div>
+          <button type="button" onClick={() => onOpen(product)} className="text-left w-full cursor-pointer">
             <p className="text-[10px] font-semibold text-secondary uppercase">{product.category}</p>
-            <h3 className="font-bold text-sm text-primary line-clamp-2 leading-snug">{product.title}</h3>
-          </div>
+            <h3 className="font-bold text-sm text-primary line-clamp-2 leading-snug hover:text-[#f68b1e] transition-colors">{product.title}</h3>
+          </button>
           <div className="space-y-2 pt-1">
             <div>
               <p className="text-base font-black text-primary">{formatMoney(product.price, currency)}</p>
@@ -178,10 +223,11 @@ export function StoreProductCard({
               type="button"
               disabled={outOfStock}
               onClick={() => onAdd(product)}
-              className="w-full py-2 rounded-lg bg-[#f68b1e] hover:bg-[#e07b15] disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 transition cursor-pointer"
+              className="w-full min-h-10 py-2 rounded-lg bg-[#f68b1e] hover:bg-[#e07b15] disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 transition cursor-pointer"
             >
               <ShoppingCart className="w-3.5 h-3.5" /> {outOfStock ? 'Out of Stock' : 'Add to Cart'}
             </button>
+            {quickActions}
           </div>
         </div>
       </div>
@@ -191,8 +237,9 @@ export function StoreProductCard({
   if (layoutStyle === 'temu') {
     return (
       <div className="bg-card border border-theme hover:border-[#fb7701]/60 rounded-xl overflow-hidden flex flex-col justify-between transition">
-        <div className="relative">
+        <button type="button" onClick={() => onOpen(product)} className="relative text-left w-full cursor-pointer">
           {product.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={product.image_url} alt={product.title} className="w-full h-40 object-cover bg-secondary/20" />
           ) : (
             <div className="w-full h-32 bg-secondary/20 flex items-center justify-center">
@@ -204,33 +251,36 @@ export function StoreProductCard({
               -{pct}% OFF
             </span>
           )}
-        </div>
+        </button>
         <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
-          <div>
-            <h3 className="font-bold text-xs sm:text-sm text-primary line-clamp-2">{product.title}</h3>
+          <button type="button" onClick={() => onOpen(product)} className="text-left w-full cursor-pointer">
+            <h3 className="font-bold text-xs sm:text-sm text-primary line-clamp-2 hover:text-[#fb7701] transition-colors">{product.title}</h3>
             {product.stock_qty !== null && product.stock_qty > 0 && product.stock_qty <= 10 && (
               <p className="text-[10px] font-bold text-[#fb7701] mt-0.5 flex items-center gap-1">
                 <Flame className="w-3 h-3" /> Almost sold out · {product.stock_qty} left
               </p>
             )}
-          </div>
-          <div className="flex items-center justify-between gap-2 pt-1">
-            <div>
-              <span className="text-sm font-black text-[#fb7701]">{formatMoney(product.price, currency)}</span>
-              {product.compare_at_price && product.compare_at_price > product.price && (
-                <span className="text-[10px] text-secondary line-through ml-1.5">
-                  {formatMoney(product.compare_at_price, currency)}
-                </span>
-              )}
+          </button>
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <span className="text-sm font-black text-[#fb7701]">{formatMoney(product.price, currency)}</span>
+                {product.compare_at_price && product.compare_at_price > product.price && (
+                  <span className="text-[10px] text-secondary line-through ml-1.5">
+                    {formatMoney(product.compare_at_price, currency)}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                disabled={outOfStock}
+                onClick={() => onAdd(product)}
+                className="min-h-9 px-2.5 py-1.5 rounded-full bg-[#fb7701] hover:bg-[#e56800] disabled:opacity-50 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3 h-3" /> {outOfStock ? 'Sold' : 'Buy'}
+              </button>
             </div>
-            <button
-              type="button"
-              disabled={outOfStock}
-              onClick={() => onAdd(product)}
-              className="px-2.5 py-1.5 rounded-full bg-[#fb7701] hover:bg-[#e56800] disabled:opacity-50 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
-            >
-              <Plus className="w-3 h-3" /> {outOfStock ? 'Sold' : 'Buy'}
-            </button>
+            {quickActions}
           </div>
         </div>
       </div>
@@ -240,42 +290,48 @@ export function StoreProductCard({
   // Standard clean card
   return (
     <div className="bg-card border border-theme rounded-2xl overflow-hidden flex flex-col justify-between">
-      {product.image_url ? (
-        <img src={product.image_url} alt={product.title} className="w-full h-44 object-cover bg-secondary/20" />
-      ) : (
-        <div className="w-full h-32 bg-secondary/20 flex items-center justify-center">
-          <Icon className="w-8 h-8 text-secondary/40" />
-        </div>
-      )}
+      <button type="button" onClick={() => onOpen(product)} className="text-left w-full cursor-pointer">
+        {product.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={product.image_url} alt={product.title} className="w-full h-44 object-cover bg-secondary/20" />
+        ) : (
+          <div className="w-full h-32 bg-secondary/20 flex items-center justify-center">
+            <Icon className="w-8 h-8 text-secondary/40" />
+          </div>
+        )}
+      </button>
       <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
-        <div className="space-y-1.5">
+        <button type="button" onClick={() => onOpen(product)} className="space-y-1.5 text-left w-full cursor-pointer">
           <div className="flex items-center justify-between gap-2">
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold text-cyan-400 bg-cyan-500/10">
               <Icon className="w-3 h-3" /> {label}
             </span>
             <span className="text-[11px] text-secondary">{product.category}</span>
           </div>
-          <h3 className="font-bold text-primary text-base leading-snug">{product.title}</h3>
+          <h3 className="font-bold text-primary text-base leading-snug hover:text-accent transition-colors">{product.title}</h3>
           {product.description && <p className="text-xs text-secondary line-clamp-2">{product.description}</p>}
-        </div>
+        </button>
 
-        <div className="pt-3 border-t border-theme flex items-center justify-between gap-2">
-          <div>
-            <span className="text-base font-black text-primary">{formatMoney(product.price, currency)}</span>
-            {product.compare_at_price && product.compare_at_price > product.price && (
-              <span className="text-xs text-secondary line-through ml-2">
-                {formatMoney(product.compare_at_price, currency)}
-              </span>
-            )}
+        <div className="pt-3 border-t border-theme space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <span className="text-base font-black text-primary">{formatMoney(product.price, currency)}</span>
+              {product.compare_at_price && product.compare_at_price > product.price && (
+                <span className="text-xs text-secondary line-through ml-2">
+                  {formatMoney(product.compare_at_price, currency)}
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              disabled={outOfStock}
+              onClick={() => onAdd(product)}
+              className="min-h-9 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black text-xs font-bold flex items-center gap-1 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" /> {outOfStock ? 'Sold Out' : 'Add'}
+            </button>
           </div>
-          <button
-            type="button"
-            disabled={outOfStock}
-            onClick={() => onAdd(product)}
-            className="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black text-xs font-bold flex items-center gap-1 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" /> {outOfStock ? 'Sold Out' : 'Add'}
-          </button>
+          {quickActions}
         </div>
       </div>
     </div>
