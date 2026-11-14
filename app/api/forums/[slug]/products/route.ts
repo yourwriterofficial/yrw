@@ -1,3 +1,5 @@
+import { planFor } from '@/lib/plans';
+import { readExtendedSite } from '@/lib/forumServer';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
@@ -29,12 +31,21 @@ export async function POST(
 
     const { data: site } = await supabaseAdmin
       .from('forums')
-      .select('id, owner_id')
+      .select('id, owner_id, plan_tier')
       .eq('slug', slug.toLowerCase().trim())
       .maybeSingle();
 
     if (!site) return NextResponse.json({ error: 'Store not found' }, { status: 404 });
     if (site.owner_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    // The Starter plan has a product limit; Pro and Business are unlimited.
+    const plan = planFor((site as { plan_tier?: string }).plan_tier, (await readExtendedSite(site.id))?.plan_expires_at);
+    if (plan.maxProducts !== null) {
+      const { count } = await supabaseAdmin.from('site_products').select('id', { count: 'exact', head: true }).eq('site_id', site.id);
+      if ((count ?? 0) >= plan.maxProducts) {
+        return NextResponse.json({ error: `The ${plan.name} plan allows up to ${plan.maxProducts} products. Upgrade to Pro for unlimited products.` }, { status: 403 });
+      }
+    }
 
     const raw = await request.json();
     const parsed = productSchema.safeParse(raw);

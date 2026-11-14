@@ -35,27 +35,27 @@ export default function DevelopaFooter() {
           <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Engineering</h3>
           <ul className="space-y-2 text-sm text-secondary">
             <li>
-              <Link href="/developer#capabilities" className="hover:text-accent transition-colors">
+              <Link href="/create#capabilities" className="hover:text-accent transition-colors">
                 Web Applications
               </Link>
             </li>
             <li>
-              <Link href="/developer#capabilities" className="hover:text-accent transition-colors">
+              <Link href="/create#capabilities" className="hover:text-accent transition-colors">
                 Mobile App Development
               </Link>
             </li>
             <li>
-              <Link href="/developer#capabilities" className="hover:text-accent transition-colors">
+              <Link href="/create#capabilities" className="hover:text-accent transition-colors">
                 API & Payment Integrations
               </Link>
             </li>
             <li>
-              <Link href="/developer#capabilities" className="hover:text-accent transition-colors">
+              <Link href="/create#capabilities" className="hover:text-accent transition-colors">
                 Database Architecture
               </Link>
             </li>
             <li>
-              <Link href="/developer#capabilities" className="hover:text-accent transition-colors">
+              <Link href="/create#capabilities" className="hover:text-accent transition-colors">
                 MVP Prototypes
               </Link>
             </li>
@@ -73,7 +73,7 @@ export default function DevelopaFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/developer#quote" className="hover:text-accent transition-colors flex items-center gap-1.5">
+              <Link href="/create#quote" className="hover:text-accent transition-colors flex items-center gap-1.5">
                 <Code2 className="w-3.5 h-3.5 text-accent" />
                 Submit Project Brief
               </Link>
@@ -95,7 +95,7 @@ export default function DevelopaFooter() {
       <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-theme flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-secondary">
         <p>© {new Date().getFullYear()} developa.me — an engineering division of ResearchWriter. All rights reserved.</p>
         <div className="flex items-center gap-6">
-          <Link href="/developer#quote" className="text-accent hover:text-accent transition-colors font-medium flex items-center gap-1">
+          <Link href="/create#quote" className="text-accent hover:text-accent transition-colors font-medium flex items-center gap-1">
             <span>Hire Dev Lead</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>

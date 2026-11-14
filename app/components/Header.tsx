@@ -11,7 +11,7 @@ import ImpersonationBanner from './ImpersonationBanner';
 import { Menu, X, ArrowRight, ChevronDown, ShieldCheck, LayoutDashboard, LogOut, User, Code2, GraduationCap, PenLine, FileText, LineChart } from 'lucide-react';
 
 const SERVICE_LINKS: { href: string; label: string; icon: any; color: string; badge?: string }[] = [
-  { href: '/developer', label: 'Full Stack Development', icon: Code2, color: 'text-accent bg-accent/10', badge: 'developa.me' },
+  { href: '/create', label: 'Full Stack Development', icon: Code2, color: 'text-accent bg-accent/10', badge: 'developa.me' },
   { href: '/#academic', label: 'Academic Writing & Research', icon: GraduationCap, color: 'text-accent bg-accent/10' },
   { href: '/#content', label: 'Content & Creative Writing', icon: PenLine, color: 'text-accent bg-accent/10' },
   { href: '/#resume', label: 'Executive CVs & Resumes', icon: FileText, color: 'text-accent bg-accent/10' },

@@ -14,11 +14,11 @@
  * 7. Copy the "Web app URL" (starts with https://script.google.com/macros/s/...)
  * 8. Add it to your project's .env.local:
  *    GOOGLE_APPS_SCRIPT_UPLOAD_URL="https://script.google.com/macros/s/..."
- *    DRIVE_UPLOAD_SECRET="your-own-secret-password-optional"
+ *    DRIVE_UPLOAD_SECRET="a-long-random-string-that-matches-SHARED_SECRET-in-this-script"
  */
 
 var FOLDER_NAME = "Developa Store Uploads";
-var SHARED_SECRET = "developa_drive_upload_secret_2026"; // Change to match DRIVE_UPLOAD_SECRET in your .env
+var SHARED_SECRET = "CHANGE-ME-to-a-long-random-string"; // Must equal DRIVE_UPLOAD_SECRET in .env.local. Use a long random value; never reuse an example.
 
 function doPost(e) {
   try {
@@ -28,8 +28,12 @@ function doPost(e) {
 
     var data = JSON.parse(e.postData.contents);
 
-    // Optional secret token verification
-    if (data.secret && data.secret !== SHARED_SECRET) {
+    // The secret is REQUIRED. (It used to be optional, which let anyone who found the
+    // web-app URL upload to your Drive just by leaving the secret out.)
+    if (SHARED_SECRET.indexOf("CHANGE-ME") === 0) {
+      return responseJson({ error: "Set SHARED_SECRET in the script before use" }, 500);
+    }
+    if (data.secret !== SHARED_SECRET) {
       return responseJson({ error: "Invalid secret key" }, 403);
     }
 

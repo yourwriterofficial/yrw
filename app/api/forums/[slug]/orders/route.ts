@@ -1,3 +1,7 @@
+import { findUsableCoupon, discountFor } from '@/lib/coupons';
+import { downloadsForOrder, reserveStock, releaseStock } from '@/lib/forumServer';
+import { emailOrderReceived } from '@/lib/storeEmails';
+import { overLimit, clientIp } from '@/lib/rateLimit';
 import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -6,6 +10,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/forumServer';
 
 const createOrderSchema = z.object({
+  coupon_code: z.string().trim().max(30).optional().default(''),
   buyer_name: z.string().trim().min(2, 'Full name is required').max(100),
   buyer_email: z.string().trim().email('Valid email is required').max(150),
   buyer_phone: z.string().trim().min(5, 'Phone or WhatsApp number is required').max(30),
@@ -44,16 +49,23 @@ export async function GET(
     if (!site) return NextResponse.json({ error: 'Store not found' }, { status: 404 });
 
     if (code && email) {
+      // Codes are short, so make guessing impractical: limit attempts per visitor.
+      if (overLimit(`order-lookup:${clientIp(request)}`, 15, 10 * 60 * 1000)) {
+        return NextResponse.json({ error: 'Too many lookups. Please wait a few minutes.' }, { status: 429 });
+      }
       const { data: order } = await supabaseAdmin
         .from('site_orders')
         .select('*')
         .eq('site_id', site.id)
         .eq('order_code', code)
-        .ilike('buyer_email', email)
+        .eq('buyer_email', email) // exact match: ilike would treat % and _ as wildcards
         .maybeSingle();
 
       if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-      return NextResponse.json({ order });
+
+      // Download links are released only once the store owner has confirmed payment.
+      const downloads = order.payment_status === 'paid' ? await downloadsForOrder(site.id, order.items) : [];
+      return NextResponse.json({ order, downloads });
     }
 
     const supabase = await createServerClient();
@@ -85,7 +97,7 @@ export async function POST(
     const { slug } = await context.params;
     const { data: site } = await supabaseAdmin
       .from('forums')
-      .select('id, site_mode')
+      .select('id, slug, site_mode, owner_id, name, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions')
       .eq('slug', slug.toLowerCase().trim())
       .maybeSingle();
 
@@ -93,7 +105,7 @@ export async function POST(
       return NextResponse.json({ error: 'Storefront not found' }, { status: 404 });
     }
 
-    const raw = await request.json();
+    const raw = await request.json().catch(() => null);
     const parsed = createOrderSchema.safeParse(raw);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid order' }, { status: 400 });
@@ -133,6 +145,28 @@ export async function POST(
     }
 
     const supabase = await createServerClient();
+    if (overLimit(`order-create:${clientIp(request)}`, 10, 10 * 60 * 1000)) {
+      return NextResponse.json({ error: 'Too many orders from this device. Please wait a few minutes.' }, { status: 429 });
+    }
+
+    // A coupon is re-checked here: the amount the browser showed is never trusted.
+    let discount = 0;
+    let couponUsed: { id: string; code: string; used_count: number } | null = null;
+    if (parsed.data.coupon_code) {
+      const { coupon } = await findUsableCoupon(site.id, parsed.data.coupon_code);
+      if (coupon) {
+        discount = discountFor(coupon, subtotal);
+        couponUsed = { id: coupon.id, code: coupon.code, used_count: coupon.used_count };
+      }
+    }
+    const grandTotal = Math.max(0, subtotal - discount);
+
+    // Take the stock now so the last item cannot be sold twice. It is returned if saving fails.
+    const reserved = await reserveStock(site.id, orderItems);
+    if (!reserved.ok) {
+      return NextResponse.json({ error: `Sorry, "${reserved.title || 'an item'}" just sold out.` }, { status: 409 });
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
 
     const orderCode = `ORD-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
@@ -151,7 +185,8 @@ export async function POST(
         notes: xss(parsed.data.notes),
         items: orderItems,
         subtotal,
-        total_amount: subtotal,
+        total_amount: grandTotal,
+        ...(couponUsed ? { coupon_code: couponUsed.code, discount_amount: discount } : {}),
         payment_method: parsed.data.payment_method,
         payment_reference: xss(parsed.data.payment_reference),
         payment_proof_note: xss(parsed.data.payment_proof_note),
@@ -161,7 +196,43 @@ export async function POST(
       .select('*')
       .single();
 
-    if (insertErr) throw insertErr;
+    if (insertErr) {
+      await releaseStock(site.id, orderItems);
+      throw insertErr;
+    }
+
+    emailOrderReceived(site, {
+      order_code: order.order_code,
+      buyer_name: order.buyer_name,
+      buyer_email: order.buyer_email,
+      total_amount: Number(order.total_amount),
+      payment_method: order.payment_method,
+      payment_status: order.payment_status,
+      fulfillment_status: order.fulfillment_status,
+      items: order.items,
+    }).catch((e) => console.warn('Buyer confirmation email failed:', e));
+
+    if (couponUsed) {
+      // Count the use only if nobody else used the last one in the meantime.
+      await supabaseAdmin.from('site_coupons').update({ used_count: couponUsed.used_count + 1 }).eq('id', couponUsed.id).eq('used_count', couponUsed.used_count);
+    }
+
+    // Tell the store owner. A shop where nobody learns about new orders loses sales.
+    // Best effort: a notification failure must never undo or hide the buyer's order.
+    try {
+      const { notifyUser } = await import('@/lib/notify');
+      const amount = Math.round(grandTotal).toLocaleString('en-NG');
+      await notifyUser({
+        userId: site.owner_id,
+        title: `New order ${orderCode} on ${site.name}`,
+        message: `${parsed.data.buyer_name} placed an order for ${amount}. Open your store manager to confirm payment.`,
+        type: 'order_update',
+        link: `/forums/${slug.toLowerCase().trim()}`,
+      });
+    } catch (e) {
+      console.warn('Store owner notification failed:', e);
+    }
+
     return NextResponse.json({ order }, { status: 201 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to place order';

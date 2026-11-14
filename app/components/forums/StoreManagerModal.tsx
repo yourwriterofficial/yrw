@@ -197,7 +197,7 @@ export default function StoreManagerModal({
         <div className="p-4 sm:p-5 border-b border-theme flex items-center justify-between">
           <div>
             <h2 className="font-black text-lg">Manage {site.name}</h2>
-            <p className="text-xs font-mono text-cyan-400">{site.slug}.developa.me</p>
+            <p className="text-xs font-mono text-accent">{site.slug}.developa.me</p>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-card text-secondary">
             <X className="w-5 h-5" />
@@ -215,7 +215,7 @@ export default function StoreManagerModal({
               type="button"
               onClick={() => setTab(id as typeof tab)}
               className={`px-3 py-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition ${
-                tab === id ? 'border-cyan-400 text-cyan-400' : 'border-transparent text-secondary hover:text-primary'
+                tab === id ? 'border-accent text-accent' : 'border-transparent text-secondary hover:text-primary'
               }`}
             >
               <Icon className="w-3.5 h-3.5" /> {label}
@@ -234,7 +234,7 @@ export default function StoreManagerModal({
             <>
               <form onSubmit={handleAddProduct} className="bg-card border border-theme rounded-xl p-4 space-y-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-secondary flex items-center gap-1.5">
-                  <Plus className="w-3.5 h-3.5 text-cyan-400" /> Add Product / Service
+                  <Plus className="w-3.5 h-3.5 text-accent" /> Add Product / Service
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <input
@@ -282,8 +282,8 @@ export default function StoreManagerModal({
                   />
                 </div>
                 <div className="flex items-center gap-3">
-                  <label className="cursor-pointer px-3 py-2 rounded-lg bg-primary border border-theme hover:border-cyan-500 text-xs text-secondary hover:text-primary flex items-center gap-1.5 transition">
-                    <Upload className="w-3.5 h-3.5 text-cyan-400" />
+                  <label className="cursor-pointer px-3 py-2 rounded-lg bg-primary border border-theme hover:border-accent text-xs text-secondary hover:text-primary flex items-center gap-1.5 transition">
+                    <Upload className="w-3.5 h-3.5 text-accent" />
                     <span>{uploadingImage ? 'Uploading to Drive...' : 'Upload Photo'}</span>
                     <input
                       type="file"
@@ -346,7 +346,7 @@ export default function StoreManagerModal({
                   <div key={o.id} className="p-4 rounded-xl bg-card border border-theme space-y-2.5 text-xs">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <span className="font-mono font-bold text-cyan-400">{o.order_code}</span> ·{' '}
+                        <span className="font-mono font-bold text-accent">{o.order_code}</span> ·{' '}
                         <span className="font-bold text-primary">{o.buyer_name}</span> ({o.buyer_phone})
                       </div>
                       <span className="font-black text-sm">{formatMoney(o.total_amount, currency)}</span>
@@ -478,9 +478,9 @@ export default function StoreManagerModal({
               <div className="p-3.5 rounded-xl bg-card border border-theme space-y-2 pt-3">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-primary flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-cyan-400" /> Custom Domain
+                    <Globe className="w-3.5 h-3.5 text-accent" /> Custom Domain
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent/10 text-accent">
                     Pro Feature
                   </span>
                 </div>
@@ -500,7 +500,7 @@ export default function StoreManagerModal({
                 <div className="p-2.5 rounded-lg bg-primary/80 border border-theme text-[11px] text-secondary space-y-1">
                   <p className="font-semibold text-primary">DNS Setup Instructions:</p>
                   <p>In your domain registrar (GoDaddy, Namecheap, Whois, Whogohost):</p>
-                  <p className="font-mono text-cyan-400">Type: CNAME | Name: shop (or @) | Value: developa.me</p>
+                  <p className="font-mono text-accent">Type: CNAME | Name: shop (or @) | Value: developa.me</p>
                 </div>
               </div>
 

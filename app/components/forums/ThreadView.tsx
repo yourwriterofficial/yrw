@@ -79,7 +79,7 @@ export default function ThreadView({ slug, threadId }: { slug: string; threadId:
       <main className="max-w-3xl mx-auto px-4 sm:px-6 pt-10 pb-16 space-y-6 w-full flex-1">
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 text-xs text-secondary hover:text-cyan-400 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-secondary hover:text-accent transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to {forum?.name || `${slug}.developa.me`}
         </Link>
@@ -96,7 +96,7 @@ export default function ThreadView({ slug, threadId }: { slug: string; threadId:
             <article className="bg-card border border-theme rounded-2xl p-6 space-y-4">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-cyan-400">{slug}.developa.me</span>
+                  <span className="text-xs font-mono text-accent">{slug}.developa.me</span>
                   {thread.is_locked && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-semibold">
                       <Lock className="w-3 h-3" /> Locked
@@ -143,7 +143,7 @@ export default function ThreadView({ slug, threadId }: { slug: string; threadId:
                   value={replyBody}
                   onChange={(e) => setReplyBody(e.target.value)}
                   placeholder="Write your reply..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-primary border border-theme text-sm text-primary focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-primary border border-theme text-sm text-primary focus:outline-none focus:border-accent"
                 />
                 {replyError && <p className="text-xs text-danger">{replyError}</p>}
                 <div className="flex justify-end">
@@ -160,10 +160,10 @@ export default function ThreadView({ slug, threadId }: { slug: string; threadId:
       <footer className="w-full border-t border-theme py-6 text-center text-xs text-secondary bg-card/40">
         <span>Powered by </span>
         <a
-          href="https://create.developa.me"
+          href="https://developa.me"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-bold text-cyan-400 hover:underline"
+          className="font-bold text-accent hover:underline"
         >
           Developa
         </a>

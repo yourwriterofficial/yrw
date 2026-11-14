@@ -5,7 +5,7 @@ const SERVICES = [
   { href: '/#statistics', label: 'Statistics & fieldwork' },
   { href: '/#content', label: 'Content writing' },
   { href: '/#resume', label: 'CVs & resumes' },
-  { href: '/developer', label: 'Software (developa.me)' },
+  { href: '/create', label: 'Software (developa.me)' },
 ];
 
 export default function Footer() {

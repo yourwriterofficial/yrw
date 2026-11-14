@@ -1,5 +1,6 @@
 'use client';
 
+import { waNumber } from '@/lib/phone';
 import { useState, useMemo } from 'react';
 import {
   ShoppingCart, Plus, Minus, Trash2, Search,
@@ -25,8 +26,13 @@ export default function StorefrontView({
   const currency = site.currency || 'NGN';
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
+  const [sort, setSort] = useState<'featured' | 'price_asc' | 'price_desc' | 'newest'>('featured');
+  const [inStockOnly, setInStockOnly] = useState(false);
   const [cart, setCart] = useState<CartEntry[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
+  const [coupon, setCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [couponMsg, setCouponMsg] = useState('');
 
   // Checkout state
   const [buyerName, setBuyerName] = useState('');
@@ -50,19 +56,48 @@ export default function StorefrontView({
     return Array.from(set);
   }, [visibleProducts]);
 
+  const categoryCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of visibleProducts) m.set(p.category || 'General', (m.get(p.category || 'General') || 0) + 1);
+    return m;
+  }, [visibleProducts]);
+
   const filtered = useMemo(() => {
-    return visibleProducts.filter((p) => {
+    const q = search.trim().toLowerCase();
+    const list = visibleProducts.filter((p) => {
       if (category !== 'All' && (p.category || 'General') !== category) return false;
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        return p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q);
-      }
-      return true;
+      if (inStockOnly && p.stock_qty !== null && p.stock_qty <= 0) return false;
+      if (!q) return true;
+      return [p.title, p.description || '', p.category || ''].some((v) => v.toLowerCase().includes(q));
     });
-  }, [visibleProducts, category, search]);
+    if (sort === 'price_asc') return [...list].sort((a, b) => Number(a.price) - Number(b.price));
+    if (sort === 'price_desc') return [...list].sort((a, b) => Number(b.price) - Number(a.price));
+    if (sort === 'newest') return [...list].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+    return list;
+  }, [visibleProducts, category, search, sort, inStockOnly]);
+
+  const clearFilters = () => { setCategory('All'); setSearch(''); setSort('featured'); setInStockOnly(false); };
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const cartTotal = cart.reduce((sum, item) => sum + Number(item.product.price) * item.qty, 0);
+  // The discount shown here is a preview; the server recalculates it when the order is placed.
+  const discount = coupon ? Math.min(coupon.discount, cartTotal) : 0;
+  const payable = Math.max(0, cartTotal - discount);
+
+  const applyCoupon = async () => {
+    setCouponMsg('');
+    if (!couponInput.trim()) return;
+    try {
+      const res = await fetch(`/api/forums/${encodeURIComponent(site.slug)}/coupons/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponInput, subtotal: cartTotal }),
+      });
+      const data = await res.json();
+      if (data.valid) { setCoupon({ code: data.code, discount: data.discount }); setCouponMsg(''); }
+      else { setCoupon(null); setCouponMsg(data.message || 'That code is not valid.'); }
+    } catch { setCouponMsg('Could not check the code. Try again.'); }
+  };
 
   const addToCart = (product: SiteProduct) => {
     setPlacedOrder(null);
@@ -109,6 +144,7 @@ export default function StorefrontView({
           payment_reference: paymentRef,
           payment_proof_note: proofNote,
           items: cart.map((c) => ({ product_id: c.product.id, qty: c.qty })),
+          coupon_code: coupon?.code || '',
         }),
       });
       const data = await res.json();
@@ -118,6 +154,8 @@ export default function StorefrontView({
       }
       setPlacedOrder(data.order);
       setCart([]);
+      setCoupon(null);
+      setCouponInput('');
       setPaymentRef('');
       setProofNote('');
     } catch {
@@ -150,11 +188,11 @@ export default function StorefrontView({
               onClick={() => setCategory(cat)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
                 category === cat
-                  ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-400'
+                  ? 'bg-accent/15 border-accent/40 text-accent'
                   : 'border-theme bg-card text-secondary hover:text-primary'
               }`}
             >
-              {cat}
+              {cat}{cat !== 'All' && categoryCounts.get(cat) ? <span className="opacity-60"> {categoryCounts.get(cat)}</span> : null}
             </button>
           ))}
         </div>
@@ -167,9 +205,23 @@ export default function StorefrontView({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search products..."
-              className="w-full pl-8 pr-3 py-2 rounded-xl bg-card border border-theme text-xs text-primary focus:outline-none focus:border-cyan-500"
+              className="w-full pl-8 pr-3 py-2 rounded-xl bg-card border border-theme text-xs text-primary focus:outline-none focus:border-accent"
             />
           </div>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as typeof sort)}
+            aria-label="Sort products"
+            className="py-2 pl-3 pr-2 rounded-xl bg-card border border-theme text-xs text-primary focus:outline-none focus:border-accent"
+          >
+            <option value="featured">Featured</option>
+            <option value="newest">Newest</option>
+            <option value="price_asc">Price: low to high</option>
+            <option value="price_desc">Price: high to low</option>
+          </select>
+          <label className="hidden md:flex items-center gap-1.5 text-xs text-secondary whitespace-nowrap">
+            <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="w-3.5 h-3.5" /> In stock
+          </label>
           <Button
             variant="primary"
             onClick={() => setCartOpen(true)}
@@ -183,7 +235,14 @@ export default function StorefrontView({
       {/* Product Grid */}
       {filtered.length === 0 ? (
         <div className="bg-card border border-theme rounded-2xl p-10 text-center text-sm text-secondary">
-          No products found. {visibleProducts.length === 0 ? 'The store owner has not added products yet.' : ''}
+          {visibleProducts.length === 0 ? (
+            'The store owner has not added products yet.'
+          ) : (
+            <>
+              No products match your search.{' '}
+              <button type="button" onClick={clearFilters} className="text-accent font-medium hover:underline">Clear filters</button>
+            </>
+          )}
         </div>
       ) : (
         <div className={`grid gap-3.5 ${layoutStyle === 'temu' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
@@ -205,7 +264,7 @@ export default function StorefrontView({
           <div className="w-full max-w-md bg-primary border-l border-theme h-full overflow-y-auto p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-theme pb-3">
               <h3 className="font-black text-lg flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5 text-cyan-400" />
+                <ShoppingCart className="w-5 h-5 text-accent" />
                 {placedOrder ? 'Order Placed' : `Your Cart (${cartCount})`}
               </h3>
               <button
@@ -240,7 +299,7 @@ export default function StorefrontView({
 
                 {site.whatsapp_number && (
                   <a
-                    href={`https://wa.me/${site.whatsapp_number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                    href={`https://wa.me/${waNumber(site.whatsapp_number)}?text=${encodeURIComponent(
                       `Hi ${site.name}, I just placed order ${placedOrder.order_code} (${formatMoney(placedOrder.total_amount, currency)}).`
                     )}`}
                     target="_blank"
@@ -282,9 +341,24 @@ export default function StorefrontView({
                   ))}
                 </div>
 
+                <div className="pt-2 border-t border-theme space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      placeholder="Discount code"
+                      aria-label="Discount code"
+                      className="input-box flex-1 !py-2 text-sm font-mono"
+                    />
+                    <button type="button" onClick={applyCoupon} className="px-4 text-sm font-medium rounded-full border border-theme hover:bg-hover">Apply</button>
+                  </div>
+                  {couponMsg && <p className="text-xs text-danger">{couponMsg}</p>}
+                  {coupon && <p className="text-xs text-success">Code {coupon.code} applied: {formatMoney(discount, currency)} off</p>}
+                </div>
+
                 <div className="flex items-center justify-between font-black text-base pt-2 border-t border-theme">
                   <span>Total</span>
-                  <span>{formatMoney(cartTotal, currency)}</span>
+                  <span>{formatMoney(payable, currency)}</span>
                 </div>
 
                 <form onSubmit={handleCheckout} className="space-y-3 pt-2 border-t border-theme">
@@ -336,7 +410,7 @@ export default function StorefrontView({
                       type="button"
                       onClick={() => setPaymentMethod('manual_transfer')}
                       className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 ${
-                        paymentMethod === 'manual_transfer' ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400' : 'border-theme bg-card text-secondary'
+                        paymentMethod === 'manual_transfer' ? 'border-accent bg-accent/10 text-accent' : 'border-theme bg-card text-secondary'
                       }`}
                     >
                       <Landmark className="w-3.5 h-3.5" /> Bank Transfer
@@ -345,7 +419,7 @@ export default function StorefrontView({
                       type="button"
                       onClick={() => setPaymentMethod('pay_on_delivery')}
                       className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 ${
-                        paymentMethod === 'pay_on_delivery' ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400' : 'border-theme bg-card text-secondary'
+                        paymentMethod === 'pay_on_delivery' ? 'border-accent bg-accent/10 text-accent' : 'border-theme bg-card text-secondary'
                       }`}
                     >
                       <Truck className="w-3.5 h-3.5" /> Pay on Delivery
@@ -358,7 +432,7 @@ export default function StorefrontView({
                         <>
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-primary">{site.bank_name}</span>
-                            <button type="button" onClick={handleCopyAccount} className="text-cyan-400 flex items-center gap-1 font-mono">
+                            <button type="button" onClick={handleCopyAccount} className="text-accent flex items-center gap-1 font-mono">
                               {copiedAcct ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                               {site.bank_account_number}
                             </button>
@@ -388,7 +462,7 @@ export default function StorefrontView({
 
                   {checkoutError && <p className="text-xs text-danger">{checkoutError}</p>}
                   <Button type="submit" variant="primary" disabled={submitting}>
-                    {submitting ? 'Placing Order...' : `Place Order (${formatMoney(cartTotal, currency)})`}
+                    {submitting ? 'Placing Order...' : `Place Order (${formatMoney(payable, currency)})`}
                   </Button>
                 </form>
               </>

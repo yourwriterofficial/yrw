@@ -13,6 +13,26 @@ import {
   extractDevelopaSubdomain, type ForumSummary, type ForumThread, type SiteProduct,
 } from '@/lib/forums';
 
+interface PlatformAd { id: string; title: string; body: string; link_url: string; image_url: string; placement: 'banner' | 'footer' }
+
+function AdStrip({ ad }: { ad: PlatformAd }) {
+  const inner = (
+    <span className="flex items-center justify-center gap-3 text-sm">
+      {ad.image_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={ad.image_url} alt="" className="w-8 h-8 rounded-lg object-cover" />
+      )}
+      <span><strong className="font-medium">{ad.title}</strong>{ad.body ? <span className="text-secondary"> · {ad.body}</span> : null}</span>
+      <span className="text-[11px] text-secondary border border-theme rounded px-1.5 py-0.5">Ad</span>
+    </span>
+  );
+  return ad.link_url ? (
+    <a href={ad.link_url} target="_blank" rel="noopener noreferrer sponsored" className="block px-4 py-2.5 bg-card hover:bg-hover transition-colors border-b border-theme">{inner}</a>
+  ) : (
+    <div className="px-4 py-2.5 bg-card border-b border-theme">{inner}</div>
+  );
+}
+
 export default function ForumView({ slug }: { slug: string }) {
   const [forum, setForum] = useState<ForumSummary | null>(null);
   const [threads, setThreads] = useState<ForumThread[]>([]);
@@ -30,6 +50,7 @@ export default function ForumView({ slug }: { slug: string }) {
   const [postError, setPostError] = useState('');
   const [joining, setJoining] = useState(false);
   const [isSubdomain, setIsSubdomain] = useState(false);
+  const [ads, setAds] = useState<PlatformAd[]>([]);
 
   const loadForum = useCallback(async () => {
     try {
@@ -43,6 +64,7 @@ export default function ForumView({ slug }: { slug: string }) {
       setForum(data.forum);
       setThreads(data.threads || []);
       setProducts(data.products || []);
+      setAds(data.ads || []);
       setIsMember(!!data.isMember);
       setIsOwner(!!data.isOwner);
       setActiveTab(data.forum?.site_mode === 'forum' ? 'forum' : 'store');
@@ -115,11 +137,19 @@ export default function ForumView({ slug }: { slug: string }) {
 
   return (
     <div className="min-h-screen bg-primary text-primary flex flex-col justify-between">
+      {(forum as unknown as { announcement_active?: boolean; announcement?: string })?.announcement_active &&
+        (forum as unknown as { announcement?: string })?.announcement && (
+          <div className="px-4 py-2.5 text-center text-sm font-medium text-white" style={{ background: forum?.accent_color || 'var(--accent)' }}>
+            {(forum as unknown as { announcement?: string }).announcement}
+          </div>
+        )}
+      {ads.filter((a) => a.placement === 'banner').slice(0, 1).map((a) => <AdStrip key={a.id} ad={a} />)}
+
       {/* Store Owner Toolbar */}
       {isOwner && (
-        <div className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-cyan-500/30 px-4 sm:px-6 py-2.5 flex items-center justify-between text-xs">
+        <div className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-accent/30 px-4 sm:px-6 py-2.5 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
             <span className="font-bold text-primary">Store Owner Mode</span>
             <span className="hidden sm:inline text-secondary">· You are viewing your live site</span>
           </div>
@@ -127,7 +157,7 @@ export default function ForumView({ slug }: { slug: string }) {
             <button
               type="button"
               onClick={() => setManagerOpen(true)}
-              className="px-3 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+              className="px-3 py-1 rounded-lg bg-accent hover:bg-accent text-black font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
             >
               <Settings className="w-3.5 h-3.5" /> Manage Store & Products
             </button>
@@ -145,7 +175,7 @@ export default function ForumView({ slug }: { slug: string }) {
           <div className="bg-card border border-theme rounded-2xl p-8 text-center space-y-3">
             <h1 className="text-xl font-bold">{error || 'Site not found'}</h1>
             <p className="text-sm text-secondary">
-              Want to claim <span className="font-mono text-cyan-400">{slug}.developa.me</span>?
+              Want to claim <span className="font-mono text-accent">{slug}.developa.me</span>?
             </p>
             <Button href={directoryHref} variant="primary">
               Launch Store or Forum
@@ -168,7 +198,7 @@ export default function ForumView({ slug }: { slug: string }) {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs font-mono text-cyan-400">{forum.slug}.developa.me</p>
+                  <p className="text-xs font-mono text-accent">{forum.slug}.developa.me</p>
                   {forum.description && (
                     <p className="text-sm text-secondary pt-1">{forum.description}</p>
                   )}
@@ -179,7 +209,7 @@ export default function ForumView({ slug }: { slug: string }) {
                     <Button
                       variant="secondary"
                       onClick={() => setManagerOpen(true)}
-                      icon={<Settings className="w-4 h-4 text-cyan-400" />}
+                      icon={<Settings className="w-4 h-4 text-accent" />}
                     >
                       Manage Site
                     </Button>
@@ -229,7 +259,7 @@ export default function ForumView({ slug }: { slug: string }) {
                       type="button"
                       onClick={() => setActiveTab('store')}
                       className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition ${
-                        activeTab === 'store' ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30' : 'text-secondary hover:text-primary'
+                        activeTab === 'store' ? 'bg-accent/15 text-accent border border-accent/30' : 'text-secondary hover:text-primary'
                       }`}
                     >
                       <ShoppingBag className="w-3.5 h-3.5" /> Storefront
@@ -238,7 +268,7 @@ export default function ForumView({ slug }: { slug: string }) {
                       type="button"
                       onClick={() => setActiveTab('forum')}
                       className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition ${
-                        activeTab === 'forum' ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30' : 'text-secondary hover:text-primary'
+                        activeTab === 'forum' ? 'bg-accent/15 text-accent border border-accent/30' : 'text-secondary hover:text-primary'
                       }`}
                     >
                       <MessageSquare className="w-3.5 h-3.5" /> Community
@@ -253,7 +283,7 @@ export default function ForumView({ slug }: { slug: string }) {
             {showForum && (
               <>
                 {showComposer && (
-                  <form onSubmit={handleCreateThread} className="bg-card border border-cyan-500/30 rounded-2xl p-6 space-y-4">
+                  <form onSubmit={handleCreateThread} className="bg-card border border-accent/30 rounded-2xl p-6 space-y-4">
                     <h2 className="font-bold text-base">Start a Discussion</h2>
                     <input
                       type="text"
@@ -262,7 +292,7 @@ export default function ForumView({ slug }: { slug: string }) {
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="Thread title"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-primary border border-theme text-sm text-primary focus:outline-none focus:border-cyan-500"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-primary border border-theme text-sm text-primary focus:outline-none focus:border-accent"
                     />
                     <textarea
                       required
@@ -271,7 +301,7 @@ export default function ForumView({ slug }: { slug: string }) {
                       value={body}
                       onChange={(e) => setBody(e.target.value)}
                       placeholder="Write your post..."
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-primary border border-theme text-sm text-primary focus:outline-none focus:border-cyan-500"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-primary border border-theme text-sm text-primary focus:outline-none focus:border-accent"
                     />
                     {postError && <p className="text-xs text-danger">{postError}</p>}
                     <div className="flex justify-end gap-2">
@@ -295,11 +325,11 @@ export default function ForumView({ slug }: { slug: string }) {
                       <Link
                         key={t.id}
                         href={threadHref(t.id)}
-                        className="block bg-card border border-theme hover:border-cyan-500/40 rounded-2xl p-5 transition space-y-2"
+                        className="block bg-card border border-theme hover:border-accent/40 rounded-2xl p-5 transition space-y-2"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <h3 className="font-bold text-primary text-base flex items-center gap-2">
-                            {t.is_pinned && <Pin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />}
+                            {t.is_pinned && <Pin className="w-3.5 h-3.5 text-accent shrink-0" />}
                             {t.is_locked && <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
                             <span>{t.title}</span>
                           </h3>
@@ -332,15 +362,17 @@ export default function ForumView({ slug }: { slug: string }) {
         )}
       </main>
 
-      {/* Powered by Developa Footer */}
-      {!forum?.hide_branding && (
+      {ads.filter((a) => a.placement === 'footer').slice(0, 1).map((a) => <AdStrip key={a.id} ad={a} />)}
+
+      {/* Powered by Developa Footer. Hiding it is a paid feature, so it is enforced here too. */}
+      {!(forum?.hide_branding && (forum as unknown as { plan_effective?: string })?.plan_effective !== 'free') && (
         <footer className="w-full border-t border-theme py-6 text-center text-xs text-secondary bg-card/40">
           <span>Powered by </span>
           <a
-            href="https://create.developa.me"
+            href="https://developa.me"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-bold text-cyan-400 hover:underline"
+            className="font-bold text-accent hover:underline"
           >
             Developa
           </a>

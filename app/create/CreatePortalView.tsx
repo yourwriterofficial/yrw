@@ -108,18 +108,18 @@ export default function CreatePortalView() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-white flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+    <div className="min-h-screen bg-[#07090e] text-white flex flex-col justify-between selection:bg-accent selection:text-black">
       {/* Header */}
       <header className="border-b border-white/10 bg-[#0c1017]/80 backdrop-blur sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-mono font-bold text-xs">
-              <Terminal className="w-4 h-4 text-cyan-400" />
+            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/30 flex items-center justify-center text-accent font-mono font-bold text-xs">
+              <Terminal className="w-4 h-4 text-accent" />
             </div>
             <div className="flex flex-col">
               <div className="flex items-baseline gap-0.5 leading-none">
                 <span className="font-black text-lg tracking-tight text-white">developa</span>
-                <span className="text-cyan-400 font-bold text-sm">.me</span>
+                <span className="text-accent font-bold text-sm">.me</span>
               </div>
               <span className="text-[9px] font-mono text-white/50 tracking-wider">
                 Store & Community Builder
@@ -139,7 +139,7 @@ export default function CreatePortalView() {
                 </button>
               </div>
             ) : (
-              <span className="text-xs text-cyan-400 font-mono">create.developa.me</span>
+              <span className="text-xs text-accent font-mono">developa.me</span>
             )}
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function CreatePortalView() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-12 space-y-12 w-full flex-1">
         {/* Hero Section */}
         <div className="text-center space-y-4 max-w-2xl mx-auto">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-mono font-semibold">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/30 text-accent text-xs font-mono font-semibold">
             <Layers className="w-3.5 h-3.5" /> Zero-Code Mini SaaS Platform
           </span>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
@@ -169,7 +169,7 @@ export default function CreatePortalView() {
                   type="button"
                   onClick={() => setAuthMode('signin')}
                   className={`pb-1 transition border-b-2 ${
-                    authMode === 'signin' ? 'border-cyan-400 text-cyan-400' : 'border-transparent text-white/50'
+                    authMode === 'signin' ? 'border-accent text-accent' : 'border-transparent text-white/50'
                   }`}
                 >
                   Sign in
@@ -178,13 +178,13 @@ export default function CreatePortalView() {
                   type="button"
                   onClick={() => setAuthMode('signup')}
                   className={`pb-1 transition border-b-2 ${
-                    authMode === 'signup' ? 'border-cyan-400 text-cyan-400' : 'border-transparent text-white/50'
+                    authMode === 'signup' ? 'border-accent text-accent' : 'border-transparent text-white/50'
                   }`}
                 >
                   Create Account
                 </button>
               </div>
-              <span className="text-[10px] font-mono text-cyan-400">Direct Access</span>
+              <span className="text-[10px] font-mono text-accent">Direct Access</span>
             </div>
 
             <form onSubmit={handleAuth} className="space-y-3.5 text-xs">
@@ -196,7 +196,7 @@ export default function CreatePortalView() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-accent"
                 />
               </div>
               <div>
@@ -208,7 +208,7 @@ export default function CreatePortalView() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-accent"
                 />
               </div>
 
@@ -217,7 +217,7 @@ export default function CreatePortalView() {
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-sm transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-accent hover:bg-accent text-black font-bold text-sm transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {authLoading ? 'Authenticating...' : authMode === 'signup' ? 'Create Account & Continue' : 'Sign in to Builder'}
               </button>
@@ -230,7 +230,7 @@ export default function CreatePortalView() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-cyan-400" /> My Live Stores & Communities ({mySites.length})
+                <ShoppingBag className="w-4 h-4 text-accent" /> My Live Stores & Communities ({mySites.length})
               </h2>
             </div>
 
@@ -242,13 +242,13 @@ export default function CreatePortalView() {
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <h3 className="font-bold text-base text-white">{site.name}</h3>
-                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-white/5 text-cyan-400">
+                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-white/5 text-accent">
                           {site.site_mode}
                         </span>
                       </div>
-                      <p className="text-xs font-mono text-cyan-400">{site.slug}.developa.me</p>
+                      <p className="text-xs font-mono text-accent">{site.slug}.developa.me</p>
                       {site.custom_domain && (
-                        <p className="text-xs font-mono text-emerald-400 flex items-center gap-1">
+                        <p className="text-xs font-mono text-accent flex items-center gap-1">
                           <Globe className="w-3 h-3" /> {site.custom_domain}
                         </p>
                       )}
@@ -256,14 +256,22 @@ export default function CreatePortalView() {
 
                     <div className="flex items-center justify-between pt-3 border-t border-white/10">
                       <span className="text-xs text-white/50">{site.member_count} members</span>
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
-                      >
-                        Visit Store <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                      <div className="flex items-center gap-4">
+                        <a
+                          href={`/developer/manage?site=${site.slug}`}
+                          className="text-xs font-bold text-white bg-accent hover:bg-accent-hover px-3 py-1.5 rounded-full"
+                        >
+                          Manage
+                        </a>
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-bold text-accent hover:text-accent flex items-center gap-1"
+                        >
+                          Visit <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
                     </div>
                   </div>
                 );
@@ -275,7 +283,7 @@ export default function CreatePortalView() {
         {/* Builder Form (Available for all, signs in upon submission if needed) */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 border-b border-white/10 pb-2">
-            <Plus className="w-5 h-5 text-cyan-400" />
+            <Plus className="w-5 h-5 text-accent" />
             <h2 className="text-xl font-black">Launch a New Storefront</h2>
           </div>
           <CreateForumForm onCreated={() => { if (user) loadMySites(); }} />
@@ -295,14 +303,14 @@ export default function CreatePortalView() {
                 <p className="text-2xl font-black">₦0 <span className="text-xs text-white/50 font-normal">/ month</span></p>
               </div>
               <ul className="text-xs space-y-2 text-white/70">
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-cyan-400" /> Free [name].developa.me subdomain</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-cyan-400" /> Jumia, Temu, and Retail layouts</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-cyan-400" /> Manual Bank Transfer & Pay on Delivery</li>
-                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-cyan-400" /> Up to 5 product listings</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-accent" /> Free [name].developa.me subdomain</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-accent" /> Jumia, Temu, and Retail layouts</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-accent" /> Manual Bank Transfer & Pay on Delivery</li>
+                <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-accent" /> Up to 5 product listings</li>
               </ul>
             </div>
 
-            <div className="bg-gradient-to-br from-cyan-950/40 via-[#0d121c] to-amber-950/30 border border-amber-500/40 rounded-2xl p-6 space-y-4 relative overflow-hidden">
+            <div className="bg-gradient-to-br from-accent/40 via-[#0d121c] to-amber-950/30 border border-amber-500/40 rounded-2xl p-6 space-y-4 relative overflow-hidden">
               <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40">
                 Popular
               </span>
@@ -332,7 +340,7 @@ export default function CreatePortalView() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-6 text-center text-xs text-white/50 bg-[#07090e]">
-        Powered by <strong className="text-cyan-400">developa.me</strong> · The Zero-Code Store & Community Engine
+        Powered by <strong className="text-accent">developa.me</strong> · The Zero-Code Store & Community Engine
       </footer>
     </div>
   );

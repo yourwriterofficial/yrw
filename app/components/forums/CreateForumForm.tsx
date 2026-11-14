@@ -101,12 +101,12 @@ export default function CreateForumForm({ onCreated }: Props) {
     <form onSubmit={handleSubmit} className="bg-card border border-theme rounded-2xl p-6 space-y-5">
       <div>
         <h2 className="text-lg font-bold text-primary flex items-center gap-2">
-          <Plus className="w-4 h-4 text-cyan-400" />
+          <Plus className="w-4 h-4 text-accent" />
           Launch Your Store or Forum on developa.me
         </h2>
         <p className="text-xs text-secondary mt-0.5">
           Pick a ready-made template — zero coding required. Your site goes live at{' '}
-          <span className="font-mono text-cyan-400">[name].developa.me</span>.
+          <span className="font-mono text-accent">[name].developa.me</span>.
         </p>
       </div>
 
@@ -123,8 +123,8 @@ export default function CreateForumForm({ onCreated }: Props) {
                 onClick={() => handleSelectTemplate(tpl.id)}
                 className={`text-left p-3.5 rounded-xl border transition space-y-1.5 ${
                   active
-                    ? 'border-cyan-500 bg-cyan-500/10'
-                    : 'border-theme bg-primary/60 hover:border-cyan-500/40'
+                    ? 'border-accent bg-accent/10'
+                    : 'border-theme bg-primary/60 hover:border-accent/40'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -135,7 +135,7 @@ export default function CreateForumForm({ onCreated }: Props) {
                     ) : tpl.site_mode === 'both' ? (
                       <><Sparkles className="w-2.5 h-2.5 text-amber-400" /> Both</>
                     ) : (
-                      <><MessageSquare className="w-2.5 h-2.5 text-cyan-400" /> Forum</>
+                      <><MessageSquare className="w-2.5 h-2.5 text-accent" /> Forum</>
                     )}
                   </span>
                 </div>
@@ -158,13 +158,13 @@ export default function CreateForumForm({ onCreated }: Props) {
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
             placeholder={hasStore ? 'e.g. Kolawole Apparel' : 'e.g. Naija SaaS Builders'}
-            className="w-full px-3.5 py-2.5 rounded-xl bg-primary border border-theme text-sm text-primary focus:outline-none focus:border-cyan-500"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-primary border border-theme text-sm text-primary focus:outline-none focus:border-accent"
           />
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-secondary mb-1.5">Subdomain Address</label>
-          <div className="flex items-center rounded-xl bg-primary border border-theme focus-within:border-cyan-500 overflow-hidden">
+          <div className="flex items-center rounded-xl bg-primary border border-theme focus-within:border-accent overflow-hidden">
             <input
               type="text"
               required
@@ -174,7 +174,7 @@ export default function CreateForumForm({ onCreated }: Props) {
               placeholder="my-store"
               className="flex-1 px-3.5 py-2.5 bg-transparent text-sm font-mono text-primary focus:outline-none min-w-0"
             />
-            <span className="px-3 py-2.5 text-xs font-mono text-cyan-400 bg-secondary/40 border-l border-theme shrink-0">
+            <span className="px-3 py-2.5 text-xs font-mono text-accent bg-secondary/40 border-l border-theme shrink-0">
               .developa.me
             </span>
           </div>
@@ -190,7 +190,7 @@ export default function CreateForumForm({ onCreated }: Props) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder={hasStore ? 'What do you sell?' : 'What is this community about?'}
-          className="w-full px-3.5 py-2.5 rounded-xl bg-primary border border-theme text-sm text-primary focus:outline-none focus:border-cyan-500 resize-none"
+          className="w-full px-3.5 py-2.5 rounded-xl bg-primary border border-theme text-sm text-primary focus:outline-none focus:border-accent resize-none"
         />
       </div>
 
@@ -214,28 +214,28 @@ export default function CreateForumForm({ onCreated }: Props) {
               value={bankName}
               onChange={(e) => setBankName(e.target.value)}
               placeholder="Bank Name (e.g. GTBank)"
-              className="px-3 py-2 rounded-lg bg-card border border-theme text-xs text-primary focus:outline-none focus:border-cyan-500"
+              className="px-3 py-2 rounded-lg bg-card border border-theme text-xs text-primary focus:outline-none focus:border-accent"
             />
             <input
               type="text"
               value={bankAccountNumber}
               onChange={(e) => setBankAccountNumber(e.target.value)}
               placeholder="Account Number"
-              className="px-3 py-2 rounded-lg bg-card border border-theme text-xs font-mono text-primary focus:outline-none focus:border-cyan-500"
+              className="px-3 py-2 rounded-lg bg-card border border-theme text-xs font-mono text-primary focus:outline-none focus:border-accent"
             />
             <input
               type="text"
               value={bankAccountName}
               onChange={(e) => setBankAccountName(e.target.value)}
               placeholder="Account Name"
-              className="px-3 py-2 rounded-lg bg-card border border-theme text-xs text-primary focus:outline-none focus:border-cyan-500"
+              className="px-3 py-2 rounded-lg bg-card border border-theme text-xs text-primary focus:outline-none focus:border-accent"
             />
             <input
               type="text"
               value={whatsappNumber}
               onChange={(e) => setWhatsappNumber(e.target.value)}
               placeholder="WhatsApp (e.g. 23480...)"
-              className="px-3 py-2 rounded-lg bg-card border border-theme text-xs text-primary focus:outline-none focus:border-cyan-500"
+              className="px-3 py-2 rounded-lg bg-card border border-theme text-xs text-primary focus:outline-none focus:border-accent"
             />
           </div>
         </div>
@@ -247,7 +247,7 @@ export default function CreateForumForm({ onCreated }: Props) {
             type="button"
             onClick={() => setIsPublic(true)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition ${
-              isPublic ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-400' : 'border-theme text-secondary'
+              isPublic ? 'bg-accent/15 border-accent/40 text-accent' : 'border-theme text-secondary'
             }`}
           >
             <Globe className="w-3.5 h-3.5" /> Public

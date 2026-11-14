@@ -1,11 +1,12 @@
+import { planFor, effectiveTier, PLANS } from '@/lib/plans';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { resolveAuthorNames, supabaseAdmin } from '@/lib/forumServer';
+import { resolveAuthorNames, supabaseAdmin, readExtendedSite, readSeo } from '@/lib/forumServer';
 
 const SITE_SELECT =
-  'id, slug, name, description, owner_id, is_public, accent_color, member_count, thread_count, created_at, site_mode, template_id, hero_headline, hero_subheadline, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions';
+  'id, slug, name, description, owner_id, is_public, accent_color, member_count, thread_count, created_at, site_mode, template_id, hero_headline, hero_subheadline, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions, plan_tier, custom_domain, custom_domain_verified, hide_branding, logo_url';
 
 const updateForumSchema = z.object({
   name: z.string().trim().min(2).max(80).optional(),
@@ -13,7 +14,12 @@ const updateForumSchema = z.object({
   is_public: z.boolean().optional(),
   site_mode: z.enum(['forum', 'store', 'both']).optional(),
   template_id: z.string().trim().max(50).optional(),
-  custom_domain: z.union([z.string().trim().max(120), z.null()]).optional(),
+  announcement: z.string().trim().max(200).optional(),
+  seo_title: z.string().trim().max(70).optional(),
+  seo_description: z.string().trim().max(170).optional(),
+  announcement_active: z.boolean().optional(),
+  accent_color: z.string().trim().max(9).optional(),
+  logo_url: z.string().trim().max(500).optional(),
   hide_branding: z.boolean().optional(),
   hero_headline: z.string().trim().max(160).optional(),
   hero_subheadline: z.string().trim().max(300).optional(),
@@ -79,7 +85,13 @@ export async function GET(
         : (() => {
             let pq = supabaseAdmin
               .from('site_products')
-              .select('id, site_id, title, description, category, product_type, price, compare_at_price, image_url, digital_url, stock_qty, is_active, sort_order, created_at')
+              // digital_url is the paid download. Only the owner gets it here; buyers get it from
+              // their paid order (see the orders endpoint).
+              .select(
+                isOwner
+                  ? 'id, site_id, title, description, category, product_type, price, compare_at_price, image_url, digital_url, stock_qty, is_active, sort_order, created_at'
+                  : 'id, site_id, title, description, category, product_type, price, compare_at_price, image_url, stock_qty, is_active, sort_order, created_at'
+              )
               .eq('site_id', forum.id)
               .order('sort_order', { ascending: true })
               .order('created_at', { ascending: false });
@@ -98,8 +110,31 @@ export async function GET(
       author_name: names.get(t.author_id) || 'Member',
     }));
 
+    // New-migration data, read tolerantly so stores keep working before it is applied.
+    const ext = await readExtendedSite(forum.id);
+    const seo = await readSeo(forum.id);
+    const tier = effectiveTier((forum as Record<string, unknown>).plan_tier as string, ext?.plan_expires_at);
+    let ads: unknown[] = [];
+    if (!PLANS[tier].hidesPlatformAds) {
+      const nowIso = new Date().toISOString();
+      const { data: adRows } = await supabaseAdmin
+        .from('platform_site_ads')
+        .select('id, title, body, link_url, image_url, placement, target_site_id, starts_at, ends_at')
+        .eq('is_active', true)
+        .or(`target_site_id.is.null,target_site_id.eq.${forum.id}`);
+      ads = (adRows || []).filter((a) =>
+        (!a.starts_at || a.starts_at <= nowIso) && (!a.ends_at || a.ends_at >= nowIso)
+      );
+    }
+
     const enrichedForum = forum ? {
       ...forum,
+      seo_title: seo.seo_title,
+      seo_description: seo.seo_description,
+      announcement: ext?.announcement ?? '',
+      announcement_active: ext?.announcement_active ?? false,
+      plan_expires_at: ext?.plan_expires_at ?? null,
+      plan_effective: tier,
       custom_domain: (forum as Record<string, unknown>).custom_domain ?? null,
       custom_domain_verified: (forum as Record<string, unknown>).custom_domain_verified ?? false,
       plan_tier: (forum as Record<string, unknown>).plan_tier ?? 'free',
@@ -111,6 +146,7 @@ export async function GET(
       forum: enrichedForum,
       threads: enrichedThreads,
       products: productsRes.data || [],
+      ads,
       isMember,
       isOwner,
     });
@@ -134,7 +170,7 @@ export async function PATCH(
 
     const { data: forum } = await supabaseAdmin
       .from('forums')
-      .select('id, owner_id')
+      .select('id, owner_id, plan_tier')
       .eq('slug', slug.toLowerCase().trim())
       .maybeSingle();
 
@@ -144,8 +180,9 @@ export async function PATCH(
     if (forum.owner_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+    const extra = await readExtendedSite(forum.id);
 
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
     const parsed = updateForumSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid input' }, { status: 400 });
@@ -171,10 +208,30 @@ export async function PATCH(
     if (parsed.data.is_public !== undefined) updates.is_public = parsed.data.is_public;
     if (parsed.data.site_mode !== undefined) updates.site_mode = parsed.data.site_mode;
     if (parsed.data.template_id !== undefined) updates.template_id = parsed.data.template_id;
-    if (parsed.data.custom_domain !== undefined) {
-      updates.custom_domain = parsed.data.custom_domain ? parsed.data.custom_domain.toLowerCase().trim() : null;
+    // Custom domains are managed through /domain (they must be DNS-verified), not here.
+    if (parsed.data.hide_branding !== undefined) {
+      const plan = planFor(forum.plan_tier, (extra as { plan_expires_at?: string | null } | null)?.plan_expires_at);
+      if (parsed.data.hide_branding && !plan.hideBranding) {
+        return NextResponse.json({ error: 'Removing the "Powered by Developa" badge needs the Pro plan.' }, { status: 403 });
+      }
+      updates.hide_branding = parsed.data.hide_branding;
     }
-    if (parsed.data.hide_branding !== undefined) updates.hide_branding = parsed.data.hide_branding;
+    if (parsed.data.accent_color !== undefined && /^#[0-9a-fA-F]{6}$/.test(parsed.data.accent_color)) updates.accent_color = parsed.data.accent_color;
+    if (parsed.data.logo_url !== undefined) updates.logo_url = /^https:\/\//.test(parsed.data.logo_url) || parsed.data.logo_url === '' ? parsed.data.logo_url : undefined;
+    if (parsed.data.seo_title !== undefined || parsed.data.seo_description !== undefined) {
+      const seo: Record<string, string> = {};
+      if (parsed.data.seo_title !== undefined) seo.seo_title = xss(parsed.data.seo_title);
+      if (parsed.data.seo_description !== undefined) seo.seo_description = xss(parsed.data.seo_description);
+      const { error: seoErr } = await supabaseAdmin.from('forums').update(seo).eq('id', forum.id);
+      if (seoErr) return NextResponse.json({ error: 'Search appearance needs the latest database update first.' }, { status: 503 });
+    }
+    if (parsed.data.announcement !== undefined || parsed.data.announcement_active !== undefined) {
+      const ann: Record<string, unknown> = {};
+      if (parsed.data.announcement !== undefined) ann.announcement = xss(parsed.data.announcement);
+      if (parsed.data.announcement_active !== undefined) ann.announcement_active = parsed.data.announcement_active;
+      const { error: annErr } = await supabaseAdmin.from('forums').update(ann).eq('id', forum.id);
+      if (annErr) return NextResponse.json({ error: 'The announcement bar needs the latest database update first.' }, { status: 503 });
+    }
     if (parsed.data.currency !== undefined) updates.currency = parsed.data.currency;
 
     const { data: updated, error } = await supabaseAdmin

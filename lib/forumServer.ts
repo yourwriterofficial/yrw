@@ -27,3 +27,115 @@ export async function resolveAuthorNames(userIds: string[]): Promise<Map<string,
   }
   return map;
 }
+
+/**
+ * Columns added by migration 20261114010000. Reading them is tolerant: until that migration
+ * is applied the query errors, and we simply get no extra data instead of breaking the page.
+ */
+export async function readExtendedSite(siteId: string) {
+  const { data } = await supabaseAdmin
+    .from('forums')
+    .select('plan_expires_at, domain_verify_token, domain_checked_at, announcement, announcement_active')
+    .eq('id', siteId)
+    .maybeSingle();
+  return (data as {
+    plan_expires_at: string | null;
+    domain_verify_token: string | null;
+    domain_checked_at: string | null;
+    announcement: string;
+    announcement_active: boolean;
+  } | null) ?? null;
+}
+
+/** Resolves the signed-in user and the site they own, or the error response to return. */
+export async function requireOwnedSite(slug: string) {
+  const { createClient: createServerClient } = await import('@/lib/supabase/server');
+  const { NextResponse } = await import('next/server');
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: NextResponse.json({ error: 'Please sign in.' }, { status: 401 }) } as const;
+  const { data: site } = await supabaseAdmin
+    .from('forums')
+    .select('id, slug, owner_id, name, plan_tier, custom_domain, custom_domain_verified, hide_branding')
+    .eq('slug', slug.toLowerCase().trim())
+    .maybeSingle();
+  if (!site) return { error: NextResponse.json({ error: 'Site not found' }, { status: 404 }) } as const;
+  if (site.owner_id !== user.id) return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) } as const;
+  const ext = await readExtendedSite(site.id);
+  return { user, site: { ...site, ...(ext || {}) } } as const;
+}
+
+/** True when the signed-in user is a platform admin (the founder side). */
+export async function isPlatformAdmin(): Promise<boolean> {
+  const { createClient: createServerClient } = await import('@/lib/supabase/server');
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data: profile } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).single();
+  return profile?.is_admin === true;
+}
+
+/** Download links for the digital items in an order. Only call this once the order is paid. */
+export async function downloadsForOrder(
+  siteId: string,
+  items: { product_id?: string | number }[] | null | undefined
+): Promise<{ title: string; url: string }[]> {
+  const ids = (items || []).map((i) => i.product_id).filter(Boolean) as (string | number)[];
+  if (ids.length === 0) return [];
+  const { data } = await supabaseAdmin
+    .from('site_products')
+    .select('id, title, product_type, digital_url')
+    .eq('site_id', siteId)
+    .in('id', ids);
+  return (data || [])
+    .filter((p) => p.product_type === 'digital' && p.digital_url)
+    .map((p) => ({ title: p.title as string, url: p.digital_url as string }));
+}
+
+/** Search-appearance columns from migration 20261114020000. Tolerant: returns blanks until it is applied. */
+export async function readSeo(siteId: string): Promise<{ seo_title: string; seo_description: string }> {
+  const { data } = await supabaseAdmin.from('forums').select('seo_title, seo_description').eq('id', siteId).maybeSingle();
+  return { seo_title: (data?.seo_title as string) || '', seo_description: (data?.seo_description as string) || '' };
+}
+
+/**
+ * Changes a product's stock by `delta` (negative to take stock, positive to give it back).
+ * Products with unlimited stock (null) are left alone. The update only applies if the stock is
+ * still what we just read, so two buyers can never both take the last item; it retries a few times.
+ */
+export async function adjustStock(siteId: string, productId: string | number, delta: number): Promise<boolean> {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const { data: row } = await supabaseAdmin.from('site_products').select('stock_qty').eq('id', productId).eq('site_id', siteId).maybeSingle();
+    if (!row) return false;
+    if (row.stock_qty === null) return true;
+    const next = Number(row.stock_qty) + delta;
+    if (next < 0) return false;
+    const { data: updated } = await supabaseAdmin
+      .from('site_products')
+      .update({ stock_qty: next })
+      .eq('id', productId)
+      .eq('site_id', siteId)
+      .eq('stock_qty', row.stock_qty)
+      .select('id');
+    if (updated && updated.length > 0) return true;
+  }
+  return false;
+}
+
+/** Takes stock for every item, or none: if one item is gone, whatever was already taken is put back. */
+export async function reserveStock(siteId: string, items: { product_id: string | number; qty: number; title?: string }[]) {
+  const taken: { product_id: string | number; qty: number }[] = [];
+  for (const it of items) {
+    const ok = await adjustStock(siteId, it.product_id, -it.qty);
+    if (!ok) {
+      for (const t of taken) await adjustStock(siteId, t.product_id, t.qty);
+      return { ok: false as const, title: it.title };
+    }
+    taken.push({ product_id: it.product_id, qty: it.qty });
+  }
+  return { ok: true as const };
+}
+
+export async function releaseStock(siteId: string, items: { product_id: string | number; qty: number }[]) {
+  for (const it of items) await adjustStock(siteId, it.product_id, it.qty);
+}

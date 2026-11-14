@@ -151,7 +151,7 @@ export default function LandingPage() {
               {service.slug === 'dev' && (
                 <div className="flex flex-wrap gap-3 mt-6">
                   <Link href="/developer/shop" className={pillTonal} style={{ background: tonalStrong }}>Browse scripts</Link>
-                  <Link href="/developer" className="inline-flex items-center gap-1 h-11 px-3 text-sm font-medium text-accent">More on software <ArrowRight className="w-4 h-4" /></Link>
+                  <Link href="/create" className="inline-flex items-center gap-1 h-11 px-3 text-sm font-medium text-accent">More on software <ArrowRight className="w-4 h-4" /></Link>
                 </div>
               )}
             </div>

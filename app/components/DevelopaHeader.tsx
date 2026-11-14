@@ -101,11 +101,19 @@ export default function DevelopaHeader() {
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-7 text-[13px] font-medium text-secondary">
             <Link
-              href="/developer#capabilities"
+              href="/developer"
               className="hover:text-primary transition-colors flex items-center gap-1.5"
             >
               <Code2 className="w-3.5 h-3.5 text-accent" />
-              Capabilities
+              Create a site
+            </Link>
+
+            <Link
+              href="/create#capabilities"
+              className="hover:text-primary transition-colors flex items-center gap-1.5"
+            >
+              <Code2 className="w-3.5 h-3.5 text-accent" />
+              Software services
             </Link>
 
             <Link
@@ -125,7 +133,7 @@ export default function DevelopaHeader() {
             </Link>
 
             <Link
-              href="/developer#trust"
+              href="/create#trust"
               className="hover:text-primary transition-colors flex items-center gap-1.5"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-accent" />
@@ -134,12 +142,15 @@ export default function DevelopaHeader() {
 
             {user ? (
               <div className="flex items-center gap-4 pl-2 border-l border-theme">
+                <Link href="/developer/manage" className="text-primary hover:text-accent transition-colors font-medium text-xs">
+                  Manage my sites
+                </Link>
                 {isAdmin ? (
                   <Link
-                    href="/admin/dev-shop"
+                    href="/admin/developa-sites"
                     className="flex items-center gap-1.5 text-accent hover:text-accent transition-colors font-bold text-xs bg-accent/10 border border-accent/30 px-3 py-1.5 rounded-lg"
                   >
-                    <Cpu className="w-3.5 h-3.5" /> Dev Shop Admin
+                    <Cpu className="w-3.5 h-3.5" /> Platform admin
                   </Link>
                 ) : (
                   <Link
@@ -173,10 +184,10 @@ export default function DevelopaHeader() {
           <div className="hidden lg:flex items-center gap-3">
             <ThemeToggle compact />
             <Link
-              href="/developer#quote"
+              href="/create#quote"
               className="bg-gradient-to-r from-accent to-accent hover:from-accent hover:to-accent text-black font-bold text-xs tracking-wide px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-accent/20 flex items-center gap-1.5"
             >
-              <span>Start a Project</span>
+              <span>Get a software quote</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -199,12 +210,12 @@ export default function DevelopaHeader() {
         {mobileMenuOpen && (
           <div className="lg:hidden bg-card border-b border-theme px-4 pt-3 pb-6 space-y-3 shadow-elevation-2 animate-in fade-in slide-in-from-top-2 duration-150">
             <Link
-              href="/developer#capabilities"
+              href="/create#capabilities"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-primary hover:bg-hover font-medium"
             >
               <Code2 className="w-4 h-4 text-accent" />
-              Capabilities
+              Software services
             </Link>
             <Link
               href="/developer/shop"
@@ -215,7 +226,7 @@ export default function DevelopaHeader() {
               Script Marketplace
             </Link>
             <Link
-              href="/developer#trust"
+              href="/create#trust"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-primary hover:bg-hover font-medium"
             >
@@ -226,6 +237,13 @@ export default function DevelopaHeader() {
             <div className="pt-3 border-t border-theme space-y-2">
               {user ? (
                 <>
+                  <Link
+                    href="/developer/manage"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium"
+                  >
+                    Manage my sites
+                  </Link>
                   {isAdmin ? (
                     <Link
                       href="/admin/dev-shop"
@@ -264,11 +282,11 @@ export default function DevelopaHeader() {
               )}
 
               <Link
-                href="/developer#quote"
+                href="/create#quote"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full mt-2 bg-gradient-to-r from-accent to-accent hover:from-accent hover:to-accent text-black font-bold text-xs py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm"
               >
-                <span>Start a Project</span>
+                <span>Get a software quote</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { supabaseAdmin, resolveAuthorNames } from '@/lib/forumServer';
+import { PLANS } from '@/lib/plans';
 
 async function verifyAdmin() {
   const supabase = await createServerClient();
@@ -64,12 +65,16 @@ export async function PATCH(request: Request) {
     const isAdmin = await verifyAdmin();
     if (!isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { id, is_public, plan_tier, custom_domain_verified } = await request.json();
+    const { id, is_public, plan_tier, custom_domain_verified, plan_expires_at } = await request.json();
     if (!id) return NextResponse.json({ error: 'Missing site id' }, { status: 400 });
 
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (is_public !== undefined) updates.is_public = is_public;
-    if (plan_tier !== undefined) updates.plan_tier = plan_tier;
+    if (plan_tier !== undefined) {
+      if (!['free', 'pro', 'business'].includes(plan_tier)) return NextResponse.json({ error: 'Unknown plan' }, { status: 400 });
+      updates.plan_tier = plan_tier;
+    }
+    if (plan_expires_at !== undefined) updates.plan_expires_at = plan_expires_at;
     if (custom_domain_verified !== undefined) updates.custom_domain_verified = custom_domain_verified;
 
     const { data: updated, error } = await supabaseAdmin
@@ -83,6 +88,58 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ site: updated });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to update site';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+/**
+ * Record a paid plan: logs the payment and moves the site onto the plan, extending from
+ * today or from the current expiry if it has not run out yet.
+ * Body: { action: 'record_payment', site_id, plan_tier: 'pro'|'business', months, amount?, reference?, note? }
+ */
+export async function POST(request: Request) {
+  try {
+    const isAdmin = await verifyAdmin();
+    if (!isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const body = await request.json().catch(() => null);
+    if (body?.action !== 'record_payment') return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+
+    const tier = body.plan_tier as 'pro' | 'business';
+    const months = Number(body.months);
+    if (!['pro', 'business'].includes(tier) || !Number.isInteger(months) || months < 1 || months > 36 || !body.site_id) {
+      return NextResponse.json({ error: 'Choose a plan, a site and 1 to 36 months.' }, { status: 400 });
+    }
+    const amount = body.amount !== undefined && body.amount !== '' ? Number(body.amount) : PLANS[tier].priceNgn * months;
+    if (!Number.isFinite(amount) || amount < 0) return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+
+    const { data: site } = await supabaseAdmin.from('forums').select('id, plan_expires_at').eq('id', body.site_id).single();
+    if (!site) return NextResponse.json({ error: 'Site not found' }, { status: 404 });
+
+    const base = site.plan_expires_at && new Date(site.plan_expires_at).getTime() > Date.now() ? new Date(site.plan_expires_at) : new Date();
+    base.setMonth(base.getMonth() + months);
+
+    const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { error: payErr } = await supabaseAdmin.from('site_plan_payments').insert({
+      site_id: site.id, plan_tier: tier, months, amount,
+      reference: body.reference ? String(body.reference).slice(0, 120) : null,
+      note: body.note ? String(body.note).slice(0, 300) : null,
+      recorded_by: user?.id ?? null,
+    });
+    if (payErr) return NextResponse.json({ error: 'Plan payments need the latest database update first.' }, { status: 503 });
+
+    const { data: updated, error } = await supabaseAdmin
+      .from('forums')
+      .update({ plan_tier: tier, plan_expires_at: base.toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', site.id)
+      .select('*')
+      .single();
+    if (error) throw error;
+    return NextResponse.json({ site: updated });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to record payment';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

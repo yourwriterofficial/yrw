@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'developa.me — Full Stack Engineering & Custom Software',
-  description: 'Web applications, mobile builds, APIs, database architecture, and MVP delivery — plus a marketplace of ready-made scripts with complete source code and IP transfer.',
+  title: 'developa.me | Launch your online store or community in minutes',
+  description: 'Create your online store or community on developa.me. Pick a template, add products, accept bank transfers or pay on delivery, and connect your own domain. No coding needed.',
 };
 
 export default function DeveloperLayout({ children }: { children: React.ReactNode }) {

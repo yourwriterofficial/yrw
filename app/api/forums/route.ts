@@ -5,11 +5,18 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/forumServer';
 import { FORUM_ACCENTS, normalizeForumSlug, validateForumSlug } from '@/lib/forums';
 import { getTemplateById } from '@/lib/siteTemplates';
+import { overLimit } from '@/lib/rateLimit';
 
 const allowedAccents = new Set<string>(FORUM_ACCENTS.map((a) => a.value));
 
 const SITE_SELECT =
-  'id, slug, name, description, owner_id, is_public, accent_color, member_count, thread_count, created_at, site_mode, template_id, hero_headline, hero_subheadline, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions';
+  'id, slug, name, description, owner_id, is_public, accent_color, member_count, thread_count, created_at, site_mode, template_id, hero_headline, hero_subheadline, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions, plan_tier, custom_domain, custom_domain_verified, hide_branding, logo_url';
+
+// The public directory never needs payment details; only a store's own page shows them at checkout.
+const PUBLIC_LIST_SELECT =
+  'id, slug, name, description, owner_id, is_public, accent_color, member_count, thread_count, created_at, site_mode, template_id, hero_headline, hero_subheadline, currency, whatsapp_number';
+
+const MAX_SITES_PER_USER = 5;
 
 const createForumSchema = z.object({
   slug: z.string().min(3).max(32),
@@ -59,7 +66,7 @@ export async function GET(request: Request) {
 
     let query = supabaseAdmin
       .from('forums')
-      .select(SITE_SELECT)
+      .select(PUBLIC_LIST_SELECT)
       .eq('is_public', true)
       .order('thread_count', { ascending: false })
       .order('created_at', { ascending: false })
@@ -69,8 +76,11 @@ export async function GET(request: Request) {
       query = query.eq('site_mode', mode);
     }
 
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,slug.ilike.%${search}%,description.ilike.%${search}%`);
+    // Strip characters that mean something inside a PostgREST filter string, so a search
+    // box can never add extra conditions to the query.
+    const safeSearch = search.replace(/[,()%*\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+    if (safeSearch) {
+      query = query.or(`name.ilike.%${safeSearch}%,slug.ilike.%${safeSearch}%,description.ilike.%${safeSearch}%`);
     }
 
     const { data, error } = await query;
@@ -103,7 +113,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Please sign in to launch your site.' }, { status: 401 });
     }
 
-    const body = await request.json();
+    if (overLimit(`site-create:${user.id}`, 5, 60 * 60 * 1000)) {
+      return NextResponse.json({ error: 'You are creating sites too quickly. Please try again later.' }, { status: 429 });
+    }
+
+    const body = await request.json().catch(() => null);
     const parsed = createForumSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid input' }, { status: 400 });
@@ -113,6 +127,14 @@ export async function POST(request: Request) {
     const slugErr = validateForumSlug(slug);
     if (slugErr) {
       return NextResponse.json({ error: slugErr }, { status: 400 });
+    }
+
+    const { count: owned } = await supabaseAdmin
+      .from('forums')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', user.id);
+    if ((owned ?? 0) >= MAX_SITES_PER_USER) {
+      return NextResponse.json({ error: `You can run up to ${MAX_SITES_PER_USER} sites per account.` }, { status: 403 });
     }
 
     const { data: existing } = await supabaseAdmin

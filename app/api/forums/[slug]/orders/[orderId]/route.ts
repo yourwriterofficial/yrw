@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { supabaseAdmin } from '@/lib/forumServer';
+import { supabaseAdmin, downloadsForOrder, releaseStock } from '@/lib/forumServer';
+import { emailOrderUpdate } from '@/lib/storeEmails';
 
 const updateOrderSchema = z.object({
   payment_status: z.enum(['pending', 'proof_submitted', 'paid', 'rejected']).optional(),
@@ -23,7 +24,7 @@ export async function PATCH(
 
     const { data: site } = await supabaseAdmin
       .from('forums')
-      .select('id, owner_id')
+      .select('id, slug, owner_id, name, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions')
       .eq('slug', slug.toLowerCase().trim())
       .maybeSingle();
 
@@ -42,6 +43,13 @@ export async function PATCH(
     if (parsed.data.payment_reference !== undefined) updates.payment_reference = xss(parsed.data.payment_reference);
     if (parsed.data.payment_proof_note !== undefined) updates.payment_proof_note = xss(parsed.data.payment_proof_note);
 
+    const { data: before } = await supabaseAdmin
+      .from('site_orders')
+      .select('payment_status, fulfillment_status')
+      .eq('id', orderId)
+      .eq('site_id', site.id)
+      .maybeSingle();
+
     const { data: order, error } = await supabaseAdmin
       .from('site_orders')
       .update(updates)
@@ -51,6 +59,28 @@ export async function PATCH(
       .single();
 
     if (error) throw error;
+
+    // A cancelled order, or a rejected payment, frees its items again. Only the first time it
+    // enters that state, so repeating the action cannot add stock twice.
+    const wasDead = before && (before.payment_status === 'rejected' || before.fulfillment_status === 'cancelled');
+    const isDead = order && (order.payment_status === 'rejected' || order.fulfillment_status === 'cancelled');
+    if (order && isDead && !wasDead) {
+      await releaseStock(site.id, order.items || []);
+    }
+
+    // Tell the buyer, but only when a status really changed (not on every save).
+    const paymentChanged = before && parsed.data.payment_status && parsed.data.payment_status !== before.payment_status;
+    const fulfilmentChanged = before && parsed.data.fulfillment_status && parsed.data.fulfillment_status !== before.fulfillment_status;
+    if (order && (paymentChanged || fulfilmentChanged)) {
+      (async () => {
+        const downloads = paymentChanged && parsed.data.payment_status === 'paid' ? await downloadsForOrder(site.id, order.items) : [];
+        await emailOrderUpdate(site, order, {
+          payment: paymentChanged ? parsed.data.payment_status : undefined,
+          fulfillment: fulfilmentChanged ? parsed.data.fulfillment_status : undefined,
+        }, downloads);
+      })().catch((e) => console.warn('Buyer status email failed:', e));
+    }
+
     return NextResponse.json({ order });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to update order';

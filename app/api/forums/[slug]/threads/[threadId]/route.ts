@@ -163,3 +163,38 @@ export async function POST(
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+/** Owner moderation: pin/unpin or lock/unlock a thread. */
+export async function PATCH(
+  request: Request,
+  context: { params: Promise<{ slug: string; threadId: string }> }
+) {
+  const { slug, threadId } = await context.params;
+  const { requireOwnedSite } = await import('@/lib/forumServer');
+  const r = await requireOwnedSite(slug);
+  if ('error' in r) return r.error;
+  const body = await request.json().catch(() => null);
+  const updates: Record<string, boolean> = {};
+  if (typeof body?.is_pinned === 'boolean') updates.is_pinned = body.is_pinned;
+  if (typeof body?.is_locked === 'boolean') updates.is_locked = body.is_locked;
+  if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'Nothing to update.' }, { status: 400 });
+  const { error } = await supabaseAdmin.from('forum_threads').update(updates).eq('id', threadId).eq('forum_id', r.site.id);
+  if (error) return NextResponse.json({ error: 'Could not update the thread.' }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
+
+/** Owner moderation: delete a thread and its replies. */
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ slug: string; threadId: string }> }
+) {
+  const { slug, threadId } = await context.params;
+  const { requireOwnedSite } = await import('@/lib/forumServer');
+  const r = await requireOwnedSite(slug);
+  if ('error' in r) return r.error;
+  await supabaseAdmin.from('forum_posts').delete().eq('thread_id', threadId).eq('forum_id', r.site.id);
+  await supabaseAdmin.from('forum_threads').delete().eq('id', threadId).eq('forum_id', r.site.id);
+  const { count } = await supabaseAdmin.from('forum_threads').select('id', { count: 'exact', head: true }).eq('forum_id', r.site.id);
+  await supabaseAdmin.from('forums').update({ thread_count: count ?? 0 }).eq('id', r.site.id);
+  return NextResponse.json({ ok: true });
+}

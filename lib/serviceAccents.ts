@@ -65,7 +65,7 @@ export const SERVICE_ACCENTS: ServiceAccent[] = [
   {
     label: 'Full Stack Development',
     slug: 'dev',
-    href: '/developer',
+    href: '/create',
     iconName: 'Terminal',
     badge: 'Engineering',
     color: 'text-cyan-500',

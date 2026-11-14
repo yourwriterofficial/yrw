@@ -24,6 +24,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Sales & Orders',
     items: [
+      { href: '/admin/quote-requests', label: 'Quote requests', icon: lucide.Inbox },
       { href: '/admin/orders', label: 'Orders', icon: lucide.Database },
       { href: '/admin/invoices', label: 'Invoices', icon: lucide.FileSpreadsheet },
       { href: '/admin/transactions', label: 'Transactions', icon: lucide.History },
@@ -33,7 +34,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Developa SaaS',
     items: [
-      { href: '/admin/developa-sites', label: 'SaaS Stores & Sites', icon: lucide.Globe },
+      { href: '/admin/developa-sites', label: 'Developa platform', icon: lucide.Globe },
       { href: '/admin/dev-shop', label: 'Script Shop', icon: lucide.ShoppingBag },
     ],
   },

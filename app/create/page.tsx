@@ -1,10 +1,10 @@
-import CreatePortalView from '@/app/create/CreatePortalView';
+import ServicesView from '@/app/create/ServicesView';
 
 export const metadata = {
-  title: 'Developa — Launch Your Zero-Code Store or Community in 60 Seconds',
-  description: 'Create your online storefront with Jumia or Temu styles, accept manual bank transfers and pay on delivery, or launch a community forum on developa.me.',
+  title: 'Software development services | developa.me',
+  description: 'Web applications, mobile builds, APIs, database architecture and MVP delivery, with full source code and IP transfer. Get a fixed-fee quote.',
 };
 
-export default function CreatePage() {
-  return <CreatePortalView />;
+export default function CreateServicesPage() {
+  return <ServicesView />;
 }

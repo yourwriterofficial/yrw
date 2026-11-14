@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { overLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
@@ -11,6 +12,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Please sign in to upload images.' }, { status: 401 });
     }
 
+    if (overLimit(`upload:${user.id}`, 30, 60 * 60 * 1000)) {
+      return NextResponse.json({ error: 'Upload limit reached. Please try again later.' }, { status: 429 });
+    }
+
+    const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_UPLOAD_URL;
+    const uploadSecret = process.env.DRIVE_UPLOAD_SECRET;
+    if (!appsScriptUrl || !appsScriptUrl.startsWith('https://script.google.com/') || !uploadSecret) {
+      return NextResponse.json({ error: 'Image uploads are not set up yet.' }, { status: 503 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
 
@@ -18,8 +29,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No file uploaded.' }, { status: 400 });
     }
 
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'Only image files are supported.' }, { status: 400 });
+    // An explicit list: no SVG (it can carry scripts), and not just "anything starting with image/".
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+      return NextResponse.json({ error: 'Please upload a JPG, PNG, WebP or GIF image.' }, { status: 400 });
     }
 
     // Limit to 5MB
@@ -29,40 +41,24 @@ export async function POST(request: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const base64Data = buffer.toString('base64');
-    const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_UPLOAD_URL;
 
-    // 1. If Google Apps Script Web App is configured, upload directly to Google Drive
-    if (appsScriptUrl && appsScriptUrl.startsWith('https://script.google.com/')) {
-      try {
-        const gasRes = await fetch(appsScriptUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            base64Data,
-            mimeType: file.type,
-            fileName: file.name,
-            secret: process.env.DRIVE_UPLOAD_SECRET || 'developa_drive_upload_secret_2026',
-          }),
-        });
-
-        if (gasRes.ok) {
-          const gasData = await gasRes.json();
-          if (gasData.url) {
-            return NextResponse.json({ url: gasData.url, provider: 'google_drive' });
-          }
-        }
-      } catch (gasErr) {
-        console.warn('Google Apps Script upload failed, falling back:', gasErr);
+    try {
+      const gasRes = await fetch(appsScriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64Data, mimeType: file.type, fileName: file.name, secret: uploadSecret }),
+      });
+      const gasData = gasRes.ok ? await gasRes.json() : null;
+      if (gasData?.url) {
+        return NextResponse.json({ url: gasData.url, provider: 'google_drive' });
       }
+      console.warn('Drive upload returned no URL:', gasData?.error || gasRes.status);
+    } catch (gasErr) {
+      console.warn('Google Apps Script upload failed:', gasErr);
     }
 
-    // 2. High-reliability fallback (data URL or Supabase storage if available)
-    const dataUrl = `data:${file.type};base64,${base64Data}`;
-    return NextResponse.json({
-      url: dataUrl,
-      provider: 'base64_data',
-      note: 'Stored as data URL. Set GOOGLE_APPS_SCRIPT_UPLOAD_URL in .env to store directly on your Google Drive.',
-    });
+    // Deliberately no data-URL fallback: a multi-megabyte string in every product row slows every page that lists products.
+    return NextResponse.json({ error: 'The image could not be uploaded right now. Please try again.' }, { status: 502 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Upload failed';
     return NextResponse.json({ error: message }, { status: 500 });
