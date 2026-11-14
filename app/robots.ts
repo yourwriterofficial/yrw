@@ -7,12 +7,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
-        // Keep private / authenticated areas out of the index.
-        disallow: ['/admin', '/dashboard', '/api', '/invoice/', '/complete-registration', '/update-password'],
+        allow: ['/', '/forums', '/forums/', '/developer'],
+        disallow: ['/api/', '/developer/manage', '/admin', '/receipt/'],
       },
     ],
     sitemap: `${base}/sitemap.xml`,
-    host: base,
   };
 }

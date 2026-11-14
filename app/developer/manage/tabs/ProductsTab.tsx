@@ -7,6 +7,7 @@ import { planFor } from '@/lib/plans';
 import { jsonFetch, type Site } from '../types';
 import VariantEditorModal from './VariantEditorModal';
 import ReviewsPanel from './ReviewsPanel';
+import ProductCsvImportModal from './ProductCsvImportModal';
 
 const BLANK = {
   title: '',
@@ -30,6 +31,7 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('All');
   const [variantProduct, setVariantProduct] = useState<SiteProduct | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const plan = planFor(site.plan_tier, site.plan_expires_at);
   const atLimit = plan.maxProducts !== null && products.length >= plan.maxProducts && !editing;
@@ -230,10 +232,22 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
       </form>
 
       <div className="lg:col-span-3 space-y-3">
-        <p className="text-sm text-secondary">
-          {products.length} {products.length === 1 ? 'product' : 'products'}
-          {plan.maxProducts !== null && ` of ${plan.maxProducts} on the ${plan.name} plan`}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-secondary">
+            {products.length} {products.length === 1 ? 'product' : 'products'}
+            {plan.maxProducts !== null && ` of ${plan.maxProducts} on the ${plan.name} plan`}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              if (plan.bulkImport) setImportOpen(true);
+              else setMsg('CSV bulk product import is available on Pro and Business plans.');
+            }}
+            className="text-xs font-medium px-3.5 h-9 rounded-full border border-theme hover:bg-hover"
+          >
+            Import CSV
+          </button>
+        </div>
         {products.length === 0 && <p className="text-sm text-secondary border border-dashed border-theme rounded-2xl p-8 text-center">No products yet. Add your first one on the left.</p>}
         {products.length > 4 && (
           <div className="flex flex-wrap gap-2">
@@ -283,6 +297,13 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
           product={variantProduct}
           onClose={() => setVariantProduct(null)}
           onSaved={reload}
+        />
+      )}
+      {importOpen && (
+        <ProductCsvImportModal
+          site={site}
+          onClose={() => setImportOpen(false)}
+          onImported={reload}
         />
       )}
       <ReviewsPanel site={site} products={products} />

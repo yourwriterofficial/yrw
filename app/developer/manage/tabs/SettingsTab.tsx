@@ -204,6 +204,15 @@ export default function SettingsTab({ site, reload, goToPlan }: { site: Site; re
           <input type="checkbox" checked={f.weekly_backup_email} onChange={(e) => set('weekly_backup_email', e.target.checked)} className="w-4 h-4" />
           Email me a weekly JSON backup of products and orders
         </label>
+        <div className="pt-2">
+          <a
+            href={`/api/forums/${encodeURIComponent(site.slug)}/export`}
+            download
+            className="inline-flex items-center px-4 h-10 rounded-full border border-theme hover:bg-hover text-xs font-medium"
+          >
+            Download store backup (JSON)
+          </a>
+        </div>
       </section>
 
       <div className="flex items-center gap-4">

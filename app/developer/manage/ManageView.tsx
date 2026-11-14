@@ -10,6 +10,7 @@ import { PLANS, daysLeft, effectiveTier } from '@/lib/plans';
 import { jsonFetch, type Site } from './types';
 import ProductsTab from './tabs/ProductsTab';
 import OrdersTab from './tabs/OrdersTab';
+import CustomersTab from './tabs/CustomersTab';
 import CommunityTab from './tabs/CommunityTab';
 import CouponsTab from './tabs/CouponsTab';
 import ShippingTab from './tabs/ShippingTab';
@@ -19,12 +20,13 @@ import SettingsTab from './tabs/SettingsTab';
 import StoreQrCard from './StoreQrCard';
 import CartsLeftCard from './CartsLeftCard';
 
-type TabKey = 'overview' | 'products' | 'orders' | 'community' | 'coupons' | 'shipping' | 'domain' | 'plan' | 'settings';
+type TabKey = 'overview' | 'products' | 'orders' | 'customers' | 'community' | 'coupons' | 'shipping' | 'domain' | 'plan' | 'settings';
 
 const TABS: { key: TabKey; label: string; storeOnly?: boolean; forumOnly?: boolean }[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'products', label: 'Products', storeOnly: true },
   { key: 'orders', label: 'Orders', storeOnly: true },
+  { key: 'customers', label: 'Customers', storeOnly: true },
   { key: 'community', label: 'Community', forumOnly: true },
   { key: 'coupons', label: 'Coupons', storeOnly: true },
   { key: 'shipping', label: 'Delivery', storeOnly: true },
@@ -171,6 +173,7 @@ export default function ManageView() {
           {tab === 'overview' && <Overview site={site} detail={detail!} orders={orders} origin={origin} go={setTab} />}
           {tab === 'products' && <ProductsTab site={site} products={detail!.products} reload={reload} />}
           {tab === 'orders' && <OrdersTab site={site} orders={orders} reload={reload} />}
+          {tab === 'customers' && <CustomersTab site={site} goToPlan={() => setTab('plan')} />}
           {tab === 'community' && <CommunityTab site={site} threads={detail!.threads} reload={reload} />}
           {tab === 'coupons' && <CouponsTab site={site} goToPlan={() => setTab('plan')} />}
           {tab === 'shipping' && <ShippingTab site={site} reload={reload} goToPlan={() => setTab('plan')} />}

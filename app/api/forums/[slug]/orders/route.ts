@@ -23,6 +23,7 @@ const createOrderSchema = z.object({
   payment_method: z.enum(['manual_transfer', 'pay_on_delivery']).default('manual_transfer'),
   payment_reference: z.string().trim().max(120).optional().default(''),
   payment_proof_note: z.string().trim().max(400).optional().default(''),
+  marketing_consent: z.boolean().optional().default(false),
   items: z
     .array(
       z.object({
@@ -267,6 +268,7 @@ export async function POST(
         shipping_zone: xss(shippingZone),
         delivery_method: resolvedMethod,
         delivery_state: xss(parsed.data.delivery_state),
+        marketing_consent: parsed.data.marketing_consent,
       })
       .select('*')
       .single();
@@ -297,6 +299,26 @@ export async function POST(
           .eq('email', buyerEmailLower)
           .eq('status', 'open')
       ).catch(() => {});
+
+      if (parsed.data.marketing_consent) {
+        Promise.resolve(
+          supabaseAdmin
+            .from('site_subscribers')
+            .upsert(
+              {
+                site_id: site.id,
+                email: buyerEmailLower,
+                name: xss(parsed.data.buyer_name),
+                phone: xss(parsed.data.buyer_phone),
+                source: 'checkout',
+                marketing_consent: true,
+                unsubscribed_at: null,
+                unsubscribe_token: crypto.randomBytes(18).toString('hex'),
+              },
+              { onConflict: 'site_id,email' }
+            )
+        ).catch(() => {});
+      }
     }
 
     emailOrderReceived(site, {
