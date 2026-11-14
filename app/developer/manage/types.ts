@@ -7,6 +7,7 @@ export interface Site {
   name: string;
   description: string;
   owner_id: string;
+  template_id?: string;
   is_public: boolean;
   accent_color: string;
   member_count: number;
