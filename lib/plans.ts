@@ -10,10 +10,27 @@ export interface PlanDefinition {
   name: string;
   priceNgn: number;           // per month
   maxProducts: number | null; // null = unlimited
+  maxProductPhotos: number;   // 1 on Starter, 6 on Pro/Business
   customDomain: boolean;
   hideBranding: boolean;
   coupons: boolean;
   hidesPlatformAds: boolean;  // the founder's ads are not shown on this site
+  variants: boolean;
+  reviews: boolean;
+  shippingZones: boolean;
+  receipts: boolean;
+  lowStockAlerts: boolean;
+  abandonedCarts: boolean;
+  refundsLog: boolean;
+  customerExport: boolean;
+  bulkImport: boolean;
+  staffAccounts: boolean;
+  deeperAnalytics: boolean;
+  newsletterLimitPerMonth: number;
+  scheduledBackup: boolean;
+  paidMemberships: boolean;
+  bookings: boolean;
+  prioritySupport: boolean;
   highlights: string[];
 }
 
@@ -23,10 +40,27 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     name: 'Starter',
     priceNgn: 0,
     maxProducts: 10,
+    maxProductPhotos: 1,
     customDomain: false,
     hideBranding: false,
     coupons: false,
     hidesPlatformAds: false,
+    variants: false,
+    reviews: false,
+    shippingZones: false,
+    receipts: false,
+    lowStockAlerts: false,
+    abandonedCarts: false,
+    refundsLog: false,
+    customerExport: false,
+    bulkImport: false,
+    staffAccounts: false,
+    deeperAnalytics: false,
+    newsletterLimitPerMonth: 0,
+    scheduledBackup: false,
+    paidMemberships: false,
+    bookings: false,
+    prioritySupport: false,
     highlights: ['Your own yourname.developa.me address', 'Up to 10 products', 'Orders by bank transfer or pay on delivery', 'Community forum'],
   },
   pro: {
@@ -34,22 +68,56 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     name: 'Pro',
     priceNgn: 7500,
     maxProducts: null,
+    maxProductPhotos: 6,
     customDomain: true,
     hideBranding: true,
     coupons: true,
     hidesPlatformAds: true,
-    highlights: ['Your own domain (yourbrand.com)', 'Unlimited products', 'Discount coupons', 'No "Powered by Developa" and no platform ads'],
+    variants: true,
+    reviews: true,
+    shippingZones: true,
+    receipts: true,
+    lowStockAlerts: true,
+    abandonedCarts: true,
+    refundsLog: true,
+    customerExport: true,
+    bulkImport: true,
+    staffAccounts: false,
+    deeperAnalytics: true,
+    newsletterLimitPerMonth: 1000,
+    scheduledBackup: true,
+    paidMemberships: false,
+    bookings: false,
+    prioritySupport: false,
+    highlights: ['Your own domain (yourbrand.com)', 'Unlimited products & variants', 'Discount coupons & shipping zones', 'No "Powered by Developa" and no platform ads'],
   },
   business: {
     tier: 'business',
     name: 'Business',
     priceNgn: 20000,
     maxProducts: null,
+    maxProductPhotos: 6,
     customDomain: true,
     hideBranding: true,
     coupons: true,
     hidesPlatformAds: true,
-    highlights: ['Everything in Pro', 'Priority support on WhatsApp', 'Help setting up your store'],
+    variants: true,
+    reviews: true,
+    shippingZones: true,
+    receipts: true,
+    lowStockAlerts: true,
+    abandonedCarts: true,
+    refundsLog: true,
+    customerExport: true,
+    bulkImport: true,
+    staffAccounts: true,
+    deeperAnalytics: true,
+    newsletterLimitPerMonth: 5000,
+    scheduledBackup: true,
+    paidMemberships: true,
+    bookings: true,
+    prioritySupport: true,
+    highlights: ['Everything in Pro', 'Staff accounts with roles', 'Paid memberships & booking slots', 'Priority support on WhatsApp'],
   },
 };
 

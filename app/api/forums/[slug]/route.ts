@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { resolveAuthorNames, supabaseAdmin, readExtendedSite, readSeo } from '@/lib/forumServer';
+import { resolveAuthorNames, supabaseAdmin, readExtendedSite, readSeo, readSiteTools } from '@/lib/forumServer';
 
 const SITE_SELECT =
   'id, slug, name, description, owner_id, is_public, accent_color, member_count, thread_count, created_at, site_mode, template_id, hero_headline, hero_subheadline, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions, plan_tier, custom_domain, custom_domain_verified, hide_branding, logo_url';
@@ -111,8 +111,37 @@ export async function GET(
     }));
 
     // New-migration data, read tolerantly so stores keep working before it is applied.
-    const ext = await readExtendedSite(forum.id);
-    const seo = await readSeo(forum.id);
+    const [ext, seo, tools, extraProdRes] = await Promise.all([
+      readExtendedSite(forum.id),
+      readSeo(forum.id),
+      readSiteTools(forum.id),
+      forum.site_mode === 'forum'
+        ? Promise.resolve({ data: null })
+        : supabaseAdmin
+            .from('site_products')
+            .select('id, image_urls, variant_options, low_stock_at')
+            .eq('site_id', forum.id),
+    ]);
+
+    const prodExtraMap = new Map<string, { image_urls?: string[]; variant_options?: string[]; low_stock_at?: number }>();
+    for (const row of (extraProdRes.data as { id: string; image_urls?: string[]; variant_options?: string[]; low_stock_at?: number }[] | null) || []) {
+      prodExtraMap.set(row.id, row);
+    }
+
+    const enrichedProducts = (productsRes.data || []).map((p) => {
+      const prod = p as unknown as { id: string; image_url?: string };
+      const extra = prodExtraMap.get(prod.id);
+      const urls = extra?.image_urls && extra.image_urls.length > 0
+        ? extra.image_urls
+        : prod.image_url ? [prod.image_url] : [];
+      return {
+        ...prod,
+        image_urls: urls,
+        variant_options: extra?.variant_options || [],
+        low_stock_at: extra?.low_stock_at ?? 3,
+      };
+    });
+
     const tier = effectiveTier((forum as Record<string, unknown>).plan_tier as string, ext?.plan_expires_at);
     let ads: unknown[] = [];
     if (!PLANS[tier].hidesPlatformAds) {
@@ -135,6 +164,16 @@ export async function GET(
       announcement_active: ext?.announcement_active ?? false,
       plan_expires_at: ext?.plan_expires_at ?? null,
       plan_effective: tier,
+      page_about: tools.page_about,
+      page_delivery: tools.page_delivery,
+      page_returns: tools.page_returns,
+      page_contact_note: tools.page_contact_note,
+      social_links: tools.social_links,
+      pickup_address: tools.pickup_address,
+      summary_email: tools.summary_email,
+      weekly_backup_email: tools.weekly_backup_email,
+      verified: tools.verified,
+      verified_at: tools.verified_at,
       custom_domain: (forum as Record<string, unknown>).custom_domain ?? null,
       custom_domain_verified: (forum as Record<string, unknown>).custom_domain_verified ?? false,
       plan_tier: (forum as Record<string, unknown>).plan_tier ?? 'free',
@@ -145,7 +184,7 @@ export async function GET(
     return NextResponse.json({
       forum: enrichedForum,
       threads: enrichedThreads,
-      products: productsRes.data || [],
+      products: enrichedProducts,
       ads,
       isMember,
       isOwner,

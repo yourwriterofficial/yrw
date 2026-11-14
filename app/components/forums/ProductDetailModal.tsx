@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, ShoppingCart, MessageCircle, Share2, Check } from 'lucide-react';
+import { X, ShoppingCart, MessageCircle, Share2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatMoney, type ForumSummary, type SiteProduct } from '@/lib/forums';
 import { waLink } from '@/lib/phone';
 
@@ -20,6 +20,13 @@ export function buildProductWaHref(site: ForumSummary, product: SiteProduct, pri
   return waLink(site.whatsapp_number, msg);
 }
 
+export function productImages(product: SiteProduct): string[] {
+  const list = Array.isArray(product.image_urls) && product.image_urls.length > 0
+    ? product.image_urls
+    : product.image_url ? [product.image_url] : [];
+  return Array.from(new Set(list.filter(Boolean)));
+}
+
 export default function ProductDetailModal({
   site,
   product,
@@ -32,9 +39,15 @@ export default function ProductDetailModal({
   onAddToCart: (product: SiteProduct) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [photoIdx, setPhotoIdx] = useState(0);
+  const images = productImages(product);
   const currency = site.currency || 'NGN';
   const outOfStock = product.stock_qty !== null && product.stock_qty <= 0;
   const waHref = buildProductWaHref(site, product);
+
+  useEffect(() => {
+    setPhotoIdx(0);
+  }, [product.id]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -51,12 +64,13 @@ export default function ProductDetailModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      // Fallback for non-clipboard contexts
       if (typeof navigator !== 'undefined' && 'share' in navigator) {
         navigator.share({ title: product.title, url }).catch(() => {});
       }
     }
   };
+
+  const activePhoto = images[photoIdx] || images[0] || '';
 
   return (
     <div
@@ -83,14 +97,55 @@ export default function ProductDetailModal({
         </div>
 
         <div className="p-5 sm:p-6 space-y-5">
-          {product.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={product.image_url}
-              alt={product.title}
-              className="w-full max-h-80 object-cover rounded-2xl border border-theme bg-secondary/20"
-            />
-          ) : null}
+          {activePhoto && (
+            <div className="space-y-2.5">
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={activePhoto}
+                  alt={product.title}
+                  className="w-full max-h-80 object-cover rounded-2xl border border-theme bg-secondary/20"
+                />
+                {images.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Previous photo"
+                      onClick={() => setPhotoIdx((i) => (i - 1 + images.length) % images.length)}
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center cursor-pointer"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next photo"
+                      onClick={() => setPhotoIdx((i) => (i + 1) % images.length)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center cursor-pointer"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+              </div>
+              {images.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto g-scroll-x pb-1">
+                  {images.map((url, idx) => (
+                    <button
+                      key={url + idx}
+                      type="button"
+                      onClick={() => setPhotoIdx(idx)}
+                      className={`shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition cursor-pointer ${
+                        idx === photoIdx ? 'border-accent' : 'border-theme opacity-70 hover:opacity-100'
+                      }`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <h2 id="product-modal-title" className="text-xl sm:text-2xl font-bold text-primary leading-snug">

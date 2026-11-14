@@ -17,6 +17,15 @@ export const FORUM_ACCENTS = [
 
 import type { ProductType, SiteMode } from '@/lib/siteTemplates';
 
+export interface SiteSocialLinks {
+  instagram?: string;
+  tiktok?: string;
+  facebook?: string;
+  x?: string;
+  youtube?: string;
+  website?: string;
+}
+
 export interface ForumSummary {
   id: string;
   slug: string;
@@ -43,6 +52,29 @@ export interface ForumSummary {
   plan_tier?: 'free' | 'pro' | 'business';
   logo_url?: string;
   hide_branding?: boolean;
+  verified?: boolean;
+  verified_at?: string | null;
+  page_about?: string;
+  page_delivery?: string;
+  page_returns?: string;
+  page_contact_note?: string;
+  social_links?: SiteSocialLinks;
+  pickup_address?: string;
+  summary_email?: boolean;
+  weekly_backup_email?: boolean;
+}
+
+export interface ProductVariant {
+  id: string;
+  site_id: string;
+  product_id: string;
+  label: string;
+  options: Record<string, string>;
+  price: number;
+  stock_qty: number | null;
+  sku: string;
+  sort_order: number;
+  is_active: boolean;
 }
 
 export interface SiteProduct {
@@ -55,15 +87,23 @@ export interface SiteProduct {
   price: number;
   compare_at_price: number | null;
   image_url: string;
+  image_urls?: string[];
+  variant_options?: string[];
+  variants?: ProductVariant[];
+  low_stock_at?: number;
   digital_url: string;
   stock_qty: number | null;
   is_active: boolean;
   sort_order: number;
   created_at: string;
+  rating_avg?: number;
+  rating_count?: number;
 }
 
 export interface SiteOrderItem {
   product_id: string;
+  variant_id?: string;
+  variant_label?: string;
   title: string;
   product_type: ProductType;
   price: number;
@@ -81,12 +121,20 @@ export interface SiteOrder {
   notes: string;
   items: SiteOrderItem[];
   subtotal: number;
+  discount_amount?: number;
+  coupon_code?: string | null;
+  shipping_fee?: number;
+  shipping_zone?: string;
+  delivery_method?: 'delivery' | 'pickup';
+  delivery_state?: string;
   total_amount: number;
   payment_method: 'manual_transfer' | 'pay_on_delivery';
   payment_reference: string;
   payment_proof_note: string;
   payment_status: 'pending' | 'proof_submitted' | 'paid' | 'rejected';
   fulfillment_status: 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled';
+  internal_note?: string;
+  refunded_amount?: number;
   created_at: string;
 }
 

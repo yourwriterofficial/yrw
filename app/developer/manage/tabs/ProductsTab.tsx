@@ -1,14 +1,26 @@
 'use client';
 
 import { useState } from 'react';
+import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { formatMoney, type SiteProduct } from '@/lib/forums';
 import { planFor } from '@/lib/plans';
 import { jsonFetch, type Site } from '../types';
 
-const BLANK = { title: '', description: '', category: 'General', product_type: 'physical', price: '', compare_at_price: '', stock_qty: '', image_url: '', digital_url: '' };
+const BLANK = {
+  title: '',
+  description: '',
+  category: 'General',
+  product_type: 'physical',
+  price: '',
+  compare_at_price: '',
+  stock_qty: '',
+  low_stock_at: '3',
+  digital_url: '',
+};
 
 export default function ProductsTab({ site, products, reload }: { site: Site; products: SiteProduct[]; reload: () => Promise<void> }) {
   const [form, setForm] = useState({ ...BLANK });
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -22,21 +34,42 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
   const shown = products.filter((p) => (cat === 'All' || (p.category || 'General') === cat) && (!q.trim() || `${p.title} ${p.category}`.toLowerCase().includes(q.trim().toLowerCase())));
   const set = (k: keyof typeof BLANK, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  const upload = async (file: File | undefined) => {
-    if (!file) return;
+  const upload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    if (imageUrls.length >= plan.maxProductPhotos) {
+      setMsg(
+        plan.maxProductPhotos === 1
+          ? 'The Starter plan allows 1 photo per product. Upgrade to Pro for up to 6 photos.'
+          : `Maximum ${plan.maxProductPhotos} photos per product.`
+      );
+      return;
+    }
     setUploading(true);
     setMsg('');
-    const fd = new FormData();
-    fd.append('file', file);
-    try {
-      const res = await fetch('/api/upload/drive', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (res.ok && data.url) set('image_url', data.url);
-      else setMsg(data.error || 'Upload failed.');
-    } catch {
-      setMsg('Upload failed. Check your connection.');
+    const next = [...imageUrls];
+    for (const file of Array.from(files)) {
+      if (next.length >= plan.maxProductPhotos) break;
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const res = await fetch('/api/upload/drive', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (res.ok && data.url) next.push(data.url);
+        else setMsg(data.error || 'Upload failed.');
+      } catch {
+        setMsg('Upload failed. Check your connection.');
+      }
     }
+    setImageUrls(next);
     setUploading(false);
+  };
+
+  const movePhoto = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir;
+    if (target < 0 || target >= imageUrls.length) return;
+    const copy = [...imageUrls];
+    [copy[idx], copy[target]] = [copy[target], copy[idx]];
+    setImageUrls(copy);
   };
 
   const save = async (e: React.FormEvent) => {
@@ -51,7 +84,9 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
       price: Number(form.price),
       compare_at_price: form.compare_at_price === '' ? null : Number(form.compare_at_price),
       stock_qty: form.stock_qty === '' ? null : Number(form.stock_qty),
-      image_url: form.image_url,
+      low_stock_at: form.low_stock_at === '' ? 3 : Number(form.low_stock_at),
+      image_url: imageUrls[0] || '',
+      image_urls: imageUrls,
       digital_url: form.product_type === 'digital' ? form.digital_url : '',
     };
     const r = editing
@@ -59,6 +94,7 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
       : await jsonFetch(`/api/forums/${site.slug}/products`, { method: 'POST', body: payload });
     if (r.ok) {
       setForm({ ...BLANK });
+      setImageUrls([]);
       setEditing(null);
       await reload();
     } else {
@@ -70,10 +106,18 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
   const edit = (p: SiteProduct) => {
     setEditing(p.id);
     setForm({
-      title: p.title, description: p.description || '', category: p.category || 'General', product_type: p.product_type,
-      price: String(p.price), compare_at_price: p.compare_at_price == null ? '' : String(p.compare_at_price),
-      stock_qty: p.stock_qty == null ? '' : String(p.stock_qty), image_url: p.image_url || '', digital_url: p.digital_url || '',
+      title: p.title,
+      description: p.description || '',
+      category: p.category || 'General',
+      product_type: p.product_type,
+      price: String(p.price),
+      compare_at_price: p.compare_at_price == null ? '' : String(p.compare_at_price),
+      stock_qty: p.stock_qty == null ? '' : String(p.stock_qty),
+      low_stock_at: String(p.low_stock_at ?? 3),
+      digital_url: p.digital_url || '',
     });
+    const urls = Array.isArray(p.image_urls) && p.image_urls.length > 0 ? p.image_urls : p.image_url ? [p.image_url] : [];
+    setImageUrls(urls);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -124,10 +168,16 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
             <input id="p-stock" type="number" min={0} value={form.stock_qty} onChange={(e) => set('stock_qty', e.target.value)} className="input-box w-full" />
           </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1.5" htmlFor="p-cat">Category</label>
-          <input id="p-cat" list="p-cat-list" value={form.category} onChange={(e) => set('category', e.target.value)} className="input-box w-full" />
-          <datalist id="p-cat-list">{categories.map((c) => <option key={c} value={c} />)}</datalist>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium mb-1.5" htmlFor="p-cat">Category</label>
+            <input id="p-cat" list="p-cat-list" value={form.category} onChange={(e) => set('category', e.target.value)} className="input-box w-full" />
+            <datalist id="p-cat-list">{categories.map((c) => <option key={c} value={c} />)}</datalist>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5" htmlFor="p-low">Low-stock alert at</label>
+            <input id="p-low" type="number" min={0} max={1000} value={form.low_stock_at} onChange={(e) => set('low_stock_at', e.target.value)} className="input-box w-full" />
+          </div>
         </div>
         {form.product_type === 'digital' && (
           <div>
@@ -137,12 +187,32 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
           </div>
         )}
         <div>
-          <label className="block text-sm font-medium mb-1.5">Photo</label>
-          {form.image_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={form.image_url} alt="" className="w-24 h-24 rounded-2xl object-cover mb-2 border border-theme" />
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-sm font-medium">Photos ({imageUrls.length}/{plan.maxProductPhotos})</label>
+            {plan.maxProductPhotos === 1 && <span className="text-xs text-secondary">Up to 6 on Pro</span>}
+          </div>
+          {imageUrls.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2.5">
+              {imageUrls.map((url, idx) => (
+                <div key={url + idx} className="relative group w-20">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt="" className="w-20 h-20 rounded-xl object-cover border border-theme" />
+                  <div className="flex items-center justify-between gap-0.5 mt-1">
+                    <button type="button" onClick={() => movePhoto(idx, -1)} disabled={idx === 0} aria-label="Move photo left" className="p-1 rounded border border-theme disabled:opacity-30"><ArrowLeft className="w-3 h-3" /></button>
+                    <button type="button" onClick={() => setImageUrls((prev) => prev.filter((_, i) => i !== idx))} aria-label="Remove photo" className="p-1 rounded border border-theme text-danger"><X className="w-3 h-3" /></button>
+                    <button type="button" onClick={() => movePhoto(idx, 1)} disabled={idx === imageUrls.length - 1} aria-label="Move photo right" className="p-1 rounded border border-theme disabled:opacity-30"><ArrowRight className="w-3 h-3" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
-          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => upload(e.target.files?.[0])} className="text-sm" />
+          <input
+            type="file"
+            multiple={plan.maxProductPhotos > 1}
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={(e) => upload(e.target.files)}
+            className="text-sm w-full"
+          />
           {uploading && <p className="text-xs text-secondary mt-1">Uploading…</p>}
         </div>
         {msg && <p className="text-sm text-danger" role="alert">{msg}</p>}
@@ -151,7 +221,7 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
             {busy ? 'Saving…' : editing ? 'Save changes' : 'Add product'}
           </button>
           {editing && (
-            <button type="button" onClick={() => { setEditing(null); setForm({ ...BLANK }); }} className="text-sm px-4 h-11 rounded-full border border-theme">Cancel</button>
+            <button type="button" onClick={() => { setEditing(null); setForm({ ...BLANK }); setImageUrls([]); }} className="text-sm px-4 h-11 rounded-full border border-theme">Cancel</button>
           )}
         </div>
       </form>
@@ -174,29 +244,33 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
           </div>
         )}
         {products.length > 0 && shown.length === 0 && <p className="text-sm text-secondary">No products match.</p>}
-        {shown.map((p) => (
-          <div key={p.id} className="g-card p-4 flex gap-4 items-center">
-            <div className="w-16 h-16 rounded-xl bg-secondary overflow-hidden shrink-0 flex items-center justify-center text-secondary text-xs">
-              {p.image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.image_url} alt="" className="w-full h-full object-cover" />
-              ) : 'No photo'}
+        {shown.map((p) => {
+          const photoCount = Array.isArray(p.image_urls) && p.image_urls.length > 0 ? p.image_urls.length : p.image_url ? 1 : 0;
+          return (
+            <div key={p.id} className="g-card p-4 flex gap-4 items-center">
+              <div className="w-16 h-16 rounded-xl bg-secondary overflow-hidden shrink-0 flex items-center justify-center text-secondary text-xs">
+                {p.image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.image_url} alt="" className="w-full h-full object-cover" />
+                ) : 'No photo'}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium truncate">{p.title}</p>
+                <p className="text-sm text-secondary">
+                  {formatMoney(p.price, site.currency)} · {p.product_type}
+                  {p.stock_qty != null && ` · ${p.stock_qty} in stock`}
+                  {photoCount > 1 && ` · ${photoCount} photos`}
+                  {!p.is_active && ' · hidden'}
+                </p>
+              </div>
+              <div className="flex gap-1 shrink-0 text-sm">
+                <button onClick={() => edit(p)} className="px-3 h-9 rounded-full hover:bg-hover text-accent font-medium">Edit</button>
+                <button onClick={() => toggle(p)} className="px-3 h-9 rounded-full hover:bg-hover">{p.is_active ? 'Hide' : 'Show'}</button>
+                <button onClick={() => remove(p)} className="px-3 h-9 rounded-full hover:bg-hover text-danger">Delete</button>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-medium truncate">{p.title}</p>
-              <p className="text-sm text-secondary">
-                {formatMoney(p.price, site.currency)} · {p.product_type}
-                {p.stock_qty != null && ` · ${p.stock_qty} in stock`}
-                {!p.is_active && ' · hidden'}
-              </p>
-            </div>
-            <div className="flex gap-1 shrink-0 text-sm">
-              <button onClick={() => edit(p)} className="px-3 h-9 rounded-full hover:bg-hover text-accent font-medium">Edit</button>
-              <button onClick={() => toggle(p)} className="px-3 h-9 rounded-full hover:bg-hover">{p.is_active ? 'Hide' : 'Show'}</button>
-              <button onClick={() => remove(p)} className="px-3 h-9 rounded-full hover:bg-hover text-danger">Delete</button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

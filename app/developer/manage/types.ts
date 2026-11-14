@@ -1,3 +1,6 @@
+import type { SiteSocialLinks } from '@/lib/forums';
+import type { SiteRole } from '@/lib/forumServer';
+
 export interface Site {
   id: string;
   slug: string;
@@ -27,6 +30,16 @@ export interface Site {
   announcement_active?: boolean;
   seo_title?: string;
   seo_description?: string;
+  page_about?: string;
+  page_delivery?: string;
+  page_returns?: string;
+  page_contact_note?: string;
+  social_links?: SiteSocialLinks;
+  pickup_address?: string;
+  summary_email?: boolean;
+  weekly_backup_email?: boolean;
+  verified?: boolean;
+  my_role?: SiteRole;
 }
 
 /** Founder's WhatsApp, used for upgrade requests. */

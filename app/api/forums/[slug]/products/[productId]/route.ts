@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
-import { createClient as createServerClient } from '@/lib/supabase/server';
-import { supabaseAdmin } from '@/lib/forumServer';
+import { planFor } from '@/lib/plans';
+import { requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+
+const httpsUrlSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((v) => v === '' || /^https:\/\//i.test(v), 'Photo URLs must use https://');
 
 const updateProductSchema = z.object({
   title: z.string().trim().min(2).max(120).optional(),
@@ -11,27 +17,13 @@ const updateProductSchema = z.object({
   product_type: z.enum(['physical', 'digital', 'service']).optional(),
   price: z.coerce.number().min(0).max(100_000_000).optional(),
   compare_at_price: z.union([z.coerce.number().min(0), z.null()]).optional(),
-  image_url: z.string().trim().max(500).optional(),
+  image_url: httpsUrlSchema.optional(),
+  image_urls: z.array(z.string().trim().max(500).refine((v) => /^https:\/\//i.test(v), 'Photo URLs must use https://')).max(6).optional(),
   digital_url: z.string().trim().max(500).optional(),
   stock_qty: z.union([z.coerce.number().int().min(0), z.null()]).optional(),
+  low_stock_at: z.coerce.number().int().min(0).max(1000).optional(),
   is_active: z.boolean().optional(),
 });
-
-async function verifyOwner(slug: string) {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
-
-  const { data: site } = await supabaseAdmin
-    .from('forums')
-    .select('id, owner_id')
-    .eq('slug', slug.toLowerCase().trim())
-    .maybeSingle();
-
-  if (!site) return { error: NextResponse.json({ error: 'Store not found' }, { status: 404 }) };
-  if (site.owner_id !== user.id) return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
-  return { site };
-}
 
 export async function PATCH(
   request: Request,
@@ -39,10 +31,12 @@ export async function PATCH(
 ) {
   try {
     const { slug, productId } = await context.params;
-    const auth = await verifyOwner(slug);
-    if ('error' in auth) return auth.error;
+    const access = await requireSiteAccess(slug, ['owner', 'manager']);
+    if ('error' in access) return access.error;
+    const { site } = access;
+    const plan = planFor(site.plan_tier, site.plan_expires_at);
 
-    const raw = await request.json();
+    const raw = await request.json().catch(() => null);
     const parsed = updateProductSchema.safeParse(raw);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid input' }, { status: 400 });
@@ -55,18 +49,56 @@ export async function PATCH(
     if (parsed.data.product_type !== undefined) updates.product_type = parsed.data.product_type;
     if (parsed.data.price !== undefined) updates.price = parsed.data.price;
     if (parsed.data.compare_at_price !== undefined) updates.compare_at_price = parsed.data.compare_at_price;
-    if (parsed.data.image_url !== undefined) updates.image_url = xss(parsed.data.image_url);
     if (parsed.data.digital_url !== undefined) updates.digital_url = xss(parsed.data.digital_url);
     if (parsed.data.stock_qty !== undefined) updates.stock_qty = parsed.data.stock_qty;
     if (parsed.data.is_active !== undefined) updates.is_active = parsed.data.is_active;
 
-    const { data: product, error } = await supabaseAdmin
+    let urlsCount = 0;
+    if (parsed.data.image_urls !== undefined) {
+      const urls = Array.from(new Set(parsed.data.image_urls.map((u) => u.trim()).filter(Boolean)));
+      urlsCount = urls.length;
+      if (urls.length > plan.maxProductPhotos) {
+        return NextResponse.json(
+          { error: `The ${plan.name} plan allows ${plan.maxProductPhotos} photo per product. Upgrade to Pro to add up to 6 photos.` },
+          { status: 403 }
+        );
+      }
+      updates.image_urls = urls.map((u) => xss(u));
+      updates.image_url = xss(urls[0] || '');
+    } else if (parsed.data.image_url !== undefined) {
+      updates.image_url = xss(parsed.data.image_url);
+      updates.image_urls = parsed.data.image_url ? [xss(parsed.data.image_url)] : [];
+    }
+
+    if (parsed.data.low_stock_at !== undefined) {
+      updates.low_stock_at = parsed.data.low_stock_at;
+    }
+
+    let { data: product, error } = await supabaseAdmin
       .from('site_products')
       .update(updates)
       .eq('id', productId)
-      .eq('site_id', auth.site.id)
+      .eq('site_id', site.id)
       .select('*')
       .single();
+
+    if (error && /column .* does not exist/i.test(error.message)) {
+      if (urlsCount > 1) {
+        return NextResponse.json({ error: 'Multiple product photos need the latest database update first.' }, { status: 503 });
+      }
+      const fallbackUpdates = { ...updates };
+      delete fallbackUpdates.image_urls;
+      delete fallbackUpdates.low_stock_at;
+      const fallback = await supabaseAdmin
+        .from('site_products')
+        .update(fallbackUpdates)
+        .eq('id', productId)
+        .eq('site_id', site.id)
+        .select('*')
+        .single();
+      product = fallback.data;
+      error = fallback.error;
+    }
 
     if (error) throw error;
     return NextResponse.json({ product });
@@ -82,14 +114,14 @@ export async function DELETE(
 ) {
   try {
     const { slug, productId } = await context.params;
-    const auth = await verifyOwner(slug);
-    if ('error' in auth) return auth.error;
+    const access = await requireSiteAccess(slug, ['owner', 'manager']);
+    if ('error' in access) return access.error;
 
     const { error } = await supabaseAdmin
       .from('site_products')
       .delete()
       .eq('id', productId)
-      .eq('site_id', auth.site.id);
+      .eq('site_id', access.site.id);
 
     if (error) throw error;
     return NextResponse.json({ deleted: true });

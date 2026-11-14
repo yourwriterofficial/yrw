@@ -1,4 +1,7 @@
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { planFor } from '@/lib/plans';
+
+export type SiteRole = 'owner' | 'manager' | 'packer' | 'support';
 
 export const supabaseAdmin = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -47,22 +50,102 @@ export async function readExtendedSite(siteId: string) {
   } | null) ?? null;
 }
 
-/** Resolves the signed-in user and the site they own, or the error response to return. */
-export async function requireOwnedSite(slug: string) {
+/**
+ * Columns added by migration 20261114030000 & 20261114040000. Tolerant: returns safe defaults
+ * if those migrations are not applied yet.
+ */
+export async function readSiteTools(siteId: string) {
+  const { data } = await supabaseAdmin
+    .from('forums')
+    .select('page_about, page_delivery, page_returns, page_contact_note, social_links, pickup_address, summary_email, verified, verified_at')
+    .eq('id', siteId)
+    .maybeSingle();
+  const { data: gData } = await supabaseAdmin
+    .from('forums')
+    .select('weekly_backup_email')
+    .eq('id', siteId)
+    .maybeSingle();
+  return {
+    page_about: (data?.page_about as string) || '',
+    page_delivery: (data?.page_delivery as string) || '',
+    page_returns: (data?.page_returns as string) || '',
+    page_contact_note: (data?.page_contact_note as string) || '',
+    social_links: (data?.social_links as Record<string, string>) || {},
+    pickup_address: (data?.pickup_address as string) || '',
+    summary_email: typeof data?.summary_email === 'boolean' ? data.summary_email : true,
+    verified: data?.verified === true,
+    verified_at: (data?.verified_at as string | null) ?? null,
+    weekly_backup_email: gData?.weekly_backup_email === true,
+  };
+}
+
+/**
+ * Resolves the signed-in user and verifies they are the owner or an authorized staff member
+ * for the site. Staff access requires the Business plan.
+ */
+export async function requireSiteAccess(slug: string, allowedRoles: SiteRole[] = ['owner', 'manager']) {
   const { createClient: createServerClient } = await import('@/lib/supabase/server');
   const { NextResponse } = await import('next/server');
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: NextResponse.json({ error: 'Please sign in.' }, { status: 401 }) } as const;
+
   const { data: site } = await supabaseAdmin
     .from('forums')
     .select('id, slug, owner_id, name, plan_tier, custom_domain, custom_domain_verified, hide_branding')
     .eq('slug', slug.toLowerCase().trim())
     .maybeSingle();
+
   if (!site) return { error: NextResponse.json({ error: 'Site not found' }, { status: 404 }) } as const;
-  if (site.owner_id !== user.id) return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) } as const;
   const ext = await readExtendedSite(site.id);
-  return { user, site: { ...site, ...(ext || {}) } } as const;
+  const fullSite = { ...site, ...(ext || {}) };
+
+  if (site.owner_id === user.id) {
+    return { user, role: 'owner' as SiteRole, site: fullSite } as const;
+  }
+
+  const plan = planFor(site.plan_tier, ext?.plan_expires_at);
+  if (!plan.staffAccounts) {
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) } as const;
+  }
+
+  // Look up staff membership by user_id or invited email (tolerant if migration not applied).
+  const userEmail = (user.email || '').toLowerCase().trim();
+  let staffRow: { id: string; role: string; user_id: string | null } | null = null;
+  const { data: byUid } = await supabaseAdmin
+    .from('site_staff')
+    .select('id, role, user_id')
+    .eq('site_id', site.id)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (byUid) {
+    staffRow = byUid;
+  } else if (userEmail) {
+    const { data: byEmail } = await supabaseAdmin
+      .from('site_staff')
+      .select('id, role, user_id')
+      .eq('site_id', site.id)
+      .eq('email', userEmail)
+      .maybeSingle();
+    if (byEmail) {
+      staffRow = byEmail;
+      if (!byEmail.user_id) {
+        await supabaseAdmin.from('site_staff').update({ user_id: user.id }).eq('id', byEmail.id);
+      }
+    }
+  }
+
+  const staffRole = staffRow?.role as SiteRole | undefined;
+  if (!staffRole || !allowedRoles.includes(staffRole)) {
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) } as const;
+  }
+
+  return { user, role: staffRole, site: fullSite } as const;
+}
+
+/** Resolves the signed-in user and the site they own (or manager/staff if permitted), or error response. */
+export async function requireOwnedSite(slug: string, allowedRoles: SiteRole[] = ['owner', 'manager']) {
+  return requireSiteAccess(slug, allowedRoles);
 }
 
 /** True when the signed-in user is a platform admin (the founder side). */
@@ -99,13 +182,50 @@ export async function readSeo(siteId: string): Promise<{ seo_title: string; seo_
 }
 
 /**
- * Changes a product's stock by `delta` (negative to take stock, positive to give it back).
- * Products with unlimited stock (null) are left alone. The update only applies if the stock is
- * still what we just read, so two buyers can never both take the last item; it retries a few times.
+ * Changes stock by `delta` (negative to take stock, positive to give it back) on either a
+ * product variant (when `variantId` is provided) or the parent product.
+ * Unlimited stock (`null`) is left alone. Uses an atomic conditional update so two buyers
+ * can never both take the last item.
  */
-export async function adjustStock(siteId: string, productId: string | number, delta: number): Promise<boolean> {
+export async function adjustStock(
+  siteId: string,
+  productId: string | number,
+  delta: number,
+  variantId?: string | null
+): Promise<boolean> {
+  if (variantId) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const { data: row } = await supabaseAdmin
+        .from('site_product_variants')
+        .select('stock_qty')
+        .eq('id', variantId)
+        .eq('product_id', productId)
+        .eq('site_id', siteId)
+        .maybeSingle();
+      if (!row) return false;
+      if (row.stock_qty === null) return true;
+      const next = Number(row.stock_qty) + delta;
+      if (next < 0) return false;
+      const { data: updated } = await supabaseAdmin
+        .from('site_product_variants')
+        .update({ stock_qty: next })
+        .eq('id', variantId)
+        .eq('product_id', productId)
+        .eq('site_id', siteId)
+        .eq('stock_qty', row.stock_qty)
+        .select('id');
+      if (updated && updated.length > 0) return true;
+    }
+    return false;
+  }
+
   for (let attempt = 0; attempt < 4; attempt++) {
-    const { data: row } = await supabaseAdmin.from('site_products').select('stock_qty').eq('id', productId).eq('site_id', siteId).maybeSingle();
+    const { data: row } = await supabaseAdmin
+      .from('site_products')
+      .select('stock_qty')
+      .eq('id', productId)
+      .eq('site_id', siteId)
+      .maybeSingle();
     if (!row) return false;
     if (row.stock_qty === null) return true;
     const next = Number(row.stock_qty) + delta;
@@ -122,20 +242,26 @@ export async function adjustStock(siteId: string, productId: string | number, de
   return false;
 }
 
-/** Takes stock for every item, or none: if one item is gone, whatever was already taken is put back. */
-export async function reserveStock(siteId: string, items: { product_id: string | number; qty: number; title?: string }[]) {
-  const taken: { product_id: string | number; qty: number }[] = [];
+/** Takes stock for every item (variant or product), or none: rolls back on failure. */
+export async function reserveStock(
+  siteId: string,
+  items: { product_id: string | number; variant_id?: string | null; qty: number; title?: string }[]
+) {
+  const taken: { product_id: string | number; variant_id?: string | null; qty: number }[] = [];
   for (const it of items) {
-    const ok = await adjustStock(siteId, it.product_id, -it.qty);
+    const ok = await adjustStock(siteId, it.product_id, -it.qty, it.variant_id);
     if (!ok) {
-      for (const t of taken) await adjustStock(siteId, t.product_id, t.qty);
+      for (const t of taken) await adjustStock(siteId, t.product_id, t.qty, t.variant_id);
       return { ok: false as const, title: it.title };
     }
-    taken.push({ product_id: it.product_id, qty: it.qty });
+    taken.push({ product_id: it.product_id, variant_id: it.variant_id, qty: it.qty });
   }
   return { ok: true as const };
 }
 
-export async function releaseStock(siteId: string, items: { product_id: string | number; qty: number }[]) {
-  for (const it of items) await adjustStock(siteId, it.product_id, it.qty);
+export async function releaseStock(
+  siteId: string,
+  items: { product_id: string | number; variant_id?: string | null; qty: number }[]
+) {
+  for (const it of items) await adjustStock(siteId, it.product_id, it.qty, it.variant_id);
 }
