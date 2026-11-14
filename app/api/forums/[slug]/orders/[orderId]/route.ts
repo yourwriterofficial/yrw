@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { supabaseAdmin, downloadsForOrder, isMissingColumnError, releaseStock, requireSiteAccess } from '@/lib/forumServer';
 import { emailOrderUpdate } from '@/lib/storeEmails';
+import { sendSitePush } from '@/lib/sitePush';
 
 const updateOrderSchema = z.object({
   payment_status: z.enum(['pending', 'proof_submitted', 'paid', 'rejected']).optional(),
@@ -90,6 +91,17 @@ export async function PATCH(
           fulfillment: fulfilmentChanged ? parsed.data.fulfillment_status : undefined,
         }, downloads);
       })().catch((e) => console.warn('Buyer status email failed:', e));
+
+      // Phone alert for the buyer if they turned alerts on. Runs after the response, never blocks the update.
+      const status = paymentChanged && parsed.data.payment_status === 'paid'
+        ? 'Payment received'
+        : `Order ${String(fulfilmentChanged ? parsed.data.fulfillment_status : parsed.data.payment_status).replace(/_/g, ' ')}`;
+      after(() => sendSitePush(site.id, 'buyer', {
+        title: `${site.name}: order ${order.order_code}`,
+        body: status,
+        url: `/forums/${site.slug}`,
+        tag: `order-${order.order_code}`,
+      }, { buyerEmail: order.buyer_email }));
     }
 
     return NextResponse.json({ order });

@@ -9,6 +9,8 @@ import { formatDistanceToNow } from 'date-fns';
 import Button from '@/app/components/ui/Button';
 import StorefrontView from '@/app/components/forums/StorefrontView';
 import SiteAdSpace from '@/app/components/forums/SiteAdSpace';
+import SellerChat from '@/app/components/forums/SellerChat';
+import SitePwa from '@/app/components/forums/SitePwa';
 import ThreadListThemes, { FORUM_LAYOUTS } from '@/app/components/forums/ThreadListThemes';
 import { getTemplateById } from '@/lib/siteTemplates';
 import StoreManagerModal from '@/app/components/forums/StoreManagerModal';
@@ -453,6 +455,7 @@ export default function ForumView({ slug }: { slug: string }) {
       </main>
 
       <div className="max-w-6xl mx-auto px-4"><SiteAdSpace slug={slug} placement="footer" /></div>
+      {forum && siteMode !== 'forum' && <SellerChat slug={slug} siteName={forum.name} />}
       {ads.filter((a) => a.placement === 'footer').slice(0, 1).map((a) => <AdStrip key={a.id} ad={a} />)}
 
       {forum && (() => {
@@ -543,6 +546,19 @@ export default function ForumView({ slug }: { slug: string }) {
             <p className="text-sm text-primary whitespace-pre-line leading-relaxed">{infoPageModal.body}</p>
           </div>
         </div>
+      )}
+
+      {forum && (
+        <SitePwa
+          slug={slug}
+          siteName={forum.name}
+          accent={forum.accent_color}
+          installEnabled={forum.plugins?.appinstall !== false}
+          canPush={
+            (isOwner || ['owner', 'manager', 'packer'].includes(forum.my_role || '')) &&
+            ['pro', 'business'].includes((forum as unknown as { plan_effective?: string }).plan_effective || '')
+          }
+        />
       )}
     </div>
   );

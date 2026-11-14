@@ -22,12 +22,13 @@ import DomainTab from './tabs/DomainTab';
 import PlanTab from './tabs/PlanTab';
 import AdSpaceTab from './tabs/AdSpaceTab';
 import MessagesTab from './tabs/MessagesTab';
+import PluginsTab from './tabs/PluginsTab';
 import SettingsTab from './tabs/SettingsTab';
 import StoreQrCard from './StoreQrCard';
 import CartsLeftCard from './CartsLeftCard';
 import AnalyticsCard from './AnalyticsCard';
 
-type TabKey = 'overview' | 'products' | 'orders' | 'customers' | 'bookings' | 'community' | 'memberships' | 'coupons' | 'shipping' | 'messages' | 'adspace' | 'domain' | 'plan' | 'settings';
+type TabKey = 'overview' | 'products' | 'orders' | 'customers' | 'bookings' | 'community' | 'memberships' | 'coupons' | 'shipping' | 'plugins' | 'messages' | 'adspace' | 'domain' | 'plan' | 'settings';
 
 const TABS: { key: TabKey; label: string; storeOnly?: boolean; forumOnly?: boolean }[] = [
   { key: 'overview', label: 'Overview' },
@@ -39,6 +40,7 @@ const TABS: { key: TabKey; label: string; storeOnly?: boolean; forumOnly?: boole
   { key: 'memberships', label: 'Memberships', forumOnly: true },
   { key: 'coupons', label: 'Coupons', storeOnly: true },
   { key: 'shipping', label: 'Delivery', storeOnly: true },
+  { key: 'plugins', label: 'Plugins' },
   { key: 'messages', label: 'Messages', storeOnly: true },
   { key: 'adspace', label: 'Ad space' },
   { key: 'domain', label: 'Domain' },
@@ -46,7 +48,8 @@ const TABS: { key: TabKey; label: string; storeOnly?: boolean; forumOnly?: boole
   { key: 'settings', label: 'Settings' },
 ];
 
-interface Detail { forum: Site; products: SiteProduct[]; threads: ForumThread[] }
+interface OwnerAd { id: string; title: string; body: string; link_url: string; image_url: string; placement: string }
+interface Detail { forum: Site; products: SiteProduct[]; threads: ForumThread[]; ads: OwnerAd[] }
 
 export default function ManageView() {
   const [authState, setAuthState] = useState<'checking' | 'out' | 'in'>('checking');
@@ -81,11 +84,11 @@ export default function ManageView() {
     if (!s) return;
     setLoadingSite(true);
     const [d, o] = await Promise.all([
-      jsonFetch<{ forum?: Site; products?: SiteProduct[]; threads?: ForumThread[] }>(`/api/forums/${s}`),
+      jsonFetch<{ forum?: Site; products?: SiteProduct[]; threads?: ForumThread[]; ads?: OwnerAd[] }>(`/api/forums/${s}`),
       jsonFetch<{ orders?: SiteOrder[] }>(`/api/forums/${s}/orders`),
     ]);
     if (d.ok && d.data.forum) {
-      setDetail({ forum: d.data.forum, products: d.data.products || [], threads: d.data.threads || [] });
+      setDetail({ forum: d.data.forum, products: d.data.products || [], threads: d.data.threads || [], ads: d.data.ads || [] });
     }
     setOrders(o.data.orders || []);
     setLoadingSite(false);
@@ -221,6 +224,7 @@ export default function ManageView() {
           {activeTab === 'memberships' && <MembershipsTab site={site} goToPlan={() => setTab('plan')} />}
           {activeTab === 'coupons' && <CouponsTab site={site} goToPlan={() => setTab('plan')} />}
           {activeTab === 'shipping' && <ShippingTab site={site} reload={reload} goToPlan={() => setTab('plan')} />}
+          {activeTab === 'plugins' && <PluginsTab site={site} go={(t) => setTab(t as TabKey)} />}
           {activeTab === 'messages' && <MessagesTab site={site} goToPlan={() => setTab('plan')} />}
           {activeTab === 'adspace' && <AdSpaceTab site={site} goToPlan={() => setTab('plan')} />}
           {activeTab === 'domain' && <DomainTab site={site} goToPlan={() => setTab('plan')} />}
@@ -263,6 +267,24 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
 
   return (
     <div className="space-y-6">
+      {detail.ads.filter((a) => a.placement === 'banner').slice(0, 1).map((a) => {
+        const body = (
+          <div className="g-tonal px-5 py-4 flex items-center gap-4">
+            {a.image_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={a.image_url} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0" />
+            )}
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wide text-secondary">Sponsored</p>
+              <p className="font-medium truncate">{a.title}</p>
+              {a.body && <p className="text-sm text-secondary truncate">{a.body}</p>}
+            </div>
+          </div>
+        );
+        return a.link_url
+          ? <a key={a.id} href={a.link_url} target="_blank" rel="noopener noreferrer sponsored" className="block">{body}</a>
+          : <div key={a.id}>{body}</div>;
+      })}
       {(needsCheck > 0) && (
         <button onClick={() => go('orders')} className="w-full text-left g-tonal p-4 flex items-center justify-between gap-3">
           <span className="font-medium">{needsCheck} {needsCheck === 1 ? 'payment' : 'payments'} to check</span>

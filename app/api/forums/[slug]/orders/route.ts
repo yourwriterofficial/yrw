@@ -3,9 +3,10 @@ import { downloadsForOrder, isMissingColumnError, readExtendedSite, readSiteTool
 import { emailOrderReceived } from '@/lib/storeEmails';
 import { computeShipping, type ShippingZoneRow } from '@/lib/shipping';
 import { planFor } from '@/lib/plans';
+import { sendSitePush } from '@/lib/sitePush';
 import { overLimit, clientIp } from '@/lib/rateLimit';
 import crypto from 'node:crypto';
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { createClient as createServerClient } from '@/lib/supabase/server';
@@ -356,6 +357,14 @@ export async function POST(
     } catch (e) {
       console.warn('Store owner notification failed:', e);
     }
+
+    // Phone alert for Pro and Business stores. Runs after the response is sent, so it can never slow down or fail an order.
+    after(() => sendSitePush(site.id, 'owner', {
+      title: `New order ${orderCode}`,
+      body: `${parsed.data.buyer_name} placed an order for ${Math.round(grandTotal).toLocaleString('en-NG')}.`,
+      url: `/forums/${site.slug}`,
+      tag: `order-${orderCode}`,
+    }));
 
     return NextResponse.json({ order }, { status: 201 });
   } catch (err: unknown) {

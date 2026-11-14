@@ -3,7 +3,7 @@
 import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Monitor, Smartphone } from 'lucide-react';
-import { SITE_TEMPLATES, getTemplateById } from '@/lib/siteTemplates';
+import { SITE_TEMPLATES } from '@/lib/siteTemplates';
 import type { ForumSummary, ForumThread, SiteProduct } from '@/lib/forums';
 import { StoreProductCard, StorefrontHeroAndTrust } from '@/app/components/forums/StorefrontThemes';
 import ThreadListThemes, { FORUM_LAYOUTS } from '@/app/components/forums/ThreadListThemes';
@@ -18,6 +18,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
   const [width, setWidth] = useState<'desktop' | 'phone'>('desktop');
   const [price, setPrice] = useState<{ price: number; owned: boolean } | null>(null);
   const [category, setCategory] = useState('All');
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     let active = true;
@@ -44,9 +45,9 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
     const src = tpl?.sample_threads ?? (tpl?.sample_thread ? [tpl.sample_thread] : []);
     return src.map((t, i) => ({
       id: `t${i}`, forum_id: 'preview', author_id: 'a', author_name: ['Adaeze', 'Tunde', 'Zainab', 'Chidi'][i % 4], title: t.title, body: t.body,
-      is_pinned: i === 0, is_locked: false, reply_count: [24, 9, 41, 3][i % 4], last_activity_at: new Date(Date.now() - i * 3_600_000).toISOString(), created_at: new Date(Date.now() - i * 7_200_000).toISOString(),
+      is_pinned: i === 0, is_locked: false, reply_count: [24, 9, 41, 3][i % 4], last_activity_at: new Date(now - i * 3_600_000).toISOString(), created_at: new Date(now - i * 7_200_000).toISOString(),
     }));
-  }, [tpl]);
+  }, [tpl, now]);
 
   if (!tpl || !site) {
     return (

@@ -5,6 +5,8 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/forumServer';
 import { effectiveTier, PLANS } from '@/lib/plans';
 import { overLimit } from '@/lib/rateLimit';
+import { pluginOn } from '@/lib/plugins';
+import { readPluginSettings } from '@/lib/pluginsServer';
 import { sendSiteEmail } from '@/lib/siteMailer';
 import { emailShell } from '@/lib/emailTemplates';
 import { siteUrl } from '@/lib/siteUrl';
@@ -18,7 +20,8 @@ async function chatSite(slug: string) {
     .eq('slug', slug.toLowerCase().trim())
     .maybeSingle();
   if (!data || !data.is_public) return null;
-  return { site: data, enabled: PLANS[effectiveTier(data.plan_tier, data.plan_expires_at)].directMessages };
+  const settings = await readPluginSettings(data.id);
+  return { site: data, enabled: PLANS[effectiveTier(data.plan_tier, data.plan_expires_at)].directMessages && pluginOn('chat', data.plan_tier, data.plan_expires_at, settings) };
 }
 
 /** Buyer: my conversation with this seller. */

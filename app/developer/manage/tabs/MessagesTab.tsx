@@ -57,7 +57,7 @@ export default function MessagesTab({ site, goToPlan }: { site: Site; goToPlan: 
     <div className="grid md:grid-cols-[320px_1fr] gap-4 min-h-[460px]">
       <section className={`g-card overflow-hidden ${open ? 'hidden md:block' : ''}`}>
         <h3 className="font-medium px-4 py-3 border-b border-theme">Conversations</h3>
-        {convos.length === 0 ? <p className="p-4 text-sm text-secondary">No messages yet. Buyers will find a "Message seller" button on your site.</p> : (
+        {convos.length === 0 ? <p className="p-4 text-sm text-secondary">No messages yet. Buyers will find a &ldquo;Message seller&rdquo; button on your site.</p> : (
           <ul className="divide-y divide-theme max-h-[520px] overflow-y-auto">
             {convos.map((c) => (
               <li key={c.buyer_id}>

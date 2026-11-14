@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react'; // eslint-disable-line
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Globe, Lock, Plus, ArrowRight, ShoppingBag, MessageSquare, Layers } from 'lucide-react';
 import { FORUM_ACCENTS, normalizeForumSlug, validateForumSlug, getForumHref } from '@/lib/forums';
@@ -13,13 +13,19 @@ interface Props {
 
 export default function CreateForumForm({ onCreated }: Props) {
   const router = useRouter();
-  const [templateId, setTemplateId] = useState<string>(SITE_TEMPLATES[0].id);
+  // A theme preview links here with ?template=<id>, so start on that theme.
+  const [wantedId] = useState<string>(() => {
+    if (typeof window === 'undefined') return SITE_TEMPLATES[0].id;
+    const w = new URLSearchParams(window.location.search).get('template');
+    return w && SITE_TEMPLATES.some((t) => t.id === w) ? w : SITE_TEMPLATES[0].id;
+  });
+  const [templateId, setTemplateId] = useState<string>(wantedId);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(true);
-  const [accent, setAccent] = useState<string>(SITE_TEMPLATES[0].accent_color);
+  const [accent, setAccent] = useState<string>(getTemplateById(wantedId).accent_color);
   const [currency, setCurrency] = useState<'NGN' | 'USD' | 'GBP'>('NGN');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [bankName, setBankName] = useState('');
@@ -28,7 +34,7 @@ export default function CreateForumForm({ onCreated }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const [group, setGroup] = useState<TemplateGroup>('sell');
+  const [group, setGroup] = useState<TemplateGroup>(templateGroup(getTemplateById(wantedId)));
   // Prices and what this person already owns come from the server, so a price changed in the admin shows at once.
   const [prices, setPrices] = useState<Record<string, { price: number; owned: boolean; pending: boolean; active: boolean }>>({});
   const [buy, setBuy] = useState<{ reference: string; amount: number; theme: string } | null>(null);
@@ -42,15 +48,7 @@ export default function CreateForumForm({ onCreated }: Props) {
       for (const t of j.themes || []) m[t.id] = { price: t.price_ngn, owned: t.owned ?? t.price_ngn === 0, pending: !!t.pending, active: t.is_active };
       setPrices(m);
     }).catch(() => {});
-    const wanted = new URLSearchParams(window.location.search).get('template');
-    if (wanted && SITE_TEMPLATES.some((t) => t.id === wanted)) {
-      setTemplateId(wanted);
-      setGroup(templateGroup(getTemplateById(wanted)));
-      const tpl = getTemplateById(wanted);
-      setAccent(tpl.accent_color);
-    }
     return () => { active = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const priceOf = (id: string) => prices[id]?.price ?? getTemplateById(id).price_ngn ?? 0;

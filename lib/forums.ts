@@ -52,6 +52,8 @@ export interface ForumSummary {
   plan_tier?: 'free' | 'pro' | 'business';
   logo_url?: string;
   hide_branding?: boolean;
+  /** Owner's plugin switches. A missing entry means on. */
+  plugins?: Record<string, unknown>;
   verified?: boolean;
   verified_at?: string | null;
   my_role?: 'owner' | 'manager' | 'packer' | 'support';

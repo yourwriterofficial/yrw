@@ -5,6 +5,8 @@ import xss from 'xss';
 import { supabaseAdmin } from '@/lib/forumServer';
 import { effectiveTier, PLANS } from '@/lib/plans';
 import { clientIp, overLimit } from '@/lib/rateLimit';
+import { pluginOn } from '@/lib/plugins';
+import { readPluginSettings } from '@/lib/pluginsServer';
 import { sendSiteEmail } from '@/lib/siteMailer';
 import { emailShell } from '@/lib/emailTemplates';
 import { siteUrl } from '@/lib/siteUrl';
@@ -19,6 +21,7 @@ async function siteWithPlan(slug: string) {
     .maybeSingle();
   if (!data || !data.is_public) return null;
   if (!PLANS[effectiveTier(data.plan_tier, data.plan_expires_at)].adSpace) return null;
+  if (!pluginOn('adspace', data.plan_tier, data.plan_expires_at, await readPluginSettings(data.id))) return null;
   return data;
 }
 

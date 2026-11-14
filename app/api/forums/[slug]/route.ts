@@ -1,5 +1,6 @@
 import { planFor, effectiveTier, PLANS } from '@/lib/plans';
 import { canUseTheme } from '@/lib/themeCatalog';
+import { readPluginSettings } from '@/lib/pluginsServer';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
@@ -296,6 +297,7 @@ export async function GET(
       // The plan end date is for the owner and their staff only; visitors only need the effective plan below.
       ...(myRole ? { plan_expires_at: ext?.plan_expires_at ?? null } : {}),
       plan_effective: tier,
+      plugins: await readPluginSettings(forum.id),
       page_about: tools.page_about,
       page_delivery: tools.page_delivery,
       page_returns: tools.page_returns,
