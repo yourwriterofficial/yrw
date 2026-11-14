@@ -157,7 +157,7 @@ export async function GET(
     const threads = threadsRes.data || [];
     const names = await resolveAuthorNames(threads.map((t) => t.author_id));
 
-    let membersOnlyMap = new Map<string, boolean>();
+    const membersOnlyMap = new Map<string, boolean>();
     let hasActivePaidMembership = !!myRole;
     if (forum.site_mode !== 'store' && threads.length > 0) {
       const [moRes, memShipRes] = await Promise.all([
@@ -342,6 +342,24 @@ export async function PATCH(
     const parsed = updateForumSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid input' }, { status: 400 });
+    }
+
+    // A manager runs the shop day to day, but must not be able to redirect the money or change what
+    // the site is. These fields stay with the owner.
+    const OWNER_ONLY = ['bank_name', 'bank_account_number', 'bank_account_name', 'payment_instructions', 'currency', 'is_public', 'site_mode', 'template_id', 'hide_branding'] as const;
+    if (access.role !== 'owner') {
+      // The settings form sends every field on each save, so only a field that really CHANGES is blocked.
+      const { data: current } = await supabaseAdmin.from('forums').select(OWNER_ONLY.join(', ')).eq('id', forum.id).maybeSingle();
+      const now = (current || {}) as unknown as Record<string, unknown>;
+      const changed = OWNER_ONLY.filter((k) => {
+        const incoming = (parsed.data as Record<string, unknown>)[k];
+        if (incoming === undefined) return false;
+        const normalised = typeof incoming === 'string' ? xss(incoming) : incoming;
+        return String(normalised ?? '') !== String(now[k] ?? '');
+      });
+      if (changed.length > 0) {
+        return NextResponse.json({ error: 'Only the site owner can change payment details, visibility and the site type.' }, { status: 403 });
+      }
     }
 
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };

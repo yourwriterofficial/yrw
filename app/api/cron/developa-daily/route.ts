@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { supabaseAdmin } from '@/lib/forumServer';
 import { daysLeft, effectiveTier, PLANS } from '@/lib/plans';
 import { formatMoney } from '@/lib/forums';
@@ -12,9 +13,12 @@ const esc = (v: unknown) =>
   String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get('authorization');
+  const authHeader = request.headers.get('authorization') || '';
   const expectedSecret = process.env.CRON_SECRET;
-  if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
+  const expected = Buffer.from(`Bearer ${expectedSecret || ''}`);
+  const given = Buffer.from(authHeader);
+  // Fails closed when CRON_SECRET is not set, and compares in constant time.
+  if (!expectedSecret || given.length !== expected.length || !timingSafeEqual(given, expected)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

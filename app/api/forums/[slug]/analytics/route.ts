@@ -58,7 +58,8 @@ export async function POST(
     // Daily rotating one-way hash keeps visitor counts unique per day without storing IPs
     const sessionHash = crypto
       .createHash('sha256')
-      .update(`${ip}|${ua}|${todayUtc}|${site.id}`)
+      // The secret makes the hash impossible to reverse by trying every possible IP address.
+      .update(`${process.env.ANALYTICS_SALT || process.env.SUPABASE_SERVICE_ROLE_KEY || ''}|${ip}|${ua}|${todayUtc}|${site.id}`)
       .digest('hex')
       .slice(0, 24);
 

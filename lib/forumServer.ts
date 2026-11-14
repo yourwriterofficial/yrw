@@ -98,6 +98,20 @@ export async function readSiteTools(siteId: string) {
 }
 
 /**
+ * True when this account's email address has been confirmed. A staff invite is matched by email,
+ * so without this an attacker could sign up with a victim's address (when email confirmation is
+ * off, or via a provider that does not verify) and inherit their staff role.
+ */
+async function emailIsConfirmed(userId: string): Promise<boolean> {
+  try {
+    const { data } = await supabaseAdmin.auth.admin.getUserById(userId);
+    return !!(data?.user?.email_confirmed_at || (data?.user as { confirmed_at?: string } | undefined)?.confirmed_at);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Resolves the signed-in user and verifies they are the owner or an authorized staff member
  * for the site. Staff access requires the Business plan.
  */
@@ -138,7 +152,7 @@ export async function requireSiteAccess(slug: string, allowedRoles: SiteRole[] =
     .maybeSingle();
   if (byUid) {
     staffRow = byUid;
-  } else if (userEmail) {
+  } else if (userEmail && (await emailIsConfirmed(user.id))) {
     const { data: byEmail } = await supabaseAdmin
       .from('site_staff')
       .select('id, role, user_id')
@@ -183,7 +197,7 @@ export async function resolveUserSiteRole(
   if (byUid?.role) return byUid.role as SiteRole;
 
   const email = (userEmail || '').toLowerCase().trim();
-  if (!email) return null;
+  if (!email || !(await emailIsConfirmed(userId))) return null;
   const { data: byEmail } = await supabaseAdmin
     .from('site_staff')
     .select('id, role, user_id')
@@ -199,8 +213,8 @@ export async function resolveUserSiteRole(
   return null;
 }
 
-/** Resolves the signed-in user and the site they own (or manager/staff if permitted), or error response. */
-export async function requireOwnedSite(slug: string, allowedRoles: SiteRole[] = ['owner', 'manager']) {
+/** Resolves the signed-in user and the site they OWN, or an error response. Pass `allowedRoles` to let staff in too. */
+export async function requireOwnedSite(slug: string, allowedRoles: SiteRole[] = ['owner']) {
   return requireSiteAccess(slug, allowedRoles);
 }
 

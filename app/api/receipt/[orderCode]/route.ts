@@ -51,7 +51,8 @@ export async function GET(
     if (!order) return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
     return buildResponse(order);
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to load receipt' }, { status: 500 });
+    console.error('Receipt lookup failed:', err);
+    return NextResponse.json({ error: 'Could not load this receipt. Please try again.' }, { status: 500 });
   }
 }
 
