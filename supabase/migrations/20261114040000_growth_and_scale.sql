@@ -21,10 +21,17 @@ create table if not exists public.site_subscribers (
 create index if not exists site_subscribers_site_idx on public.site_subscribers (site_id, marketing_consent);
 alter table public.site_subscribers enable row level security;
 
-drop policy if exists "site_subscribers_owner_all" on public.site_subscribers;
-create policy "site_subscribers_owner_all" on public.site_subscribers
-  for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
-  with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_subscribers' and policyname = 'site_subscribers_owner_all'
+  ) then
+    create policy "site_subscribers_owner_all" on public.site_subscribers
+      for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
+      with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+  end if;
+end $$;
 
 -- 4.3 Staff accounts with roles
 create table if not exists public.site_staff (
@@ -41,14 +48,28 @@ create index if not exists site_staff_user_idx on public.site_staff (user_id);
 create index if not exists site_staff_site_idx on public.site_staff (site_id);
 alter table public.site_staff enable row level security;
 
-drop policy if exists "site_staff_owner_all" on public.site_staff;
-create policy "site_staff_owner_all" on public.site_staff
-  for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
-  with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_staff' and policyname = 'site_staff_owner_all'
+  ) then
+    create policy "site_staff_owner_all" on public.site_staff
+      for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
+      with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+  end if;
+end $$;
 
-drop policy if exists "site_staff_self_read" on public.site_staff;
-create policy "site_staff_self_read" on public.site_staff
-  for select using (user_id = auth.uid());
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_staff' and policyname = 'site_staff_self_read'
+  ) then
+    create policy "site_staff_self_read" on public.site_staff
+      for select using (user_id = auth.uid());
+  end if;
+end $$;
 
 -- 4.4 Privacy-friendly visits & traffic analytics
 create table if not exists public.site_visits (
@@ -64,9 +85,16 @@ create table if not exists public.site_visits (
 create index if not exists site_visits_site_created_idx on public.site_visits (site_id, created_at desc);
 alter table public.site_visits enable row level security;
 
-drop policy if exists "site_visits_owner_read" on public.site_visits;
-create policy "site_visits_owner_read" on public.site_visits
-  for select using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_visits' and policyname = 'site_visits_owner_read'
+  ) then
+    create policy "site_visits_owner_read" on public.site_visits
+      for select using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+  end if;
+end $$;
 
 -- 4.5 Email newsletter log
 create table if not exists public.site_newsletters (
@@ -82,10 +110,17 @@ create table if not exists public.site_newsletters (
 create index if not exists site_newsletters_site_month_idx on public.site_newsletters (site_id, month_key);
 alter table public.site_newsletters enable row level security;
 
-drop policy if exists "site_newsletters_owner_all" on public.site_newsletters;
-create policy "site_newsletters_owner_all" on public.site_newsletters
-  for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
-  with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_newsletters' and policyname = 'site_newsletters_owner_all'
+  ) then
+    create policy "site_newsletters_owner_all" on public.site_newsletters
+      for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
+      with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+  end if;
+end $$;
 
 -- 4.7 Scheduled backups + 4.11 Plan expiry reminder state
 alter table public.forums
@@ -107,14 +142,28 @@ create table if not exists public.site_membership_tiers (
 create index if not exists site_membership_tiers_site_idx on public.site_membership_tiers (site_id);
 alter table public.site_membership_tiers enable row level security;
 
-drop policy if exists "site_membership_tiers_public_read" on public.site_membership_tiers;
-create policy "site_membership_tiers_public_read" on public.site_membership_tiers
-  for select using (is_active = true);
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_membership_tiers' and policyname = 'site_membership_tiers_public_read'
+  ) then
+    create policy "site_membership_tiers_public_read" on public.site_membership_tiers
+      for select using (is_active = true);
+  end if;
+end $$;
 
-drop policy if exists "site_membership_tiers_owner_all" on public.site_membership_tiers;
-create policy "site_membership_tiers_owner_all" on public.site_membership_tiers
-  for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
-  with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_membership_tiers' and policyname = 'site_membership_tiers_owner_all'
+  ) then
+    create policy "site_membership_tiers_owner_all" on public.site_membership_tiers
+      for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
+      with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+  end if;
+end $$;
 
 create table if not exists public.site_memberships (
   id                uuid primary key default gen_random_uuid(),
@@ -130,12 +179,19 @@ create table if not exists public.site_memberships (
 create index if not exists site_memberships_site_user_idx on public.site_memberships (site_id, user_id, status);
 alter table public.site_memberships enable row level security;
 
-drop policy if exists "site_memberships_self_or_owner" on public.site_memberships;
-create policy "site_memberships_self_or_owner" on public.site_memberships
-  for select using (
-    user_id = auth.uid()
-    or exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid())
-  );
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_memberships' and policyname = 'site_memberships_self_or_owner'
+  ) then
+    create policy "site_memberships_self_or_owner" on public.site_memberships
+      for select using (
+        user_id = auth.uid()
+        or exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid())
+      );
+  end if;
+end $$;
 
 alter table public.forum_threads
   add column if not exists is_members_only boolean not null default false;
@@ -156,14 +212,28 @@ create table if not exists public.site_booking_services (
 create index if not exists site_booking_services_site_idx on public.site_booking_services (site_id);
 alter table public.site_booking_services enable row level security;
 
-drop policy if exists "site_booking_services_public_read" on public.site_booking_services;
-create policy "site_booking_services_public_read" on public.site_booking_services
-  for select using (is_active = true);
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_booking_services' and policyname = 'site_booking_services_public_read'
+  ) then
+    create policy "site_booking_services_public_read" on public.site_booking_services
+      for select using (is_active = true);
+  end if;
+end $$;
 
-drop policy if exists "site_booking_services_owner_all" on public.site_booking_services;
-create policy "site_booking_services_owner_all" on public.site_booking_services
-  for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
-  with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_booking_services' and policyname = 'site_booking_services_owner_all'
+  ) then
+    create policy "site_booking_services_owner_all" on public.site_booking_services
+      for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
+      with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+  end if;
+end $$;
 
 create table if not exists public.site_bookings (
   id          uuid primary key default gen_random_uuid(),
@@ -183,10 +253,17 @@ create table if not exists public.site_bookings (
 create index if not exists site_bookings_site_date_idx on public.site_bookings (site_id, slot_date);
 alter table public.site_bookings enable row level security;
 
-drop policy if exists "site_bookings_owner_all" on public.site_bookings;
-create policy "site_bookings_owner_all" on public.site_bookings
-  for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
-  with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_bookings' and policyname = 'site_bookings_owner_all'
+  ) then
+    create policy "site_bookings_owner_all" on public.site_bookings
+      for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
+      with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+  end if;
+end $$;
 
 -- 4.10 Priority support requests
 create table if not exists public.site_support_requests (
@@ -204,11 +281,25 @@ create table if not exists public.site_support_requests (
 create index if not exists site_support_requests_site_idx on public.site_support_requests (site_id, created_at desc);
 alter table public.site_support_requests enable row level security;
 
-drop policy if exists "site_support_owner_read" on public.site_support_requests;
-create policy "site_support_owner_read" on public.site_support_requests
-  for select using (user_id = auth.uid());
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_support_requests' and policyname = 'site_support_owner_read'
+  ) then
+    create policy "site_support_owner_read" on public.site_support_requests
+      for select using (user_id = auth.uid());
+  end if;
+end $$;
 
-drop policy if exists "site_support_admin_all" on public.site_support_requests;
-create policy "site_support_admin_all" on public.site_support_requests
-  for all using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_support_requests' and policyname = 'site_support_admin_all'
+  ) then
+    create policy "site_support_admin_all" on public.site_support_requests
+      for all using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true))
+      with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  end if;
+end $$;

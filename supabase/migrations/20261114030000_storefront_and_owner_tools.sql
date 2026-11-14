@@ -26,17 +26,31 @@ create index if not exists site_product_variants_prod_idx on public.site_product
 create index if not exists site_product_variants_site_idx on public.site_product_variants (site_id);
 alter table public.site_product_variants enable row level security;
 
-drop policy if exists "site_variants_public_read" on public.site_product_variants;
-create policy "site_variants_public_read" on public.site_product_variants
-  for select using (
-    is_active = true
-    and exists (select 1 from public.forums f where f.id = site_id and f.is_public = true)
-  );
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_product_variants' and policyname = 'site_variants_public_read'
+  ) then
+    create policy "site_variants_public_read" on public.site_product_variants
+      for select using (
+        is_active = true
+        and exists (select 1 from public.forums f where f.id = site_id and f.is_public = true)
+      );
+  end if;
+end $$;
 
-drop policy if exists "site_variants_owner_all" on public.site_product_variants;
-create policy "site_variants_owner_all" on public.site_product_variants
-  for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
-  with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_product_variants' and policyname = 'site_variants_owner_all'
+  ) then
+    create policy "site_variants_owner_all" on public.site_product_variants
+      for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
+      with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+  end if;
+end $$;
 
 -- 2.5 Reviews & ratings
 create table if not exists public.site_reviews (
@@ -55,17 +69,31 @@ create index if not exists site_reviews_prod_idx on public.site_reviews (product
 create index if not exists site_reviews_site_idx on public.site_reviews (site_id, created_at desc);
 alter table public.site_reviews enable row level security;
 
-drop policy if exists "site_reviews_public_read" on public.site_reviews;
-create policy "site_reviews_public_read" on public.site_reviews
-  for select using (
-    is_visible = true
-    and exists (select 1 from public.forums f where f.id = site_id and f.is_public = true)
-  );
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_reviews' and policyname = 'site_reviews_public_read'
+  ) then
+    create policy "site_reviews_public_read" on public.site_reviews
+      for select using (
+        is_visible = true
+        and exists (select 1 from public.forums f where f.id = site_id and f.is_public = true)
+      );
+  end if;
+end $$;
 
-drop policy if exists "site_reviews_owner_all" on public.site_reviews;
-create policy "site_reviews_owner_all" on public.site_reviews
-  for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
-  with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_reviews' and policyname = 'site_reviews_owner_all'
+  ) then
+    create policy "site_reviews_owner_all" on public.site_reviews
+      for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
+      with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+  end if;
+end $$;
 
 alter table public.site_orders
   add column if not exists review_reminded_at timestamptz;
@@ -97,17 +125,31 @@ create table if not exists public.site_shipping_zones (
 create index if not exists site_shipping_zones_site_idx on public.site_shipping_zones (site_id);
 alter table public.site_shipping_zones enable row level security;
 
-drop policy if exists "site_shipping_public_read" on public.site_shipping_zones;
-create policy "site_shipping_public_read" on public.site_shipping_zones
-  for select using (
-    is_active = true
-    and exists (select 1 from public.forums f where f.id = site_id and f.is_public = true)
-  );
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_shipping_zones' and policyname = 'site_shipping_public_read'
+  ) then
+    create policy "site_shipping_public_read" on public.site_shipping_zones
+      for select using (
+        is_active = true
+        and exists (select 1 from public.forums f where f.id = site_id and f.is_public = true)
+      );
+  end if;
+end $$;
 
-drop policy if exists "site_shipping_owner_all" on public.site_shipping_zones;
-create policy "site_shipping_owner_all" on public.site_shipping_zones
-  for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
-  with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_shipping_zones' and policyname = 'site_shipping_owner_all'
+  ) then
+    create policy "site_shipping_owner_all" on public.site_shipping_zones
+      for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
+      with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+  end if;
+end $$;
 
 alter table public.site_orders
   add column if not exists shipping_fee numeric(12, 2) not null default 0,
@@ -139,9 +181,16 @@ create table if not exists public.site_carts (
 create index if not exists site_carts_site_status_idx on public.site_carts (site_id, status, updated_at desc);
 alter table public.site_carts enable row level security;
 
-drop policy if exists "site_carts_owner_read" on public.site_carts;
-create policy "site_carts_owner_read" on public.site_carts
-  for select using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_carts' and policyname = 'site_carts_owner_read'
+  ) then
+    create policy "site_carts_owner_read" on public.site_carts
+      for select using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+  end if;
+end $$;
 
 -- 2.13 Private order notes & refund/return events
 alter table public.site_orders
@@ -162,7 +211,14 @@ create table if not exists public.site_order_events (
 create index if not exists site_order_events_order_idx on public.site_order_events (order_id, created_at desc);
 alter table public.site_order_events enable row level security;
 
-drop policy if exists "site_order_events_owner_all" on public.site_order_events;
-create policy "site_order_events_owner_all" on public.site_order_events
-  for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
-  with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'site_order_events' and policyname = 'site_order_events_owner_all'
+  ) then
+    create policy "site_order_events_owner_all" on public.site_order_events
+      for all using (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()))
+      with check (exists (select 1 from public.forums f where f.id = site_id and f.owner_id = auth.uid()));
+  end if;
+end $$;
