@@ -232,7 +232,7 @@ export default function CreatePortalView() {
                       </div>
                       <div className="flex gap-2 shrink-0">
                         <Link href={`/developer/manage?site=${site.slug}`} className="btn-primary inline-flex items-center gap-1.5 !rounded-full px-5 py-2.5 text-sm font-medium">
-                          <Settings2 className="w-4 h-4" /> Manage
+                          <Settings2 className="w-4 h-4" /> Admin
                         </Link>
                         <a href={getForumHref(site.slug, host)} target="_blank" rel="noreferrer" className="btn-secondary inline-flex items-center gap-1.5 !rounded-full px-5 py-2.5 text-sm font-medium">
                           Visit <ExternalLink className="w-3.5 h-3.5" />

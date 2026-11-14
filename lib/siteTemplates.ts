@@ -1,6 +1,13 @@
 export type SiteMode = 'forum' | 'store' | 'both';
 export type ProductType = 'physical' | 'digital' | 'service';
-export type StoreLayoutStyle = 'standard' | 'jumia' | 'temu';
+export type StoreLayoutStyle = 'standard' | 'jumia' | 'temu' | 'portfolio' | 'classified';
+export type TemplateGroup = 'sell' | 'showcase' | 'community';
+
+export const TEMPLATE_GROUPS: { key: TemplateGroup; label: string }[] = [
+  { key: 'sell', label: 'Sell products' },
+  { key: 'showcase', label: 'Portfolio and services' },
+  { key: 'community', label: 'Blog and community' },
+];
 
 export interface SiteTemplateProduct {
   title: string;
@@ -18,6 +25,10 @@ export interface SiteTemplate {
   tagline: string;
   site_mode: SiteMode;
   layout_style: StoreLayoutStyle;
+  /** Which tab of the template picker it shows under. Defaults from the site type. */
+  group?: TemplateGroup;
+  /** What the owner's items are called: [singular, plural]. Defaults to Product/Products. */
+  item_label?: [string, string];
   accent_color: string;
   hero_headline: string;
   hero_subheadline: string;
@@ -259,8 +270,166 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       body: 'Start a new thread or reply below to get the conversation going.',
     },
   },
+  {
+    id: 'portfolio-creative',
+    label: 'Portfolio & Hire Me',
+    group: 'showcase',
+    item_label: ['Project', 'Projects'],
+    tagline: 'Show your best work and let clients book you or buy a package.',
+    site_mode: 'store',
+    layout_style: 'portfolio',
+    accent_color: '#1a56db',
+    hero_headline: 'Work that speaks for itself.',
+    hero_subheadline: 'Browse recent projects, then message me or book a package in a few taps.',
+    sample_products: [
+      { title: 'Brand identity for a Lagos fashion label', description: 'Logo, colours, packaging and social kit. Delivered in 10 days.', category: 'Branding', product_type: 'service', price: 150000 },
+      { title: 'Website design and build', description: 'A five-page responsive website with contact form and WhatsApp button.', category: 'Web', product_type: 'service', price: 250000 },
+      { title: 'Monthly social media management', description: '12 posts, 4 stories and a monthly report.', category: 'Social', product_type: 'service', price: 80000 },
+    ],
+  },
+  {
+    id: 'photographer-studio',
+    label: 'Photography & Video Studio',
+    group: 'showcase',
+    item_label: ['Package', 'Packages'],
+    tagline: 'A gallery-style site with bookable shoot packages.',
+    site_mode: 'store',
+    layout_style: 'portfolio',
+    accent_color: '#7c3aed',
+    hero_headline: 'Moments, beautifully kept.',
+    hero_subheadline: 'Weddings, portraits, events and brands. Pick a package and reserve your date.',
+    sample_products: [
+      { title: 'Portrait session (1 hour)', description: '20 edited photos delivered in a private online gallery.', category: 'Portraits', product_type: 'service', price: 45000 },
+      { title: 'Wedding day coverage', description: 'Full-day coverage, 300 edited photos and a highlight reel.', category: 'Weddings', product_type: 'service', price: 450000 },
+      { title: 'Product photography (10 items)', description: 'Clean white-background and lifestyle shots for your shop.', category: 'Commercial', product_type: 'service', price: 60000 },
+    ],
+  },
+  {
+    id: 'buy-and-sell',
+    label: 'Buy & Sell Marketplace',
+    group: 'sell',
+    item_label: ['Listing', 'Listings'],
+    tagline: 'Classified-style listings. Buyers contact you on WhatsApp or order online.',
+    site_mode: 'both',
+    layout_style: 'classified',
+    accent_color: '#16a34a',
+    hero_headline: 'Buy and sell near you.',
+    hero_subheadline: 'Fresh listings every day. Message the seller or order straight from the page.',
+    sample_products: [
+      { title: 'iPhone 12, 128GB, clean', description: 'Used, battery health 88%. Comes with charger. Inspect before you pay.', category: 'Phones', product_type: 'physical', price: 320000, stock_qty: 1 },
+      { title: 'Office desk and chair set', description: 'Solid wood desk with a padded chair. Pickup in Ikeja.', category: 'Furniture', product_type: 'physical', price: 95000, stock_qty: 1 },
+      { title: 'Toyota Corolla 2012 (Tokunbo)', description: 'Accident-free, AC works, first body. Serious buyers only.', category: 'Cars', product_type: 'physical', price: 4200000, stock_qty: 1 },
+    ],
+    sample_thread: { title: 'Selling tips and safety rules', body: 'Meet in public places, inspect before you pay, and never send money to someone you have not met.' },
+  },
+  {
+    id: 'blog-magazine',
+    label: 'Blog & Newsletter',
+    group: 'community',
+    item_label: ['Post', 'Posts'],
+    tagline: 'Publish articles, grow readers and let them join the conversation.',
+    site_mode: 'forum',
+    layout_style: 'standard',
+    accent_color: '#0f766e',
+    hero_headline: 'Stories, ideas and honest advice.',
+    hero_subheadline: 'Read the latest posts and join the discussion in the comments.',
+    sample_products: [],
+    sample_thread: { title: 'Welcome to the blog', body: 'This is your first post. Edit it or delete it, then publish your own from the Admin page.' },
+  },
+  {
+    id: 'restaurant-food',
+    label: 'Restaurant, Bakery & Food Orders',
+    group: 'sell',
+    item_label: ['Menu item', 'Menu'],
+    tagline: 'A menu people can order from, with delivery and pickup.',
+    site_mode: 'store',
+    layout_style: 'standard',
+    accent_color: '#ea580c',
+    hero_headline: 'Hot, fresh and on its way.',
+    hero_subheadline: 'Choose from the menu and order for delivery or pickup.',
+    sample_products: [
+      { title: 'Jollof rice and grilled chicken', description: 'Party jollof, peppered chicken and plantain.', category: 'Main meals', product_type: 'physical', price: 4500 },
+      { title: 'Chin chin (500g)', description: 'Crunchy and fresh, packed to order.', category: 'Snacks', product_type: 'physical', price: 2500 },
+      { title: 'Celebration cake (8 inch)', description: 'Vanilla or chocolate. Order two days ahead.', category: 'Cakes', product_type: 'physical', price: 22000 },
+    ],
+  },
+  {
+    id: 'real-estate',
+    label: 'Real Estate & Rentals',
+    group: 'sell',
+    item_label: ['Property', 'Properties'],
+    tagline: 'List houses, land and apartments and get enquiries on WhatsApp.',
+    site_mode: 'store',
+    layout_style: 'classified',
+    accent_color: '#0369a1',
+    hero_headline: 'Find your next home.',
+    hero_subheadline: 'Verified listings with clear prices. Message us to book an inspection.',
+    sample_products: [
+      { title: '2-bedroom flat to let, Yaba', description: 'Tiled floors, prepaid meter, water and security. Rent per year.', category: 'Rent', product_type: 'service', price: 1800000 },
+      { title: 'Land for sale, Ibeju-Lekki (600sqm)', description: 'Dry land with C of O. Inspection every Saturday.', category: 'Land', product_type: 'service', price: 12000000 },
+    ],
+  },
+  {
+    id: 'online-academy',
+    label: 'Online Academy & Courses',
+    group: 'sell',
+    item_label: ['Course', 'Courses'],
+    tagline: 'Sell courses, workshops and study guides with instant access.',
+    site_mode: 'both',
+    layout_style: 'standard',
+    accent_color: '#4f46e5',
+    hero_headline: 'Learn a skill that pays.',
+    hero_subheadline: 'Practical courses and guides. Join, learn and ask questions in the community.',
+    sample_products: [
+      { title: 'Freelancing starter course', description: 'Find clients, price your work and get paid from anywhere.', category: 'Courses', product_type: 'digital', price: 15000, compare_at_price: 25000 },
+      { title: 'Excel for business (workbook)', description: 'Templates and exercises you can reuse at work.', category: 'Guides', product_type: 'digital', price: 6000 },
+      { title: 'Live workshop: build your first website', description: 'A 3-hour live session with Q&A.', category: 'Workshops', product_type: 'service', price: 10000 },
+    ],
+    sample_thread: { title: 'Introduce yourself', body: 'Say hello, tell us what you want to learn and ask your first question.' },
+  },
+  {
+    id: 'salon-beauty',
+    label: 'Salon, Spa & Beauty Bookings',
+    group: 'showcase',
+    item_label: ['Service', 'Services'],
+    tagline: 'A price list and booking page for hair, makeup, nails and spa.',
+    site_mode: 'store',
+    layout_style: 'portfolio',
+    accent_color: '#db2777',
+    hero_headline: 'Look good. Feel even better.',
+    hero_subheadline: 'Book your appointment in minutes and pay a deposit to hold your slot.',
+    sample_products: [
+      { title: 'Full glam makeup', description: 'Soft or full glam with lashes. Trial available.', category: 'Makeup', product_type: 'service', price: 25000 },
+      { title: 'Knotless braids', description: 'Medium length, hair included.', category: 'Hair', product_type: 'service', price: 35000 },
+      { title: 'Gel manicure and pedicure', description: 'Includes soak, shape and colour.', category: 'Nails', product_type: 'service', price: 18000 },
+    ],
+  },
+  {
+    id: 'events-tickets',
+    label: 'Events & Ticket Sales',
+    group: 'sell',
+    item_label: ['Ticket', 'Tickets'],
+    tagline: 'Sell tickets and passes for shows, workshops and parties.',
+    site_mode: 'store',
+    layout_style: 'standard',
+    accent_color: '#c026d3',
+    hero_headline: 'Be there.',
+    hero_subheadline: 'Get your ticket now. Limited seats, confirmed after payment.',
+    sample_products: [
+      { title: 'Regular ticket', description: 'General entry. Show your order code at the door.', category: 'Tickets', product_type: 'service', price: 5000, stock_qty: 200 },
+      { title: 'VIP ticket', description: 'Front seating, a drink and a meet-and-greet.', category: 'Tickets', product_type: 'service', price: 20000, stock_qty: 40 },
+    ],
+  },
 ];
 
 export function getTemplateById(id?: string | null): SiteTemplate {
   return SITE_TEMPLATES.find((t) => t.id === id) || SITE_TEMPLATES[0];
+}
+
+export function templateGroup(t: SiteTemplate): TemplateGroup {
+  return t.group ?? (t.site_mode === 'forum' ? 'community' : 'sell');
+}
+
+export function itemLabels(id?: string | null): [string, string] {
+  return getTemplateById(id).item_label ?? ['Product', 'Products'];
 }

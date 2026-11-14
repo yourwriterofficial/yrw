@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Globe, Lock, Plus, ArrowRight, ShoppingBag, MessageSquare, Sparkles } from 'lucide-react';
 import { FORUM_ACCENTS, normalizeForumSlug, validateForumSlug, getForumHref } from '@/lib/forums';
-import { SITE_TEMPLATES, getTemplateById } from '@/lib/siteTemplates';
+import { SITE_TEMPLATES, TEMPLATE_GROUPS, getTemplateById, templateGroup, type TemplateGroup } from '@/lib/siteTemplates';
 import Button from '@/app/components/ui/Button';
 
 interface Props {
@@ -28,11 +28,13 @@ export default function CreateForumForm({ onCreated }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  const [group, setGroup] = useState<TemplateGroup>('sell');
   const selectedTemplate = getTemplateById(templateId);
   const hasStore = selectedTemplate.site_mode !== 'forum';
 
   const handleSelectTemplate = (id: string) => {
     setTemplateId(id);
+    setGroup(templateGroup(getTemplateById(id)));
     const tpl = getTemplateById(id);
     setAccent(tpl.accent_color);
   };
@@ -113,8 +115,16 @@ export default function CreateForumForm({ onCreated }: Props) {
       {/* Template Picker */}
       <div className="space-y-2">
         <label className="block text-xs font-semibold text-secondary">1. Choose a Template</label>
+        <div className="flex gap-2 overflow-x-auto pb-1" role="tablist">
+          {TEMPLATE_GROUPS.map((g) => (
+            <button key={g.key} type="button" role="tab" aria-selected={group === g.key} onClick={() => setGroup(g.key)}
+              className={`shrink-0 px-4 h-9 rounded-full text-xs font-semibold border transition ${group === g.key ? 'bg-accent text-[var(--accent-foreground)] border-transparent' : 'border-theme text-secondary hover:bg-hover'}`}>
+              {g.label}
+            </button>
+          ))}
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          {SITE_TEMPLATES.map((tpl) => {
+          {SITE_TEMPLATES.filter((t) => templateGroup(t) === group).map((tpl) => {
             const active = tpl.id === templateId;
             return (
               <button

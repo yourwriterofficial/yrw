@@ -143,7 +143,7 @@ export default function DevelopaHeader() {
             {user ? (
               <div className="flex items-center gap-4 pl-2 border-l border-theme">
                 <Link href="/developer/manage" className="text-primary hover:text-accent transition-colors font-medium text-xs">
-                  Manage my sites
+                  Site admin
                 </Link>
                 {isAdmin ? (
                   <Link
@@ -242,7 +242,7 @@ export default function DevelopaHeader() {
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium"
                   >
-                    Manage my sites
+                    Site admin
                   </Link>
                   {isAdmin ? (
                     <Link

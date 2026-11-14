@@ -7,6 +7,7 @@ import DevelopaHeader from '@/app/components/DevelopaHeader';
 import DevelopaFooter from '@/app/components/DevelopaFooter';
 import { formatMoney, type ForumThread, type SiteOrder, type SiteProduct } from '@/lib/forums';
 import { PLANS, daysLeft, effectiveTier } from '@/lib/plans';
+import { itemLabels } from '@/lib/siteTemplates';
 import { jsonFetch, type Site } from './types';
 import ProductsTab from './tabs/ProductsTab';
 import OrdersTab from './tabs/OrdersTab';
@@ -155,8 +156,8 @@ export default function ManageView() {
     <>
       <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="g-h2">Manage</h1>
-          <p className="text-secondary text-sm mt-1">Your stores and communities on developa.me</p>
+          <h1 className="g-h2">Admin</h1>
+          <p className="text-secondary text-sm mt-1">Run your site: orders, content, customers and settings</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {sites.length > 1 && (
@@ -193,11 +194,14 @@ export default function ManageView() {
 
           <div role="tablist" className="flex gap-1 overflow-x-auto g-scroll-x pb-2 mb-6 border-b border-theme">
             {visibleTabs.map((t) => {
+              const tabLabel = t.key === 'products' ? itemLabels(site.template_id)[1]
+                : t.key === 'community' && site.template_id === 'blog-magazine' ? 'Posts'
+                : t.label;
               const badge = t.key === 'orders' ? orders.filter((o) => o.payment_status === 'proof_submitted').length : 0;
               return (
                 <button key={t.key} role="tab" aria-selected={activeTab === t.key} onClick={() => setTab(t.key)}
                   className={`shrink-0 px-4 h-10 rounded-full text-sm font-medium transition-colors ${activeTab === t.key ? 'bg-accent text-[var(--accent-foreground)]' : 'text-secondary hover:bg-hover hover:text-primary'}`}>
-                  {t.label}{badge > 0 && <span className="ml-2 text-xs bg-[var(--danger)] text-white rounded-full px-1.5 py-0.5">{badge}</span>}
+                  {tabLabel}{badge > 0 && <span className="ml-2 text-xs bg-[var(--danger)] text-white rounded-full px-1.5 py-0.5">{badge}</span>}
                 </button>
               );
             })}
@@ -243,7 +247,7 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
   }, [paid]);
 
   const steps = [
-    { done: !isStore || detail.products.length > 0, label: 'Add your first product', tab: 'products' as TabKey, show: isStore },
+    { done: !isStore || detail.products.length > 0, label: `Add your first ${itemLabels(site.template_id)[0].toLowerCase()}`, tab: 'products' as TabKey, show: isStore },
     { done: !!site.bank_account_number || !!site.whatsapp_number, label: 'Tell buyers how to pay you', tab: 'settings' as TabKey, show: isStore },
     { done: !!site.logo_url, label: 'Add your logo', tab: 'settings' as TabKey, show: true },
     { done: site.is_public, label: 'Make your site visible', tab: 'settings' as TabKey, show: true },
@@ -264,7 +268,7 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
           <>
             <Stat label="Money received" value={formatMoney(revenue, site.currency)} />
             <Stat label="Orders" value={String(orders.length)} sub={awaiting > 0 ? `${awaiting} awaiting payment` : undefined} />
-            <Stat label="Products live" value={String(activeProducts)} sub={`${detail.products.length} in total`} />
+            <Stat label={`${itemLabels(site.template_id)[1]} live`} value={String(activeProducts)} sub={`${detail.products.length} in total`} />
             <Stat label="Members" value={String(site.member_count)} />
           </>
         ) : (
@@ -326,6 +330,16 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
           </section>
           {isStore && <StoreQrCard site={site} />}
           {isStore && <CartsLeftCard site={site} goToPlan={() => go('plan')} />}
+          {isStore && effectiveTier(site.plan_tier, site.plan_expires_at) === 'free' && (
+            <section className="g-tonal p-5">
+              <h3 className="font-medium">Grow with Pro</h3>
+              <p className="text-sm text-secondary mt-1">
+                {detail.products.length} of {PLANS.free.maxProducts} free {itemLabels(site.template_id)[1].toLowerCase()} used.
+                Pro gives you unlimited items, your own domain, coupons, delivery zones and no platform ads for {'₦'}{PLANS.pro.priceNgn.toLocaleString('en-NG')} a month.
+              </p>
+              <button onClick={() => go('plan')} className="mt-3 text-sm font-medium px-5 h-10 rounded-full bg-accent text-[var(--accent-foreground)] hover:bg-accent-hover">See plans</button>
+            </section>
+          )}
           <section className="g-card p-5">
             <h3 className="font-medium">Getting started <span className="text-secondary font-normal text-sm">{doneCount}/{steps.length}</span></h3>
             <ul className="mt-3 space-y-2 text-sm">

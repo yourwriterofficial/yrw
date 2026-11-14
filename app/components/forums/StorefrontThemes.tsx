@@ -297,6 +297,95 @@ export function StoreProductCard({
     );
   }
 
+  if (layoutStyle === 'portfolio') {
+    const forService = product.product_type === 'service';
+    return (
+      <div className="group bg-card border border-theme rounded-3xl overflow-hidden flex flex-col">
+        <button type="button" onClick={() => onOpen(product)} className="relative text-left w-full cursor-pointer">
+          {product.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={product.image_url} alt={product.title} className="w-full aspect-[4/3] object-cover bg-secondary/20 group-hover:scale-[1.02] transition-transform duration-300" />
+          ) : (
+            <div className="w-full aspect-[4/3] flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${site.accent_color || '#1a56db'}33, ${site.accent_color || '#1a56db'}0d)` }}>
+              <Icon className="w-10 h-10 text-secondary/50" />
+            </div>
+          )}
+          {product.category && (
+            <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-card/90 text-[11px] font-medium text-primary backdrop-blur">{product.category}</span>
+          )}
+        </button>
+        <div className="p-4 sm:p-5 flex-1 flex flex-col gap-3">
+          <button type="button" onClick={() => onOpen(product)} className="text-left cursor-pointer">
+            <h3 className="font-medium text-primary text-base sm:text-lg leading-snug">{product.title}</h3>
+            {product.description && <p className="text-sm text-secondary line-clamp-2 mt-1">{product.description}</p>}
+            {ratingChip}
+          </button>
+          <div className="mt-auto flex items-center justify-between gap-2">
+            <span className="text-primary font-medium">{forService ? 'From ' : ''}{formatMoney(product.price, currency)}</span>
+            <button
+              type="button"
+              disabled={outOfStock}
+              onClick={() => onAdd(product)}
+              className="min-h-10 px-5 rounded-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-[var(--accent-foreground)] text-sm font-medium cursor-pointer"
+            >
+              {outOfStock ? 'Unavailable' : forService ? 'Book' : 'Buy'}
+            </button>
+          </div>
+          {quickActions}
+        </div>
+      </div>
+    );
+  }
+
+  if (layoutStyle === 'classified') {
+    return (
+      <div className="bg-card border border-theme rounded-2xl overflow-hidden flex flex-col">
+        <button type="button" onClick={() => onOpen(product)} className="relative text-left w-full cursor-pointer">
+          {product.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={product.image_url} alt={product.title} className="w-full h-44 object-cover bg-secondary/20" />
+          ) : (
+            <div className="w-full h-36 bg-secondary/20 flex items-center justify-center">
+              <Icon className="w-8 h-8 text-secondary/40" />
+            </div>
+          )}
+          {outOfStock && <span className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-black/70 text-white text-[11px] font-semibold">Sold</span>}
+        </button>
+        <div className="p-4 flex-1 flex flex-col gap-2">
+          <button type="button" onClick={() => onOpen(product)} className="text-left cursor-pointer">
+            <p className="text-xs text-secondary">{product.category}</p>
+            <h3 className="font-medium text-primary leading-snug line-clamp-2">{product.title}</h3>
+          </button>
+          <p className="text-lg font-semibold text-primary">{formatMoney(product.price, currency)}</p>
+          <div className="mt-auto flex items-center gap-2 pt-1">
+            {waHref ? (
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex-1 min-h-10 px-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5"
+              >
+                <MessageCircle className="w-4 h-4" /> Contact seller
+              </a>
+            ) : null}
+            <button
+              type="button"
+              disabled={outOfStock}
+              onClick={() => onAdd(product)}
+              className="min-h-10 px-4 rounded-full border border-theme hover:bg-hover disabled:opacity-50 text-xs font-semibold cursor-pointer"
+            >
+              {outOfStock ? 'Sold' : 'Buy now'}
+            </button>
+            <button type="button" onClick={handleShare} aria-label={`Share ${product.title}`} className="min-h-10 w-10 rounded-full border border-theme hover:bg-hover inline-flex items-center justify-center cursor-pointer">
+              {copied ? <Check className="w-4 h-4 text-success" /> : <Share2 className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Standard clean card
   return (
     <div className="bg-card border border-theme rounded-2xl overflow-hidden flex flex-col justify-between">
