@@ -405,6 +405,23 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
+    id: 'creator-studio',
+    label: 'Creator & Video Studio (Tees Digital Space style)',
+    group: 'showcase',
+    item_label: ['Rate', 'Production rates'],
+    tagline: 'For video editors, UGC creators and brand filmmakers: showcase your reels and sell production rates.',
+    site_mode: 'store',
+    layout_style: 'portfolio',
+    accent_color: '#15803d',
+    hero_headline: 'Cinematic visuals that make brands unforgettable.',
+    hero_subheadline: 'Brand films, UGC content and social-ready cuts. Pick a rate or message me your idea.',
+    sample_products: [
+      { title: 'Social-ready cut (up to 60 seconds)', description: 'One edited short for Reels, TikTok or Shorts with captions and music.', category: 'Short form', product_type: 'service', price: 25000 },
+      { title: 'UGC content pack (3 videos)', description: 'Three authentic product videos shot and edited for your ads.', category: 'UGC', product_type: 'service', price: 90000 },
+      { title: 'Brand film (2 to 3 minutes)', description: 'Concept, shoot direction, edit, colour grade and sound design.', category: 'Brand films', product_type: 'service', price: 250000 },
+    ],
+  },
+  {
     id: 'events-tickets',
     label: 'Events & Ticket Sales',
     group: 'sell',
