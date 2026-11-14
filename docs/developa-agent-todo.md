@@ -208,3 +208,45 @@ Not done / unsure:
 - **Flutterwave via the Subskription account:** possible technically (same keys, separate `DEV_` references, separate ledger), but one Flutterwave webhook URL serves the whole account, so Subskription's webhook must forward `DEV_` events to research-writer, and payouts draw from the same Flutterwave balance. Confirm in the Flutterwave dashboard: subaccounts/splits enabled, Transfers enabled and the server IP whitelisted, settlement time, and that the account's business terms allow a marketplace.
 - **PocketFi:** used in Nairaguide (virtual accounts and one-off Pro checkout) and in Subskription (virtual account columns and a webhook). Nairaguide's README says it was removed on purpose and should not come back, and Subskription moved to Flutterwave. Recommendation: do not bring it back; one provider means one set of reconciliations.
 - **Best fit for Nigerian buyers:** Flutterwave dynamic virtual accounts per order (pay by transfer, confirmed automatically) plus cards.
+
+---
+
+## 7. Review log
+
+### Review 1 (2026-11-14): packages 1.3, 1.5, 2.1 to 2.14, 4.1 to 4.11
+
+**Accepted, with fixes made by the reviewer** (commits `53e7e77`, `77a8ba8` on `feat/2-developa-tools`).
+Checked: typecheck, lint of touched files, a guard map of every new API route, row-level security on every new
+table, server-side totals/fees/stock in order placement, plan flags enforced on the server, public endpoints
+return no owner data, owner/staff endpoints return 401 without login, cron fails closed, no server errors on
+public pages while migrations 020000 to 040000 are unapplied.
+
+**Problems found and fixed**
+1. *Staff role could be claimed with an unverified email.* Staff invites match by email, so an attacker could
+   sign up as an invited address. Now requires a confirmed email (`emailIsConfirmed` in `lib/forumServer.ts`).
+2. *`requireOwnedSite` quietly allowed managers.* That opened domain connect/disconnect to managers. Now owner-only
+   by default; staff must be listed explicitly.
+3. *Managers could change the bank account and site type.* Payment details, currency, visibility, site type,
+   template and badge are now owner-only (only a field that really changes is blocked, so a normal manager save works).
+4. Receipt endpoint echoed internal error text; cron compared its secret with `!==`; analytics visitor hash was
+   unsalted; plan end date was visible to visitors; one lint error (`prefer-const`) was missed.
+
+**Rules learned (apply to all future packages)**
+- A permission helper's default must be the safest option. Name and default must agree.
+- Anything matched by email needs the email to be confirmed.
+- Never trust "typecheck and targeted lint pass" as proof of security: add a test with a second account.
+
+**Not yet verified (needs migrations 020000, 030000, 040000 applied, then the reviewer runs these)**
+- As the **owner**: create a product with 3 photos and a size variant; place an order as a buyer; confirm stock drops
+  per variant and returns on cancel; mark paid and check the buyer email and downloads; add a delivery zone and
+  check the fee at checkout; leave a review from a paid order; export customers and open the CSV in a spreadsheet.
+- As a **second account**: confirm 403 on every owner endpoint of someone else's store.
+- As **staff** (Business plan): invite a packer; confirm they can see orders but not customers, export, bank
+  details, staff or domain.
+- Newsletter: send to two consented subscribers; confirm the unsubscribe link works and the monthly cap holds.
+- Cron: call `/api/cron/developa-daily` with and without `CRON_SECRET`.
+- Owner dashboard authenticated tabs (the agent's browser run only saw the signed-out empty state).
+
+**Known small items left for later:** unsubscribe links change state on GET (an email scanner could trigger them;
+consider a confirm button); the daily cron sends emails in one loop and may need batching beyond a few hundred
+stores; several older endpoints still return raw `err.message` to the browser.
