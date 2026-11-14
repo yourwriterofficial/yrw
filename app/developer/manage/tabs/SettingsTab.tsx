@@ -6,6 +6,16 @@ import { planFor } from '@/lib/plans';
 import { jsonFetch, type Site } from '../types';
 import StaffPanel from './StaffPanel';
 
+function Field({ id, label, children, hint }: { id: string; label: string; children: React.ReactNode; hint?: string }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium mb-1.5">{label}</label>
+      {children}
+      {hint && <p className="text-xs text-secondary mt-1">{hint}</p>}
+    </div>
+  );
+}
+
 export default function SettingsTab({ site, reload, goToPlan }: { site: Site; reload: () => Promise<void>; goToPlan: () => void }) {
   const [f, setF] = useState({
     name: site.name || '',
@@ -71,14 +81,6 @@ export default function SettingsTab({ site, reload, goToPlan }: { site: Site; re
     else setMsg({ ok: false, text: r.data.error || 'Could not save.' });
     setBusy(false);
   };
-
-  const Field = ({ id, label, children, hint }: { id: string; label: string; children: React.ReactNode; hint?: string }) => (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium mb-1.5">{label}</label>
-      {children}
-      {hint && <p className="text-xs text-secondary mt-1">{hint}</p>}
-    </div>
-  );
 
   return (
     <div className="max-w-2xl space-y-6">

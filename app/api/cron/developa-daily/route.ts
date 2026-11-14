@@ -29,6 +29,7 @@ export async function GET(request: Request) {
     summariesSent: 0,
     cartRemindersSent: 0,
     reviewInvitesSent: 0,
+    bookingRemindersSent: 0,
     backupsSent: 0,
     expiryNoticesSent: 0,
   };
@@ -270,6 +271,49 @@ export async function GET(request: Request) {
             .from('site_orders')
             .update({ review_reminded_at: now.toISOString() })
             .eq('id', ord.id);
+        }
+      }
+    }
+
+    // 2.6 Booking reminders 24 hours before confirmed slots
+    const tomorrowUtc = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const { data: upcomingBookings, error: bookErr } = await supabaseAdmin
+      .from('site_bookings')
+      .select('id, site_id, service_id, buyer_name, buyer_email, slot_date, slot_time')
+      .eq('status', 'confirmed')
+      .eq('slot_date', tomorrowUtc)
+      .is('reminded_at', null)
+      .limit(80);
+
+    if (!bookErr && upcomingBookings && upcomingBookings.length > 0) {
+      const svcIds = Array.from(new Set(upcomingBookings.map((b) => b.service_id)));
+      const { data: svcRows } = await supabaseAdmin
+        .from('site_booking_services')
+        .select('id, title')
+        .in('id', svcIds);
+      const svcTitleMap = new Map((svcRows || []).map((sv) => [sv.id as string, sv.title as string]));
+
+      for (const b of upcomingBookings) {
+        const site = siteMap.get(b.site_id);
+        if (!site) continue;
+        const serviceTitle = svcTitleMap.get(b.service_id) || 'your appointment';
+        const storeHref = `${siteUrl()}/forums/${site.slug}`;
+        const ok = await sendSystemEmail({
+          to: b.buyer_email,
+          subject: `Reminder: ${serviceTitle} at ${site.name} tomorrow (${b.slot_time})`,
+          html: emailShell(
+            `<h2>Appointment reminder</h2><p>Hi ${esc((b.buyer_name || '').split(' ')[0] || 'there')}, this is a quick reminder for <strong>${esc(serviceTitle)}</strong> at <strong>${esc(site.name)}</strong> on <strong>${esc(b.slot_date)}</strong> at <strong>${esc(b.slot_time)}</strong>.</p>`,
+            'View store',
+            storeHref,
+            'developa'
+          ),
+        }).catch(() => false);
+        if (ok) {
+          stats.bookingRemindersSent++;
+          await supabaseAdmin
+            .from('site_bookings')
+            .update({ reminded_at: now.toISOString() })
+            .eq('id', b.id);
         }
       }
     }

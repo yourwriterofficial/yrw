@@ -30,10 +30,10 @@ and the paid plans must remove a real pain (growth, time, trust), never basic se
 | 14 | Community forum with threads and replies | built |
 | 15 | Pin, lock and delete discussions | built |
 | 16 | Share link with copy button | built |
-| 17 | WhatsApp button on every product (not only after an order) | not yet |
-| 18 | About, Contact and Delivery/Returns pages | not yet |
-| 19 | Social links (Instagram, TikTok, Facebook) in the footer | not yet |
-| 20 | QR code for the store, to print on packaging and posters | not yet |
+| 17 | WhatsApp button on every product (not only after an order) | built |
+| 18 | About, Contact and Delivery/Returns pages | built |
+| 19 | Social links (Instagram, TikTok, Facebook) in the footer | built |
+| 20 | QR code for the store, to print on packaging and posters | built |
 
 ## 20 features worth paying for (Pro ₦7,500 and Business ₦20,000 a month)
 
@@ -45,27 +45,27 @@ and the paid plans must remove a real pain (growth, time, trust), never basic se
 | 2 | Unlimited products | built |
 | 3 | Discount coupons (percent or fixed, limits, end date) | built |
 | 4 | No "Powered by Developa" badge and no platform ads | built |
-| 5 | Delivery fees by state or zone, free-delivery threshold, pickup option | not yet |
-| 6 | Product variants (size, colour, storage) with stock per variant | not yet |
-| 7 | Several photos per product | not yet |
-| 8 | Customer reviews and star ratings | not yet |
-| 9 | Abandoned-cart reminder by WhatsApp or email | not yet |
-| 10 | Low-stock alerts and a daily sales summary email | not yet |
-| 11 | Customer list with CSV export | not yet |
-| 12 | Bulk product import from CSV or Excel | not yet |
-| 13 | Printable invoices and receipts with your logo | not yet |
-| 14 | Deeper analytics: visits, conversion, where buyers come from | not yet |
-| 15 | Email newsletter to customers and members | not yet |
+| 5 | Delivery fees by state or zone, free-delivery threshold, pickup option | built |
+| 6 | Product variants (size, colour, storage) with stock per variant | built |
+| 7 | Several photos per product | built |
+| 8 | Customer reviews and star ratings | built |
+| 9 | Abandoned-cart reminder by WhatsApp or email | built |
+| 10 | Low-stock alerts and a daily sales summary email | built |
+| 11 | Customer list with CSV export | built |
+| 12 | Bulk product import from CSV or Excel | built |
+| 13 | Printable invoices and receipts with your logo | built |
+| 14 | Deeper analytics: visits, conversion, where buyers come from | built |
+| 15 | Email newsletter to customers and members | built |
 
 **Business**
 
 | # | Feature | Status |
 |---|---|---|
-| 16 | Staff accounts with roles (packer, support, manager) | not yet |
+| 16 | Staff accounts with roles (packer, support, manager) | built |
 | 17 | Card and instant-transfer payments (Paystack or Flutterwave) that confirm orders automatically | not yet |
-| 18 | Paid memberships and a premium community | not yet |
-| 19 | Booking and appointments for service businesses | not yet |
-| 20 | Priority WhatsApp support and done-for-you setup | partly (promised in the plan text, no process yet) |
+| 18 | Paid memberships and a premium community | built |
+| 19 | Booking and appointments for service businesses | built |
+| 20 | Priority WhatsApp support and done-for-you setup | built |
 
 ## 20 most needed features, in order
 
@@ -75,24 +75,24 @@ Ranked by how much they help a first-time Nigerian seller sell more or lose less
 |---|---|---|---|
 | 1 | Online payments that confirm themselves | Owners check bank alerts by hand today, which is slow and error-prone | not yet |
 | 2 | Stock goes down when something sells, and comes back on cancel | Otherwise one item can be sold again and again | built (this release) |
-| 3 | Delivery fees by state, plus pickup | Delivery cost is the first buyer question | not yet |
-| 4 | WhatsApp button on every product and a shareable product link | Most sales conversations happen on WhatsApp | partly (after an order only) |
-| 5 | Variants (size, colour) | Fashion, phones and shoes cannot be sold without them | not yet |
-| 6 | Several photos per product | Buyers do not buy what they cannot see | not yet |
-| 7 | Order tracking page for buyers | Fewer "where is my order?" messages | partly (email now, no page) |
-| 8 | Receipts and invoices | Proof of purchase, and trust | not yet |
-| 9 | Reviews and ratings | The strongest trust signal for a new store | not yet |
-| 10 | Abandoned-cart recovery | Recovers sales already almost made | not yet |
-| 11 | Low-stock alerts | Stops stock-outs and missed sales | not yet |
+| 3 | Delivery fees by state, plus pickup | Delivery cost is the first buyer question | built |
+| 4 | WhatsApp button on every product and a shareable product link | Most sales conversations happen on WhatsApp | built |
+| 5 | Variants (size, colour) | Fashion, phones and shoes cannot be sold without them | built |
+| 6 | Several photos per product | Buyers do not buy what they cannot see | built |
+| 7 | Order tracking page for buyers | Fewer "where is my order?" messages | built |
+| 8 | Receipts and invoices | Proof of purchase, and trust | built |
+| 9 | Reviews and ratings | The strongest trust signal for a new store | built |
+| 10 | Abandoned-cart recovery | Recovers sales already almost made | built |
+| 11 | Low-stock alerts | Stops stock-outs and missed sales | built |
 | 12 | Coupons | Promotions and first-order discounts | built |
-| 13 | Customer list and export | Owners need to reach past buyers | not yet |
-| 14 | Google title, description, sitemap | Free traffic | partly (title and description built, no sitemap) |
-| 15 | Bulk import | Sellers with 100 items cannot type them one by one | not yet |
-| 16 | Refunds, returns and private order notes | Real businesses need them | partly (cancel and reject only) |
-| 17 | Staff accounts | Owners cannot answer every order alone | not yet |
-| 18 | Policy and info pages (About, Delivery, Returns, Contact) | Buyers look for them before paying | not yet |
-| 19 | Data export and automatic backup | Owners fear losing their shop | not yet |
-| 20 | Verified-seller badge | Fights scam fears around online shops | not yet |
+| 13 | Customer list and export | Owners need to reach past buyers | built |
+| 14 | Google title, description, sitemap | Free traffic | built |
+| 15 | Bulk import | Sellers with 100 items cannot type them one by one | built |
+| 16 | Refunds, returns and private order notes | Real businesses need them | built |
+| 17 | Staff accounts | Owners cannot answer every order alone | built |
+| 18 | Policy and info pages (About, Delivery, Returns, Contact) | Buyers look for them before paying | built |
+| 19 | Data export and automatic backup | Owners fear losing their shop | built |
+| 20 | Verified-seller badge | Fights scam fears around online shops | built |
 
 ## Suggested build order
 

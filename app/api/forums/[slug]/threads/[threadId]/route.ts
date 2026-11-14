@@ -2,11 +2,37 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { resolveAuthorNames, supabaseAdmin } from '@/lib/forumServer';
+import { readExtendedSite, resolveAuthorNames, resolveUserSiteRole, supabaseAdmin } from '@/lib/forumServer';
 
 const replySchema = z.object({
   body: z.string().trim().min(2, 'Reply must be at least 2 characters').max(8000),
 });
+
+async function hasPaidMemberAccess(
+  forumId: string,
+  ownerId: string,
+  planTier: string | null | undefined,
+  userId: string | undefined,
+  userEmail: string | undefined
+): Promise<boolean> {
+  if (!userId) return false;
+  const ext = await readExtendedSite(forumId);
+  const role = await resolveUserSiteRole(forumId, ownerId, planTier, ext?.plan_expires_at, userId, userEmail);
+  if (role) return true;
+
+  const { data: mem } = await supabaseAdmin
+    .from('site_memberships')
+    .select('status, expires_at')
+    .eq('site_id', forumId)
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!mem) return false;
+  return !mem.expires_at || mem.expires_at > new Date().toISOString();
+}
 
 export async function GET(
   _request: Request,
@@ -17,7 +43,7 @@ export async function GET(
 
     const { data: forum } = await supabaseAdmin
       .from('forums')
-      .select('id, slug, name, description, owner_id, is_public, accent_color')
+      .select('id, slug, name, description, owner_id, is_public, accent_color, plan_tier')
       .eq('slug', slug.toLowerCase().trim())
       .maybeSingle();
 
@@ -54,6 +80,16 @@ export async function GET(
 
     if (!thread) {
       return NextResponse.json({ error: 'Thread not found' }, { status: 404 });
+    }
+
+    const { data: gatedCol } = await supabaseAdmin
+      .from('forum_threads')
+      .select('is_members_only')
+      .eq('id', thread.id)
+      .maybeSingle();
+    const isMembersOnly = gatedCol?.is_members_only === true;
+    if (isMembersOnly && !(await hasPaidMemberAccess(forum.id, forum.owner_id, forum.plan_tier, user?.id, user?.email))) {
+      return NextResponse.json({ error: 'This discussion is for active members only.', members_only: true }, { status: 403 });
     }
 
     const { data: posts, error: postsErr } = await supabaseAdmin
@@ -96,7 +132,7 @@ export async function POST(
 
     const { data: forum } = await supabaseAdmin
       .from('forums')
-      .select('id, owner_id, is_public')
+      .select('id, owner_id, is_public, plan_tier')
       .eq('slug', slug.toLowerCase().trim())
       .maybeSingle();
 
@@ -125,6 +161,16 @@ export async function POST(
 
     if (!thread) {
       return NextResponse.json({ error: 'Thread not found' }, { status: 404 });
+    }
+
+    const { data: gatedCol } = await supabaseAdmin
+      .from('forum_threads')
+      .select('is_members_only')
+      .eq('id', thread.id)
+      .maybeSingle();
+    const isMembersOnly = gatedCol?.is_members_only === true;
+    if (isMembersOnly && !(await hasPaidMemberAccess(forum.id, forum.owner_id, forum.plan_tier, user?.id, user?.email))) {
+      return NextResponse.json({ error: 'This discussion is for active members only.', members_only: true }, { status: 403 });
     }
     if (thread.is_locked) {
       return NextResponse.json({ error: 'This thread is locked.' }, { status: 403 });

@@ -156,10 +156,46 @@ export async function GET(
 
     const threads = threadsRes.data || [];
     const names = await resolveAuthorNames(threads.map((t) => t.author_id));
-    const enrichedThreads = threads.map((t) => ({
-      ...t,
-      author_name: names.get(t.author_id) || 'Member',
-    }));
+
+    let membersOnlyMap = new Map<string, boolean>();
+    let hasActivePaidMembership = !!myRole;
+    if (forum.site_mode !== 'store' && threads.length > 0) {
+      const [moRes, memShipRes] = await Promise.all([
+        supabaseAdmin
+          .from('forum_threads')
+          .select('id, is_members_only')
+          .eq('forum_id', forum.id),
+        !hasActivePaidMembership && user
+          ? supabaseAdmin
+              .from('site_memberships')
+              .select('id, expires_at')
+              .eq('site_id', forum.id)
+              .eq('user_id', user.id)
+              .eq('status', 'active')
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+      if (moRes.data) {
+        for (const r of moRes.data as { id: string; is_members_only?: boolean }[]) {
+          membersOnlyMap.set(r.id, !!r.is_members_only);
+        }
+      }
+      if (memShipRes.data) {
+        const exp = (memShipRes.data as { expires_at?: string | null }).expires_at;
+        hasActivePaidMembership = !exp || new Date(exp).getTime() > Date.now();
+      }
+    }
+
+    const enrichedThreads = threads.map((t) => {
+      const isMembersOnly = membersOnlyMap.get(t.id) ?? false;
+      const lockedForViewer = isMembersOnly && !hasActivePaidMembership;
+      return {
+        ...t,
+        is_members_only: isMembersOnly,
+        body: lockedForViewer ? 'Members-only discussion. Join a paid membership to read and reply.' : t.body,
+        author_name: names.get(t.author_id) || 'Member',
+      };
+    });
 
     // New-migration data, read tolerantly so stores keep working before it is applied.
     const ext = extEarly;

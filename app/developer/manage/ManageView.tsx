@@ -14,6 +14,8 @@ import CustomersTab from './tabs/CustomersTab';
 import CommunityTab from './tabs/CommunityTab';
 import CouponsTab from './tabs/CouponsTab';
 import ShippingTab from './tabs/ShippingTab';
+import BookingsTab from './tabs/BookingsTab';
+import MembershipsTab from './tabs/MembershipsTab';
 import DomainTab from './tabs/DomainTab';
 import PlanTab from './tabs/PlanTab';
 import SettingsTab from './tabs/SettingsTab';
@@ -21,14 +23,16 @@ import StoreQrCard from './StoreQrCard';
 import CartsLeftCard from './CartsLeftCard';
 import AnalyticsCard from './AnalyticsCard';
 
-type TabKey = 'overview' | 'products' | 'orders' | 'customers' | 'community' | 'coupons' | 'shipping' | 'domain' | 'plan' | 'settings';
+type TabKey = 'overview' | 'products' | 'orders' | 'customers' | 'bookings' | 'community' | 'memberships' | 'coupons' | 'shipping' | 'domain' | 'plan' | 'settings';
 
 const TABS: { key: TabKey; label: string; storeOnly?: boolean; forumOnly?: boolean }[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'products', label: 'Products', storeOnly: true },
   { key: 'orders', label: 'Orders', storeOnly: true },
   { key: 'customers', label: 'Customers', storeOnly: true },
+  { key: 'bookings', label: 'Bookings', storeOnly: true },
   { key: 'community', label: 'Community', forumOnly: true },
+  { key: 'memberships', label: 'Memberships', forumOnly: true },
   { key: 'coupons', label: 'Coupons', storeOnly: true },
   { key: 'shipping', label: 'Delivery', storeOnly: true },
   { key: 'domain', label: 'Domain' },
@@ -48,7 +52,9 @@ export default function ManageView() {
   const [loadingSite, setLoadingSite] = useState(false);
   const [origin, setOrigin] = useState('');
 
-  useEffect(() => { setOrigin(window.location.origin); }, []);
+  useEffect(() => {
+    Promise.resolve().then(() => setOrigin(window.location.origin));
+  }, []);
 
   // 1. Who is this, and which sites do they own?
   useEffect(() => {
@@ -79,7 +85,15 @@ export default function ManageView() {
     setLoadingSite(false);
   }, []);
 
-  useEffect(() => { if (slug) loadSite(slug); }, [slug, loadSite]);
+  useEffect(() => {
+    if (!slug) return;
+    let active = true;
+    (async () => {
+      await Promise.resolve();
+      if (active) await loadSite(slug);
+    })();
+    return () => { active = false; };
+  }, [slug, loadSite]);
   const reload = useCallback(async () => { await loadSite(slug); }, [loadSite, slug]);
 
   const site = detail?.forum;
@@ -92,12 +106,17 @@ export default function ManageView() {
     if (role === 'packer') return modeFiltered.filter((t) => t.key === 'overview' || t.key === 'orders');
     if (role === 'support') {
       return modeFiltered.filter(
-        (t) => t.key === 'overview' || t.key === 'orders' || t.key === 'customers' || t.key === 'community'
+        (t) =>
+          t.key === 'overview' ||
+          t.key === 'orders' ||
+          t.key === 'customers' ||
+          t.key === 'bookings' ||
+          t.key === 'community'
       );
     }
     return modeFiltered.filter((t) => t.key !== 'domain' && t.key !== 'plan');
   }, [site?.site_mode, site?.my_role]);
-  useEffect(() => { if (site && !visibleTabs.some((t) => t.key === tab)) setTab('overview'); }, [site, visibleTabs, tab]);
+  const activeTab: TabKey = visibleTabs.some((t) => t.key === tab) ? tab : 'overview';
 
   const shell = (inner: React.ReactNode) => (
     <div className="g-font min-h-screen bg-primary text-primary overflow-x-hidden">
@@ -176,24 +195,26 @@ export default function ManageView() {
             {visibleTabs.map((t) => {
               const badge = t.key === 'orders' ? orders.filter((o) => o.payment_status === 'proof_submitted').length : 0;
               return (
-                <button key={t.key} role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)}
-                  className={`shrink-0 px-4 h-10 rounded-full text-sm font-medium transition-colors ${tab === t.key ? 'bg-accent text-[var(--accent-foreground)]' : 'text-secondary hover:bg-hover hover:text-primary'}`}>
+                <button key={t.key} role="tab" aria-selected={activeTab === t.key} onClick={() => setTab(t.key)}
+                  className={`shrink-0 px-4 h-10 rounded-full text-sm font-medium transition-colors ${activeTab === t.key ? 'bg-accent text-[var(--accent-foreground)]' : 'text-secondary hover:bg-hover hover:text-primary'}`}>
                   {t.label}{badge > 0 && <span className="ml-2 text-xs bg-[var(--danger)] text-white rounded-full px-1.5 py-0.5">{badge}</span>}
                 </button>
               );
             })}
           </div>
 
-          {tab === 'overview' && <Overview site={site} detail={detail!} orders={orders} origin={origin} go={setTab} />}
-          {tab === 'products' && <ProductsTab site={site} products={detail!.products} reload={reload} />}
-          {tab === 'orders' && <OrdersTab site={site} orders={orders} reload={reload} />}
-          {tab === 'customers' && <CustomersTab site={site} goToPlan={() => setTab('plan')} />}
-          {tab === 'community' && <CommunityTab site={site} threads={detail!.threads} reload={reload} />}
-          {tab === 'coupons' && <CouponsTab site={site} goToPlan={() => setTab('plan')} />}
-          {tab === 'shipping' && <ShippingTab site={site} reload={reload} goToPlan={() => setTab('plan')} />}
-          {tab === 'domain' && <DomainTab site={site} goToPlan={() => setTab('plan')} />}
-          {tab === 'plan' && <PlanTab site={site} />}
-          {tab === 'settings' && <SettingsTab key={site.slug + (site.name || '')} site={site} reload={reload} goToPlan={() => setTab('plan')} />}
+          {activeTab === 'overview' && <Overview site={site} detail={detail!} orders={orders} origin={origin} go={setTab} />}
+          {activeTab === 'products' && <ProductsTab site={site} products={detail!.products} reload={reload} />}
+          {activeTab === 'orders' && <OrdersTab site={site} orders={orders} reload={reload} />}
+          {activeTab === 'customers' && <CustomersTab site={site} goToPlan={() => setTab('plan')} />}
+          {activeTab === 'bookings' && <BookingsTab site={site} goToPlan={() => setTab('plan')} />}
+          {activeTab === 'community' && <CommunityTab site={site} threads={detail!.threads} reload={reload} />}
+          {activeTab === 'memberships' && <MembershipsTab site={site} goToPlan={() => setTab('plan')} />}
+          {activeTab === 'coupons' && <CouponsTab site={site} goToPlan={() => setTab('plan')} />}
+          {activeTab === 'shipping' && <ShippingTab site={site} reload={reload} goToPlan={() => setTab('plan')} />}
+          {activeTab === 'domain' && <DomainTab site={site} goToPlan={() => setTab('plan')} />}
+          {activeTab === 'plan' && <PlanTab site={site} />}
+          {activeTab === 'settings' && <SettingsTab key={site.slug + (site.name || '')} site={site} reload={reload} goToPlan={() => setTab('plan')} />}
         </>
       )}
     </>
@@ -201,7 +222,7 @@ export default function ManageView() {
 }
 
 function Overview({ site, detail, orders, origin, go }: { site: Site; detail: Detail; orders: SiteOrder[]; origin: string; go: (t: TabKey) => void }) {
-  const paid = orders.filter((o) => o.payment_status === 'paid');
+  const paid = useMemo(() => orders.filter((o) => o.payment_status === 'paid'), [orders]);
   const revenue = paid.reduce((s, o) => s + Number(o.total_amount), 0);
   const needsCheck = orders.filter((o) => o.payment_status === 'proof_submitted').length;
   const awaiting = orders.filter((o) => o.payment_status === 'pending').length;

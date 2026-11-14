@@ -22,7 +22,7 @@ const ROLE_NOTES: Record<StaffRow['role'], string> = {
 export default function StaffPanel({ site, goToPlan }: { site: Site; goToPlan: () => void }) {
   const plan = planFor(site.plan_tier, site.plan_expires_at);
   const [staff, setStaff] = useState<StaffRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => plan.staffAccounts);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<StaffRow['role']>('manager');
   const [busy, setBusy] = useState(false);
@@ -36,8 +36,13 @@ export default function StaffPanel({ site, goToPlan }: { site: Site; goToPlan: (
   }, [site.slug]);
 
   useEffect(() => {
-    if (plan.staffAccounts) load();
-    else setLoading(false);
+    if (!plan.staffAccounts) return;
+    let active = true;
+    (async () => {
+      await Promise.resolve();
+      if (active) await load();
+    })();
+    return () => { active = false; };
   }, [plan.staffAccounts, load]);
 
   const invite = async () => {

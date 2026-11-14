@@ -62,7 +62,10 @@ export default function ProductDetailModal({
   const [revSuccess, setRevSuccess] = useState('');
 
   const activeVariants = (product.variants || []).filter((v) => v.is_active);
-  const [selectedVariantId, setSelectedVariantId] = useState<string>(activeVariants[0]?.id || '');
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(() => {
+    const firstInStock = activeVariants.find((v) => v.stock_qty === null || v.stock_qty > 0) || activeVariants[0];
+    return firstInStock?.id || '';
+  });
   const selectedVariant = activeVariants.find((v) => v.id === selectedVariantId) || activeVariants[0];
 
   const images = productImages(product);
@@ -74,30 +77,31 @@ export default function ProductDetailModal({
   const waHref = buildProductWaHref(site, product, effectivePrice);
 
   useEffect(() => {
-    setPhotoIdx(0);
-    setWriteOpen(false);
-    setRevError('');
-    setRevSuccess('');
-    const list = (product.variants || []).filter((v) => v.is_active);
-    const firstInStock = list.find((v) => v.stock_qty === null || v.stock_qty > 0) || list[0];
-    setSelectedVariantId(firstInStock?.id || '');
-
     let active = true;
-    setLoadingReviews(true);
-    fetch(`/api/forums/${encodeURIComponent(site.slug)}/analytics`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: `/product/${product.id}`, product_id: product.id }),
-    }).catch(() => {});
-    fetch(`/api/forums/${encodeURIComponent(site.slug)}/reviews?productId=${encodeURIComponent(product.id)}`, { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((d) => {
+    (async () => {
+      await Promise.resolve();
+      if (!active) return;
+      setLoadingReviews(true);
+      fetch(`/api/forums/${encodeURIComponent(site.slug)}/analytics`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: `/product/${product.id}`, product_id: product.id }),
+      }).catch(() => {});
+      try {
+        const r = await fetch(
+          `/api/forums/${encodeURIComponent(site.slug)}/reviews?productId=${encodeURIComponent(product.id)}`,
+          { cache: 'no-store' }
+        );
+        const d = await r.json();
         if (active) setReviews(Array.isArray(d.reviews) ? d.reviews : []);
-      })
-      .catch(() => {})
-      .finally(() => { if (active) setLoadingReviews(false); });
+      } catch {
+        // Ignore review load failure
+      } finally {
+        if (active) setLoadingReviews(false);
+      }
+    })();
     return () => { active = false; };
-  }, [product, site.slug]);
+  }, [product.id, site.slug]);
 
   const submitReview = async (e: React.FormEvent) => {
     e.preventDefault();

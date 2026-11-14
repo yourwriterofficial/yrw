@@ -9,6 +9,10 @@ import { formatDistanceToNow } from 'date-fns';
 import Button from '@/app/components/ui/Button';
 import StorefrontView from '@/app/components/forums/StorefrontView';
 import StoreManagerModal from '@/app/components/forums/StoreManagerModal';
+import ForumMembershipModal, {
+  type MyMembershipStatus,
+  type PublicMembershipTier,
+} from '@/app/components/forums/ForumMembershipModal';
 import {
   extractDevelopaSubdomain, type ForumSummary, type ForumThread, type SiteProduct,
 } from '@/lib/forums';
@@ -47,11 +51,15 @@ export default function ForumView({ slug }: { slug: string }) {
   const [showComposer, setShowComposer] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [isMembersOnly, setIsMembersOnly] = useState(false);
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
   const [joining, setJoining] = useState(false);
   const [isSubdomain, setIsSubdomain] = useState(false);
   const [ads, setAds] = useState<PlatformAd[]>([]);
+  const [membershipTiers, setMembershipTiers] = useState<PublicMembershipTier[]>([]);
+  const [myMembership, setMyMembership] = useState<MyMembershipStatus | null>(null);
+  const [membershipModalOpen, setMembershipModalOpen] = useState(false);
 
   const loadForum = useCallback(async () => {
     try {
@@ -76,16 +84,31 @@ export default function ForumView({ slug }: { slug: string }) {
     }
   }, [slug]);
 
+  const loadMemberships = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/forums/${encodeURIComponent(slug)}/memberships`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const tiers = Array.isArray(data.tiers)
+        ? (data.tiers as (PublicMembershipTier & { is_active?: boolean })[]).filter((t) => t.is_active !== false)
+        : [];
+      setMembershipTiers(tiers);
+      setMyMembership(data.myMembership || null);
+    } catch {
+      // Tolerant if memberships migration is not yet applied
+    }
+  }, [slug]);
+
   useEffect(() => {
     let active = true;
     (async () => {
       await Promise.resolve();
       if (!active) return;
       setIsSubdomain(!!extractDevelopaSubdomain(window.location.host));
-      await loadForum();
+      await Promise.all([loadForum(), loadMemberships()]);
     })();
     return () => { active = false; };
-  }, [loadForum]);
+  }, [loadForum, loadMemberships]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -124,7 +147,7 @@ export default function ForumView({ slug }: { slug: string }) {
       const res = await fetch(`/api/forums/${encodeURIComponent(slug)}/threads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, body }),
+        body: JSON.stringify({ title, body, is_members_only: isMembersOnly }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -133,6 +156,7 @@ export default function ForumView({ slug }: { slug: string }) {
       }
       setTitle('');
       setBody('');
+      setIsMembersOnly(false);
       setShowComposer(false);
       setThreads((prev) => [data.thread, ...prev]);
       setForum((prev) => (prev ? { ...prev, thread_count: prev.thread_count + 1 } : prev));
@@ -243,6 +267,14 @@ export default function ForumView({ slug }: { slug: string }) {
                       {isMember ? 'Joined' : 'Join'}
                     </Button>
                   )}
+                  {showForum && membershipTiers.length > 0 && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => setMembershipModalOpen(true)}
+                    >
+                      {myMembership?.status === 'active' ? 'VIP Member' : 'Memberships'}
+                    </Button>
+                  )}
                   {showForum && (
                     <Button
                       variant="primary"
@@ -322,6 +354,17 @@ export default function ForumView({ slug }: { slug: string }) {
                       placeholder="Write your post..."
                       className="w-full px-3.5 py-2.5 rounded-xl bg-primary border border-theme text-sm text-primary focus:outline-none focus:border-accent"
                     />
+                    {(isOwner || ['owner', 'manager', 'support'].includes(forum.my_role || '')) && membershipTiers.length > 0 && (
+                      <label className="flex items-center gap-2 text-xs text-secondary select-none">
+                        <input
+                          type="checkbox"
+                          checked={isMembersOnly}
+                          onChange={(e) => setIsMembersOnly(e.target.checked)}
+                          className="w-4 h-4"
+                        />
+                        Members-only discussion
+                      </label>
+                    )}
                     {postError && <p className="text-xs text-danger">{postError}</p>}
                     <div className="flex justify-end gap-2">
                       <Button type="button" variant="secondary" onClick={() => setShowComposer(false)}>
@@ -347,10 +390,15 @@ export default function ForumView({ slug }: { slug: string }) {
                         className="block bg-card border border-theme hover:border-accent/40 rounded-2xl p-5 transition space-y-2"
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <h3 className="font-bold text-primary text-base flex items-center gap-2">
+                          <h3 className="font-bold text-primary text-base flex items-center flex-wrap gap-2">
                             {t.is_pinned && <Pin className="w-3.5 h-3.5 text-accent shrink-0" />}
                             {t.is_locked && <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
                             <span>{t.title}</span>
+                            {t.is_members_only && (
+                              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-accent/15 text-accent">
+                                Members only
+                              </span>
+                            )}
                           </h3>
                           <span className="text-xs text-secondary flex items-center gap-1 shrink-0">
                             <MessageSquare className="w-3.5 h-3.5" /> {t.reply_count}
@@ -375,6 +423,18 @@ export default function ForumView({ slug }: { slug: string }) {
                 products={products}
                 onClose={() => setManagerOpen(false)}
                 onUpdated={loadForum}
+              />
+            )}
+
+            {membershipModalOpen && (
+              <ForumMembershipModal
+                forum={forum}
+                tiers={membershipTiers}
+                myMembership={myMembership}
+                onClose={() => setMembershipModalOpen(false)}
+                onJoined={async () => {
+                  await Promise.all([loadForum(), loadMemberships()]);
+                }}
               />
             )}
           </>

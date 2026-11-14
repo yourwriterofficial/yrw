@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import PageHeader from '@/app/components/ui/PageHeader';
 import { formatMoney, type ForumSummary } from '@/lib/forums';
 import { PLANS, daysLeft, effectiveTier, type PlanTier } from '@/lib/plans';
+import SupportInboxTab from './SupportInboxTab';
 
 interface AdminSiteRow extends ForumSummary {
   owner_name: string;
@@ -15,7 +16,7 @@ interface AdminSiteRow extends ForumSummary {
 interface PaymentRow { id: number; site_id: string; site_name: string; site_slug: string; plan_tier: string; months: number; amount: number; reference: string | null; note: string | null; created_at: string }
 interface AdRow { id: string; title: string; body: string; link_url: string; image_url: string; placement: 'banner' | 'footer'; target_site_id: string | null; is_active: boolean; starts_at: string | null; ends_at: string | null }
 
-type Tab = 'sites' | 'payments' | 'ads';
+type Tab = 'sites' | 'payments' | 'ads' | 'support';
 const naira = (n: number) => '₦' + Math.round(n).toLocaleString('en-NG');
 
 async function api<T = Record<string, unknown>>(url: string, method = 'GET', body?: unknown) {
@@ -47,7 +48,14 @@ export default function AdminDevelopaSitesPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      await Promise.resolve();
+      if (active) await loadAll();
+    })();
+    return () => { active = false; };
+  }, [loadAll]);
 
   const flash = (ok: boolean, text: string) => { setNote({ ok, text }); setTimeout(() => setNote(null), 5000); };
 
@@ -88,8 +96,13 @@ export default function AdminDevelopaSitesPage() {
         <Kpi label="Sales across all stores" value={formatMoney(kpi.gmv)} sub={`${kpi.orders} orders`} />
       </div>
 
-      <div className="flex gap-2 border-b border-theme pb-3">
-        {([['sites', 'Sites'], ['payments', 'Plan payments'], ['ads', 'Ads on all sites']] as [Tab, string][]).map(([k, label]) => (
+      <div className="flex flex-wrap gap-2 border-b border-theme pb-3">
+        {([
+          ['sites', 'Sites'],
+          ['payments', 'Plan payments'],
+          ['ads', 'Ads on all sites'],
+          ['support', 'Priority support'],
+        ] as [Tab, string][]).map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)} className={`px-4 h-10 rounded-full text-sm font-medium ${tab === k ? 'bg-accent text-[var(--accent-foreground)]' : 'text-secondary hover:bg-hover'}`}>{label}</button>
         ))}
         <button onClick={loadAll} className="ml-auto px-4 h-10 rounded-full text-sm border border-theme hover:bg-hover">Refresh</button>
@@ -100,6 +113,7 @@ export default function AdminDevelopaSitesPage() {
           {tab === 'sites' && <SitesTab sites={sites} reload={loadAll} flash={flash} />}
           {tab === 'payments' && <PaymentsTab payments={payments} />}
           {tab === 'ads' && <AdsTab ads={ads} sites={sites} reload={loadAll} flash={flash} />}
+          {tab === 'support' && <SupportInboxTab flash={flash} />}
         </>
       )}
     </div>
@@ -119,9 +133,16 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
 /* ------------------------------ Sites ------------------------------ */
 function SitesTab({ sites, reload, flash }: { sites: AdminSiteRow[]; reload: () => Promise<void>; flash: (ok: boolean, t: string) => void }) {
   const [query, setQuery] = useState('');
+  const [soonOnly, setSoonOnly] = useState(false);
   const [paying, setPaying] = useState<AdminSiteRow | null>(null);
   const [verifying, setVerifying] = useState<AdminSiteRow | null>(null);
-  const shown = sites.filter((s) => !query.trim() || [s.name, s.slug, s.owner_name, s.custom_domain || ''].some((v) => v.toLowerCase().includes(query.trim().toLowerCase())));
+  const shown = sites.filter((s) => {
+    if (soonOnly) {
+      const l = daysLeft(s.plan_expires_at);
+      if (s.plan_tier === 'free' || l === null || l > 7) return false;
+    }
+    return !query.trim() || [s.name, s.slug, s.owner_name, s.custom_domain || ''].some((v) => v.toLowerCase().includes(query.trim().toLowerCase()));
+  });
 
   const patch = async (s: AdminSiteRow, body: Record<string, unknown>, okText: string) => {
     const r = await api('/api/admin/developa-sites', 'PATCH', { id: s.id, ...body });
@@ -131,7 +152,16 @@ function SitesTab({ sites, reload, flash }: { sites: AdminSiteRow[]; reload: () 
 
   return (
     <div className="space-y-4">
-      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by site, owner or domain" aria-label="Search sites" className="input-box w-full max-w-md" />
+      <div className="flex flex-wrap items-center gap-3">
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by site, owner or domain" aria-label="Search sites" className="input-box w-full max-w-md" />
+        <button
+          type="button"
+          onClick={() => setSoonOnly((p) => !p)}
+          className={`px-4 h-10 rounded-full text-xs font-medium border transition-colors ${soonOnly ? 'bg-accent text-[var(--accent-foreground)] border-transparent' : 'border-theme text-secondary hover:bg-hover'}`}
+        >
+          Ending soon (within 7d)
+        </button>
+      </div>
       {shown.length === 0 ? <p className="text-sm text-secondary border border-dashed border-theme rounded-2xl p-8 text-center">No sites match.</p> : (
         <div className="g-card overflow-x-auto">
           <table className="w-full text-sm text-left min-w-[860px]">

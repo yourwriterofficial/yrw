@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { ShoppingCart, Search, Package } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { ShoppingCart, Search, Package, Calendar } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
-import { formatMoney, type ForumSummary, type ProductVariant, type SiteOrder, type SiteProduct } from '@/lib/forums';
+import { type ForumSummary, type ProductVariant, type SiteOrder, type SiteProduct } from '@/lib/forums';
 import { getTemplateById } from '@/lib/siteTemplates';
 import { computeShipping } from '@/lib/shipping';
 import { planFor } from '@/lib/plans';
 import { StorefrontHeroAndTrust, StoreProductCard } from '@/app/components/forums/StorefrontThemes';
 import ProductDetailModal from '@/app/components/forums/ProductDetailModal';
 import OrderTrackingModal from '@/app/components/forums/OrderTrackingModal';
+import StorefrontBookingModal, { type PublicBookingService, type TakenSlot } from '@/app/components/forums/StorefrontBookingModal';
 import StorefrontCheckoutDrawer, { type StorefrontCartEntry } from '@/app/components/forums/StorefrontCheckoutDrawer';
 
 export default function StorefrontView({
@@ -48,22 +49,55 @@ export default function StorefrontView({
   const [selectedProduct, setSelectedProduct] = useState<SiteProduct | null>(null);
   const [trackOpen, setTrackOpen] = useState(false);
   const [trackInitialCode, setTrackInitialCode] = useState('');
+  const [bookingServices, setBookingServices] = useState<PublicBookingService[]>([]);
+  const [takenSlots, setTakenSlots] = useState<TakenSlot[]>([]);
+  const [bookingOpen, setBookingOpen] = useState(false);
 
   const visibleProducts = useMemo(() => products.filter((p) => p.is_active), [products]);
 
+  const loadBookings = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/forums/${encodeURIComponent(site.slug)}/bookings`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const svcs = Array.isArray(data.services)
+        ? (data.services as (PublicBookingService & { is_active?: boolean })[]).filter((s) => s.is_active !== false)
+        : [];
+      setBookingServices(svcs);
+      setTakenSlots(Array.isArray(data.takenSlots) ? data.takenSlots : []);
+    } catch {
+      // Tolerant if bookings migration is not yet applied
+    }
+  }, [site.slug]);
+
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const pid = params.get('product');
-    if (pid && visibleProducts.length > 0) {
-      const match = visibleProducts.find((p) => p.id === pid);
-      if (match) setSelectedProduct(match);
-    }
-    const orderParam = params.get('order');
-    const trackParam = params.get('track');
-    if (orderParam || trackParam === '1') {
-      if (orderParam) setTrackInitialCode(orderParam.trim().toUpperCase());
-      setTrackOpen(true);
-    }
+    let active = true;
+    (async () => {
+      await Promise.resolve();
+      if (active) await loadBookings();
+    })();
+    return () => { active = false; };
+  }, [loadBookings]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      await Promise.resolve();
+      if (!active) return;
+      const params = new URLSearchParams(window.location.search);
+      const pid = params.get('product');
+      if (pid && visibleProducts.length > 0) {
+        const match = visibleProducts.find((p) => p.id === pid);
+        if (match) setSelectedProduct(match);
+      }
+      const orderParam = params.get('order');
+      const trackParam = params.get('track');
+      if (orderParam || trackParam === '1') {
+        if (orderParam) setTrackInitialCode(orderParam.trim().toUpperCase());
+        setTrackOpen(true);
+      }
+    })();
+    return () => { active = false; };
   }, [visibleProducts]);
 
   const categories = useMemo(() => {
@@ -102,7 +136,7 @@ export default function StorefrontView({
   // The discount shown here is a preview; the server recalculates it when the order is placed.
   const discount = coupon ? Math.min(coupon.discount, cartTotal) : 0;
   const plan = planFor(site.plan_tier);
-  const zones = site.shipping_zones || [];
+  const zones = useMemo(() => site.shipping_zones || [], [site.shipping_zones]);
   const hasPhysical = cart.some((c) => c.product.product_type === 'physical');
   const shippingCalc = useMemo(() => {
     if (!plan.shippingZones || !hasPhysical) return { fee: 0, zoneName: '', freeDeliveryApplied: false };
@@ -319,6 +353,15 @@ export default function StorefrontView({
           <label className="hidden md:flex items-center gap-1.5 text-xs text-secondary whitespace-nowrap">
             <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="w-3.5 h-3.5" /> In stock
           </label>
+          {bookingServices.length > 0 && (
+            <Button
+              variant="secondary"
+              onClick={() => setBookingOpen(true)}
+              icon={<Calendar className="w-4 h-4" />}
+            >
+              Book slot
+            </Button>
+          )}
           <Button
             variant="ghost"
             onClick={() => setTrackOpen(true)}
@@ -366,6 +409,7 @@ export default function StorefrontView({
 
       {selectedProduct && (
         <ProductDetailModal
+          key={selectedProduct.id}
           site={site}
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
@@ -378,6 +422,16 @@ export default function StorefrontView({
           site={site}
           initialCode={trackInitialCode}
           onClose={() => setTrackOpen(false)}
+        />
+      )}
+
+      {bookingOpen && bookingServices.length > 0 && (
+        <StorefrontBookingModal
+          site={site}
+          services={bookingServices}
+          takenSlots={takenSlots}
+          onClose={() => setBookingOpen(false)}
+          onBooked={loadBookings}
         />
       )}
 

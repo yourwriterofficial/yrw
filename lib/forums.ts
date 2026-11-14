@@ -54,6 +54,7 @@ export interface ForumSummary {
   hide_branding?: boolean;
   verified?: boolean;
   verified_at?: string | null;
+  my_role?: 'owner' | 'manager' | 'packer' | 'support';
   page_about?: string;
   page_delivery?: string;
   page_returns?: string;
@@ -188,6 +189,7 @@ export interface ForumThread {
   body: string;
   is_pinned: boolean;
   is_locked: boolean;
+  is_members_only?: boolean;
   reply_count: number;
   last_activity_at: string;
   created_at: string;

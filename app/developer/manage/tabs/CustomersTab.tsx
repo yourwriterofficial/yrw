@@ -73,7 +73,12 @@ export default function CustomersTab({ site, goToPlan }: { site: Site; goToPlan:
   }, [site.slug, canEdit, plan.newsletterLimitPerMonth]);
 
   useEffect(() => {
-    loadAll();
+    let active = true;
+    (async () => {
+      await Promise.resolve();
+      if (active) await loadAll();
+    })();
+    return () => { active = false; };
   }, [loadAll]);
 
   const filtered = useMemo(() => {
