@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react'; // eslint-disable-line
 import { useRouter } from 'next/navigation';
 import { Globe, Lock, Plus, ArrowRight, ShoppingBag, MessageSquare, Layers } from 'lucide-react';
 import { FORUM_ACCENTS, normalizeForumSlug, validateForumSlug, getForumHref } from '@/lib/forums';
@@ -29,6 +29,42 @@ export default function CreateForumForm({ onCreated }: Props) {
   const [error, setError] = useState('');
 
   const [group, setGroup] = useState<TemplateGroup>('sell');
+  // Prices and what this person already owns come from the server, so a price changed in the admin shows at once.
+  const [prices, setPrices] = useState<Record<string, { price: number; owned: boolean; pending: boolean; active: boolean }>>({});
+  const [buy, setBuy] = useState<{ reference: string; amount: number; theme: string } | null>(null);
+  const [buying, setBuying] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/themes').then((r) => r.json()).then((j) => {
+      if (!active) return;
+      const m: Record<string, { price: number; owned: boolean; pending: boolean; active: boolean }> = {};
+      for (const t of j.themes || []) m[t.id] = { price: t.price_ngn, owned: t.owned ?? t.price_ngn === 0, pending: !!t.pending, active: t.is_active };
+      setPrices(m);
+    }).catch(() => {});
+    const wanted = new URLSearchParams(window.location.search).get('template');
+    if (wanted && SITE_TEMPLATES.some((t) => t.id === wanted)) {
+      setTemplateId(wanted);
+      setGroup(templateGroup(getTemplateById(wanted)));
+      const tpl = getTemplateById(wanted);
+      setAccent(tpl.accent_color);
+    }
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const priceOf = (id: string) => prices[id]?.price ?? getTemplateById(id).price_ngn ?? 0;
+  const isLocked = (id: string) => priceOf(id) > 0 && prices[id]?.owned !== true;
+  const naira = (n: number) => '₦' + n.toLocaleString('en-NG');
+
+  const startBuy = async () => {
+    setBuying(true); setError('');
+    const res = await fetch('/api/themes/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ template_id: templateId }) });
+    const j = await res.json().catch(() => ({}));
+    setBuying(false);
+    if (res.ok) { setBuy(j); setPrices((p) => ({ ...p, [templateId]: { ...(p[templateId] || { price: j.amount, owned: false, active: true }), pending: true } })); }
+    else setError(res.status === 401 ? 'Sign in first, then buy the theme.' : j.error || 'Could not start the purchase.');
+  };
   const selectedTemplate = getTemplateById(templateId);
   const hasStore = selectedTemplate.site_mode !== 'forum';
 
@@ -124,7 +160,7 @@ export default function CreateForumForm({ onCreated }: Props) {
           ))}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          {SITE_TEMPLATES.filter((t) => templateGroup(t) === group).map((tpl) => {
+          {SITE_TEMPLATES.filter((t) => templateGroup(t) === group && prices[t.id]?.active !== false).map((tpl) => {
             const active = tpl.id === templateId;
             return (
               <button
@@ -150,6 +186,12 @@ export default function CreateForumForm({ onCreated }: Props) {
                   </span>
                 </div>
                 <p className="text-[11px] text-secondary line-clamp-2">{tpl.tagline}</p>
+                <div className="flex items-center justify-between pt-1.5">
+                  <span className={`text-[11px] font-semibold ${priceOf(tpl.id) > 0 && prices[tpl.id]?.owned !== true ? 'text-accent' : 'text-secondary'}`}>
+                    {priceOf(tpl.id) === 0 ? 'Free' : prices[tpl.id]?.owned ? 'Owned' : naira(priceOf(tpl.id))}
+                  </span>
+                  <a href={`/developer/preview/${tpl.id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[11px] font-medium text-accent hover:underline">Preview</a>
+                </div>
               </button>
             );
           })}
@@ -288,10 +330,24 @@ export default function CreateForumForm({ onCreated }: Props) {
           </div>
         </div>
 
-        <Button type="submit" variant="primary" disabled={submitting || !slug || !!slugError} icon={<ArrowRight className="w-4 h-4" />}>
-          {submitting ? 'Launching...' : hasStore ? 'Launch Store' : 'Create Forum'}
-        </Button>
+        {isLocked(templateId) ? (
+          <Button type="button" variant="primary" disabled={buying || !!prices[templateId]?.pending && !buy} onClick={startBuy} icon={<ArrowRight className="w-4 h-4" />}>
+            {buying ? 'Please wait...' : prices[templateId]?.pending && !buy ? 'Waiting for confirmation' : `Buy this theme (${naira(priceOf(templateId))})`}
+          </Button>
+        ) : (
+          <Button type="submit" variant="primary" disabled={submitting || !slug || !!slugError} icon={<ArrowRight className="w-4 h-4" />}>
+            {submitting ? 'Launching...' : hasStore ? 'Launch Store' : 'Create Forum'}
+          </Button>
+        )}
       </div>
+
+      {buy && (
+        <div className="p-4 rounded-2xl g-tonal text-sm space-y-2">
+          <p className="font-medium">Almost there. Pay {naira(buy.amount)} for {buy.theme}.</p>
+          <p className="text-secondary">Send it by bank transfer and quote reference <span className="font-mono text-primary">{buy.reference}</span>. We unlock the theme on your account as soon as we confirm it, usually within a few hours.</p>
+          <a href={`https://wa.me/2348121443666?text=${encodeURIComponent(`Hello, I paid ${naira(buy.amount)} for the ${buy.theme} theme. Reference ${buy.reference}.`)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center bg-accent text-[var(--accent-foreground)] font-medium px-5 h-10 rounded-full">Send proof on WhatsApp</a>
+        </div>
+      )}
 
       {error && (
         <div className="p-3 rounded-xl bg-danger/10 border border-danger/30 text-xs text-danger">

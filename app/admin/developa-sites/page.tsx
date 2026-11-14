@@ -5,6 +5,7 @@ import PageHeader from '@/app/components/ui/PageHeader';
 import { formatMoney, type ForumSummary } from '@/lib/forums';
 import { PLANS, daysLeft, effectiveTier, type PlanTier } from '@/lib/plans';
 import SupportInboxTab from './SupportInboxTab';
+import ThemesTab from './ThemesTab';
 
 interface AdminSiteRow extends ForumSummary {
   owner_name: string;
@@ -16,7 +17,7 @@ interface AdminSiteRow extends ForumSummary {
 interface PaymentRow { id: number; site_id: string; site_name: string; site_slug: string; plan_tier: string; months: number; amount: number; reference: string | null; note: string | null; created_at: string }
 interface AdRow { id: string; title: string; body: string; link_url: string; image_url: string; placement: 'banner' | 'footer'; target_site_id: string | null; is_active: boolean; starts_at: string | null; ends_at: string | null }
 
-type Tab = 'sites' | 'payments' | 'ads' | 'support';
+type Tab = 'sites' | 'payments' | 'themes' | 'ads' | 'support';
 const naira = (n: number) => '₦' + Math.round(n).toLocaleString('en-NG');
 
 async function api<T = Record<string, unknown>>(url: string, method = 'GET', body?: unknown) {
@@ -100,6 +101,7 @@ export default function AdminDevelopaSitesPage() {
         {([
           ['sites', 'Sites'],
           ['payments', 'Plan payments'],
+          ['themes', 'Themes and prices'],
           ['ads', 'Ads on all sites'],
           ['support', 'Priority support'],
         ] as [Tab, string][]).map(([k, label]) => (
@@ -112,6 +114,7 @@ export default function AdminDevelopaSitesPage() {
         <>
           {tab === 'sites' && <SitesTab sites={sites} reload={loadAll} flash={flash} />}
           {tab === 'payments' && <PaymentsTab payments={payments} />}
+          {tab === 'themes' && <ThemesTab flash={flash} />}
           {tab === 'ads' && <AdsTab ads={ads} sites={sites} reload={loadAll} flash={flash} />}
           {tab === 'support' && <SupportInboxTab flash={flash} />}
         </>
