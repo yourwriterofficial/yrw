@@ -1,4 +1,4 @@
-import webpush from 'web-push';
+import * as webpush from 'web-push';
 import { isMissingRelationError, readExtendedSite, supabaseAdmin } from '@/lib/forumServer';
 import { planFor } from '@/lib/plans';
 import { readPluginSettings } from '@/lib/pluginsServer';

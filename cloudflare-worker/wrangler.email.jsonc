@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "research-writer-email-worker",
+  "main": "email-worker.js",
+  "compatibility_date": "2026-01-01",
+  "vars": {
+    "INBOUND_WEBHOOK_URL": "https://yourresearchwriter.com.ng/api/email/inbound",
+    "DEFAULT_FROM_EMAIL": "noreply@yourresearchwriter.com.ng"
+  },
+  "send_email": [
+    {
+      "name": "SEND_EMAIL"
+    }
+  ]
+}

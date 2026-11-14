@@ -36,5 +36,5 @@ export async function sendSiteEmail(params: {
       console.warn('Apps Script mailer failed, using the email service instead:', err);
     }
   }
-  return sendSystemEmail(params);
+  return sendSystemEmail({ ...params, fromName: 'developa.me' });
 }
