@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { isMissingRelationError, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
-import { planFor } from '@/lib/plans';
+import { planFor, EMAIL_PACKS } from '@/lib/plans';
+import { creditsOf, spendEmailCredits } from '@/lib/emailCredits';
+import { readPluginSettings } from '@/lib/pluginsServer';
 import { sendSystemEmail } from '@/lib/emailService';
 import { emailShell } from '@/lib/emailTemplates';
 import { siteUrl } from '@/lib/siteUrl';
@@ -48,6 +50,8 @@ export async function GET(
         sentThisMonth: 0,
         limitPerMonth: plan.newsletterLimitPerMonth,
         subscriberCount: 0,
+        credits: 0,
+        packs: EMAIL_PACKS,
         tableMissing: true,
       });
     }
@@ -62,6 +66,8 @@ export async function GET(
       sentThisMonth,
       limitPerMonth: plan.newsletterLimitPerMonth,
       subscriberCount: subsRes.count || 0,
+      credits: creditsOf(await readPluginSettings(access.site.id)),
+      packs: EMAIL_PACKS,
     });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to load newsletters' }, { status: 500 });
@@ -99,11 +105,12 @@ export async function POST(
       return NextResponse.json({ error: 'Newsletters need the latest database update first.' }, { status: 503 });
     }
     const usedEmails = (monthLogs || []).reduce((sum, row) => sum + (Number(row.sent_count) || 0), 0);
-    if (usedEmails >= plan.newsletterLimitPerMonth) {
-      return NextResponse.json({ error: `Monthly send limit of ${plan.newsletterLimitPerMonth.toLocaleString()} emails reached. It resets on the 1st. Upgrade your plan for a bigger monthly allowance.` }, { status: 403 });
+    const monthlyLeft = Math.max(0, plan.newsletterLimitPerMonth - usedEmails);
+    const credits = creditsOf(await readPluginSettings(access.site.id));
+    const remainingQuota = monthlyLeft + credits;
+    if (remainingQuota <= 0) {
+      return NextResponse.json({ error: `You have used your ${plan.newsletterLimitPerMonth.toLocaleString()} included emails for this month. They reset on the 1st. Buy an email pack to send more now.` }, { status: 403 });
     }
-
-    const remainingQuota = plan.newsletterLimitPerMonth - usedEmails;
     const { data: subs, error: subErr } = await supabaseAdmin
       .from('site_subscribers')
       .select('email, name, unsubscribe_token')
@@ -145,6 +152,9 @@ export async function POST(
       }).catch(() => false);
       if (ok) sentCount++;
     }
+
+    // Bought emails are only used once the month's included emails run out.
+    await spendEmailCredits(access.site.id, Math.max(0, sentCount - monthlyLeft));
 
     const { data: log } = await supabaseAdmin
       .from('site_newsletters')

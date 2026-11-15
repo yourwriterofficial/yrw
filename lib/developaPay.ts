@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/forumServer';
-import { PLANS, type PlanTier } from '@/lib/plans';
+import { PLANS, EMAIL_PACKS, type PlanTier } from '@/lib/plans';
+import { addEmailCredits } from '@/lib/emailCredits';
 import { verifyTransaction, type PaystackVerifiedTx } from '@/lib/paystack';
 
 export interface SettleResult {
@@ -84,6 +85,15 @@ export async function settleDevelopaPayment(reference: string): Promise<SettleRe
       return { ok: true, kind: 'plan', redirectPath: `/developer/manage?site=${site.slug}&tab=plan&paid=1` };
     }
     return { ok: true, kind: 'plan', redirectPath: '/create?paid=1' };
+  }
+
+  if (meta.kind === 'email_pack') {
+    const pack = EMAIL_PACKS.find((p) => p.id === meta.packId);
+    const back = meta.slug ? `/developer/manage?site=${meta.slug}&tab=customers&emails_paid=1` : '/create';
+    if (!pack || !meta.siteId) return { ok: false, error: 'Email pack not recognised.' };
+    if (tx.amount < pack.priceNgn * 100) return { ok: false, error: 'Paid amount is less than expected.' };
+    const added = await addEmailCredits(String(meta.siteId), reference, pack.emails);
+    return { ok: true, kind: 'email_pack', alreadyPaid: !added, redirectPath: back };
   }
 
   if (meta.kind === 'theme') {

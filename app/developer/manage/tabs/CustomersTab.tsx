@@ -46,6 +46,10 @@ export default function CustomersTab({ site, goToPlan }: { site: Site; goToPlan:
   const [sentThisMonth, setSentThisMonth] = useState(0);
   const [limitPerMonth, setLimitPerMonth] = useState(plan.newsletterLimitPerMonth);
   const [subscriberCount, setSubscriberCount] = useState(0);
+  const [credits, setCredits] = useState(0);
+  const [packs, setPacks] = useState<{ id: string; emails: number; priceNgn: number }[]>([]);
+  const [buyBusy, setBuyBusy] = useState<string | null>(null);
+  const [buyMsg, setBuyMsg] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [sendBusy, setSendBusy] = useState(false);
@@ -61,6 +65,8 @@ export default function CustomersTab({ site, goToPlan }: { site: Site; goToPlan:
             sentThisMonth?: number;
             limitPerMonth?: number;
             subscriberCount?: number;
+            credits?: number;
+            packs?: { id: string; emails: number; priceNgn: number }[];
           }>(`/api/forums/${site.slug}/newsletter`)
         : Promise.resolve(null),
     ]);
@@ -70,6 +76,8 @@ export default function CustomersTab({ site, goToPlan }: { site: Site; goToPlan:
       setSentThisMonth(Number(nRes.data.sentThisMonth || 0));
       setLimitPerMonth(Number(nRes.data.limitPerMonth ?? plan.newsletterLimitPerMonth));
       setSubscriberCount(Number(nRes.data.subscriberCount || 0));
+      setCredits(Number(nRes.data.credits || 0));
+      setPacks(Array.isArray(nRes.data.packs) ? nRes.data.packs : []);
     }
     setLoading(false);
   }, [site.slug, canEdit, plan.newsletterLimitPerMonth]);
@@ -109,6 +117,18 @@ export default function CustomersTab({ site, goToPlan }: { site: Site; goToPlan:
       setSubMsg({ ok: false, text: r.data.error || 'Could not add subscriber.' });
     }
     setSubBusy(false);
+  };
+
+  const buyPack = async (packId: string) => {
+    setBuyBusy(packId);
+    setBuyMsg('');
+    const r = await jsonFetch<{ authorization_url?: string }>('/api/developa/pay/init', { method: 'POST', body: { kind: 'email_pack', slug: site.slug, pack_id: packId } });
+    if (r.ok && r.data.authorization_url) {
+      window.location.href = r.data.authorization_url;
+      return;
+    }
+    setBuyMsg((r.data.error as string) || 'Could not start the payment. Please try again.');
+    setBuyBusy(null);
   };
 
   const sendNewsletter = async (e: React.FormEvent) => {
@@ -209,6 +229,23 @@ export default function CustomersTab({ site, goToPlan }: { site: Site; goToPlan:
                   {sentThisMonth >= limitPerMonth ? 'Limit reached. Upgrade for more' : 'Running low. Upgrade for more'}
                 </button>
               )}
+            </div>
+            <div className="rounded-xl bg-secondary/40 p-3 space-y-2.5">
+              <p className="text-sm">
+                <span className="font-medium">{Math.max(0, limitPerMonth - sentThisMonth).toLocaleString()}</span> included emails left this month
+                {credits > 0 && <> · <span className="font-medium">{credits.toLocaleString()}</span> bought emails saved</>}
+              </p>
+              <p className="text-xs text-secondary">Your plan includes {limitPerMonth.toLocaleString()} emails a month. Need more? Buy a pack. Bought emails never expire and are used after your monthly ones.</p>
+              {packs.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {packs.map((p) => (
+                    <button key={p.id} type="button" disabled={buyBusy !== null} onClick={() => buyPack(p.id)} className="h-10 px-4 rounded-full border border-theme hover:bg-hover text-xs font-medium disabled:opacity-50">
+                      {buyBusy === p.id ? 'Opening…' : `+${p.emails.toLocaleString()} emails · ${formatMoney(p.priceNgn, 'NGN')}`}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {buyMsg && <p className="text-xs text-danger" role="alert">{buyMsg}</p>}
             </div>
             {plan.newsletterLimitPerMonth <= 0 ? (
               <div className="space-y-3">

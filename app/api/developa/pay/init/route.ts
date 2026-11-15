@@ -3,7 +3,7 @@ import { randomBytes } from 'crypto';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin, requireOwnedSite } from '@/lib/forumServer';
-import { PAID_TIERS, PLANS, effectiveTier, priceForPeriod, type PlanTier } from '@/lib/plans';
+import { PAID_TIERS, PLANS, EMAIL_PACKS, effectiveTier, priceForPeriod, type PlanTier } from '@/lib/plans';
 import { pluginOn } from '@/lib/plugins';
 import { readPluginSettings } from '@/lib/pluginsServer';
 import { initializeCheckout, paystackErrorResponse, referenceFor } from '@/lib/paystack';
@@ -17,6 +17,11 @@ const initSchema = z.discriminatedUnion('kind', [
     slug: z.string().min(1),
     plan_tier: z.enum(['lite', 'pro', 'business', 'corporate']),
     months: z.number().int().min(1).max(36).default(1),
+  }),
+  z.object({
+    kind: z.literal('email_pack'),
+    slug: z.string().min(1),
+    pack_id: z.string().min(1).max(20),
   }),
   z.object({
     kind: z.literal('theme'),
@@ -89,6 +94,22 @@ export async function POST(request: Request) {
           planTier: tier,
           months: data.months,
         },
+      });
+      return NextResponse.json({ authorization_url: checkout.authorization_url, reference: checkout.reference });
+    }
+
+    if (data.kind === 'email_pack') {
+      const owned = await requireOwnedSite(data.slug);
+      if ('error' in owned) return owned.error;
+      const pack = EMAIL_PACKS.find((p) => p.id === data.pack_id);
+      if (!pack) return NextResponse.json({ error: 'That email pack does not exist.' }, { status: 400 });
+      const ref = referenceFor(`dev_mail_${suffix}`);
+      const checkout = await initializeCheckout({
+        email: owned.user.email || 'owner@developa.me',
+        amountKobo: pack.priceNgn * 100,
+        reference: ref,
+        callbackUrl,
+        meta: { app: 'developa', kind: 'email_pack', siteId: owned.site.id, slug: owned.site.slug, userId: owned.user.id, packId: pack.id },
       });
       return NextResponse.json({ authorization_url: checkout.authorization_url, reference: checkout.reference });
     }

@@ -5,6 +5,14 @@
  */
 export type PlanTier = 'free' | 'lite' | 'pro' | 'business' | 'corporate';
 
+/** Extra customer emails, bought separately and kept until used. Prices are in naira. Change them here. */
+export interface EmailPack { id: string; emails: number; priceNgn: number }
+export const EMAIL_PACKS: EmailPack[] = [
+  { id: 'e100', emails: 100, priceNgn: 1500 },
+  { id: 'e500', emails: 500, priceNgn: 6000 },
+  { id: 'e2000', emails: 2000, priceNgn: 20000 },
+];
+
 export const PLAN_ORDER: PlanTier[] = ['free', 'lite', 'pro', 'business', 'corporate'];
 export const PAID_TIERS: PlanTier[] = ['lite', 'pro', 'business', 'corporate'];
 
@@ -31,7 +39,7 @@ export interface PlanDefinition {
   staffAccounts: boolean;
   maxStaff: number;
   deeperAnalytics: boolean;
-  /** Customer emails (newsletters) a site can send each month. Never unlimited: every plan has a cap. */
+  /** Customer emails (newsletters) included each month. Never unlimited and never above 50: more are bought as packs (EMAIL_PACKS). */
   newsletterLimitPerMonth: number;
   scheduledBackup: boolean;
   paidMemberships: boolean;
@@ -76,7 +84,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     staffAccounts: false,
     maxStaff: 0,
     deeperAnalytics: false,
-    newsletterLimitPerMonth: 50,
+    newsletterLimitPerMonth: 10,
     scheduledBackup: false,
     paidMemberships: false,
     bookings: false,
@@ -92,7 +100,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'none',
     businessCard: false,
     catalogueMode: true,
-    highlights: ['1 site on yourname.developa.me', 'Up to 10 products with 1 photo each', '10 free themes', 'WhatsApp ordering & catalogue mode', 'Orders by bank transfer or pay on delivery', 'Installable as a phone app', '50 customer emails a month'],
+    highlights: ['1 site on yourname.developa.me', 'Up to 10 products with 1 photo each', '10 free themes', 'WhatsApp ordering & catalogue mode', 'Orders by bank transfer or pay on delivery', 'Installable as a phone app', '10 customer emails a month (buy more any time)'],
   },
   lite: {
     tier: 'lite',
@@ -117,7 +125,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     staffAccounts: false,
     maxStaff: 0,
     deeperAnalytics: false,
-    newsletterLimitPerMonth: 500,
+    newsletterLimitPerMonth: 20,
     scheduledBackup: false,
     paidMemberships: false,
     bookings: false,
@@ -133,7 +141,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'none',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 2 sites on one account', 'Custom domain (yourbrand.com)', 'Up to 50 products (3 photos each)', 'Get paid online straight to your bank (we keep 3%)', 'Run house ads on your own site & sell ad slots', 'Reviews, receipts, business card & phone alerts', '500 customer emails a month'],
+    highlights: ['Up to 2 sites on one account', 'Custom domain (yourbrand.com)', 'Up to 50 products (3 photos each)', 'Get paid online straight to your bank (we keep 3%)', 'Run house ads on your own site & sell ad slots', 'Reviews, receipts, business card & phone alerts', '20 customer emails a month (buy more any time)'],
   },
   pro: {
     tier: 'pro',
@@ -158,7 +166,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     staffAccounts: false,
     maxStaff: 0,
     deeperAnalytics: true,
-    newsletterLimitPerMonth: 2000,
+    newsletterLimitPerMonth: 30,
     scheduledBackup: true,
     paidMemberships: false,
     bookings: false,
@@ -174,7 +182,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'plus',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 4 sites on one account', 'Unlimited products & 6 photos each', 'Get paid online straight to your bank (we keep 2%)', 'Every Plus-tier premium theme included', 'Variants, delivery zones, coupons & abandoned carts', 'Run house ads, chat with buyers & no platform ads', '2,000 customer emails a month'],
+    highlights: ['Up to 4 sites on one account', 'Unlimited products & 6 photos each', 'Get paid online straight to your bank (we keep 2%)', 'Every Plus-tier premium theme included', 'Variants, delivery zones, coupons & abandoned carts', 'Run house ads, chat with buyers & no platform ads', '30 customer emails a month (buy more any time)'],
   },
   business: {
     tier: 'business',
@@ -199,7 +207,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     staffAccounts: true,
     maxStaff: 3,
     deeperAnalytics: true,
-    newsletterLimitPerMonth: 10000,
+    newsletterLimitPerMonth: 40,
     scheduledBackup: true,
     paidMemberships: true,
     bookings: true,
@@ -215,7 +223,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'all',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 8 sites on one account', 'Everything in Pro, and we keep only 1% of online payments', 'Every premium theme included (incl. Signature)', 'Up to 3 staff accounts with roles', 'Paid memberships & booking slots', '10,000 customer emails a month & priority WhatsApp support'],
+    highlights: ['Up to 8 sites on one account', 'Everything in Pro, and we keep only 1% of online payments', 'Every premium theme included (incl. Signature)', 'Up to 3 staff accounts with roles', 'Paid memberships & booking slots', '40 customer emails a month & priority WhatsApp support'],
   },
   corporate: {
     tier: 'corporate',
@@ -240,7 +248,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     staffAccounts: true,
     maxStaff: 15,
     deeperAnalytics: true,
-    newsletterLimitPerMonth: 30000,
+    newsletterLimitPerMonth: 50,
     scheduledBackup: true,
     paidMemberships: true,
     bookings: true,
@@ -256,7 +264,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'all',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 25 sites for agencies & branches', 'Everything in Business, and we keep only 0.5% of online payments', 'Up to 10 photos per product & 15 staff accounts', '30,000 customer emails a month', 'Full white-label & priority support'],
+    highlights: ['Up to 25 sites for agencies & branches', 'Everything in Business, and we keep only 0.5% of online payments', 'Up to 10 photos per product & 15 staff accounts', '50 customer emails a month (buy more any time)', 'Full white-label & priority support'],
   },
 };
 

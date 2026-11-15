@@ -96,7 +96,7 @@ export default function ManageView() {
       const q = new URLSearchParams(window.location.search);
       const wantedTab = q.get('tab') as TabKey | null;
       if (wantedTab && TAB_KEYS.includes(wantedTab)) setTab(wantedTab);
-      if (q.get('paid') === '1' || q.get('theme_paid') === '1') setPaidNotice(true);
+      if (q.get('paid') === '1' || q.get('theme_paid') === '1' || q.get('emails_paid') === '1') setPaidNotice(true);
     })();
   }, []);
 

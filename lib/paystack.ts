@@ -95,7 +95,7 @@ export function paystackErrorResponse(err: unknown, fallback: string) {
 
 export interface DevelopaPayMeta {
   app: 'developa';
-  kind: 'plan' | 'theme' | 'ad_booking' | 'store_order';
+  kind: 'plan' | 'theme' | 'ad_booking' | 'store_order' | 'email_pack';
   siteId?: string;
   slug?: string;
   userId?: string;
@@ -104,6 +104,7 @@ export interface DevelopaPayMeta {
   templateId?: string;
   bookingId?: string;
   orderId?: string;
+  packId?: string;
 }
 
 export async function initializeCheckout(p: {
