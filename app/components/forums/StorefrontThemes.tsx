@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ShoppingCart, Plus, Package, Download, Briefcase, Flame, ShieldCheck, Truck, Zap, Tag, MessageCircle, Share2, Check, Star,
 } from 'lucide-react';
@@ -156,7 +156,10 @@ export function StoreProductCard({
   const pct = discountPercent(Number(product.price), product.compare_at_price ? Number(product.compare_at_price) : null);
   const outOfStock = product.stock_qty !== null && product.stock_qty <= 0;
   const lowStock = product.stock_qty !== null && product.stock_qty > 0 && product.stock_qty <= 3;
-  const waHref = buildProductWaHref(site, product);
+  // The share link carries this page's address, which the server does not know. Build it after the page
+  // loads in the browser so the server and browser HTML agree (otherwise React logs a mismatch).
+  const [waHref, setWaHref] = useState<string | null>(null);
+  useEffect(() => { setWaHref(buildProductWaHref(site, product)); }, [site, product]);
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();

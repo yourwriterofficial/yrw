@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useEffect, useMemo, useState } from 'react';
+import { skinFor } from '@/lib/themeSkins';
 import Link from 'next/link';
 import { ArrowLeft, Monitor, Smartphone, ShoppingCart, Search, X, Minus, Plus, Star, MessageSquare, Lock, Check, Menu, Sparkles, Truck, ShieldCheck, Headphones, Mail } from 'lucide-react';
 import { SITE_TEMPLATES } from '@/lib/siteTemplates';
@@ -257,7 +258,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
                 <div className="px-4 sm:px-6 pt-4"><div className="rounded-xl g-tonal-strong px-4 py-2.5 text-sm flex items-center justify-between gap-3"><span className="flex items-center gap-2"><Check className="w-4 h-4 text-accent" />{notice}</span><button onClick={() => setNotice('')} aria-label="Dismiss"><X className="w-4 h-4" /></button></div></div>
               )}
 
-              <main className={`p-4 sm:p-6 space-y-8 ${premium ? 'premium-skin' : ''}`} style={premium ? ({ '--skin-accent': accent } as React.CSSProperties) : undefined}>
+              <main className="p-4 sm:p-6 space-y-8 premium-skin" data-skin={skinFor(site.template_id)} style={{ '--skin-accent': accent } as React.CSSProperties}>
                 {openThread ? (
                   <div className="max-w-3xl mx-auto space-y-4">
                     <button onClick={() => setOpenThread(null)} className="text-sm text-secondary hover:text-primary flex items-center gap-1"><ArrowLeft className="w-4 h-4" /> Back to {nav.forumLabel.toLowerCase()}</button>

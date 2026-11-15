@@ -16,6 +16,7 @@ import StorefrontCheckoutDrawer, { type StorefrontCartEntry } from '@/app/compon
 import { isPremiumTemplate } from '@/lib/premium';
 import { pluginOn } from '@/lib/plugins';
 import BusinessCard from '@/app/components/forums/BusinessCard';
+import { skinFor } from '@/lib/themeSkins';
 import { buildProductWaHref } from '@/app/components/forums/ProductDetailModal';
 import { PremiumFloaters, PremiumRails, Reveal, WishHeart, useRecentlyViewed } from '@/app/components/forums/PremiumExtras';
 import { StorefrontTrustBar, StorefrontFaqAccordion, StorefrontSafetyLinks, FlashSaleBanner, StorefrontCurrencyPreview } from '@/app/components/forums/StorefrontExtras';
@@ -383,7 +384,7 @@ export default function StorefrontView({
   }, [site.slug, site.name, site.description, site.logo_url, site.custom_domain, site.custom_domain_verified, visibleProducts, currency]);
 
   return (
-    <div className="space-y-6 premium-skin" style={{ '--skin-accent': site.accent_color || '#1a73e8' } as React.CSSProperties}>
+    <div className="space-y-6 premium-skin" data-skin={skinFor(site.template_id)} style={{ '--skin-accent': site.accent_color || '#1a73e8' } as React.CSSProperties}>
       <StorefrontHeroAndTrust
         site={site}
         layoutStyle={layoutStyle}

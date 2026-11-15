@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Roboto } from "next/font/google";
+import { Roboto, Playfair_Display, Space_Grotesk, Fraunces, Oswald } from "next/font/google";
 import "./globals.css";
+import "./theme-skins.css";
 import PWAUpdater from "./components/PWAUpdater";
 import { ThemeProvider } from "./components/ThemeProvider";
 import OrderAssistant from "./components/OrderAssistant";
@@ -16,6 +17,12 @@ const roboto = Roboto({
   variable: "--font-sans",
   display: "swap",
 });
+
+// Display faces used by individual storefront themes (see lib/themeSkins.ts and globals.css).
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap" });
+const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk", display: "swap" });
+const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap" });
+const oswald = Oswald({ subsets: ["latin"], variable: "--font-oswald", display: "swap" });
 
 export const viewport: Viewport = {
   themeColor: "#050505",
@@ -75,7 +82,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={roboto.variable}>
+    <html lang="en" suppressHydrationWarning className={`${roboto.variable} ${playfair.variable} ${grotesk.variable} ${fraunces.variable} ${oswald.variable}`}>
       <head>
         <script
           dangerouslySetInnerHTML={{

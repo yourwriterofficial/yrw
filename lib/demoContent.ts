@@ -36,39 +36,27 @@ export const brandFor = (t: SiteTemplate) => { const a = BRANDS[archetypeOf(t)];
 
 /* ---------- product artwork ---------- */
 
-const EMOJI: [RegExp, string][] = [
-  [/phone|tablet|iphone|android/i, '📱'], [/earbud|airpod|headphone|audio|speaker/i, '🎧'], [/laptop|computer|pc/i, '💻'], [/watch/i, '⌚'], [/tv|television/i, '📺'],
-  [/shoe|sneaker|footwear/i, '👟'], [/dress|gown|ankara|adire|fabric|lookbook/i, '👗'], [/shirt|tee|polo|chino|trouser|jean|hoodie|wear|fashion/i, '👕'], [/bag|handbag|tote/i, '👜'],
-  [/blender|kitchen|cook|pot|pan|home/i, '🍳'], [/fan|cooler|fridge|appliance/i, '🧊'], [/jollof|rice|meal|lunch|dinner|menu|food|suya|grill|chicken/i, '🍛'], [/cake|bake|pastry|bread|cupcake/i, '🎂'],
-  [/drink|juice|zobo|coffee|tea/i, '🥤'], [/hair|braid|wig|salon|barber/i, '💇'], [/nail|manicure|pedicure/i, '💅'], [/facial|spa|massage|skin|beauty|makeup/i, '🧴'],
-  [/photo|camera|shoot|portrait|wedding|session/i, '📷'], [/video|film|reel|edit|production/i, '🎬'], [/logo|brand|design|graphic|canva|template|preset/i, '🎨'], [/web|app|code|software|licen[cs]e/i, '🖥️'],
-  [/ebook|book|guide|read|pdf/i, '📘'], [/course|class|learn|lesson|bootcamp|academy|training|mentor/i, '🎓'], [/ticket|event|concert|festival|show|party/i, '🎟️'],
-  [/flat|apartment|house|home|duplex|rent|land|estate|property|office/i, '🏠'], [/consult|strategy|audit|coaching|session|call|advice/i, '💼'], [/music|beat|song|album/i, '🎵'],
-  [/plan|member|subscription|premium|pro\b/i, '⭐'],
-];
-const FALLBACK_EMOJI: Record<string, string> = { physical: '📦', digital: '💾', service: '🛎️' };
-
-function emojiFor(title: string, category: string, type: string): string {
-  const text = `${title} ${category}`;
-  for (const [re, e] of EMOJI) if (re.test(text)) return e;
-  return FALLBACK_EMOJI[type] ?? '✨';
-}
-
-/** A soft, designed-looking tile: layered gradient + shapes + a pictogram, tinted from the theme colour. */
+/**
+ * Placeholder product image: a calm studio backdrop (tonal gradient, a few soft shapes, a thin frame and the
+ * category in small type). No pictograms or emoji, so previews never look like stock icons. Real stores
+ * replace these with their own photos.
+ */
 export function artFor(title: string, category: string, type: string, accent: string, w = 640, h = 480): string {
   const n = hash(title + category);
-  const rot = (n % 40) - 20;
-  const e = emojiFor(title, category, type);
-  const x1 = 15 + (n % 50), y1 = 20 + ((n >> 3) % 50);
+  const variant = n % 4;
+  const cx = 18 + (n % 64), cy = 30 + ((n >> 3) % 40);
+  const shapes = [
+    `<circle cx="${w * cx / 100}" cy="${h * cy / 100}" r="${h * 0.34}" fill="${accent}" opacity=".16"/><circle cx="${w * (100 - cx) / 100}" cy="${h * 0.82}" r="${h * 0.2}" fill="${accent}" opacity=".22"/>`,
+    `<path d="M0 ${h * 0.72} C ${w * 0.3} ${h * 0.5}, ${w * 0.6} ${h * 0.95}, ${w} ${h * 0.62} V ${h} H0Z" fill="${accent}" opacity=".2"/><path d="M0 ${h * 0.85} C ${w * 0.35} ${h * 0.66}, ${w * 0.65} ${h * 1.02}, ${w} ${h * 0.78} V ${h} H0Z" fill="${accent}" opacity=".18"/>`,
+    `<rect x="${w * 0.12}" y="${h * 0.14}" width="${w * 0.34}" height="${h * 0.72}" fill="${accent}" opacity=".16"/><rect x="${w * 0.5}" y="${h * 0.3}" width="${w * 0.38}" height="${h * 0.56}" fill="${accent}" opacity=".24"/>`,
+    `<path d="M${w * 0.1} ${h} V ${h * 0.45} A ${w * 0.2} ${w * 0.2} 0 0 1 ${w * 0.5} ${h * 0.45} V ${h}Z" fill="${accent}" opacity=".2"/><circle cx="${w * 0.74}" cy="${h * 0.36}" r="${h * 0.16}" fill="${accent}" opacity=".26"/>`,
+  ][variant];
+  const label = (category || type || '').toUpperCase().slice(0, 22).replace(/[<>&]/g, '');
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
-<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${accent}" stop-opacity=".30"/><stop offset="1" stop-color="${accent}" stop-opacity=".07"/></linearGradient>
-<radialGradient id="r" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
-<rect width="${w}" height="${h}" fill="#f6f7fb"/><rect width="${w}" height="${h}" fill="url(#g)"/>
-<circle cx="${x1 * 6}" cy="${y1 * 4}" r="${150 + (n % 60)}" fill="${accent}" opacity=".10"/>
-<circle cx="${w - x1 * 4}" cy="${h - y1 * 3}" r="${110 + (n % 50)}" fill="${accent}" opacity=".12"/>
-<g transform="rotate(${rot} ${w / 2} ${h / 2})"><rect x="${w / 2 - 120}" y="${h / 2 - 120}" width="240" height="240" rx="56" fill="#fff" opacity=".55"/></g>
-<circle cx="${w / 2}" cy="${h / 2}" r="130" fill="url(#r)"/>
-<text x="50%" y="52%" font-size="150" text-anchor="middle" dominant-baseline="middle" font-family="Segoe UI Emoji,Apple Color Emoji,Noto Color Emoji,sans-serif">${e}</text></svg>`;
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${accent}" stop-opacity=".22"/><stop offset="1" stop-color="${accent}" stop-opacity=".05"/></linearGradient></defs>
+<rect width="${w}" height="${h}" fill="#f4f4f1"/><rect width="${w}" height="${h}" fill="url(#g)"/>${shapes}
+<rect x="14" y="14" width="${w - 28}" height="${h - 28}" fill="none" stroke="#000" stroke-opacity=".08"/>
+<text x="28" y="${h - 28}" font-size="15" letter-spacing="3" fill="#000" fill-opacity=".45" font-family="Helvetica,Arial,sans-serif">${label}</text></svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
