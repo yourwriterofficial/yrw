@@ -536,3 +536,41 @@ img, svg, video { max-width: 100%; }
   button, [role="button"], a.btn { min-height: 40px; }
 }
 
+
+/* ---------- Premium theme skin ----------
+   Applied to a site's content area when its theme is premium. Free themes are untouched. */
+.premium-skin {
+  --premium-heading: 'Playfair Display', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  position: relative;
+  isolation: isolate;
+}
+.premium-skin::before {
+  content: '';
+  position: absolute;
+  inset: -1.5rem -1rem auto -1rem;
+  height: 22rem;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 80% at 15% 0%, color-mix(in srgb, var(--skin-accent, #1a73e8) 16%, transparent), transparent 70%),
+    radial-gradient(50% 70% at 90% 10%, color-mix(in srgb, var(--skin-accent, #1a73e8) 10%, transparent), transparent 70%);
+}
+.premium-skin h1,
+.premium-skin h2 {
+  font-family: var(--premium-heading);
+  letter-spacing: -0.012em;
+}
+.premium-skin h1 { font-weight: 700; }
+.premium-skin .premium-card {
+  border-radius: 1.25rem;
+  transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s ease;
+}
+.premium-skin .premium-card > :not(button) { border-radius: inherit; }
+.premium-skin .premium-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px -18px color-mix(in srgb, var(--skin-accent, #1a73e8) 45%, rgba(0,0,0,.5));
+}
+.premium-skin ::selection { background: color-mix(in srgb, var(--skin-accent, #1a73e8) 30%, transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .premium-skin .premium-card, .premium-skin .premium-card:hover { transition: none; transform: none; }
+}

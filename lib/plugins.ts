@@ -16,6 +16,8 @@ export interface PluginDef {
   minTier: PlanTier;
   /** True when the owner can switch it off. False means it is simply part of the plan. */
   toggle: boolean;
+  /** For switchable plugins: is it on until the owner says otherwise? Default true. */
+  defaultOn?: boolean;
   /** The Admin tab that manages it, when there is one. */
   tab?: string;
 }
@@ -29,6 +31,8 @@ export const PLUGIN_GROUPS: { key: PluginGroup; label: string }[] = [
 
 export const PLUGINS: PluginDef[] = [
   // Sell more
+  { id: 'catalogue', name: 'Advertise mode', description: 'Show your items as a catalogue. Visitors tap to order on WhatsApp instead of using a cart. Ideal if you take orders by chat.', group: 'sell', minTier: 'free', toggle: true, defaultOn: false },
+  { id: 'businesscard', name: 'Business card', description: 'Opening hours, a call button, WhatsApp and directions, right at the top of your site.', group: 'grow', minTier: 'pro', toggle: true, tab: 'settings' },
   { id: 'coupons', name: 'Discount coupons', description: 'Percent or fixed-amount codes, with limits and expiry dates.', group: 'sell', minTier: 'pro', toggle: false, tab: 'coupons' },
   { id: 'variants', name: 'Sizes and colours', description: 'One product with many options, each with its own stock.', group: 'sell', minTier: 'pro', toggle: false, tab: 'products' },
   { id: 'shipping', name: 'Delivery zones', description: 'Different delivery fees for different states, plus store pickup.', group: 'sell', minTier: 'pro', toggle: false, tab: 'shipping' },
@@ -65,7 +69,8 @@ export function pluginOn(id: string, planTier: string | null | undefined, expire
   const def = PLUGINS.find((p) => p.id === id);
   if (!def) return false;
   if (!planIncludes(def, effectiveTier(planTier, expiresAt))) return false;
-  return !def.toggle || settings?.[id] !== false;
+  if (!def.toggle) return true;
+  return def.defaultOn === false ? settings?.[id] === true : settings?.[id] !== false;
 }
 
 /** Guards against a plugin list that has drifted from the plan flags. */
@@ -94,6 +99,8 @@ export function pluginMatchesPlan(): string[] {
     check('priority', p.prioritySupport, tier);
     check('domain', p.customDomain, tier);
     check('nobrand', p.hideBranding, tier);
+    check('businesscard', p.businessCard, tier);
+    check('catalogue', p.catalogueMode, tier);
   }
   return problems;
 }

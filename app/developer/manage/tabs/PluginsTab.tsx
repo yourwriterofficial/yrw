@@ -41,7 +41,7 @@ export default function PluginsTab({ site, go }: { site: Site; go: (tab: string)
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {items.map((p) => {
                 const included = planIncludes(p, tier);
-                const on = included && (!p.toggle || settings[p.id] !== false);
+                const on = included && (!p.toggle || (p.defaultOn === false ? settings[p.id] === true : settings[p.id] !== false));
                 return (
                   <div key={p.id} className={`g-card p-5 flex flex-col ${included ? '' : 'opacity-80'}`}>
                     <div className="flex items-start justify-between gap-3">

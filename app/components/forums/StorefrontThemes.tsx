@@ -139,6 +139,7 @@ export function StoreProductCard({
   layoutStyle,
   onAdd,
   onOpen,
+  catalogue = false,
 }: {
   site: ForumSummary;
   product: SiteProduct;
@@ -146,7 +147,10 @@ export function StoreProductCard({
   layoutStyle: StoreLayoutStyle;
   onAdd: (p: SiteProduct) => void;
   onOpen: (p: SiteProduct) => void;
+  /** Advertise mode: the button sends the buyer to WhatsApp instead of the cart. */
+  catalogue?: boolean;
 }) {
+  const cta = (label: string) => (catalogue ? 'Order on WhatsApp' : label);
   const [copied, setCopied] = useState(false);
   const { label, Icon } = typeMeta(product.product_type);
   const pct = discountPercent(Number(product.price), product.compare_at_price ? Number(product.compare_at_price) : null);
@@ -234,7 +238,7 @@ export function StoreProductCard({
               onClick={() => onAdd(product)}
               className="w-full min-h-10 py-2 rounded-lg bg-[#f68b1e] hover:bg-[#e07b15] disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 transition cursor-pointer"
             >
-              <ShoppingCart className="w-3.5 h-3.5" /> {outOfStock ? 'Out of Stock' : 'Add to Cart'}
+              <ShoppingCart className="w-3.5 h-3.5" /> {outOfStock ? 'Out of Stock' : cta('Add to Cart')}
             </button>
             {quickActions}
           </div>
@@ -287,7 +291,7 @@ export function StoreProductCard({
                 onClick={() => onAdd(product)}
                 className="min-h-9 px-2.5 py-1.5 rounded-full bg-[#fb7701] hover:bg-[#e56800] disabled:opacity-50 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
               >
-                <Plus className="w-3 h-3" /> {outOfStock ? 'Sold' : 'Buy'}
+                <Plus className="w-3 h-3" /> {outOfStock ? 'Sold' : cta('Buy')}
               </button>
             </div>
             {quickActions}
@@ -328,7 +332,7 @@ export function StoreProductCard({
               onClick={() => onAdd(product)}
               className="min-h-10 px-5 rounded-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-[var(--accent-foreground)] text-sm font-medium cursor-pointer"
             >
-              {outOfStock ? 'Unavailable' : forService ? 'Book' : 'Buy'}
+              {outOfStock ? 'Unavailable' : cta(forService ? 'Book' : 'Buy')}
             </button>
           </div>
           {quickActions}
@@ -375,7 +379,7 @@ export function StoreProductCard({
               onClick={() => onAdd(product)}
               className="min-h-10 px-4 rounded-full border border-theme hover:bg-hover disabled:opacity-50 text-xs font-semibold cursor-pointer"
             >
-              {outOfStock ? 'Sold' : 'Buy now'}
+              {outOfStock ? 'Sold' : cta('Buy now')}
             </button>
             <button type="button" onClick={handleShare} aria-label={`Share ${product.title}`} className="min-h-10 w-10 rounded-full border border-theme hover:bg-hover inline-flex items-center justify-center cursor-pointer">
               {copied ? <Check className="w-4 h-4 text-success" /> : <Share2 className="w-4 h-4" />}
@@ -414,7 +418,7 @@ export function StoreProductCard({
           onClick={() => onAdd(product)}
           className="mt-3 w-full min-h-11 border border-[var(--text-primary)] text-primary hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] disabled:opacity-40 text-sm transition cursor-pointer"
         >
-          {outOfStock ? 'Sold out' : 'Add to cart'}
+          {outOfStock ? 'Sold out' : cta('Add to cart')}
         </button>
       </div>
     );
@@ -456,7 +460,7 @@ export function StoreProductCard({
               onClick={() => onAdd(product)}
               className="w-full min-h-11 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-50 text-[var(--accent-foreground)] text-sm font-semibold cursor-pointer"
             >
-              {outOfStock ? 'Unavailable' : product.product_type === 'digital' ? 'Get it now' : 'Buy now'}
+              {outOfStock ? 'Unavailable' : cta(product.product_type === 'digital' ? 'Get it now' : 'Buy now')}
             </button>
           </div>
         </div>
@@ -506,7 +510,7 @@ export function StoreProductCard({
               onClick={() => onAdd(product)}
               className="min-h-9 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black text-xs font-bold flex items-center gap-1 cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" /> {outOfStock ? 'Sold Out' : 'Add'}
+              <Plus className="w-3.5 h-3.5" /> {outOfStock ? 'Sold Out' : cta('Add')}
             </button>
           </div>
           {quickActions}

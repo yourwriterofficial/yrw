@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireSiteAccess, supabaseAdmin, isMissingColumnError } from '@/lib/forumServer';
-import { PLUGINS, pluginOn } from '@/lib/plugins';
+import { PLUGINS, planIncludes } from '@/lib/plugins';
+import { effectiveTier } from '@/lib/plans';
 import { readPluginSettings } from '@/lib/pluginsServer';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +26,7 @@ export async function PUT(request: Request, ctx: { params: Promise<{ slug: strin
   const def = PLUGINS.find((p) => p.id === parsed.data.id);
   if (!def || !def.toggle) return NextResponse.json({ error: 'That plugin cannot be switched.' }, { status: 400 });
   const site = a.site as { plan_tier?: string; plan_expires_at?: string | null };
-  if (!pluginOn(def.id, site.plan_tier, site.plan_expires_at, {})) {
+  if (!planIncludes(def, effectiveTier(site.plan_tier, site.plan_expires_at))) {
     return NextResponse.json({ error: `${def.name} is not part of your plan.` }, { status: 403 });
   }
   const current = await readPluginSettings(a.site.id);

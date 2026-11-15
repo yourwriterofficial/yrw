@@ -392,7 +392,7 @@ export default function ForumView({ slug }: { slug: string }) {
                   <TrendingRail threads={threads} accent={forum.accent_color || getTemplateById(forum.template_id).accent_color} onOpen={(t) => { window.location.assign(threadHref(t.id)); }} />
                 )}
 
-                <section className="space-y-3">
+                <section className={`space-y-3 ${isPremiumTemplate(forum.template_id) ? 'premium-skin' : ''}`} style={isPremiumTemplate(forum.template_id) ? ({ '--skin-accent': forum.accent_color || getTemplateById(forum.template_id).accent_color } as React.CSSProperties) : undefined}>
                   {threads.length === 0 ? (
                     <div className="bg-card border border-theme rounded-2xl p-8 text-center text-sm text-secondary">
                       No discussions yet. Start the first thread above.

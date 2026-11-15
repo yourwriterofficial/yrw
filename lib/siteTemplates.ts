@@ -97,6 +97,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'temu-deals',
+    price_ngn: 2500,
     label: 'Temu-Style Flash Deals',
     tagline: 'High-energy deal grid, bold discount pills, low-stock urgency & buyer protection.',
     site_mode: 'store',
@@ -317,6 +318,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'buy-and-sell',
+    price_ngn: 2500,
     label: 'Buy & Sell Marketplace',
     group: 'sell',
     item_label: ['Listing', 'Listings'],
@@ -366,6 +368,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'real-estate',
+    price_ngn: 3000,
     label: 'Real Estate & Rentals',
     group: 'sell',
     item_label: ['Property', 'Properties'],
@@ -382,6 +385,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'online-academy',
+    price_ngn: 3000,
     label: 'Online Academy & Courses',
     group: 'sell',
     item_label: ['Course', 'Courses'],
@@ -400,6 +404,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'salon-beauty',
+    price_ngn: 2500,
     label: 'Salon, Spa & Beauty Bookings',
     group: 'showcase',
     item_label: ['Service', 'Services'],
@@ -435,6 +440,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'events-tickets',
+    price_ngn: 3000,
     label: 'Events & Ticket Sales',
     group: 'sell',
     item_label: ['Ticket', 'Tickets'],
@@ -487,6 +493,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'selar-creator',
+    price_ngn: 2500,
     label: 'Digital Creator Store (Selar style)',
     group: 'selar',
     item_label: ['Product', 'Products'],
@@ -522,6 +529,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'wp-business',
+    price_ngn: 3000,
     label: 'Business Website (WordPress style)',
     group: 'wordpress',
     item_label: ['Service', 'Services'],
@@ -539,6 +547,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'wp-blog',
+    price_ngn: 2000,
     label: 'Personal Blog (WordPress style)',
     group: 'wordpress',
     item_label: ['Post', 'Posts'],
@@ -553,6 +562,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'wp-magazine',
+    price_ngn: 2500,
     label: 'News & Magazine (WordPress style)',
     group: 'wordpress',
     item_label: ['Story', 'Stories'],

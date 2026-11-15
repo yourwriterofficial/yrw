@@ -1,6 +1,8 @@
 import { supabaseAdmin, isMissingRelationError } from '@/lib/forumServer';
 import { SITE_TEMPLATES as ALL_TEMPLATES } from '@/lib/siteTemplates';
 import { SITE_TEMPLATES, templateGroup, type TemplateGroup } from '@/lib/siteTemplates';
+import { PLANS, TRIAL_DAYS, daysLeft, effectiveTier } from '@/lib/plans';
+import { tierForPrice } from '@/lib/premium';
 
 /**
  * What each theme costs right now. A theme's default price lives in code (lib/siteTemplates.ts);
@@ -33,11 +35,30 @@ async function overrides(): Promise<Map<string, CatalogRow>> {
   return new Map((data || []).map((r) => [r.template_id as string, r as CatalogRow]));
 }
 
+/**
+ * The most expensive theme a person's paid plan already includes. The free 3-day Pro trial does not
+ * count, otherwise anyone could try Pro and keep a premium theme.
+ */
+async function includedUpTo(userId: string): Promise<number> {
+  const { data } = await supabaseAdmin.from('forums').select('plan_tier, plan_expires_at').eq('owner_id', userId).in('plan_tier', ['pro', 'business']);
+  let best = 0;
+  for (const f of data || []) {
+    const tier = effectiveTier(f.plan_tier as string, f.plan_expires_at as string | null);
+    const left = daysLeft(f.plan_expires_at as string | null);
+    if (tier === 'free' || (left !== null && left <= TRIAL_DAYS)) continue;
+    const inc = PLANS[tier].includedThemes;
+    best = Math.max(best, inc === 'all' ? Infinity : inc === 'plus' ? 4000 : 0);
+  }
+  return best;
+}
+
 export async function loadCatalog(userId?: string | null): Promise<ThemeEntry[]> {
   const rows = await overrides();
   let owned = new Set<string>();
   let pending = new Set<string>();
+  let included = 0;
   if (userId) {
+    included = await includedUpTo(userId);
     const { data } = await supabaseAdmin.from('theme_purchases').select('template_id, status').eq('user_id', userId);
     owned = new Set((data || []).filter((r) => r.status === 'paid').map((r) => r.template_id as string));
     pending = new Set((data || []).filter((r) => r.status === 'pending').map((r) => r.template_id as string));
@@ -54,7 +75,7 @@ export async function loadCatalog(userId?: string | null): Promise<ThemeEntry[]>
       default_price_ngn: t.price_ngn ?? 0,
       is_premium: price > 0,
       is_active: o ? o.is_active : true,
-      ...(userId ? { owned: price === 0 || owned.has(t.id), pending: pending.has(t.id) } : {}),
+      ...(userId ? { owned: price === 0 || owned.has(t.id) || (price > 0 && tierForPrice(price) !== 'signature' ? price <= included : included === Infinity), pending: pending.has(t.id) } : {}),
     };
   });
 }

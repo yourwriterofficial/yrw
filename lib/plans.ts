@@ -36,6 +36,10 @@ export interface PlanDefinition {
   directMessages: boolean;    // buyers can chat with the seller inside the site
   pushNotifications: boolean; // phone alerts for new orders and order updates
   appInstall: boolean;        // each site can be installed on a phone like an app
+  /** Premium themes included with the plan, so the owner does not buy them one by one. */
+  includedThemes: 'none' | 'plus' | 'all';
+  businessCard: boolean;      // opening hours, call button and map link shown on the site
+  catalogueMode: boolean;     // show items as an advertised catalogue: buyers contact you instead of using a cart
   highlights: string[];
 }
 
@@ -71,7 +75,10 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     directMessages: false,
     pushNotifications: false,
     appInstall: true,
-    highlights: ['1 site on your own yourname.developa.me address', 'Up to 10 products', 'Orders by bank transfer or pay on delivery', 'Installable as a phone app'],
+    includedThemes: 'none',
+    businessCard: false,
+    catalogueMode: true,
+    highlights: ['1 site on your own yourname.developa.me address', 'Up to 10 products with 1 photo each', '10 free themes', 'Advertise your business: buyers tap WhatsApp to order', 'Orders by bank transfer or pay on delivery', 'Installable as a phone app'],
   },
   pro: {
     tier: 'pro',
@@ -104,7 +111,10 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     directMessages: true,
     pushNotifications: true,
     appInstall: true,
-    highlights: ['Up to 4 sites on one account', 'Your own domain (yourbrand.com)', 'Unlimited products & variants', 'Sell ad space, chat with buyers, push alerts', 'No "Powered by Developa" and no platform ads'],
+    includedThemes: 'plus',
+    businessCard: true,
+    catalogueMode: true,
+    highlights: ['Up to 4 sites on one account', 'Your own domain (yourbrand.com)', 'Unlimited products & variants', 'Every Plus-tier premium theme included (worth up to ₦4,000 each)', 'Business card: opening hours, call button, map link', 'Up to 6 photos per product and product variants', 'Coupons, delivery zones and abandoned-cart reminders', 'Sell ad space, chat with buyers, phone push alerts', 'No "Powered by Developa" and no platform ads'],
   },
   business: {
     tier: 'business',
@@ -137,7 +147,10 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     directMessages: true,
     pushNotifications: true,
     appInstall: true,
-    highlights: ['Up to 8 sites on one account', 'Everything in Pro', 'Staff accounts with roles', 'Paid memberships & booking slots', 'Priority support on WhatsApp'],
+    includedThemes: 'all',
+    businessCard: true,
+    catalogueMode: true,
+    highlights: ['Up to 8 sites on one account', 'Everything in Pro', 'Every premium theme included, including Signature', 'Staff accounts with roles', 'Paid memberships & booking slots', 'Priority support on WhatsApp'],
   },
 };
 

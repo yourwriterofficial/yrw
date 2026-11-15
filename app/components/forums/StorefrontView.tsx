@@ -14,7 +14,15 @@ import StorefrontBookingModal, { type PublicBookingService, type TakenSlot } fro
 import StorefrontCheckoutDrawer, { type StorefrontCartEntry } from '@/app/components/forums/StorefrontCheckoutDrawer';
 
 import { isPremiumTemplate } from '@/lib/premium';
+import { pluginOn } from '@/lib/plugins';
+import BusinessCard from '@/app/components/forums/BusinessCard';
+import { buildProductWaHref } from '@/app/components/forums/ProductDetailModal';
 import { PremiumFloaters, PremiumRails, Reveal, WishHeart, useRecentlyViewed } from '@/app/components/forums/PremiumExtras';
+
+/** Fades content in on scroll for premium themes; free themes render it as is. */
+function RevealIf({ on, children }: { on: boolean; children: React.ReactNode }) {
+  return on ? <Reveal>{children}</Reveal> : <>{children}</>;
+}
 
 export default function StorefrontView({
   site,
@@ -25,6 +33,9 @@ export default function StorefrontView({
 }) {
   const currency = site.currency || 'NGN';
   const premium = isPremiumTemplate(site.template_id);
+  // Advertise mode: items are shown as a catalogue and buyers are sent to WhatsApp instead of a cart.
+  const catalogue = !!site.whatsapp_number && pluginOn('catalogue', 'free', null, site.plugins);
+  const showCard = pluginOn('businesscard', site.plan_tier, null, site.plugins);
   const recentlyViewed = useRecentlyViewed(site.slug);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
@@ -198,6 +209,11 @@ export default function StorefrontView({
   const openProduct = (p: SiteProduct) => { setSelectedProduct(p); recentlyViewed.push(p.id); };
 
   const addToCart = (product: SiteProduct, variant?: ProductVariant) => {
+    if (catalogue) {
+      const href = buildProductWaHref(site, product);
+      if (href) window.open(href, '_blank', 'noopener,noreferrer');
+      return;
+    }
     if (!variant && (product.variants || []).some((v) => v.is_active)) {
       setSelectedProduct(product);
       return;
@@ -307,7 +323,7 @@ export default function StorefrontView({
   }, [site.slug, site.name, site.description, site.logo_url, site.custom_domain, site.custom_domain_verified, visibleProducts, currency]);
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${premium ? 'premium-skin' : ''}`} style={premium ? ({ '--skin-accent': site.accent_color || '#1a73e8' } as React.CSSProperties) : undefined}>
       <StorefrontHeroAndTrust
         site={site}
         layoutStyle={layoutStyle}
@@ -315,6 +331,8 @@ export default function StorefrontView({
         selectedCategory={category}
         onSelectCategory={setCategory}
       />
+
+      {showCard && <BusinessCard site={site} accent={site.accent_color || '#1a73e8'} />}
 
       {/* Search, Category Filter & Cart Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -369,20 +387,24 @@ export default function StorefrontView({
               Book slot
             </Button>
           )}
-          <Button
-            variant="ghost"
-            onClick={() => setTrackOpen(true)}
-            icon={<Package className="w-4 h-4" />}
-          >
-            Track order
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => setCartOpen(true)}
-            icon={<ShoppingCart className="w-4 h-4" />}
-          >
-            Cart ({cartCount})
-          </Button>
+          {!catalogue && (
+            <Button
+              variant="ghost"
+              onClick={() => setTrackOpen(true)}
+              icon={<Package className="w-4 h-4" />}
+            >
+              Track order
+            </Button>
+          )}
+          {!catalogue && (
+            <Button
+              variant="primary"
+              onClick={() => setCartOpen(true)}
+              icon={<ShoppingCart className="w-4 h-4" />}
+            >
+              Cart ({cartCount})
+            </Button>
+          )}
         </div>
       </div>
 
@@ -399,7 +421,7 @@ export default function StorefrontView({
           )}
         </div>
       ) : (
-        <Reveal><div className={`grid gap-3.5 ${layoutStyle === 'temu' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : layoutStyle === 'shopify' ? 'grid-cols-2 lg:grid-cols-4 gap-y-8' : layoutStyle === 'classified' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
+        <RevealIf on={premium}><div className={`grid gap-3.5 ${layoutStyle === 'temu' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : layoutStyle === 'shopify' ? 'grid-cols-2 lg:grid-cols-4 gap-y-8' : layoutStyle === 'classified' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
           {filtered.map((p) => {
             const card = (
               <StoreProductCard
@@ -410,20 +432,21 @@ export default function StorefrontView({
                 layoutStyle={layoutStyle}
                 onAdd={addToCart}
                 onOpen={openProduct}
+                catalogue={catalogue}
               />
             );
             return premium
-              ? <div key={p.id} className="relative"><WishHeart slug={site.slug} productId={p.id} accent={site.accent_color || '#1a73e8'} />{card}</div>
+              ? <div key={p.id} className="relative premium-card"><WishHeart slug={site.slug} productId={p.id} accent={site.accent_color || '#1a73e8'} />{card}</div>
               : card;
           })}
-        </div></Reveal>
+        </div></RevealIf>
       )}
 
       {premium && (
         <PremiumRails site={site} products={visibleProducts} currency={currency} accent={site.accent_color || '#1a73e8'} onOpen={openProduct} recentId={selectedProduct?.id} />
       )}
       {premium && !cartOpen && !selectedProduct && (
-        <PremiumFloaters site={site} accent={site.accent_color || '#1a73e8'} currency={currency} cart={{ count: cartCount, total: cartTotal }} onCart={() => setCartOpen(true)} />
+        <PremiumFloaters site={site} accent={site.accent_color || '#1a73e8'} currency={currency} cart={catalogue ? undefined : { count: cartCount, total: cartTotal }} onCart={() => setCartOpen(true)} />
       )}
 
       {selectedProduct && (

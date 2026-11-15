@@ -2,13 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import {
+  LayoutDashboard, Package, ShoppingBag, Users, CalendarDays, Ticket, Truck, MessagesSquare, Crown, MessageCircle, Puzzle, Megaphone,
+  Globe, Sparkles, Settings as SettingsIcon, ExternalLink, Copy, Check, Menu, X, ChevronRight, Share2, Plus, TrendingUp, Wallet, Eye,
+} from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import DevelopaHeader from '@/app/components/DevelopaHeader';
 import DevelopaFooter from '@/app/components/DevelopaFooter';
 import { formatMoney, type ForumThread, type SiteOrder, type SiteProduct } from '@/lib/forums';
-import { PLANS, daysLeft, effectiveTier } from '@/lib/plans';
+import { PLANS, PRUNE_NOTICE, daysLeft, effectiveTier, type PlanTier } from '@/lib/plans';
 import { itemLabels } from '@/lib/siteTemplates';
-import { PRUNE_NOTICE } from '@/lib/plans';
 import { jsonFetch, type Site } from './types';
 import ProductsTab from './tabs/ProductsTab';
 import OrdersTab from './tabs/OrdersTab';
@@ -29,23 +32,32 @@ import CartsLeftCard from './CartsLeftCard';
 import AnalyticsCard from './AnalyticsCard';
 
 type TabKey = 'overview' | 'products' | 'orders' | 'customers' | 'bookings' | 'community' | 'memberships' | 'coupons' | 'shipping' | 'plugins' | 'messages' | 'adspace' | 'domain' | 'plan' | 'settings';
+type NavGroup = 'main' | 'sell' | 'community' | 'grow' | 'account';
 
-const TABS: { key: TabKey; label: string; storeOnly?: boolean; forumOnly?: boolean }[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'products', label: 'Products', storeOnly: true },
-  { key: 'orders', label: 'Orders', storeOnly: true },
-  { key: 'customers', label: 'Customers', storeOnly: true },
-  { key: 'bookings', label: 'Bookings', storeOnly: true },
-  { key: 'community', label: 'Community', forumOnly: true },
-  { key: 'memberships', label: 'Memberships', forumOnly: true },
-  { key: 'coupons', label: 'Coupons', storeOnly: true },
-  { key: 'shipping', label: 'Delivery', storeOnly: true },
-  { key: 'plugins', label: 'Plugins' },
-  { key: 'messages', label: 'Messages', storeOnly: true },
-  { key: 'adspace', label: 'Ad space' },
-  { key: 'domain', label: 'Domain' },
-  { key: 'plan', label: 'Plan' },
-  { key: 'settings', label: 'Settings' },
+const GROUPS: { key: NavGroup; label: string }[] = [
+  { key: 'main', label: '' },
+  { key: 'sell', label: 'Sell' },
+  { key: 'community', label: 'Community' },
+  { key: 'grow', label: 'Grow' },
+  { key: 'account', label: 'Account' },
+];
+
+const TABS: { key: TabKey; label: string; group: NavGroup; Icon: typeof Package; storeOnly?: boolean; forumOnly?: boolean }[] = [
+  { key: 'overview', label: 'Overview', group: 'main', Icon: LayoutDashboard },
+  { key: 'products', label: 'Products', group: 'sell', Icon: Package, storeOnly: true },
+  { key: 'orders', label: 'Orders', group: 'sell', Icon: ShoppingBag, storeOnly: true },
+  { key: 'customers', label: 'Customers', group: 'sell', Icon: Users, storeOnly: true },
+  { key: 'bookings', label: 'Bookings', group: 'sell', Icon: CalendarDays, storeOnly: true },
+  { key: 'coupons', label: 'Coupons', group: 'sell', Icon: Ticket, storeOnly: true },
+  { key: 'shipping', label: 'Delivery', group: 'sell', Icon: Truck, storeOnly: true },
+  { key: 'community', label: 'Community', group: 'community', Icon: MessagesSquare, forumOnly: true },
+  { key: 'memberships', label: 'Memberships', group: 'community', Icon: Crown, forumOnly: true },
+  { key: 'messages', label: 'Messages', group: 'grow', Icon: MessageCircle, storeOnly: true },
+  { key: 'plugins', label: 'Plugins', group: 'grow', Icon: Puzzle },
+  { key: 'adspace', label: 'Ad space', group: 'grow', Icon: Megaphone },
+  { key: 'domain', label: 'Domain', group: 'grow', Icon: Globe },
+  { key: 'plan', label: 'Plan', group: 'account', Icon: Sparkles },
+  { key: 'settings', label: 'Settings', group: 'account', Icon: SettingsIcon },
 ];
 
 interface OwnerAd { id: string; title: string; body: string; link_url: string; image_url: string; placement: string }
@@ -60,6 +72,7 @@ export default function ManageView() {
   const [orders, setOrders] = useState<SiteOrder[]>([]);
   const [loadingSite, setLoadingSite] = useState(false);
   const [origin, setOrigin] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     Promise.resolve().then(() => setOrigin(window.location.origin));
@@ -159,84 +172,138 @@ export default function ManageView() {
 
   const tier = site ? effectiveTier(site.plan_tier, site.plan_expires_at) : 'free';
   const left = site ? daysLeft(site.plan_expires_at) : null;
+  const labelFor = (t: (typeof TABS)[number]) => !site ? t.label
+    : t.key === 'products' ? itemLabels(site.template_id)[1]
+    : t.key === 'community' && site.template_id === 'blog-magazine' ? 'Posts'
+    : t.label;
+  const badgeFor = (key: TabKey) => (key === 'orders' ? orders.filter((o) => o.payment_status === 'proof_submitted').length : 0);
+  const current = visibleTabs.find((t) => t.key === activeTab);
+  const siteLink = site ? (site.custom_domain && site.custom_domain_verified && tier !== 'free' ? `https://${site.custom_domain}` : `/forums/${site.slug}`) : '#';
+
+  const nav = (onPick?: () => void) => (
+    <nav aria-label="Admin sections" className="space-y-5">
+      {GROUPS.map((g) => {
+        const items = visibleTabs.filter((t) => t.group === g.key);
+        if (items.length === 0) return null;
+        return (
+          <div key={g.key}>
+            {g.label && <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-secondary">{g.label}</p>}
+            <ul className="space-y-0.5">
+              {items.map((t) => {
+                const on = activeTab === t.key;
+                const badge = badgeFor(t.key);
+                return (
+                  <li key={t.key}>
+                    <button
+                      onClick={() => { setTab(t.key); onPick?.(); }}
+                      aria-current={on ? 'page' : undefined}
+                      className={`w-full flex items-center gap-3 px-3 h-10 rounded-xl text-sm font-medium transition-colors ${on ? 'bg-accent text-[var(--accent-foreground)] shadow-sm' : 'text-secondary hover:bg-hover hover:text-primary'}`}
+                    >
+                      <t.Icon className="w-[18px] h-[18px] shrink-0" />
+                      <span className="flex-1 text-left truncate">{labelFor(t)}</span>
+                      {badge > 0 && <span className="text-[11px] bg-[var(--danger)] text-white rounded-full px-1.5 min-w-5 h-5 inline-flex items-center justify-center">{badge}</span>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })}
+    </nav>
+  );
 
   return shell(
     <>
-      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="g-h2">Admin</h1>
-          <p className="text-secondary text-sm mt-1">Run your site: orders, content, customers and settings</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {sites.length > 1 && (
-            <select aria-label="Choose a site" value={slug} onChange={(e) => { setSlug(e.target.value); setTab('overview'); }} className="input-box !py-2.5 text-sm">
-              {sites.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
-            </select>
-          )}
-          <Link href="/developer" className="text-sm font-medium text-accent hover:underline">Create another site</Link>
-        </div>
-      </div>
-
       {!site ? (
         <p className="text-secondary text-sm">{loadingSite ? 'Loading your site…' : 'Could not load this site. Try refreshing the page.'}</p>
       ) : (
-        <>
-          <div className="g-card p-5 flex flex-wrap items-center justify-between gap-4 mb-6">
-            <div className="min-w-0">
-              <p className="font-medium text-lg truncate">{site.name}</p>
-              <a href={`/forums/${site.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm font-mono text-accent hover:underline break-all">
-                {site.custom_domain && site.custom_domain_verified && tier !== 'free' ? site.custom_domain : `${site.slug}.developa.me`}
-              </a>
+        <div className="lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-8 items-start">
+          {/* sidebar (desktop) */}
+          <aside className="hidden lg:block sticky top-28 space-y-5">
+            <SiteSwitcher sites={sites} slug={slug} site={site} tier={tier} left={left} onPick={(s) => { setSlug(s); setTab('overview'); }} />
+            <div className="g-card p-3">{nav()}</div>
+            <Link href="/developer" className="flex items-center gap-2 px-3 text-sm font-medium text-accent hover:underline"><Plus className="w-4 h-4" /> Create another site</Link>
+          </aside>
+
+          <div className="min-w-0">
+            {/* top bar */}
+            <div className="flex items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-3 min-w-0">
+                <button onClick={() => setMenuOpen(true)} className="lg:hidden w-11 h-11 rounded-full g-tonal-strong flex items-center justify-center shrink-0" aria-label="Open menu"><Menu className="w-5 h-5" /></button>
+                <div className="min-w-0">
+                  <p className="text-xs text-secondary truncate lg:hidden">{site.name}</p>
+                  <h1 className="g-h2 !text-2xl sm:!text-3xl truncate">{current ? labelFor(current) : 'Admin'}</h1>
+                </div>
+              </div>
+              <a href={siteLink} target="_blank" rel="noopener noreferrer" className="shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full border border-theme text-sm font-medium hover:bg-hover"><ExternalLink className="w-4 h-4" /> <span className="hidden sm:inline">View site</span></a>
             </div>
-            <div className="flex items-center gap-3">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${tier === 'free' ? 'bg-secondary text-secondary' : 'bg-accent text-[var(--accent-foreground)]'}`}>
-                {PLANS[tier].name}{tier !== 'free' && left !== null && left > 0 ? ` · ${left}d left` : ''}
-              </span>
-              {site.my_role && site.my_role !== 'owner' && (
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-secondary text-secondary capitalize">{site.my_role}</span>
-              )}
-              {!site.is_public && <span className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--warning-bg)] text-warning">Hidden</span>}
-              <a href={`/forums/${site.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium px-4 h-9 inline-flex items-center rounded-full border border-theme hover:bg-hover">View site</a>
-            </div>
+
+            {activeTab === 'overview' && <Overview site={site} detail={detail!} orders={orders} origin={origin} go={setTab} tier={tier} />}
+            {activeTab === 'products' && <ProductsTab site={site} products={detail!.products} reload={reload} />}
+            {activeTab === 'orders' && <OrdersTab site={site} orders={orders} reload={reload} />}
+            {activeTab === 'customers' && <CustomersTab site={site} goToPlan={() => setTab('plan')} />}
+            {activeTab === 'bookings' && <BookingsTab site={site} goToPlan={() => setTab('plan')} />}
+            {activeTab === 'community' && <CommunityTab site={site} threads={detail!.threads} reload={reload} />}
+            {activeTab === 'memberships' && <MembershipsTab site={site} goToPlan={() => setTab('plan')} />}
+            {activeTab === 'coupons' && <CouponsTab site={site} goToPlan={() => setTab('plan')} />}
+            {activeTab === 'shipping' && <ShippingTab site={site} reload={reload} goToPlan={() => setTab('plan')} />}
+            {activeTab === 'plugins' && <PluginsTab site={site} go={(t) => setTab(t as TabKey)} />}
+            {activeTab === 'messages' && <MessagesTab site={site} goToPlan={() => setTab('plan')} />}
+            {activeTab === 'adspace' && <AdSpaceTab site={site} goToPlan={() => setTab('plan')} />}
+            {activeTab === 'domain' && <DomainTab site={site} goToPlan={() => setTab('plan')} />}
+            {activeTab === 'plan' && <PlanTab site={site} />}
+            {activeTab === 'settings' && <SettingsTab key={site.slug + (site.name || '')} site={site} reload={reload} goToPlan={() => setTab('plan')} />}
           </div>
 
-          <div role="tablist" className="flex gap-1 overflow-x-auto g-scroll-x pb-2 mb-6 border-b border-theme">
-            {visibleTabs.map((t) => {
-              const tabLabel = t.key === 'products' ? itemLabels(site.template_id)[1]
-                : t.key === 'community' && site.template_id === 'blog-magazine' ? 'Posts'
-                : t.label;
-              const badge = t.key === 'orders' ? orders.filter((o) => o.payment_status === 'proof_submitted').length : 0;
-              return (
-                <button key={t.key} role="tab" aria-selected={activeTab === t.key} onClick={() => setTab(t.key)}
-                  className={`shrink-0 px-4 h-10 rounded-full text-sm font-medium transition-colors ${activeTab === t.key ? 'bg-accent text-[var(--accent-foreground)]' : 'text-secondary hover:bg-hover hover:text-primary'}`}>
-                  {tabLabel}{badge > 0 && <span className="ml-2 text-xs bg-[var(--danger)] text-white rounded-full px-1.5 py-0.5">{badge}</span>}
-                </button>
-              );
-            })}
-          </div>
-
-          {activeTab === 'overview' && <Overview site={site} detail={detail!} orders={orders} origin={origin} go={setTab} />}
-          {activeTab === 'products' && <ProductsTab site={site} products={detail!.products} reload={reload} />}
-          {activeTab === 'orders' && <OrdersTab site={site} orders={orders} reload={reload} />}
-          {activeTab === 'customers' && <CustomersTab site={site} goToPlan={() => setTab('plan')} />}
-          {activeTab === 'bookings' && <BookingsTab site={site} goToPlan={() => setTab('plan')} />}
-          {activeTab === 'community' && <CommunityTab site={site} threads={detail!.threads} reload={reload} />}
-          {activeTab === 'memberships' && <MembershipsTab site={site} goToPlan={() => setTab('plan')} />}
-          {activeTab === 'coupons' && <CouponsTab site={site} goToPlan={() => setTab('plan')} />}
-          {activeTab === 'shipping' && <ShippingTab site={site} reload={reload} goToPlan={() => setTab('plan')} />}
-          {activeTab === 'plugins' && <PluginsTab site={site} go={(t) => setTab(t as TabKey)} />}
-          {activeTab === 'messages' && <MessagesTab site={site} goToPlan={() => setTab('plan')} />}
-          {activeTab === 'adspace' && <AdSpaceTab site={site} goToPlan={() => setTab('plan')} />}
-          {activeTab === 'domain' && <DomainTab site={site} goToPlan={() => setTab('plan')} />}
-          {activeTab === 'plan' && <PlanTab site={site} />}
-          {activeTab === 'settings' && <SettingsTab key={site.slug + (site.name || '')} site={site} reload={reload} goToPlan={() => setTab('plan')} />}
-        </>
+          {/* mobile menu */}
+          {menuOpen && (
+            <div className="lg:hidden fixed inset-0 z-50 flex">
+              <div className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
+              <div className="relative w-[84%] max-w-xs h-full bg-primary overflow-y-auto p-4 space-y-5 shadow-2xl">
+                <div className="flex items-center justify-between"><p className="font-semibold">Menu</p><button onClick={() => setMenuOpen(false)} aria-label="Close menu" className="w-9 h-9 rounded-full g-tonal-strong flex items-center justify-center"><X className="w-4 h-4" /></button></div>
+                <SiteSwitcher sites={sites} slug={slug} site={site} tier={tier} left={left} onPick={(s) => { setSlug(s); setTab('overview'); setMenuOpen(false); }} />
+                {nav(() => setMenuOpen(false))}
+                <Link href="/developer" className="flex items-center gap-2 px-3 text-sm font-medium text-accent"><Plus className="w-4 h-4" /> Create another site</Link>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </>
   );
 }
 
-function Overview({ site, detail, orders, origin, go }: { site: Site; detail: Detail; orders: SiteOrder[]; origin: string; go: (t: TabKey) => void }) {
+function SiteSwitcher({ sites, slug, site, tier, left, onPick }: { sites: Site[]; slug: string; site: Site; tier: PlanTier; left: number | null; onPick: (slug: string) => void }) {
+  return (
+    <div className="g-card p-4 space-y-3">
+      <div className="flex items-center gap-3 min-w-0">
+        {site.logo_url
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={site.logo_url} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0" />
+          : <span className="w-11 h-11 rounded-xl text-white font-semibold text-lg flex items-center justify-center shrink-0" style={{ background: site.accent_color || '#1a73e8' }}>{(site.name || '?')[0].toUpperCase()}</span>}
+        <div className="min-w-0">
+          <p className="font-semibold truncate">{site.name}</p>
+          <p className="text-xs font-mono text-secondary truncate">{site.slug}.developa.me</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium ${tier === 'free' ? 'bg-secondary text-secondary' : 'bg-accent text-[var(--accent-foreground)]'}`}>
+          {PLANS[tier].name}{tier !== 'free' && left !== null && left > 0 ? ` · ${left}d left` : ''}
+        </span>
+        {!site.is_public && <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[var(--warning-bg)] text-warning">Hidden</span>}
+        {site.my_role && site.my_role !== 'owner' && <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-secondary text-secondary capitalize">{site.my_role}</span>}
+      </div>
+      {sites.length > 1 && (
+        <select aria-label="Choose a site" value={slug} onChange={(e) => onPick(e.target.value)} className="input-box !py-2 text-sm w-full">
+          {sites.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+        </select>
+      )}
+    </div>
+  );
+}
+
+function Overview({ site, detail, orders, origin, go, tier }: { site: Site; detail: Detail; orders: SiteOrder[]; origin: string; go: (t: TabKey) => void; tier: PlanTier }) {
   const paid = useMemo(() => orders.filter((o) => o.payment_status === 'paid'), [orders]);
   const revenue = paid.reduce((s, o) => s + Number(o.total_amount), 0);
   const needsCheck = orders.filter((o) => o.payment_status === 'proof_submitted').length;
@@ -245,8 +312,9 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
   const isStore = site.site_mode !== 'forum';
   const link = `${origin}/forums/${site.slug}`;
   const [copied, setCopied] = useState(false);
+  const accent = site.accent_color || '#1a73e8';
+  const adsOn = (site as Site & { plugins?: Record<string, unknown> }).plugins?.catalogue === true;
 
-  // Top sellers from paid orders
   const top = useMemo(() => {
     const m = new Map<string, { title: string; qty: number; revenue: number }>();
     paid.forEach((o) => o.items.forEach((i) => {
@@ -259,11 +327,25 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
 
   const steps = [
     { done: !isStore || detail.products.length > 0, label: `Add your first ${itemLabels(site.template_id)[0].toLowerCase()}`, tab: 'products' as TabKey, show: isStore },
-    { done: !!site.bank_account_number || !!site.whatsapp_number, label: 'Tell buyers how to pay you', tab: 'settings' as TabKey, show: isStore },
+    { done: !!site.bank_account_number || !!site.whatsapp_number, label: 'Tell buyers how to reach or pay you', tab: 'settings' as TabKey, show: isStore },
     { done: !!site.logo_url, label: 'Add your logo', tab: 'settings' as TabKey, show: true },
     { done: site.is_public, label: 'Make your site visible', tab: 'settings' as TabKey, show: true },
   ].filter((s) => s.show);
   const doneCount = steps.filter((s) => s.done).length;
+  const pct = steps.length ? Math.round((doneCount / steps.length) * 100) : 100;
+  const shareText = encodeURIComponent(`Check out ${site.name}: ${link}`);
+  const limit = PLANS[tier].maxProducts;
+  const shown = link.replace(/^https?:\/\//, '');
+
+  const copy = async () => { try { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* clipboard blocked */ } };
+
+  const actions: { Icon: typeof Package; label: string; tab: TabKey }[] = [
+    ...(isStore
+      ? [{ Icon: Plus, label: `Add ${itemLabels(site.template_id)[0].toLowerCase()}`, tab: 'products' as TabKey }, { Icon: ShoppingBag, label: 'See orders', tab: 'orders' as TabKey }]
+      : [{ Icon: MessagesSquare, label: 'Moderate posts', tab: 'community' as TabKey }]),
+    { Icon: Puzzle, label: 'Plugins', tab: 'plugins' as TabKey },
+    { Icon: SettingsIcon, label: 'Settings', tab: 'settings' as TabKey },
+  ];
 
   return (
     <div className="space-y-6">
@@ -285,42 +367,74 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
           ? <a key={a.id} href={a.link_url} target="_blank" rel="noopener noreferrer sponsored" className="block">{body}</a>
           : <div key={a.id}>{body}</div>;
       })}
-      {(needsCheck > 0) && (
-        <button onClick={() => go('orders')} className="w-full text-left g-tonal p-4 flex items-center justify-between gap-3">
+
+      {/* hero */}
+      <section className="relative overflow-hidden rounded-3xl p-6 sm:p-8 text-white" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}c0 60%, ${accent}90)` }}>
+        <div className="absolute -right-12 -top-12 w-60 h-60 rounded-full bg-white/10" />
+        <div className="absolute right-10 -bottom-16 w-44 h-44 rounded-full bg-white/10" />
+        <div className="relative flex flex-wrap items-end justify-between gap-5">
+          <div className="min-w-0">
+            <p className="text-white/80 text-sm">Welcome back</p>
+            <h2 className="text-2xl sm:text-3xl font-bold mt-1 truncate">{site.name}</h2>
+            <p className="font-mono text-sm text-white/85 mt-2 break-all">{shown}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={copy} className="h-10 px-4 rounded-full bg-white text-black text-sm font-medium inline-flex items-center gap-2">{copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}{copied ? 'Copied' : 'Copy link'}</button>
+            <a href={`https://wa.me/?text=${shareText}`} target="_blank" rel="noopener noreferrer" className="h-10 px-4 rounded-full bg-black/25 hover:bg-black/35 text-white text-sm font-medium inline-flex items-center gap-2"><Share2 className="w-4 h-4" /> Share on WhatsApp</a>
+          </div>
+        </div>
+      </section>
+
+      {needsCheck > 0 && (
+        <button onClick={() => go('orders')} className="w-full text-left g-tonal p-4 flex items-center justify-between gap-3 rounded-2xl">
           <span className="font-medium">{needsCheck} {needsCheck === 1 ? 'payment' : 'payments'} to check</span>
-          <span className="text-sm text-accent font-medium">Review orders</span>
+          <span className="text-sm text-accent font-medium inline-flex items-center gap-1">Review orders <ChevronRight className="w-4 h-4" /></span>
         </button>
       )}
 
+      {/* stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {isStore ? (
           <>
-            <Stat label="Money received" value={formatMoney(revenue, site.currency)} />
-            <Stat label="Orders" value={String(orders.length)} sub={awaiting > 0 ? `${awaiting} awaiting payment` : undefined} />
-            <Stat label={`${itemLabels(site.template_id)[1]} live`} value={String(activeProducts)} sub={`${detail.products.length} in total`} />
-            <Stat label="Members" value={String(site.member_count)} />
+            <Stat Icon={Wallet} label="Money received" value={formatMoney(revenue, site.currency)} tone={accent} />
+            <Stat Icon={ShoppingBag} label="Orders" value={String(orders.length)} sub={awaiting > 0 ? `${awaiting} awaiting payment` : undefined} tone={accent} />
+            <Stat Icon={Package} label={`${itemLabels(site.template_id)[1]} live`} value={String(activeProducts)} sub={limit ? `${detail.products.length} of ${limit} used` : `${detail.products.length} in total`} tone={accent} />
+            <Stat Icon={Users} label="Members" value={String(site.member_count)} tone={accent} />
           </>
         ) : (
           <>
-            <Stat label="Members" value={String(site.member_count)} />
-            <Stat label="Discussions" value={String(detail.threads.length)} />
-            <Stat label="Plan" value={PLANS[effectiveTier(site.plan_tier, site.plan_expires_at)].name} />
-            <Stat label="Visibility" value={site.is_public ? 'Public' : 'Hidden'} />
+            <Stat Icon={Users} label="Members" value={String(site.member_count)} tone={accent} />
+            <Stat Icon={MessagesSquare} label="Discussions" value={String(detail.threads.length)} tone={accent} />
+            <Stat Icon={Sparkles} label="Plan" value={PLANS[tier].name} tone={accent} />
+            <Stat Icon={Eye} label="Visibility" value={site.is_public ? 'Public' : 'Hidden'} tone={accent} />
           </>
         )}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      {/* quick actions */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {actions.map((a) => (
+          <button key={a.label} onClick={() => go(a.tab)} className="g-card p-4 flex items-center gap-3 text-left hover:shadow-md transition">
+            <span className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0" style={{ background: accent }}><a.Icon className="w-4 h-4" /></span>
+            <span className="text-sm font-medium">{a.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="grid xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-2 space-y-6 min-w-0">
           <AnalyticsCard site={site} goToPlan={() => go('plan')} />
           {isStore && (
             <section className="g-card p-5">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium">Latest orders</h3>
+                <h3 className="font-semibold">Latest orders</h3>
                 <button onClick={() => go('orders')} className="text-sm text-accent font-medium hover:underline">See all</button>
               </div>
               {orders.length === 0 ? (
-                <p className="text-sm text-secondary">No orders yet. Share your link to get started.</p>
+                <div className="text-center py-8">
+                  <span className="mx-auto w-12 h-12 rounded-full g-tonal-strong flex items-center justify-center mb-3"><ShoppingBag className="w-5 h-5 text-secondary" /></span>
+                  <p className="text-sm text-secondary">No orders yet. Share your link to get started.</p>
+                </div>
               ) : (
                 <ul className="divide-y divide-theme">
                   {orders.slice(0, 5).map((o) => (
@@ -335,7 +449,7 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
           )}
           {isStore && top.length > 0 && (
             <section className="g-card p-5">
-              <h3 className="font-medium mb-3">Best sellers</h3>
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4" style={{ color: accent }} /> Best sellers</h3>
               <ul className="divide-y divide-theme">
                 {top.map((t) => (
                   <li key={t.title} className="py-3 flex items-center justify-between gap-3 text-sm">
@@ -348,50 +462,56 @@ function Overview({ site, detail, orders, origin, go }: { site: Site; detail: De
           )}
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           <section className="g-card p-5">
-            <h3 className="font-medium">Share your {isStore ? 'store' : 'community'}</h3>
-            <p className="text-sm font-mono break-all text-accent mt-2">{link}</p>
-            <button
-              onClick={async () => { try { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {} }}
-              className="mt-3 text-sm font-medium px-4 h-9 rounded-full border border-theme hover:bg-hover"
-            >{copied ? 'Copied' : 'Copy link'}</button>
-          </section>
-          {isStore && <StoreQrCard site={site} />}
-          {isStore && <CartsLeftCard site={site} goToPlan={() => go('plan')} />}
-          {isStore && effectiveTier(site.plan_tier, site.plan_expires_at) === 'free' && (
-            <section className="g-tonal p-5">
-              <h3 className="font-medium">Grow with Pro</h3>
-              <p className="text-sm text-secondary mt-1">
-                {detail.products.length} of {PLANS.free.maxProducts} free {itemLabels(site.template_id)[1].toLowerCase()} used.
-                Pro gives you unlimited items, your own domain, coupons, delivery zones and no platform ads for {'₦'}{PLANS.pro.priceNgn.toLocaleString('en-NG')} a month.
-              </p>
-              <p className="text-xs text-secondary mt-2">{PRUNE_NOTICE}</p>
-              <button onClick={() => go('plan')} className="mt-3 text-sm font-medium px-5 h-10 rounded-full bg-accent text-[var(--accent-foreground)] hover:bg-accent-hover">See plans</button>
-            </section>
-          )}
-          <section className="g-card p-5">
-            <h3 className="font-medium">Getting started <span className="text-secondary font-normal text-sm">{doneCount}/{steps.length}</span></h3>
-            <ul className="mt-3 space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Setup</h3>
+              <span className="text-sm text-secondary">{doneCount} of {steps.length}</span>
+            </div>
+            <div className="h-2 rounded-full bg-secondary/60 mt-3 overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: accent }} /></div>
+            <ul className="mt-4 space-y-2.5 text-sm">
               {steps.map((s) => (
                 <li key={s.label} className="flex items-center gap-3">
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] ${s.done ? 'bg-accent text-[var(--accent-foreground)]' : 'border border-theme text-transparent'}`}>✓</span>
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${s.done ? 'text-white' : 'border border-theme'}`} style={s.done ? { background: accent } : undefined}>{s.done && <Check className="w-3 h-3" />}</span>
                   {s.done ? <span className="text-secondary line-through">{s.label}</span> : <button onClick={() => go(s.tab)} className="text-left hover:text-accent">{s.label}</button>}
                 </li>
               ))}
             </ul>
           </section>
+
+          {isStore && !adsOn && (
+            <section className="g-tonal p-5 rounded-2xl">
+              <h3 className="font-semibold">Advertising your business?</h3>
+              <p className="text-sm text-secondary mt-1">Switch on Advertise mode and visitors tap to order on WhatsApp instead of using a cart. No payment setup needed.</p>
+              <button onClick={() => go('plugins')} className="mt-3 text-sm font-medium text-accent hover:underline">Open plugins</button>
+            </section>
+          )}
+
+          {isStore && <StoreQrCard site={site} />}
+          {isStore && <CartsLeftCard site={site} goToPlan={() => go('plan')} />}
+
+          {isStore && tier === 'free' && (
+            <section className="rounded-2xl p-5 text-white" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}b0)` }}>
+              <h3 className="font-semibold flex items-center gap-2"><Sparkles className="w-4 h-4" /> Grow with Pro</h3>
+              <p className="text-sm text-white/90 mt-2">
+                {detail.products.length} of {PLANS.free.maxProducts} free {itemLabels(site.template_id)[1].toLowerCase()} used. Pro gives you unlimited items, a business card with opening hours and a call button, premium themes included, your own domain and no platform ads for {'₦'}{PLANS.pro.priceNgn.toLocaleString('en-NG')} a month.
+              </p>
+              <p className="text-xs text-white/75 mt-2">{PRUNE_NOTICE}</p>
+              <button onClick={() => go('plan')} className="mt-4 text-sm font-medium px-5 h-10 rounded-full bg-white text-black">See plans</button>
+            </section>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Stat({ Icon, label, value, sub, tone }: { Icon: typeof Package; label: string; value: string; sub?: string; tone: string }) {
   return (
     <div className="g-card p-5">
+      <span className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: `${tone}1f`, color: tone }}><Icon className="w-[18px] h-[18px]" /></span>
       <p className="text-sm text-secondary">{label}</p>
-      <p className="text-2xl font-medium mt-1 break-words">{value}</p>
+      <p className="text-2xl font-semibold mt-0.5 break-words">{value}</p>
       {sub && <p className="text-xs text-secondary mt-1">{sub}</p>}
     </div>
   );

@@ -7,6 +7,7 @@ import { SITE_TEMPLATES } from '@/lib/siteTemplates';
 import { formatMoney, type ForumSummary, type ForumThread, type SiteProduct } from '@/lib/forums';
 import { StoreProductCard, StorefrontHeroAndTrust } from '@/app/components/forums/StorefrontThemes';
 import ThreadListThemes, { FORUM_LAYOUTS } from '@/app/components/forums/ThreadListThemes';
+import BusinessCard from '@/app/components/forums/BusinessCard';
 import { isPremiumTemplate, perksFor, tierForPrice, TIER_LABEL } from '@/lib/premium';
 import { PremiumFloaters, PremiumRails, TrendingRail, WishHeart } from '@/app/components/forums/PremiumExtras';
 import { artFor, archetypeOf, brandFor, demoProducts, demoReplies, demoTestimonials, demoThreads, heroNavFor } from '@/lib/demoContent';
@@ -31,6 +32,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
   const [openThread, setOpenThread] = useState<ForumThread | null>(null);
   const [menu, setMenu] = useState(false);
   const [notice, setNotice] = useState('');
+  const [advertise, setAdvertise] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -50,6 +52,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
     id: 'preview', slug: 'preview', name: brand, description: tpl.tagline, owner_id: '', is_public: true,
     accent_color: tpl.accent_color, member_count: 1280, thread_count: threads.length, created_at: new Date().toISOString(),
     site_mode: tpl.site_mode, template_id: tpl.id, hero_headline: tpl.hero_headline, hero_subheadline: tpl.hero_subheadline, currency: 'NGN',
+    whatsapp_number: '2348012345678', pickup_address: '12 Admiralty Way, Lekki Phase 1, Lagos', page_contact_note: 'Open Mon to Sat, 9am to 6pm',
   } as ForumSummary) : null, [tpl, brand, threads.length]);
 
   if (!tpl || !site || !nav) {
@@ -80,7 +83,9 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
     { key: 'about', label: 'About' },
   ];
   const go = (v: View) => { setView(v); setOpenThread(null); setMenu(false); };
-  const add = (p: SiteProduct) => { setCart((c) => ({ ...c, [p.id]: (c[p.id] || 0) + 1 })); setCartOpen(true); };
+  const add = (p: SiteProduct) => {
+    if (advertise) { setNotice('Advertise mode: on a live site this opens WhatsApp with the item pre-filled.'); return; }
+    setCart((c) => ({ ...c, [p.id]: (c[p.id] || 0) + 1 })); setCartOpen(true); };
   const phone = width === 'phone';
   const openItem = (p: SiteProduct) => { setOpenProduct(p); };
   const rails = premium && nav.store ? <PremiumRails site={site} products={products} currency="NGN" accent={accent} onOpen={openItem} recentId={openProduct?.id} /> : null;
@@ -127,8 +132,8 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
   const productGrid = (list: SiteProduct[]) => list.length === 0
     ? <p className="text-center text-secondary py-12">No matches. Try another word or category.</p>
     : <div className={grid}>{list.map((p) => premium
-      ? <div key={p.id} className="relative"><WishHeart slug="preview" productId={p.id} accent={accent} /><StoreProductCard site={site} product={p} currency="NGN" layoutStyle={layout} onAdd={add} onOpen={openItem} /></div>
-      : <StoreProductCard key={p.id} site={site} product={p} currency="NGN" layoutStyle={layout} onAdd={add} onOpen={openItem} />)}</div>;
+      ? <div key={p.id} className="relative premium-card"><WishHeart slug="preview" productId={p.id} accent={accent} /><StoreProductCard site={site} product={p} currency="NGN" layoutStyle={layout} onAdd={add} onOpen={openItem} catalogue={advertise} /></div>
+      : <StoreProductCard key={p.id} site={site} product={p} currency="NGN" layoutStyle={layout} onAdd={add} onOpen={openItem} catalogue={advertise} />)}</div>;
 
   const filters = (
     <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
@@ -195,6 +200,11 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
                 <button key={k} onClick={() => setWidth(k)} aria-label={`${k} view`} aria-pressed={width === k} className={`w-9 h-8 rounded-full flex items-center justify-center ${width === k ? 'bg-card shadow-sm' : 'text-secondary'}`}><Icon className="w-4 h-4" /></button>
               ))}
             </div>
+            {nav.store && (
+              <label className="hidden md:inline-flex items-center gap-2 text-sm text-secondary cursor-pointer select-none" title="Visitors tap to order on WhatsApp instead of using a cart">
+                <input type="checkbox" role="switch" checked={advertise} onChange={(e) => setAdvertise(e.target.checked)} className="w-4 h-4 accent-[var(--accent)]" /> Advertise mode
+              </label>
+            )}
             <Link href={`/developer?template=${tpl.id}#start`} className="bg-accent text-[var(--accent-foreground)] font-medium text-sm px-6 h-10 inline-flex items-center rounded-full">
               {locked ? 'Get this theme' : 'Use this theme'}
             </Link>
@@ -229,7 +239,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
                     </nav>
                   )}
                   <div className="ml-auto flex items-center gap-2">
-                    {nav.store && (
+                    {nav.store && !advertise && (
                       <button onClick={() => setCartOpen(true)} className="relative w-10 h-10 rounded-full g-tonal-strong flex items-center justify-center" aria-label="Cart">
                         <ShoppingCart className="w-5 h-5" />
                         {cartCount > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full text-[11px] font-bold text-white flex items-center justify-center" style={{ background: accent }}>{cartCount}</span>}
@@ -247,7 +257,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
                 <div className="px-4 sm:px-6 pt-4"><div className="rounded-xl g-tonal-strong px-4 py-2.5 text-sm flex items-center justify-between gap-3"><span className="flex items-center gap-2"><Check className="w-4 h-4 text-accent" />{notice}</span><button onClick={() => setNotice('')} aria-label="Dismiss"><X className="w-4 h-4" /></button></div></div>
               )}
 
-              <main className="p-4 sm:p-6 space-y-8">
+              <main className={`p-4 sm:p-6 space-y-8 ${premium ? 'premium-skin' : ''}`} style={premium ? ({ '--skin-accent': accent } as React.CSSProperties) : undefined}>
                 {openThread ? (
                   <div className="max-w-3xl mx-auto space-y-4">
                     <button onClick={() => setOpenThread(null)} className="text-sm text-secondary hover:text-primary flex items-center gap-1"><ArrowLeft className="w-4 h-4" /> Back to {nav.forumLabel.toLowerCase()}</button>
@@ -279,6 +289,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
                         <button onClick={() => go('community')} className="mt-6 h-11 px-7 rounded-full bg-white text-black text-sm font-semibold relative">{arch === 'news' || arch === 'blog' ? 'Start reading' : 'Join the conversation'}</button>
                       </div>
                     )}
+                    {nav.store && <BusinessCard site={site} accent={accent} />}
                     {nav.store && <Section title={arch === 'service' || arch === 'creative' || arch === 'beauty' ? 'Popular services' : arch === 'course' ? 'Featured courses' : 'Featured'} action={{ label: `View all ${nav.shopLabel.toLowerCase()}`, to: 'shop' }}>{productGrid(products4)}</Section>}
                     {nav.forum && threads.length > 0 && <Section title={arch === 'news' ? 'Top stories' : arch === 'blog' ? 'Latest articles' : 'Recent discussions'} action={{ label: 'See all', to: 'community' }}>{forumList(threads.slice(0, 5))}</Section>}
                     {rails}

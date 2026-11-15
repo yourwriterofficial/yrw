@@ -109,7 +109,7 @@ export default function StoreQrCard({ site }: { site: Site }) {
 
   return (
     <section className="g-card p-5">
-      <div className="flex flex-wrap items-center gap-5">
+      <div className="flex flex-col items-start gap-4">
         <div className="shrink-0 bg-white p-2 rounded-xl border border-theme">
           {qrDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -123,7 +123,7 @@ export default function StoreQrCard({ site }: { site: Site }) {
             <h3 className="font-medium">Store QR code</h3>
             <p className="text-sm text-secondary mt-0.5">
               Print this for your counter, packaging, or WhatsApp flyers. Scans straight to{' '}
-              <span className="font-mono text-primary">{displayHost}</span>.
+              <span className="font-mono text-primary break-all">{displayHost}</span>.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
