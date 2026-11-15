@@ -4,14 +4,14 @@
  * the same layout still look like different brands. The CSS lives in app/globals.css ([data-skin="…"]).
  */
 export type ThemeSkin =
-  | 'clean' | 'luxury' | 'studio' | 'market' | 'warm' | 'editorial' | 'bright' | 'bold' | 'mono' | 'night' | 'sleek' | 'corporate' | 'board' | 'social' | 'micro' | 'circle' | 'journal' | 'seats';
+  | 'clean' | 'luxury' | 'studio' | 'market' | 'warm' | 'editorial' | 'bright' | 'bold' | 'mono' | 'night' | 'sleek' | 'corporate' | 'board' | 'social' | 'micro' | 'circle' | 'journal' | 'seats' | 'tees';
 
 const SKINS: Record<string, ThemeSkin> = {
   'premium-luxury': 'luxury',
   'shopify-fashion': 'luxury',
   'premium-agency': 'studio',
   'portfolio-creative': 'studio',
-  'creator-studio': 'bold',
+  'creator-studio': 'tees',
   'photographer-studio': 'mono',
   'premium-marketplace': 'market',
   'jumia-mart': 'market',

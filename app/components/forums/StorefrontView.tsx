@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, Fragment } from 'react';
 import { ShoppingCart, Search, Package, Calendar, ArrowUp } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
 import { formatMoney, type ForumSummary, type ProductVariant, type SiteOrder, type SiteProduct } from '@/lib/forums';
@@ -17,6 +17,7 @@ import { isPremiumTemplate } from '@/lib/premium';
 import { pluginOn } from '@/lib/plugins';
 import BusinessCard from '@/app/components/forums/BusinessCard';
 import { skinFor } from '@/lib/themeSkins';
+import { parseLayout, type SectionKey } from '@/lib/sectionOrder';
 import { buildProductWaHref } from '@/app/components/forums/ProductDetailModal';
 import { PremiumFloaters, PremiumRails, Reveal, WishHeart, useRecentlyViewed } from '@/app/components/forums/PremiumExtras';
 import { StorefrontTrustBar, StorefrontFaqAccordion, StorefrontSafetyLinks, FlashSaleBanner, StorefrontCurrencyPreview } from '@/app/components/forums/StorefrontExtras';
@@ -383,8 +384,10 @@ export default function StorefrontView({
     }).replace(/</g, '\\u003c');
   }, [site.slug, site.name, site.description, site.logo_url, site.custom_domain, site.custom_domain_verified, visibleProducts, currency]);
 
-  return (
-    <div className="space-y-6 premium-skin" data-skin={skinFor(site.template_id)} style={{ '--skin-accent': site.accent_color || '#1a73e8' } as React.CSSProperties}>
+  // The home page parts, drawn in the order the owner chose (see lib/sectionOrder.ts).
+  const layout = parseLayout((site.plugins as Record<string, unknown> | undefined)?._cfg_layout);
+  const blocks: Record<SectionKey, React.ReactNode> = {
+    hero: (
       <StorefrontHeroAndTrust
         site={site}
         layoutStyle={layoutStyle}
@@ -392,9 +395,14 @@ export default function StorefrontView({
         selectedCategory={category}
         onSelectCategory={setCategory}
       />
-
+    ),
+    contact: (
+      <>
       {showCard && <BusinessCard site={site} accent={site.accent_color || '#1a73e8'} />}
-
+      </>
+    ),
+    shop: (
+      <>
       {/* Search, Category Filter & Cart Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -483,7 +491,7 @@ export default function StorefrontView({
           )}
         </div>
       ) : (
-        <RevealIf on><div className={`grid gap-3.5 ${layoutStyle === 'temu' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : layoutStyle === 'shopify' ? 'grid-cols-2 lg:grid-cols-4 gap-y-8' : layoutStyle === 'classified' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
+        <RevealIf on><div className={`grid gap-3.5 ${layoutStyle === 'temu' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : layoutStyle === 'jumia' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5' : layoutStyle === 'shopify' ? 'grid-cols-2 lg:grid-cols-4 gap-y-8' : layoutStyle === 'classified' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
           {filtered.map((p) => {
             const card = (
               <StoreProductCard
@@ -507,18 +515,35 @@ export default function StorefrontView({
           })}
         </div></RevealIf>
       )}
-
+      </>
+    ),
+    flash: (
+      <>
       {pluginOn('flash_sale', site.plan_tier, null, site.plugins) && (
         <FlashSaleBanner />
       )}
-
+      </>
+    ),
+    rails: (
+      <>
       {premium && (
         <PremiumRails site={site} products={visibleProducts} currency={currency} accent={site.accent_color || '#1a73e8'} onOpen={openProduct} recentId={selectedProduct?.id} />
       )}
-
+      </>
+    ),
+    trust: (
+      <>
       <StorefrontTrustBar />
       <StorefrontFaqAccordion />
       <StorefrontSafetyLinks slug={site.slug} />
+      </>
+    ),
+  };
+
+
+  return (
+    <div className="space-y-6 premium-skin" data-skin={skinFor(site.template_id)} style={{ '--skin-accent': site.accent_color || '#1a73e8' } as React.CSSProperties}>
+      {layout.order.filter((k) => !layout.hidden.has(k)).map((k) => <Fragment key={k}>{blocks[k]}</Fragment>)}
       {premium && !cartOpen && !selectedProduct && (
         <PremiumFloaters site={site} accent={site.accent_color || '#1a73e8'} currency={currency} cart={catalogue ? undefined : { count: cartCount, total: cartTotal }} onCart={() => setCartOpen(true)} />
       )}

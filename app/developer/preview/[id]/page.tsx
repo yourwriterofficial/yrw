@@ -2,6 +2,7 @@
 
 import { use, useEffect, useMemo, useState } from 'react';
 import { skinFor } from '@/lib/themeSkins';
+import { WithBlogSidebar } from '@/app/components/forums/WpSidebar';
 import Link from 'next/link';
 import { ArrowLeft, Monitor, Smartphone, ShoppingCart, Search, X, Minus, Plus, Star, MessageSquare, Lock, Check, Menu, Gem, Truck, ShieldCheck, Headphones, Mail } from 'lucide-react';
 import { SITE_TEMPLATES } from '@/lib/siteTemplates';
@@ -91,7 +92,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
   const openItem = (p: SiteProduct) => { setOpenProduct(p); };
   const rails = premium && nav.store ? <PremiumRails site={site} products={products} currency="NGN" accent={accent} onOpen={openItem} recentId={openProduct?.id} /> : null;
 
-  const grid = `grid gap-3.5 ${phone ? 'grid-cols-1' : layout === 'temu' ? 'grid-cols-2 lg:grid-cols-4' : layout === 'shopify' ? 'grid-cols-2 lg:grid-cols-4 gap-y-8' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`;
+  const grid = `grid gap-3.5 ${phone ? 'grid-cols-1' : layout === 'temu' ? 'grid-cols-2 lg:grid-cols-4' : layout === 'jumia' ? 'grid-cols-2 lg:grid-cols-4 gap-2.5' : layout === 'shopify' ? 'grid-cols-2 lg:grid-cols-4 gap-y-8' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`;
   const products4 = shown.slice(0, phone ? 4 : 6);
 
   const forumList = (list: ForumThread[]) => FORUM_LAYOUTS.includes(layout)
@@ -279,7 +280,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
                     </form>
                   </div>
                 ) : view === 'home' ? (
-                  <>
+                  <WithBlogSidebar on={tpl.id === 'wp-blog' || tpl.id === 'wp-magazine'} brand={brand} accent={accent} posts={threads.map((t) => ({ id: t.id, title: t.title }))}>
                     {nav.store ? (
                       <StorefrontHeroAndTrust site={site} layoutStyle={layout} categories={categories} selectedCategory={category} onSelectCategory={(c) => { setCategory(c); setView('shop'); }} />
                     ) : layout === 'board' ? (
@@ -301,7 +302,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
                     {nav.store && trust}
                     {testimonials}
                     {newsletter}
-                  </>
+                  </WithBlogSidebar>
                 ) : view === 'shop' ? (
                   <>
                     <div><h1 className="text-2xl font-bold">{nav.shopLabel}</h1><p className="text-sm text-secondary mt-1">{products.length} items · tap anything to see details</p></div>

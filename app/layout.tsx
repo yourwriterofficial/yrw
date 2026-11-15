@@ -3,6 +3,7 @@ import { Roboto, Playfair_Display, Space_Grotesk, Fraunces, Oswald } from "next/
 import "./globals.css";
 import "./theme-skins.css";
 import "./theme-skins-2.css";
+import "./theme-skins-3.css";
 import PWAUpdater from "./components/PWAUpdater";
 import { ThemeProvider } from "./components/ThemeProvider";
 import OrderAssistant from "./components/OrderAssistant";

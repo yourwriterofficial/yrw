@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  ShoppingCart, Plus, Package, Download, Briefcase, Flame, ShieldCheck, Truck, Zap, Tag, MessageCircle, Share2, Check, Star,
+  ShoppingCart, Plus, Package, Download, Briefcase, Flame, ShieldCheck, Truck, Zap, Tag, MessageCircle, Share2, Check, Star, Search, User, HelpCircle, Gift, Users,
 } from 'lucide-react';
 import { formatMoney, type ForumSummary, type SiteProduct } from '@/lib/forums';
 import type { StoreLayoutStyle } from '@/lib/siteTemplates';
@@ -17,6 +17,35 @@ function typeMeta(t: SiteProduct['product_type']) {
   if (t === 'digital') return { label: 'Digital', Icon: Download };
   if (t === 'service') return { label: 'Service', Icon: Briefcase };
   return { label: 'Physical', Icon: Package };
+}
+
+/** Counts down to the end of today. Starts empty so the server and browser HTML match. */
+function Countdown({ className = '', labels = false }: { className?: string; labels?: boolean }) {
+  const [left, setLeft] = useState<number | null>(null);
+  useEffect(() => {
+    const tick = () => {
+      const end = new Date(); end.setHours(23, 59, 59, 999);
+      setLeft(Math.max(0, Math.floor((end.getTime() - Date.now()) / 1000)));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const h = left === null ? '--' : pad(Math.floor(left / 3600));
+  const m = left === null ? '--' : pad(Math.floor((left % 3600) / 60));
+  const sec = left === null ? '--' : pad(left % 60);
+  return (
+    <span className={`inline-flex items-center gap-1 font-mono font-bold ${className}`} aria-label="Time left today">
+      {[h, m, sec].map((v, i) => (
+        <span key={i} className="inline-flex items-center gap-1">
+          <span className="bg-black/80 text-white rounded px-1.5 py-0.5 min-w-[1.6rem] text-center">{v}</span>
+          {i < 2 && <span>:</span>}
+        </span>
+      ))}
+      {labels && <span className="ml-1 text-[10px] font-semibold uppercase opacity-90">left</span>}
+    </span>
+  );
 }
 
 export function StorefrontHeroAndTrust({
@@ -35,12 +64,23 @@ export function StorefrontHeroAndTrust({
   if (layoutStyle === 'jumia') {
     return (
       <div className="space-y-3">
-        {/* Jumia-style top orange flash banner */}
+        {/* Jumia-style: search row, then the flash-sales bar with a countdown */}
+        <div className="bg-card border border-theme rounded-xl p-3 flex flex-wrap items-center gap-3">
+          <div className="flex-1 min-w-[220px] flex">
+            <div className="flex-1 flex items-center gap-2 h-10 px-3 bg-secondary/40 rounded-l-lg text-sm text-secondary"><Search className="w-4 h-4" /> Search products, brands and categories</div>
+            <span className="h-10 px-5 flex items-center rounded-r-lg bg-[#f68b1e] text-white text-sm font-bold">SEARCH</span>
+          </div>
+          <div className="hidden sm:flex items-center gap-4 text-sm font-semibold text-primary">
+            <span className="flex items-center gap-1.5"><User className="w-4 h-4" /> Account</span>
+            <span className="flex items-center gap-1.5"><HelpCircle className="w-4 h-4" /> Help</span>
+          </div>
+        </div>
         <div className="rounded-xl bg-[#f68b1e] text-white px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs font-bold">
           <span className="flex items-center gap-1.5 uppercase tracking-wide">
-            <Zap className="w-4 h-4 fill-white" /> Flash Sales · Official {site.name} Store
+            <Zap className="w-4 h-4 fill-white" /> Flash Sales
           </span>
-          <span className="font-mono bg-black/20 px-2.5 py-0.5 rounded">PAY ON DELIVERY & TRANSFER</span>
+          <span className="flex items-center gap-2">Time left: <Countdown /></span>
+          <span className="font-mono bg-black/20 px-2.5 py-0.5 rounded">PAY ON DELIVERY &amp; TRANSFER</span>
         </div>
 
         {/* Jumia-style Category Sidebar + Hero Deal Banner */}
@@ -95,7 +135,7 @@ export function StorefrontHeroAndTrust({
             <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider bg-black/20 px-2.5 py-1 rounded-full">
               <Flame className="w-3.5 h-3.5 fill-yellow-300 text-yellow-300" /> Lightning Deals
             </span>
-            <span className="text-[11px] font-bold">Limited Stock · Direct Deals</span>
+            <span className="text-[11px] font-bold flex items-center gap-2">Ends in <Countdown /></span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
             {site.hero_headline || site.name}
@@ -103,6 +143,11 @@ export function StorefrontHeroAndTrust({
           {site.hero_subheadline && (
             <p className="text-xs sm:text-sm text-white/90 max-w-2xl">{site.hero_subheadline}</p>
           )}
+        </div>
+
+        <div className="rounded-xl bg-[#e8f8ee] text-[#0b7a3b] border border-[#bfe9cf] px-3 py-2 text-xs font-bold flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <span className="flex items-center gap-1.5"><Truck className="w-4 h-4" /> Free shipping on all orders</span>
+          <span className="flex items-center gap-1.5"><Gift className="w-4 h-4" /> Free gift on your first order</span>
         </div>
 
         {/* Temu-style trust bar */}
@@ -115,10 +160,52 @@ export function StorefrontHeroAndTrust({
     );
   }
 
+  if (layoutStyle === 'shopify') {
+    return (
+      <div className="space-y-4">
+        <div className="bg-black text-white text-center text-[11px] tracking-[0.18em] uppercase py-2 rounded-md">Free delivery on orders over ₦50,000</div>
+        <div className="rounded-md overflow-hidden grid md:grid-cols-2 border border-theme bg-card">
+          <div className="p-8 sm:p-12 flex flex-col justify-center gap-4">
+            <p className="text-[11px] tracking-[0.2em] uppercase text-secondary">New collection</p>
+            <h2 className="text-3xl sm:text-4xl font-light tracking-tight leading-tight text-primary">{site.hero_headline || site.name}</h2>
+            {site.hero_subheadline && <p className="text-sm text-secondary max-w-md">{site.hero_subheadline}</p>}
+            <span className="inline-flex w-fit items-center h-11 px-8 text-sm font-medium text-white bg-black rounded-sm">Shop all</span>
+          </div>
+          <div className="min-h-[220px]" style={{ background: `linear-gradient(135deg, ${site.accent_color || '#111'}33, ${site.accent_color || '#111'}0d 70%), #f1f1ef` }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (layoutStyle === 'selar') {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-2xl border border-theme bg-card overflow-hidden">
+          <div className="h-24 sm:h-32" style={{ background: `linear-gradient(120deg, ${site.accent_color || '#6d28d9'}, ${site.accent_color || '#6d28d9'}66)` }} />
+          <div className="px-5 pb-5 -mt-9 flex flex-wrap items-end gap-4">
+            <span className="w-[72px] h-[72px] rounded-2xl border-4 border-[var(--bg-card)] text-white text-2xl font-black flex items-center justify-center" style={{ background: site.accent_color || '#6d28d9' }}>{(site.name || 'S').charAt(0).toUpperCase()}</span>
+            <div className="min-w-0 flex-1 pt-10 sm:pt-0">
+              <h2 className="text-xl font-black tracking-tight truncate">{site.name}</h2>
+              <p className="text-xs text-secondary flex items-center gap-3 mt-0.5"><span className="flex items-center gap-1"><Download className="w-3.5 h-3.5" /> Instant access</span><span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Trusted creator</span></p>
+            </div>
+            <span className="h-10 px-5 rounded-full text-white text-sm font-bold flex items-center" style={{ background: site.accent_color || '#6d28d9' }}>Follow</span>
+          </div>
+        </div>
+        {(site.hero_headline || site.hero_subheadline) && (
+          <div className="px-1">
+            <p className="text-lg font-bold text-primary">{site.hero_headline}</p>
+            {site.hero_subheadline && <p className="text-sm text-secondary mt-1">{site.hero_subheadline}</p>}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // Standard clean layout
   if (!site.hero_headline && !site.hero_subheadline) return null;
   return (
     <div
+      data-section="hero"
       className="rounded-2xl border border-theme p-6 sm:p-8 bg-card space-y-2"
       style={{ borderLeftWidth: 4, borderLeftColor: site.accent_color || '#06b6d4' }}
     >
