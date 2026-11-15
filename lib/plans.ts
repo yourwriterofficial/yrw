@@ -8,9 +8,9 @@ export type PlanTier = 'free' | 'lite' | 'pro' | 'business' | 'corporate';
 /** Extra customer emails, bought separately and kept until used. Prices are in naira. Change them here. */
 export interface EmailPack { id: string; emails: number; priceNgn: number }
 export const EMAIL_PACKS: EmailPack[] = [
-  { id: 'e100', emails: 100, priceNgn: 1500 },
-  { id: 'e500', emails: 500, priceNgn: 6000 },
-  { id: 'e2000', emails: 2000, priceNgn: 20000 },
+  { id: 'e100', emails: 100, priceNgn: 20000 },
+  { id: 'e500', emails: 500, priceNgn: 80000 },
+  { id: 'e2000', emails: 2000, priceNgn: 267000 },
 ];
 
 export const PLAN_ORDER: PlanTier[] = ['free', 'lite', 'pro', 'business', 'corporate'];
