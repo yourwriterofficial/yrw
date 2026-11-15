@@ -32,7 +32,7 @@ function configure(): boolean {
     }
     return false;
   }
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:support@developa.me', vapidPublicKey(), privateKey);
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'https://developa.me', vapidPublicKey(), privateKey);
   configured = true;
   return true;
 }

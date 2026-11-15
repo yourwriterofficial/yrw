@@ -3,12 +3,18 @@ import { timingSafeEqual } from 'crypto';
 import xss from 'xss';
 import { createClient } from '@supabase/supabase-js';
 import { notifyAdmins } from '@/lib/notify';
+import { ingestInbound, InboxNeedsUpdate } from '@/lib/inbox';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)!
 );
 
+/**
+ * Every email sent to a developa.me or yourresearchwriter.com.ng address arrives here from the Cloudflare email worker.
+ * It is filed into the shared support inbox (/admin/inbox), under the brand of the address it was sent to.
+ * Until the inbox migration is applied it falls back to the old behaviour: a log line and an alert to the admins.
+ */
 export async function POST(req: NextRequest) {
   const expectedSecret = (process.env.EMAIL_INGEST_SECRET || process.env.MAIL_SECRET || '').trim();
   // The secret is only accepted in a header. A secret in the address ends up in logs and browser history.
@@ -25,6 +31,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    try {
+      const result = await ingestInbound(body);
+      return NextResponse.json({ message: 'Inbound email filed in the shared inbox', ...result });
+    } catch (err) {
+      if (!(err instanceof InboxNeedsUpdate)) throw err;
+      console.warn('[Inbound Email] Shared inbox tables are not there yet; using the old alert instead.');
+    }
+
+    // Old behaviour, kept so no email is lost before the migration is applied.
     const to = String(body.to || '').trim();
     const from = String(body.from || '').trim();
     const fromName = String(body.fromName || body.from_name || '').trim();
@@ -37,7 +53,6 @@ export async function POST(req: NextRequest) {
     const esc = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const bodyContent = html || text || rawBody || '(Empty body)';
 
-    // 1. Log inbound message to email_logs
     try {
       await supabase.from('email_logs').insert({
         recipient: to || 'inbox@yourresearchwriter.com.ng',
@@ -50,7 +65,6 @@ export async function POST(req: NextRequest) {
       console.warn('[Inbound Email] Failed to log in database:', logErr);
     }
 
-    // 2. Alert platform admins
     await notifyAdmins({
       title: `New Email: ${fromName || from}`,
       message: `${subject}\n${(text || bodyContent).slice(0, 160)}`,

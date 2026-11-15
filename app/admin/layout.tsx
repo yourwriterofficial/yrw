@@ -56,6 +56,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Communication',
     items: [
+      { href: '/admin/inbox', label: 'Support inbox', icon: lucide.Inbox },
       { href: '/admin/email', label: 'Messaging', icon: lucide.Send },
     ],
   },
@@ -83,6 +84,7 @@ const DEVELOPA_NAV_GROUPS: NavGroup[] = [
     label: 'People',
     items: [
       { href: '/admin/users', label: 'Users', icon: lucide.Users },
+      { href: '/admin/inbox', label: 'Support inbox', icon: lucide.Inbox },
       { href: '/admin/email', label: 'Messaging', icon: lucide.Send },
     ],
   },
@@ -101,6 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [user, setUser] = useState<any>(null);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [isDevelopa, setIsDevelopa] = useState(false);
+  const [inboxUnread, setInboxUnread] = useState(0);
   useEffect(() => { setIsDevelopa(onDevelopaHost()); }, []);
   const navGroups = isDevelopa ? DEVELOPA_NAV_GROUPS : NAV_GROUPS;
   const navItems = navGroups.flatMap((g) => g.items);
@@ -108,6 +111,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const portalLabel = isDevelopa ? 'My sites' : 'Client Portal';
 
   useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | undefined;
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data?.user) {
         router.replace('/login');
@@ -120,7 +124,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }
       setUser(data.user);
       setCheckingAdmin(false);
+      // Unread support mail, shown as a badge on the inbox link and refreshed every minute.
+      const poll = () => fetch('/api/admin/inbox/threads?limit=1&status=open').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.counts) setInboxUnread(Number(j.counts.unread) || 0); }).catch(() => undefined);
+      void poll();
+      timer = setInterval(poll, 60_000);
     });
+    return () => { if (timer) clearInterval(timer); };
   }, [router]);
 
   const handleLogout = async () => {
@@ -176,7 +185,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div className="flex flex-col gap-0.5">
                 {group.items.map(({ href, label, icon: Icon, exact }) => (
                   <Link key={href} href={href} className={navLinkClass(href, exact)}>
-                    <Icon className="w-5 h-5 mr-3 shrink-0" /> {label}
+                    <Icon className="w-5 h-5 mr-3 shrink-0" /> {label}{href === '/admin/inbox' && inboxUnread > 0 && <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-accent text-[var(--accent-foreground)] text-[11px] font-bold flex items-center justify-center">{inboxUnread}</span>}
                   </Link>
                 ))}
               </div>
@@ -233,7 +242,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div className="flex flex-col gap-0.5">
                 {group.items.map(({ href, label, icon: Icon, exact }) => (
                   <Link key={href} href={href} onClick={() => setMobileMenuOpen(false)} className={navLinkClass(href, exact)}>
-                    <Icon className="w-4 h-4 mr-3 shrink-0" /> {label}
+                    <Icon className="w-4 h-4 mr-3 shrink-0" /> {label}{href === '/admin/inbox' && inboxUnread > 0 && <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-accent text-[var(--accent-foreground)] text-[11px] font-bold flex items-center justify-center">{inboxUnread}</span>}
                   </Link>
                 ))}
               </div>

@@ -44,7 +44,7 @@ export async function POST(request: Request, context: { params: Promise<{ slug: 
   const reporterKey = createHash('sha256').update(`${ip}|${site.id}|${d.target_type}|${d.target_id || ''}`).digest('hex').slice(0, 32);
   const since = new Date(Date.now() - 24 * 3600_000).toISOString();
   const { data: dup, error: dupErr } = await supabaseAdmin.from('site_reports').select('id').eq('reporter_key', reporterKey).gte('created_at', since).limit(1);
-  if (dupErr) return NextResponse.json({ error: isMissingRelationError(dupErr) ? 'Reports are not switched on yet. Please email support@developa.me.' : 'Could not send the report.' }, { status: isMissingRelationError(dupErr) ? 503 : 500 });
+  if (dupErr) return NextResponse.json({ error: isMissingRelationError(dupErr) ? 'Reports are not available right now. Please try again later.' : 'Could not send the report.' }, { status: isMissingRelationError(dupErr) ? 503 : 500 });
   if (dup && dup.length) return NextResponse.json({ ok: true, duplicate: true });
 
   let reporterId: string | null = null;
