@@ -16,6 +16,8 @@ interface Props {
   layout: StoreLayoutStyle;
   accent: string;
   threadHref: (id: string) => string;
+  /** Optional cover art per post (used by the reels wall; theme previews supply it). */
+  coverFor?: (t: ForumThread) => string | undefined;
 }
 
 const ago = (d: string) => formatDistanceToNow(new Date(d), { addSuffix: true });
@@ -32,7 +34,7 @@ function Avatar({ name, accent, size = 40 }: { name?: string; accent: string; si
   );
 }
 
-export default function ThreadListThemes({ threads, layout, accent, threadHref }: Props) {
+export default function ThreadListThemes({ threads, layout, accent, threadHref, coverFor }: Props) {
   if (layout === 'board') {
     return (
       <div className="border border-theme rounded-lg overflow-hidden bg-card">
@@ -159,7 +161,7 @@ export default function ThreadListThemes({ threads, layout, accent, threadHref }
             key={t.id}
             href={threadHref(t.id)}
             className="relative block aspect-[9/14] rounded-2xl overflow-hidden group"
-            style={{ background: `linear-gradient(${160 + (i % 5) * 30}deg, ${accent}, #111 70%)` }}
+            style={coverFor?.(t) ? { backgroundImage: `url("${coverFor(t)}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: `linear-gradient(${160 + (i % 5) * 30}deg, ${accent}, #111 70%)` }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-3 text-white">

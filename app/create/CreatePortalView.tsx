@@ -13,6 +13,7 @@ import DevelopaFooter from '@/app/components/DevelopaFooter';
 import { getForumHref, type ForumSummary } from '@/lib/forums';
 import { PLANS, BILLING_PERIODS, priceForPeriod, TRIAL_DAYS, PRUNE_NOTICE, type PlanTier } from '@/lib/plans';
 import { SITE_TEMPLATES } from '@/lib/siteTemplates';
+import { demoProducts } from '@/lib/demoContent';
 
 export default function CreatePortalView() {
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
@@ -141,27 +142,33 @@ export default function CreatePortalView() {
       </section>
 
       {/* Templates */}
-      <section id="templates" className="pb-10 sm:pb-14">
+      <section id="templates" className="pb-10 sm:pb-14 scroll-mt-20">
         <div className="g-wrap">
+          <h2 className="g-h2 text-center">Pick a look</h2>
+          <p className="g-lead text-center max-w-xl mx-auto mt-3 mb-8">Every theme is a fully working site you can try before you choose.</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {SITE_TEMPLATES.slice(0, 4).map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={scrollToStart}
-                className="g-card overflow-hidden text-left hover:shadow-md transition"
-              >
-                <div className="h-20 sm:h-24 flex items-end p-3" style={{ background: `linear-gradient(135deg, ${t.accent_color}33, ${t.accent_color}0d)` }}>
-                  <span className="w-8 h-8 rounded-full flex items-center justify-center text-white" style={{ background: t.accent_color }}>
-                    {t.site_mode === 'forum' ? <MessageSquare className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-                  </span>
-                </div>
-                <div className="p-3.5">
-                  <p className="text-sm font-medium">{t.label}</p>
-                  <p className="text-xs text-secondary mt-1 line-clamp-2">{t.tagline}</p>
-                </div>
-              </button>
-            ))}
+            {SITE_TEMPLATES.slice(0, 8).map((t) => {
+              const items = demoProducts(t);
+              return (
+                <Link key={t.id} href={`/developer/preview/${t.id}`} className="g-card overflow-hidden text-left hover:shadow-md transition block">
+                  <div className="grid grid-cols-2 h-28 sm:h-32" style={{ background: `${t.accent_color}14` }}>
+                    {items.slice(0, 2).map((p) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={p.id} src={p.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    ))}
+                  </div>
+                  <div className="p-3.5">
+                    <p className="text-sm font-medium">{t.label}</p>
+                    <p className="text-xs text-secondary mt-1 line-clamp-2">{t.tagline}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+          <div className="text-center mt-8">
+            <Link href="/developer/templates" className="btn-secondary inline-flex items-center gap-2 !rounded-full px-7 py-3.5 text-base font-medium">
+              Browse all {SITE_TEMPLATES.length} themes <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>

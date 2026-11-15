@@ -13,6 +13,9 @@ import OrderTrackingModal from '@/app/components/forums/OrderTrackingModal';
 import StorefrontBookingModal, { type PublicBookingService, type TakenSlot } from '@/app/components/forums/StorefrontBookingModal';
 import StorefrontCheckoutDrawer, { type StorefrontCartEntry } from '@/app/components/forums/StorefrontCheckoutDrawer';
 
+import { isPremiumTemplate } from '@/lib/premium';
+import { PremiumFloaters, PremiumRails, Reveal, WishHeart, useRecentlyViewed } from '@/app/components/forums/PremiumExtras';
+
 export default function StorefrontView({
   site,
   products,
@@ -21,6 +24,8 @@ export default function StorefrontView({
   products: SiteProduct[];
 }) {
   const currency = site.currency || 'NGN';
+  const premium = isPremiumTemplate(site.template_id);
+  const recentlyViewed = useRecentlyViewed(site.slug);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [sort, setSort] = useState<'featured' | 'price_asc' | 'price_desc' | 'newest'>('featured');
@@ -189,6 +194,8 @@ export default function StorefrontView({
       else { setCoupon(null); setCouponMsg(data.message || 'That code is not valid.'); }
     } catch { setCouponMsg('Could not check the code. Try again.'); }
   };
+
+  const openProduct = (p: SiteProduct) => { setSelectedProduct(p); recentlyViewed.push(p.id); };
 
   const addToCart = (product: SiteProduct, variant?: ProductVariant) => {
     if (!variant && (product.variants || []).some((v) => v.is_active)) {
@@ -392,19 +399,31 @@ export default function StorefrontView({
           )}
         </div>
       ) : (
-        <div className={`grid gap-3.5 ${layoutStyle === 'temu' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : layoutStyle === 'shopify' ? 'grid-cols-2 lg:grid-cols-4 gap-y-8' : layoutStyle === 'classified' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
-          {filtered.map((p) => (
-            <StoreProductCard
-              key={p.id}
-              site={site}
-              product={p}
-              currency={currency}
-              layoutStyle={layoutStyle}
-              onAdd={addToCart}
-              onOpen={setSelectedProduct}
-            />
-          ))}
-        </div>
+        <Reveal><div className={`grid gap-3.5 ${layoutStyle === 'temu' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : layoutStyle === 'shopify' ? 'grid-cols-2 lg:grid-cols-4 gap-y-8' : layoutStyle === 'classified' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
+          {filtered.map((p) => {
+            const card = (
+              <StoreProductCard
+                key={p.id}
+                site={site}
+                product={p}
+                currency={currency}
+                layoutStyle={layoutStyle}
+                onAdd={addToCart}
+                onOpen={openProduct}
+              />
+            );
+            return premium
+              ? <div key={p.id} className="relative"><WishHeart slug={site.slug} productId={p.id} accent={site.accent_color || '#1a73e8'} />{card}</div>
+              : card;
+          })}
+        </div></Reveal>
+      )}
+
+      {premium && (
+        <PremiumRails site={site} products={visibleProducts} currency={currency} accent={site.accent_color || '#1a73e8'} onOpen={openProduct} recentId={selectedProduct?.id} />
+      )}
+      {premium && !cartOpen && !selectedProduct && (
+        <PremiumFloaters site={site} accent={site.accent_color || '#1a73e8'} currency={currency} cart={{ count: cartCount, total: cartTotal }} onCart={() => setCartOpen(true)} />
       )}
 
       {selectedProduct && (

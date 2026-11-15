@@ -12,6 +12,8 @@ import SiteAdSpace from '@/app/components/forums/SiteAdSpace';
 import SellerChat from '@/app/components/forums/SellerChat';
 import SitePwa from '@/app/components/forums/SitePwa';
 import ThreadListThemes, { FORUM_LAYOUTS } from '@/app/components/forums/ThreadListThemes';
+import { isPremiumTemplate } from '@/lib/premium';
+import { PremiumFloaters, TrendingRail } from '@/app/components/forums/PremiumExtras';
 import { getTemplateById } from '@/lib/siteTemplates';
 import StoreManagerModal from '@/app/components/forums/StoreManagerModal';
 import ForumMembershipModal, {
@@ -336,6 +338,9 @@ export default function ForumView({ slug }: { slug: string }) {
             </header>
 
             {showStore && <StorefrontView site={forum} products={products} />}
+            {!showStore && isPremiumTemplate(forum.template_id) && (
+              <PremiumFloaters site={forum} accent={forum.accent_color || getTemplateById(forum.template_id).accent_color} currency={forum.currency || 'NGN'} />
+            )}
 
             {showForum && (
               <>
@@ -381,6 +386,10 @@ export default function ForumView({ slug }: { slug: string }) {
                       </Button>
                     </div>
                   </form>
+                )}
+
+                {isPremiumTemplate(forum.template_id) && (
+                  <TrendingRail threads={threads} accent={forum.accent_color || getTemplateById(forum.template_id).accent_color} onOpen={(t) => { window.location.assign(threadHref(t.id)); }} />
                 )}
 
                 <section className="space-y-3">

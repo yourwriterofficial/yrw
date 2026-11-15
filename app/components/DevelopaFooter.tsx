@@ -28,7 +28,7 @@ export default function DevelopaFooter() {
         <div className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Product</h3>
           <ul className="space-y-2 text-sm text-secondary">
-            <li><Link href="/developer#templates" className="hover:text-accent transition-colors">Templates</Link></li>
+            <li><Link href="/developer/templates" className="hover:text-accent transition-colors">Templates</Link></li>
             <li><Link href="/developer#plans" className="hover:text-accent transition-colors">Pricing</Link></li>
             <li><Link href="/developer#start" className="hover:text-accent transition-colors">Create a site</Link></li>
             <li><Link href="/forums" className="hover:text-accent transition-colors">Community forums</Link></li>

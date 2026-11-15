@@ -299,7 +299,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'photographer-studio',
-    price_ngn: 8000,
+    price_ngn: 3000,
     label: 'Photography & Video Studio',
     group: 'showcase',
     item_label: ['Package', 'Packages'],
@@ -417,7 +417,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'creator-studio',
-    price_ngn: 15000,
+    price_ngn: 4500,
     label: 'Creator & Video Studio (Tees Digital Space style)',
     group: 'showcase',
     item_label: ['Rate', 'Production rates'],
@@ -469,7 +469,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'shopify-fashion',
-    price_ngn: 10000,
+    price_ngn: 3500,
     label: 'Fashion Lookbook (Shopify style)',
     group: 'shopify',
     item_label: ['Piece', 'Pieces'],
@@ -504,7 +504,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'selar-course',
-    price_ngn: 10000,
+    price_ngn: 4000,
     label: 'Courses & Coaching (Selar style)',
     group: 'selar',
     item_label: ['Course', 'Courses'],
@@ -568,7 +568,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'premium-agency',
     label: 'Premium Agency & Studio',
-    price_ngn: 25000,
+    price_ngn: 8000,
     group: 'premium',
     item_label: ['Service', 'Services'],
     tagline: 'A polished agency site with packages, case-study style cards and booking.',
@@ -586,7 +586,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'premium-luxury',
     label: 'Premium Luxury Boutique',
-    price_ngn: 20000,
+    price_ngn: 7500,
     group: 'premium',
     item_label: ['Piece', 'Pieces'],
     tagline: 'A refined, minimal look for jewellery, fragrance and high-end fashion.',
@@ -604,7 +604,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'premium-marketplace',
     label: 'Premium Multi-Category Marketplace',
-    price_ngn: 30000,
+    price_ngn: 9500,
     group: 'premium',
     item_label: ['Listing', 'Listings'],
     tagline: 'A busy marketplace with category sidebar, flash-sale banner and seller contact.',
@@ -623,7 +623,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'premium-restaurant',
     label: 'Premium Restaurant & Catering',
-    price_ngn: 15000,
+    price_ngn: 6500,
     group: 'premium',
     item_label: ['Menu item', 'Menu'],
     tagline: 'Menu with photos, categories, catering packages and table or event booking.',
@@ -641,7 +641,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'forum-board',
     label: 'Classic Discussion Board (Nairaland style)',
-    price_ngn: 20000,
+    price_ngn: 4500,
     group: 'social',
     item_label: ['Item', 'Items'],
     tagline: 'A busy, text-first board with sections, featured topics, reply counts and members.',
@@ -660,7 +660,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'news-broadsheet',
     label: 'Broadsheet Newspaper',
-    price_ngn: 15000,
+    price_ngn: 4500,
     group: 'news',
     item_label: ['Story', 'Stories'],
     tagline: 'A serious daily with a lead story, columns and reader comments.',
@@ -679,7 +679,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'news-tabloid',
     label: 'Daily Tabloid',
-    price_ngn: 15000,
+    price_ngn: 4500,
     group: 'news',
     item_label: ['Story', 'Stories'],
     tagline: 'Loud headlines, red masthead, entertainment and gist.',
@@ -698,7 +698,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'news-portal',
     label: 'Digital News Portal',
-    price_ngn: 18000,
+    price_ngn: 5000,
     group: 'news',
     item_label: ['Article', 'Articles'],
     tagline: 'A modern news site with a big lead story and a clean headline stream.',
@@ -718,7 +718,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'news-business',
     label: 'Business & Finance Daily',
-    price_ngn: 15000,
+    price_ngn: 5000,
     group: 'news',
     item_label: ['Story', 'Stories'],
     tagline: 'Markets, companies and money, in a calm editorial look.',
@@ -736,7 +736,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'social-feed',
     label: 'Social Network Feed (Facebook style)',
-    price_ngn: 12000,
+    price_ngn: 3500,
     group: 'social',
     item_label: ['Post', 'Posts'],
     tagline: 'A friendly feed where members post updates and comment.',
@@ -754,7 +754,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'social-micro',
     label: 'Microblog Timeline (Twitter style)',
-    price_ngn: 12000,
+    price_ngn: 3000,
     group: 'social',
     item_label: ['Post', 'Posts'],
     tagline: 'Short posts in a fast, compact timeline.',
@@ -772,7 +772,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'social-reels',
     label: 'Short Video & Reels Wall (TikTok style)',
-    price_ngn: 12000,
+    price_ngn: 4000,
     group: 'social',
     item_label: ['Clip', 'Clips'],
     tagline: 'A bold, dark wall of tall cards for creators and trends.',
@@ -790,7 +790,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'subscription-share',
     label: 'Shared Subscriptions (Subskription style)',
-    price_ngn: 10000,
+    price_ngn: 3500,
     group: 'selar',
     item_label: ['Plan', 'Plans'],
     tagline: 'Sell seats in shared subscriptions and group buys with monthly renewals.',
