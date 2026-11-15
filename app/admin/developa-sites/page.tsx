@@ -3,9 +3,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import PageHeader from '@/app/components/ui/PageHeader';
 import { formatMoney, type ForumSummary } from '@/lib/forums';
-import { PLANS, PAID_TIERS, daysLeft, effectiveTier, type PlanTier } from '@/lib/plans';
+import { PLANS, PLAN_ORDER, PAID_TIERS, daysLeft, effectiveTier, type PlanTier } from '@/lib/plans';
 import SupportInboxTab from './SupportInboxTab';
 import ThemesTab from './ThemesTab';
+import ControlDrawer from './ControlDrawer';
+import AnnounceTab from './AnnounceTab';
+import AuditTab from './AuditTab';
+import { type SiteStateRow, type UserStateRow, STATUS_STYLE } from './adminApi';
 
 interface AdminSiteRow extends ForumSummary {
   owner_name: string;
@@ -18,7 +22,7 @@ interface PaymentRow { id: number; site_id: string; site_name: string; site_slug
 interface MonthlySettlementRow { month: string; orders: number; gross: number; platform_fee: number; seller_net: number }
 interface AdRow { id: string; title: string; body: string; link_url: string; image_url: string; placement: 'banner' | 'footer'; target_site_id: string | null; is_active: boolean; starts_at: string | null; ends_at: string | null }
 
-type Tab = 'sites' | 'payments' | 'themes' | 'ads' | 'support';
+type Tab = 'sites' | 'announce' | 'payments' | 'themes' | 'ads' | 'support' | 'audit';
 const naira = (n: number) => '₦' + Math.round(n).toLocaleString('en-NG');
 
 async function api<T = Record<string, unknown>>(url: string, method = 'GET', body?: unknown) {
@@ -34,16 +38,23 @@ export default function AdminDevelopaSitesPage() {
   const [settlements, setSettlements] = useState<MonthlySettlementRow[]>([]);
   const [ads, setAds] = useState<AdRow[]>([]);
   const [needsUpdate, setNeedsUpdate] = useState(false);
+  const [controlNeedsUpdate, setControlNeedsUpdate] = useState(false);
+  const [siteStates, setSiteStates] = useState<Record<string, SiteStateRow>>({});
+  const [userStates, setUserStates] = useState<Record<string, UserStateRow>>({});
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [s, p, a] = await Promise.all([
+    const [s, p, a, c] = await Promise.all([
       api<{ sites?: AdminSiteRow[]; monthly_settlements?: MonthlySettlementRow[] }>('/api/admin/developa-sites'),
       api<{ payments?: PaymentRow[]; needs_update?: boolean }>('/api/admin/developa-sites/payments'),
       api<{ ads?: AdRow[]; needs_update?: boolean }>('/api/admin/developa-ads'),
+      api<{ sites?: Record<string, SiteStateRow>; users?: Record<string, UserStateRow>; needs_update?: boolean }>('/api/admin/developa-control'),
     ]);
+    setSiteStates(c.data.sites || {});
+    setUserStates(c.data.users || {});
+    setControlNeedsUpdate(!!c.data.needs_update);
     setSites(s.data.sites || []);
     setSettlements(s.data.monthly_settlements || []);
     setPayments(p.data.payments || []);
@@ -91,6 +102,11 @@ export default function AdminDevelopaSitesPage() {
           Plan payments and platform ads need migration <span className="font-mono">20261114010000_site_owner_tools.sql</span> to be applied first.
         </p>
       )}
+      {controlNeedsUpdate && (
+        <p className="text-sm text-warning border border-warning/30 rounded-xl p-4">
+          Banning, limits, announcements and the history need migration <span className="font-mono">20261115030000_platform_admin_controls.sql</span> to be applied first. Until then everything below still works, but those controls cannot save.
+        </p>
+      )}
       {note && <p className={`text-sm rounded-xl p-3 border ${note.ok ? 'text-success border-success/30' : 'text-danger border-danger/30'}`} role="status">{note.text}</p>}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -103,10 +119,12 @@ export default function AdminDevelopaSitesPage() {
       <div className="flex flex-wrap gap-2 border-b border-theme pb-3">
         {([
           ['sites', 'Sites'],
+          ['announce', 'Announcements'],
           ['payments', 'Plan payments'],
           ['themes', 'Themes and prices'],
           ['ads', 'Ads on all sites'],
           ['support', 'Priority support'],
+          ['audit', 'History'],
         ] as [Tab, string][]).map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)} className={`px-4 h-10 rounded-full text-sm font-medium ${tab === k ? 'bg-accent text-[var(--accent-foreground)]' : 'text-secondary hover:bg-hover'}`}>{label}</button>
         ))}
@@ -115,11 +133,13 @@ export default function AdminDevelopaSitesPage() {
 
       {loading ? <p className="text-sm text-secondary">Loading…</p> : (
         <>
-          {tab === 'sites' && <SitesTab sites={sites} reload={loadAll} flash={flash} />}
+          {tab === 'sites' && <SitesTab sites={sites} reload={loadAll} flash={flash} siteStates={siteStates} userStates={userStates} />}
+          {tab === 'announce' && <AnnounceTab sites={sites} flash={flash} />}
           {tab === 'payments' && <PaymentsTab payments={payments} settlements={settlements} />}
           {tab === 'themes' && <ThemesTab flash={flash} />}
           {tab === 'ads' && <AdsTab ads={ads} sites={sites} reload={loadAll} flash={flash} />}
           {tab === 'support' && <SupportInboxTab flash={flash} />}
+          {tab === 'audit' && <AuditTab />}
         </>
       )}
     </div>
@@ -137,7 +157,9 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
 }
 
 /* ------------------------------ Sites ------------------------------ */
-function SitesTab({ sites, reload, flash }: { sites: AdminSiteRow[]; reload: () => Promise<void>; flash: (ok: boolean, t: string) => void }) {
+function SitesTab({ sites, reload, flash, siteStates, userStates }: { sites: AdminSiteRow[]; reload: () => Promise<void>; flash: (ok: boolean, t: string) => void; siteStates: Record<string, SiteStateRow>; userStates: Record<string, UserStateRow> }) {
+  const [controlling, setControlling] = useState<AdminSiteRow | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'problem'>('all');
   const [query, setQuery] = useState('');
   const [soonOnly, setSoonOnly] = useState(false);
   const [paying, setPaying] = useState<AdminSiteRow | null>(null);
@@ -147,6 +169,7 @@ function SitesTab({ sites, reload, flash }: { sites: AdminSiteRow[]; reload: () 
       const l = daysLeft(s.plan_expires_at);
       if (s.plan_tier === 'free' || l === null || l > 7) return false;
     }
+    if (statusFilter === 'problem' && (siteStates[s.id]?.status || 'active') === 'active') return false;
     return !query.trim() || [s.name, s.slug, s.owner_name, s.custom_domain || ''].some((v) => v.toLowerCase().includes(query.trim().toLowerCase()));
   });
 
@@ -167,6 +190,13 @@ function SitesTab({ sites, reload, flash }: { sites: AdminSiteRow[]; reload: () 
         >
           Ending soon (within 7d)
         </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter((p) => (p === 'all' ? 'problem' : 'all'))}
+          className={`px-4 h-10 rounded-full text-xs font-medium border transition-colors ${statusFilter === 'problem' ? 'bg-accent text-[var(--accent-foreground)] border-transparent' : 'border-theme text-secondary hover:bg-hover'}`}
+        >
+          Limited, suspended or banned
+        </button>
       </div>
       {shown.length === 0 ? <p className="text-sm text-secondary border border-dashed border-theme rounded-2xl p-8 text-center">No sites match.</p> : (
         <div className="g-card overflow-x-auto">
@@ -185,6 +215,8 @@ function SitesTab({ sites, reload, flash }: { sites: AdminSiteRow[]; reload: () 
                         {s.name}{' '}
                         {s.verified && <span className="text-xs text-success font-medium">· Verified seller</span>}
                         {!s.is_public && <span className="text-xs text-warning font-normal">· hidden</span>}
+                        {siteStates[s.id] && siteStates[s.id].status !== 'active' && <span className={`text-xs font-medium capitalize ${STATUS_STYLE[siteStates[s.id].status]}`}>· {siteStates[s.id].status}</span>}
+                        {userStates[s.owner_id]?.status === 'banned' && <span className="text-xs font-medium text-danger">· owner banned</span>}
                       </p>
                       <a href={`/forums/${s.slug}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-accent hover:underline">{s.slug}.developa.me</a>
                     </td>
@@ -206,6 +238,7 @@ function SitesTab({ sites, reload, flash }: { sites: AdminSiteRow[]; reload: () 
                     </td>
                     <td className="p-3.5">
                       <div className="flex flex-wrap gap-1 justify-end">
+                        <button onClick={() => setControlling(s)} className="px-3 h-8 rounded-full border border-accent text-accent text-xs font-medium">Control</button>
                         <button onClick={() => setPaying(s)} className="px-3 h-8 rounded-full bg-accent text-[var(--accent-foreground)] text-xs font-medium">Record payment</button>
                         {s.plan_tier !== 'free' && <button onClick={() => patch(s, { plan_tier: 'free', plan_expires_at: null }, `${s.name} moved to Starter`)} className="px-3 h-8 rounded-full border border-theme text-xs">Set Starter</button>}
                         {s.verified ? (
@@ -223,6 +256,15 @@ function SitesTab({ sites, reload, flash }: { sites: AdminSiteRow[]; reload: () 
             </tbody>
           </table>
         </div>
+      )}
+      {controlling && (
+        <ControlDrawer
+          site={controlling}
+          state={siteStates[controlling.id]}
+          userState={userStates[controlling.owner_id]}
+          onClose={() => setControlling(null)}
+          onChanged={async (msg, ok = true) => { flash(ok, msg); if (ok) { setControlling(null); await reload(); } }}
+        />
       )}
       {paying && <PaymentModal site={paying} onClose={() => setPaying(null)} onDone={async (t) => { setPaying(null); flash(true, t); await reload(); }} flash={flash} />}
       {verifying && (
@@ -392,7 +434,7 @@ function PaymentsTab({ payments, settlements }: { payments: PaymentRow[]; settle
 
 /* -------------------------------- Ads -------------------------------- */
 function AdsTab({ ads, sites, reload, flash }: { ads: AdRow[]; sites: AdminSiteRow[]; reload: () => Promise<void>; flash: (ok: boolean, t: string) => void }) {
-  const BLANK = { title: '', body: '', link_url: '', image_url: '', placement: 'banner', target: 'all', starts: '', ends: '' };
+  const BLANK = { title: '', body: '', link_url: '', image_url: '', placement: 'banner', target: 'all', starts: '', ends: '', tiers: ['free'] as string[] };
   const [f, setF] = useState(BLANK);
   const [busy, setBusy] = useState(false);
 
@@ -402,6 +444,7 @@ function AdsTab({ ads, sites, reload, flash }: { ads: AdRow[]; sites: AdminSiteR
     const r = await api('/api/admin/developa-ads', 'POST', {
       title: f.title, body: f.body, link_url: f.link_url, image_url: f.image_url, placement: f.placement,
       target_site_id: f.target === 'all' ? null : f.target,
+      target_tiers: f.tiers.length ? f.tiers : ['free'],
       starts_at: f.starts ? new Date(f.starts + 'T00:00:00').toISOString() : null,
       ends_at: f.ends ? new Date(f.ends + 'T23:59:59').toISOString() : null,
     });
@@ -430,6 +473,15 @@ function AdsTab({ ads, sites, reload, flash }: { ads: AdRow[]; sites: AdminSiteR
           <div><label className="block text-sm font-medium mb-1.5" htmlFor="ad-st">Starts</label><input id="ad-st" type="date" value={f.starts} onChange={(e) => setF({ ...f, starts: e.target.value })} className="input-box w-full" /></div>
           <div><label className="block text-sm font-medium mb-1.5" htmlFor="ad-en">Ends</label><input id="ad-en" type="date" value={f.ends} onChange={(e) => setF({ ...f, ends: e.target.value })} className="input-box w-full" /></div>
         </div>
+        <div>
+          <p className="block text-sm font-medium mb-1.5">Show on these plans</p>
+          <div className="flex flex-wrap gap-2">
+            {PLAN_ORDER.map((t) => (
+              <button type="button" key={t} aria-pressed={f.tiers.includes(t)} onClick={() => setF({ ...f, tiers: f.tiers.includes(t) ? f.tiers.filter((x) => x !== t) : [...f.tiers, t] })} className={`h-9 px-4 rounded-full text-sm border ${f.tiers.includes(t) ? 'border-accent bg-accent/10 font-medium' : 'border-theme hover:bg-hover'}`}>{PLANS[t].name}</button>
+            ))}
+          </div>
+          <p className="text-xs text-secondary mt-1.5">Free sites are the usual choice. Paid plans can be added for a launch or a partner.</p>
+        </div>
         <button type="submit" disabled={busy} className="bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-medium text-sm px-6 h-11 rounded-full disabled:opacity-50">{busy ? 'Saving…' : 'Publish ad'}</button>
       </form>
 
@@ -439,7 +491,7 @@ function AdsTab({ ads, sites, reload, flash }: { ads: AdRow[]; sites: AdminSiteR
           <div key={a.id} className="g-card p-4 flex flex-wrap items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="font-medium truncate">{a.title} {!a.is_active && <span className="text-secondary font-normal">· paused</span>}</p>
-              <p className="text-sm text-secondary">{a.placement === 'banner' ? 'Top of page' : 'Above footer'} · {siteName(a.target_site_id)}
+              <p className="text-sm text-secondary">{a.placement === 'banner' ? 'Top of page' : 'Above footer'} · {siteName(a.target_site_id)} · {((a as { target_tiers?: string[] }).target_tiers || ['free']).map((t) => PLANS[t as PlanTier]?.name || t).join(', ')}
                 {a.ends_at && ` · until ${new Date(a.ends_at).toLocaleDateString('en-GB')}`}</p>
             </div>
             <div className="flex gap-1 text-sm">

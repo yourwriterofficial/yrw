@@ -13,6 +13,7 @@ const adSchema = z.object({
   starts_at: z.string().datetime().nullable().optional(),
   ends_at: z.string().datetime().nullable().optional(),
   is_active: z.boolean().optional().default(true),
+  target_tiers: z.array(z.enum(['free', 'lite', 'pro', 'business', 'corporate'])).min(1).optional(),
 });
 
 async function guard() {
@@ -33,11 +34,13 @@ export async function POST(request: Request) {
   const parsed = adSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid ad' }, { status: 400 });
   const d = parsed.data;
-  const { data, error } = await supabaseAdmin
-    .from('platform_site_ads')
-    .insert({ ...d, title: xss(d.title), body: xss(d.body), target_site_id: d.target_site_id ?? null, starts_at: d.starts_at ?? null, ends_at: d.ends_at ?? null })
-    .select('*')
-    .single();
+  const row = { ...d, title: xss(d.title), body: xss(d.body), target_site_id: d.target_site_id ?? null, starts_at: d.starts_at ?? null, ends_at: d.ends_at ?? null };
+  let { data, error } = await supabaseAdmin.from('platform_site_ads').insert(row).select('*').single();
+  if (error && 'target_tiers' in row) {
+    // The plan-targeting column comes with the latest database update. Until then, save without it.
+    const { target_tiers: _ignored, ...plain } = row;
+    ({ data, error } = await supabaseAdmin.from('platform_site_ads').insert(plain).select('*').single());
+  }
   if (error) return NextResponse.json({ error: 'Ads need the latest database update first.' }, { status: 503 });
   return NextResponse.json({ ad: data }, { status: 201 });
 }

@@ -179,7 +179,7 @@ export async function GET(
         : Promise.resolve({ data: null }),
       supabaseAdmin
         .from('platform_site_ads')
-        .select('id, title, body, link_url, image_url, placement, target_site_id, starts_at, ends_at')
+        .select('*')
         .eq('is_active', true)
         .or(`target_site_id.is.null,target_site_id.eq.${forum.id}`),
     ]);
@@ -278,13 +278,12 @@ export async function GET(
     });
 
     const tier = effectiveTier((forum as Record<string, unknown>).plan_tier as string, ext?.plan_expires_at);
-    let ads: unknown[] = [];
-    if (!PLANS[tier].hidesPlatformAds) {
-      const nowIso = new Date().toISOString();
-      ads = (adRowsRes.data || []).filter((a) =>
-        (!a.starts_at || a.starts_at <= nowIso) && (!a.ends_at || a.ends_at >= nowIso)
-      );
-    }
+    // Platform ads reach the plans the admin aimed them at. Older ads (no plan list) keep the old rule: plans that do not hide platform ads.
+    const nowIso = new Date().toISOString();
+    const ads: unknown[] = (adRowsRes.data || [])
+      .filter((a) => (!a.starts_at || a.starts_at <= nowIso) && (!a.ends_at || a.ends_at >= nowIso))
+      .filter((a) => (Array.isArray(a.target_tiers) && a.target_tiers.length ? a.target_tiers.includes(tier) : !PLANS[tier].hidesPlatformAds))
+      .map((a) => ({ id: a.id, title: a.title, body: a.body, link_url: a.link_url, image_url: a.image_url, placement: a.placement, target_site_id: a.target_site_id, starts_at: a.starts_at, ends_at: a.ends_at }));
 
     // Buyers only need to know whether online payment is ready, never the seller's subaccount code.
     const payRow = payRowRes.data;

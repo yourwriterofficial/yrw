@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import ShareCard from './ShareCard';
+import InboxCard from './InboxCard';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, CalendarDays, Ticket, Truck, MessagesSquare, Crown, MessageCircle, Puzzle, Megaphone,
   Globe, Gem, Settings as SettingsIcon, ExternalLink, Copy, Check, Menu, X, ChevronRight, Share2, Plus, TrendingUp, Wallet, Eye,
@@ -365,6 +366,7 @@ function Overview({ site, detail, orders, origin, go, tier }: { site: Site; deta
 
   return (
     <div className="space-y-6">
+      <InboxCard siteSlug={site.slug} />
       {detail.ads.filter((a) => a.placement === 'banner').slice(0, 1).map((a) => {
         const body = (
           <div className="g-tonal px-5 py-4 flex items-center gap-4">
