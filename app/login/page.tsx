@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '@/app/components/ui/Button';
 import { SocialLoginButton } from '@/app/components/ui/SocialLoginButton';
 import { NairaguideLoginButton } from '@/app/components/ui/NairaguideLoginButton';
-import { SubskriptionLoginButton } from '@/app/components/ui/SubskriptionLoginButton';
+import { NetworkLoginButtons } from '@/app/components/ui/NetworkLoginButtons';
 import AuthShell from '@/app/components/AuthShell';
 
 export default function LoginPage() {
@@ -141,8 +141,11 @@ function LoginInner() {
       footer={<>New here? <a href={isDevelopa ? '/register?brand=developa' : '/register'} className="text-accent font-semibold hover:underline">Create a free account</a></>}
     >
       <SocialLoginButton onClick={handleGoogleLogin} loading={loading} label="Continue with Google" />
-      <NairaguideLoginButton next={nextPath} developa={isDevelopa} label="Continue with Nairaguide" />
-      {isDevelopa && <SubskriptionLoginButton next={nextPath} />}
+      {isDevelopa ? (
+        <NetworkLoginButtons next={nextPath} />
+      ) : (
+        <NairaguideLoginButton developa={false} label="Continue with Nairaguide" next={nextPath} />
+      )}
 
       <div className="flex items-center gap-3 my-5 text-xs text-secondary">
         <span className="flex-1 h-px bg-[var(--border)]" /> or use email <span className="flex-1 h-px bg-[var(--border)]" />
