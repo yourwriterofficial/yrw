@@ -182,6 +182,13 @@ export default async function proxy(request: NextRequest) {
       response.headers.set('Content-Security-Policy', CSP)
       return response
     }
+    // Platform admins opening plain /admin on a Developa host land on the Developa platform admin,
+    // not YourResearchWriter's orders/quotes dashboard (that one stays on the main domain's /admin).
+    if ((isDevelopaDomain || isCreatePortal) && (path === '/admin' || path === '/admin/')) {
+      const response = NextResponse.redirect(new URL('/admin/developa-sites', request.url))
+      response.headers.set('Content-Security-Policy', CSP)
+      return response
+    }
   }
 
   supabaseResponse.headers.set('Content-Security-Policy', CSP)
