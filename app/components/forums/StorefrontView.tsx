@@ -383,7 +383,7 @@ export default function StorefrontView({
   }, [site.slug, site.name, site.description, site.logo_url, site.custom_domain, site.custom_domain_verified, visibleProducts, currency]);
 
   return (
-    <div className={`space-y-6 ${premium ? 'premium-skin' : ''}`} style={premium ? ({ '--skin-accent': site.accent_color || '#1a73e8' } as React.CSSProperties) : undefined}>
+    <div className="space-y-6 premium-skin" style={{ '--skin-accent': site.accent_color || '#1a73e8' } as React.CSSProperties}>
       <StorefrontHeroAndTrust
         site={site}
         layoutStyle={layoutStyle}
@@ -482,7 +482,7 @@ export default function StorefrontView({
           )}
         </div>
       ) : (
-        <RevealIf on={premium}><div className={`grid gap-3.5 ${layoutStyle === 'temu' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : layoutStyle === 'shopify' ? 'grid-cols-2 lg:grid-cols-4 gap-y-8' : layoutStyle === 'classified' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
+        <RevealIf on><div className={`grid gap-3.5 ${layoutStyle === 'temu' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : layoutStyle === 'shopify' ? 'grid-cols-2 lg:grid-cols-4 gap-y-8' : layoutStyle === 'classified' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
           {filtered.map((p) => {
             const card = (
               <StoreProductCard
@@ -496,9 +496,13 @@ export default function StorefrontView({
                 catalogue={catalogue}
               />
             );
-            return premium
-              ? <div key={p.id} className="relative premium-card"><WishHeart slug={site.slug} productId={p.id} accent={site.accent_color || '#1a73e8'} />{card}</div>
-              : card;
+            // Every theme gets the modern card; the wishlist heart stays a premium extra.
+            return (
+              <div key={p.id} className="relative premium-card">
+                {premium && <WishHeart slug={site.slug} productId={p.id} accent={site.accent_color || '#1a73e8'} />}
+                {card}
+              </div>
+            );
           })}
         </div></RevealIf>
       )}
