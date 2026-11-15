@@ -161,7 +161,7 @@ export async function GET(
     let catalogPromise = myRole !== undefined ? startCatalog(myRole) : null;
 
     // Everything else needs only the site id, so it is fetched in one go instead of one query after another.
-    const [adminState, extEarly, pluginSettings, payRowRes, seo, tools, extraProdRes, reviewsRes, shippingZonesRes, adRowsRes] = await Promise.all([
+    const [adminState, extEarly, pluginSettings, payRowRes, seo, tools, extraProdRes, reviewsRes, shippingZonesRes, adRowsRes, modRes] = await Promise.all([
       getSiteState(forum.id),
       readExtendedSite(forum.id),
       readPluginSettings(forum.id),
@@ -182,7 +182,10 @@ export async function GET(
         .select('*')
         .eq('is_active', true)
         .or(`target_site_id.is.null,target_site_id.eq.${forum.id}`),
+      // Items the platform took down. If the table is not there yet the lookup just returns nothing.
+      supabaseAdmin.from('site_moderation').select('item_type, item_id').eq('site_id', forum.id),
     ]);
+    const removedIds = new Set((modRes.data || []).map((r) => r.item_id as string));
 
     if (isSiteBlocked(adminState) && !isOwner && !(await isPlatformAdmin())) {
       void catalogPromise?.catch(() => undefined);
@@ -210,7 +213,7 @@ export async function GET(
       return NextResponse.json({ error: 'This site is private.' }, { status: 403 });
     }
 
-    const threads = threadsRes.data || [];
+    const threads = (threadsRes.data || []).filter((t) => isOwner || !removedIds.has(t.id));
     const namesPromise = resolveAuthorNames(threads.map((t) => t.author_id));
 
     const membersOnlyMap = new Map<string, boolean>();
@@ -259,7 +262,7 @@ export async function GET(
       ratingsByProd.set(rv.product_id, prev);
     }
 
-    const enrichedProducts = (productsRes.data || []).map((p) => {
+    const enrichedProducts = (productsRes.data || []).filter((p) => canManageCatalog || !removedIds.has((p as unknown as { id: string }).id)).map((p) => {
       const prod = p as unknown as { id: string; image_url?: string };
       const extra = prodExtraMap.get(prod.id);
       const urls = extra?.image_urls && extra.image_urls.length > 0
@@ -269,6 +272,7 @@ export async function GET(
       return {
         ...prod,
         image_urls: urls,
+        admin_removed: removedIds.has(prod.id),
         variant_options: extra?.variant_options || [],
         variants: variantsByProd.get(prod.id) || [],
         low_stock_at: extra?.low_stock_at ?? 3,

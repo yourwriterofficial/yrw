@@ -26,7 +26,7 @@ export async function GET() {
 
   const { data, error } = await supabaseAdmin
     .from('platform_announcements')
-    .select('id, title, body, level, audience, pinned, expires_at, created_at')
+    .select('*')
     .order('created_at', { ascending: false })
     .limit(60);
   if (error) return NextResponse.json({ announcements: [], sites: [], needs_update: true });
@@ -34,6 +34,8 @@ export async function GET() {
   const now = Date.now();
   const announcements = (data || [])
     .filter((a) => !a.expires_at || new Date(a.expires_at).getTime() > now)
+    // Scheduled and cancelled ones are not in the inbox, and only announcements meant for the inbox show here.
+    .filter((a) => (a.status ?? 'sent') === 'sent' && (!Array.isArray(a.channels) || a.channels.includes('inbox')))
     .filter((a) => {
       const aud = (a.audience || { type: 'all' }) as { type: string; tiers?: string[]; site_ids?: string[]; status?: string };
       if (aud.type === 'all') return true;
@@ -43,7 +45,7 @@ export async function GET() {
       return false;
     })
     .slice(0, 20)
-    .map(({ audience: _a, ...rest }) => rest);
+    .map((a) => ({ id: a.id, title: a.title, body: a.body, level: a.level, pinned: a.pinned, created_at: a.created_at }));
 
   return NextResponse.json({
     announcements,

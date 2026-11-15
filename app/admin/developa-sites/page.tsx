@@ -9,6 +9,7 @@ import ThemesTab from './ThemesTab';
 import ControlDrawer from './ControlDrawer';
 import AnnounceTab from './AnnounceTab';
 import AuditTab from './AuditTab';
+import ReportsTab from './ReportsTab';
 import { type SiteStateRow, type UserStateRow, STATUS_STYLE } from './adminApi';
 
 interface AdminSiteRow extends ForumSummary {
@@ -22,7 +23,7 @@ interface PaymentRow { id: number; site_id: string; site_name: string; site_slug
 interface MonthlySettlementRow { month: string; orders: number; gross: number; platform_fee: number; seller_net: number }
 interface AdRow { id: string; title: string; body: string; link_url: string; image_url: string; placement: 'banner' | 'footer'; target_site_id: string | null; is_active: boolean; starts_at: string | null; ends_at: string | null }
 
-type Tab = 'sites' | 'announce' | 'payments' | 'themes' | 'ads' | 'support' | 'audit';
+type Tab = 'sites' | 'reports' | 'announce' | 'payments' | 'themes' | 'ads' | 'support' | 'audit';
 const naira = (n: number) => '₦' + Math.round(n).toLocaleString('en-NG');
 
 async function api<T = Record<string, unknown>>(url: string, method = 'GET', body?: unknown) {
@@ -40,6 +41,7 @@ export default function AdminDevelopaSitesPage() {
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [controlNeedsUpdate, setControlNeedsUpdate] = useState(false);
   const [siteStates, setSiteStates] = useState<Record<string, SiteStateRow>>({});
+  const [openSiteId, setOpenSiteId] = useState<string | null>(null);
   const [userStates, setUserStates] = useState<Record<string, UserStateRow>>({});
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
@@ -119,6 +121,7 @@ export default function AdminDevelopaSitesPage() {
       <div className="flex flex-wrap gap-2 border-b border-theme pb-3">
         {([
           ['sites', 'Sites'],
+          ['reports', 'Reports'],
           ['announce', 'Announcements'],
           ['payments', 'Plan payments'],
           ['themes', 'Themes and prices'],
@@ -133,7 +136,8 @@ export default function AdminDevelopaSitesPage() {
 
       {loading ? <p className="text-sm text-secondary">Loading…</p> : (
         <>
-          {tab === 'sites' && <SitesTab sites={sites} reload={loadAll} flash={flash} siteStates={siteStates} userStates={userStates} />}
+          {tab === 'sites' && <SitesTab sites={sites} reload={loadAll} flash={flash} siteStates={siteStates} userStates={userStates} openSiteId={openSiteId} clearOpenSite={() => setOpenSiteId(null)} />}
+          {tab === 'reports' && <ReportsTab flash={flash} openSite={(id) => { setOpenSiteId(id); setTab('sites'); }} />}
           {tab === 'announce' && <AnnounceTab sites={sites} flash={flash} />}
           {tab === 'payments' && <PaymentsTab payments={payments} settlements={settlements} />}
           {tab === 'themes' && <ThemesTab flash={flash} />}
@@ -157,8 +161,9 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
 }
 
 /* ------------------------------ Sites ------------------------------ */
-function SitesTab({ sites, reload, flash, siteStates, userStates }: { sites: AdminSiteRow[]; reload: () => Promise<void>; flash: (ok: boolean, t: string) => void; siteStates: Record<string, SiteStateRow>; userStates: Record<string, UserStateRow> }) {
-  const [controlling, setControlling] = useState<AdminSiteRow | null>(null);
+function SitesTab({ sites, reload, flash, siteStates, userStates, openSiteId, clearOpenSite }: { sites: AdminSiteRow[]; reload: () => Promise<void>; flash: (ok: boolean, t: string) => void; siteStates: Record<string, SiteStateRow>; userStates: Record<string, UserStateRow>; openSiteId: string | null; clearOpenSite: () => void }) {
+  const [controlling, setControlling] = useState<AdminSiteRow | null>(() => (openSiteId ? sites.find((x) => x.id === openSiteId) || null : null));
+  useEffect(() => { if (openSiteId) clearOpenSite(); }, [openSiteId, clearOpenSite]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'problem'>('all');
   const [query, setQuery] = useState('');
   const [soonOnly, setSoonOnly] = useState(false);
@@ -491,6 +496,7 @@ function AdsTab({ ads, sites, reload, flash }: { ads: AdRow[]; sites: AdminSiteR
           <div key={a.id} className="g-card p-4 flex flex-wrap items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="font-medium truncate">{a.title} {!a.is_active && <span className="text-secondary font-normal">· paused</span>}</p>
+              <p className="text-xs text-secondary mb-0.5">{(a as { impressions?: number }).impressions ?? 0} views · {(a as { clicks?: number }).clicks ?? 0} clicks{((a as { impressions?: number }).impressions ?? 0) > 0 ? ` · ${((((a as { clicks?: number }).clicks ?? 0) / ((a as { impressions?: number }).impressions ?? 1)) * 100).toFixed(1)}% clicked` : ''}</p>
               <p className="text-sm text-secondary">{a.placement === 'banner' ? 'Top of page' : 'Above footer'} · {siteName(a.target_site_id)} · {((a as { target_tiers?: string[] }).target_tiers || ['free']).map((t) => PLANS[t as PlanTier]?.name || t).join(', ')}
                 {a.ends_at && ` · until ${new Date(a.ends_at).toLocaleDateString('en-GB')}`}</p>
             </div>

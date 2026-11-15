@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import ReportDialog from '@/app/components/forums/ReportDialog';
 import { ShieldCheck, Truck, Clock, ChevronDown, Flag, Rss } from 'lucide-react';
 import { formatPreviewCurrency, type PreviewCurrency } from '@/lib/storefrontTools';
 
@@ -114,12 +115,7 @@ export function StorefrontSafetyLinks({ slug }: { slug: string }) {
       >
         <Rss className="w-3 h-3" /> Store RSS feed
       </a>
-      <a
-        href={`mailto:support@developa.me?subject=${encodeURIComponent(`Report store: ${slug}`)}`}
-        className="inline-flex items-center gap-1 hover:text-danger"
-      >
-        <Flag className="w-3 h-3" /> Report abuse or scam
-      </a>
+      <ReportDialog slug={slug} target={{ type: 'site' }} />
     </div>
   );
 }

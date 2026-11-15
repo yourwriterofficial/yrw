@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   MessageSquare, Users, Plus, Pin, Lock, UserPlus, Check, Settings, ShoppingBag, ShieldCheck, X,
@@ -27,7 +27,30 @@ import {
 
 interface PlatformAd { id: string; title: string; body: string; link_url: string; image_url: string; placement: 'banner' | 'footer' }
 
-function AdStrip({ ad }: { ad: PlatformAd }) {
+function AdStrip({ ad, slug }: { ad: PlatformAd; slug: string }) {
+  const ref = useRef<HTMLElement | null>(null);
+  const track = (kind: 'impression' | 'click') => {
+    try {
+      fetch(`/api/forums/${encodeURIComponent(slug)}/ads/track`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ad_id: ad.id, kind }), keepalive: true }).catch(() => undefined);
+    } catch { /* counting is best effort */ }
+  };
+  // One view per visitor per ad per browser session, counted once the strip is actually on screen.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const key = `ad_seen_${ad.id}`;
+    try { if (sessionStorage.getItem(key)) return; } catch { /* storage blocked */ }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        try { sessionStorage.setItem(key, '1'); } catch { /* storage blocked */ }
+        track('impression');
+        io.disconnect();
+      }
+    }, { threshold: 0.5 });
+    io.observe(el);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ad.id]);
   const inner = (
     <span className="flex items-center justify-center gap-3 text-sm">
       {ad.image_url && (
@@ -39,9 +62,9 @@ function AdStrip({ ad }: { ad: PlatformAd }) {
     </span>
   );
   return ad.link_url ? (
-    <a href={ad.link_url} target="_blank" rel="noopener noreferrer sponsored" className="block px-4 py-2.5 bg-card hover:bg-hover transition-colors border-b border-theme">{inner}</a>
+    <a ref={(n) => { ref.current = n; }} onClick={() => track('click')} href={ad.link_url} target="_blank" rel="noopener noreferrer sponsored" className="block px-4 py-2.5 bg-card hover:bg-hover transition-colors border-b border-theme">{inner}</a>
   ) : (
-    <div className="px-4 py-2.5 bg-card border-b border-theme">{inner}</div>
+    <div ref={(n) => { ref.current = n; }} className="px-4 py-2.5 bg-card border-b border-theme">{inner}</div>
   );
 }
 
@@ -199,7 +222,7 @@ export default function ForumView({ slug }: { slug: string }) {
             {(forum as unknown as { announcement?: string }).announcement}
           </div>
         )}
-      {ads.filter((a) => a.placement === 'banner').slice(0, 1).map((a) => <AdStrip key={a.id} ad={a} />)}
+      {ads.filter((a) => a.placement === 'banner').slice(0, 1).map((a) => <AdStrip key={a.id} ad={a} slug={slug} />)}
       {hasAdSpace && <div className="max-w-6xl mx-auto px-4"><SiteAdSpace slug={slug} placement="banner" /></div>}
 
       {/* Store Owner Toolbar */}
@@ -478,7 +501,7 @@ export default function ForumView({ slug }: { slug: string }) {
 
       {hasAdSpace && <div className="max-w-6xl mx-auto px-4"><SiteAdSpace slug={slug} placement="footer" /></div>}
       {forum && hasChat && siteMode !== 'forum' && <SellerChat slug={slug} siteName={forum.name} />}
-      {ads.filter((a) => a.placement === 'footer').slice(0, 1).map((a) => <AdStrip key={a.id} ad={a} />)}
+      {ads.filter((a) => a.placement === 'footer').slice(0, 1).map((a) => <AdStrip key={a.id} ad={a} slug={slug} />)}
 
       {forum && (() => {
         const infoPages = [

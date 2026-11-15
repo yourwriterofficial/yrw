@@ -42,6 +42,12 @@ export async function PATCH(
       return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid input' }, { status: 400 });
     }
 
+    if (parsed.data.is_active === true) {
+      // A product the platform took down stays down.
+      const { data: taken } = await supabaseAdmin.from('site_moderation').select('id').eq('item_type', 'product').eq('item_id', productId).maybeSingle();
+      if (taken) return NextResponse.json({ error: 'This item was removed by developa.me and cannot be switched back on. Contact support if you think this is a mistake.' }, { status: 403 });
+    }
+
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (parsed.data.title !== undefined) updates.title = xss(parsed.data.title);
     if (parsed.data.description !== undefined) updates.description = xss(parsed.data.description);

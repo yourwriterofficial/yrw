@@ -5,7 +5,7 @@ import { PLANS, PLAN_ORDER, type PlanTier } from '@/lib/plans';
 import { adminApi } from './adminApi';
 
 interface SiteLite { id: string; name: string; slug: string }
-interface AnnouncementRow { id: string; title: string; body: string; level: string; audience: { type: string; tiers?: string[]; site_ids?: string[]; status?: string }; channels: string[]; pinned: boolean; expires_at: string | null; recipient_count: number; created_at: string }
+interface AnnouncementRow { status?: 'scheduled' | 'sent' | 'cancelled'; send_at?: string | null; id: string; title: string; body: string; level: string; audience: { type: string; tiers?: string[]; site_ids?: string[]; status?: string }; channels: string[]; pinned: boolean; expires_at: string | null; recipient_count: number; created_at: string }
 
 type AudienceType = 'all' | 'tiers' | 'sites' | 'status';
 const LEVELS = [
@@ -36,6 +36,7 @@ export default function AnnounceTab({ sites, flash }: { sites: SiteLite[]; flash
   const [channels, setChannels] = useState<string[]>(['inbox', 'bell']);
   const [pinned, setPinned] = useState(false);
   const [expires, setExpires] = useState('');
+  const [sendAt, setSendAt] = useState('');
   const [busy, setBusy] = useState(false);
   const [reach, setReach] = useState<string>('');
   const [history, setHistory] = useState<AnnouncementRow[]>([]);
@@ -56,7 +57,8 @@ export default function AnnounceTab({ sites, flash }: { sites: SiteLite[]; flash
 
   const payload = (dry: boolean) => ({
     title, body, level, audience: audience(), channels, pinned,
-    expires_at: expires ? new Date(expires + 'T23:59:59').toISOString() : null, dry_run: dry,
+    expires_at: expires ? new Date(expires + 'T23:59:59').toISOString() : null,
+    send_at: sendAt ? new Date(sendAt).toISOString() : null, dry_run: dry,
   });
 
   const check = async () => {
@@ -67,11 +69,16 @@ export default function AnnounceTab({ sites, flash }: { sites: SiteLite[]; flash
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!confirm(`Send "${title}" now? This cannot be taken back (you can remove it from the inbox afterwards).`)) return;
+    const later = sendAt && new Date(sendAt).getTime() > Date.now() + 2 * 60_000;
+    if (!confirm(later ? `Schedule "${title}" for ${new Date(sendAt).toLocaleString('en-GB')}?` : `Send "${title}" now? This cannot be taken back (you can remove it from the inbox afterwards).`)) return;
     setBusy(true);
-    const r = await adminApi<{ owners?: number; bell?: number; emailed?: number; emailSkipped?: number; truncated?: boolean; error?: string }>('/api/admin/developa-announce', 'POST', payload(false));
+    const r = await adminApi<{ owners?: number; bell?: number; emailed?: number; emailSkipped?: number; truncated?: boolean; scheduled?: boolean; error?: string }>('/api/admin/developa-announce', 'POST', payload(false));
     setBusy(false);
-    if (r.ok) {
+    if (r.ok && r.data.scheduled) {
+      flash(true, `Scheduled for ${new Date(sendAt).toLocaleString('en-GB')}. It goes out then, to the owners who match at that time.`);
+      setTitle(''); setBody(''); setReach(''); setSendAt('');
+      await load();
+    } else if (r.ok) {
       const d = r.data;
       flash(true, `Sent to ${d.owners} owner(s)${channels.includes('bell') ? `, ${d.bell} bell` : ''}${channels.includes('email') ? `, ${d.emailed} emailed${d.emailSkipped ? ` (${d.emailSkipped} skipped: opted out or no address)` : ''}` : ''}${d.truncated ? '. Only the first 1,000 owners were included.' : '.'}`);
       setTitle(''); setBody(''); setReach('');
@@ -136,8 +143,9 @@ export default function AnnounceTab({ sites, flash }: { sites: SiteLite[]; flash
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-sm w-full">Send later <input type="datetime-local" value={sendAt} onChange={(e) => setSendAt(e.target.value)} className="input-box" /><span className="text-xs text-secondary">{sendAt ? '' : 'Leave empty to send now'}</span></label>
           <button type="button" onClick={check} disabled={noChannel} className="h-10 px-5 rounded-full border border-theme hover:bg-hover text-sm disabled:opacity-50">Check who gets this</button>
-          <button type="submit" disabled={busy || noChannel} className="bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-medium text-sm px-7 h-10 rounded-full disabled:opacity-50">{busy ? 'Sending…' : 'Send'}</button>
+          <button type="submit" disabled={busy || noChannel} className="bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-medium text-sm px-7 h-10 rounded-full disabled:opacity-50">{busy ? 'Working…' : sendAt && new Date(sendAt).getTime() > Date.now() + 2 * 60_000 ? 'Schedule' : 'Send'}</button>
           {reach && <span className="text-sm text-secondary" role="status">{reach}</span>}
         </div>
       </form>
@@ -149,10 +157,10 @@ export default function AnnounceTab({ sites, flash }: { sites: SiteLite[]; flash
           <div key={a.id} className="g-card p-4 space-y-1">
             <div className="flex items-start justify-between gap-3">
               <p className="font-medium min-w-0">{a.title}{a.pinned && <span className="ml-2 text-xs text-secondary font-normal">pinned</span>}</p>
-              <button onClick={() => remove(a)} className="text-xs text-danger hover:underline shrink-0">Remove</button>
+              <button onClick={() => remove(a)} className="text-xs text-danger hover:underline shrink-0">{a.status === 'scheduled' ? 'Cancel' : 'Remove'}</button>
             </div>
             <p className="text-sm text-secondary line-clamp-2">{a.body}</p>
-            <p className="text-xs text-secondary">{describe(a.audience)} · {a.recipient_count} owner(s) · {a.channels.join(', ')} · {new Date(a.created_at).toLocaleDateString('en-GB')}</p>
+            <p className="text-xs text-secondary">{a.status === 'scheduled' ? <span className="text-warning font-medium">Scheduled for {a.send_at ? new Date(a.send_at).toLocaleString('en-GB') : 'later'} · </span> : a.status === 'cancelled' ? <span className="font-medium">Cancelled · </span> : null}{describe(a.audience)} · {a.status === 'scheduled' ? 'not sent yet' : `${a.recipient_count} owner(s)`} · {a.channels.join(', ')} · {new Date(a.created_at).toLocaleDateString('en-GB')}</p>
           </div>
         ))}
       </div>

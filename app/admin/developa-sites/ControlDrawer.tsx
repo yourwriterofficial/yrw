@@ -9,6 +9,11 @@ interface SiteLite {
   id: string;
   name: string;
   slug: string;
+  description?: string | null;
+  hero_headline?: string | null;
+  hero_subheadline?: string | null;
+  accent_color?: string | null;
+  whatsapp_number?: string | null;
   owner_id: string;
   owner_name: string;
   plan_tier?: string | null;
@@ -53,6 +58,37 @@ export default function ControlDrawer({
   const [tier, setTier] = useState<PlanTier>((site.plan_tier as PlanTier) || 'free');
   const [months, setMonths] = useState(1);
   const [planReason, setPlanReason] = useState('');
+
+  // Editing the public details on the owner's behalf
+  const [ed, setEd] = useState({ name: site.name, description: site.description || '', hero_headline: site.hero_headline || '', hero_subheadline: site.hero_subheadline || '', accent_color: site.accent_color || '#3b82f6', whatsapp_number: site.whatsapp_number || '' });
+  const [editWhy, setEditWhy] = useState('');
+  const [editNotify, setEditNotify] = useState(true);
+
+  // Products and posts the platform can take down
+  interface Item { id: string; title: string; removed: boolean; removed_reason: string; is_active?: boolean }
+  const [items, setItems] = useState<{ products: Item[]; threads: Item[] } | null>(null);
+  const loadItems = async () => {
+    const r = await adminApi<{ products?: Item[]; threads?: Item[] }>(`/api/admin/developa-moderation?site_id=${site.id}`);
+    setItems({ products: r.data.products || [], threads: r.data.threads || [] });
+  };
+  const moderate = async (type: 'product' | 'thread', it: Item, action: 'remove' | 'restore') => {
+    let reason = '';
+    if (action === 'remove') { const r = prompt(`Why is "${it.title}" being removed? The owner will see it.`, ''); if (r === null) return; reason = r; }
+    setBusy('item-' + it.id);
+    const r = await adminApi('/api/admin/developa-moderation', 'POST', { action, site_id: site.id, item_type: type, item_id: it.id, reason });
+    setBusy(null);
+    onChanged(r.ok ? (action === 'remove' ? 'Removed.' : 'Restored.') : ((r.data.error as string) || 'That did not work.'), r.ok);
+    if (r.ok) await loadItems();
+  };
+  const saveEdit = async () => {
+    const changes: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(ed)) if (v !== ((site as unknown as Record<string, unknown>)[k] ?? (k === 'name' ? site.name : ''))) changes[k] = v;
+    if (Object.keys(changes).length === 0) { onChanged('Nothing was changed.', false); return; }
+    setBusy('edit');
+    const r = await adminApi('/api/admin/developa-site-edit', 'PATCH', { site_id: site.id, fields: changes, reason: editWhy, notify_owner: editNotify });
+    setBusy(null);
+    onChanged(r.ok ? 'Site details updated.' : ((r.data.error as string) || 'Could not save.'), r.ok);
+  };
 
   const [history, setHistory] = useState<AuditEntry[]>([]);
   useEffect(() => {
@@ -157,6 +193,50 @@ export default function ControlDrawer({
           </div>
           <div><label className={label} htmlFor="preason">Why <span className="text-secondary font-normal">(kept in the history)</span></label><input id="preason" maxLength={300} value={planReason} onChange={(e) => setPlanReason(e.target.value)} className="input-box w-full" placeholder="Gift, partner, support fix…" /></div>
           <button type="button" onClick={grant} disabled={busy !== null} className={Btn}>{busy === 'plan' ? 'Saving…' : 'Apply plan'}</button>
+        </section>
+
+        <section className="g-card p-5 space-y-4">
+          <h4 className="font-medium">Edit site details for the owner</h4>
+          <p className="text-xs text-secondary">Fix a wrong name, an offensive headline or a bad colour. Every change is kept in the history with the old and new value.</p>
+          <div className="grid gap-3">
+            <div><label className={label} htmlFor="ed-n">Name</label><input id="ed-n" maxLength={80} value={ed.name} onChange={(e) => setEd({ ...ed, name: e.target.value })} className="input-box w-full" /></div>
+            <div><label className={label} htmlFor="ed-d">Short description</label><textarea id="ed-d" rows={2} maxLength={300} value={ed.description} onChange={(e) => setEd({ ...ed, description: e.target.value })} className="input-box w-full" /></div>
+            <div><label className={label} htmlFor="ed-h">Banner headline</label><input id="ed-h" maxLength={160} value={ed.hero_headline} onChange={(e) => setEd({ ...ed, hero_headline: e.target.value })} className="input-box w-full" /></div>
+            <div><label className={label} htmlFor="ed-s">Banner sentence</label><input id="ed-s" maxLength={300} value={ed.hero_subheadline} onChange={(e) => setEd({ ...ed, hero_subheadline: e.target.value })} className="input-box w-full" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={label} htmlFor="ed-c">Colour</label><input id="ed-c" type="color" value={/^#[0-9a-fA-F]{6}$/.test(ed.accent_color) ? ed.accent_color : '#3b82f6'} onChange={(e) => setEd({ ...ed, accent_color: e.target.value })} className="h-10 w-full rounded-lg border border-theme bg-transparent" /></div>
+              <div><label className={label} htmlFor="ed-w">WhatsApp number</label><input id="ed-w" maxLength={30} value={ed.whatsapp_number} onChange={(e) => setEd({ ...ed, whatsapp_number: e.target.value })} className="input-box w-full" /></div>
+            </div>
+            <div><label className={label} htmlFor="ed-r">Why <span className="text-secondary font-normal">(the owner is told)</span></label><input id="ed-r" maxLength={300} value={editWhy} onChange={(e) => setEditWhy(e.target.value)} className="input-box w-full" placeholder="Removed an offensive word" /></div>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editNotify} onChange={(e) => setEditNotify(e.target.checked)} className="w-4 h-4" /> Tell the owner</label>
+          </div>
+          <button type="button" onClick={saveEdit} disabled={busy !== null} className={Btn}>{busy === 'edit' ? 'Saving…' : 'Save details'}</button>
+        </section>
+
+        <section className="g-card p-5 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h4 className="font-medium">Products and posts</h4>
+            {!items && <button type="button" onClick={loadItems} className="h-9 px-4 rounded-full border border-theme hover:bg-hover text-sm">Show</button>}
+          </div>
+          {items && (
+            <div className="space-y-4">
+              {([['product', 'Products', items.products], ['thread', 'Posts', items.threads]] as ['product' | 'thread', string, Item[]][]).map(([type, heading, list]) => (
+                <div key={type}>
+                  <p className="text-xs uppercase tracking-wide text-secondary mb-1.5">{heading} ({list.length})</p>
+                  {list.length === 0 ? <p className="text-sm text-secondary">None.</p> : (
+                    <ul className="divide-y divide-theme text-sm max-h-64 overflow-y-auto">
+                      {list.map((it) => (
+                        <li key={it.id} className="py-2 flex items-center justify-between gap-3">
+                          <span className="min-w-0 truncate">{it.title}{it.removed && <span className="ml-2 text-xs text-danger">removed</span>}</span>
+                          <button type="button" disabled={busy === 'item-' + it.id} onClick={() => moderate(type, it, it.removed ? 'restore' : 'remove')} className={`shrink-0 px-3 h-8 rounded-full text-xs border ${it.removed ? 'border-theme' : 'border-danger/40 text-danger'}`}>{it.removed ? 'Restore' : 'Take down'}</button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="g-card p-5 space-y-3">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import ReportDialog from '@/app/components/forums/ReportDialog';
 import { X, ShoppingCart, MessageCircle, Share2, Check, ChevronLeft, ChevronRight, Star, QrCode } from 'lucide-react';
 import { formatMoney, type ForumSummary, type ProductVariant, type SiteProduct } from '@/lib/forums';
 import { waLink } from '@/lib/phone';
@@ -344,6 +345,8 @@ export default function ProductDetailModal({
               </div>
             </div>
           )}
+
+          <div className="text-[11px] text-secondary"><ReportDialog slug={site.slug} target={{ type: 'product', id: product.id, title: product.title }} label="Report this item" className="inline-flex items-center gap-1 hover:text-danger" /></div>
 
           {/* Customer Reviews */}
           {(reviews.length > 0 || plan.reviews) && (
