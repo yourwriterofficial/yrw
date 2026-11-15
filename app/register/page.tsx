@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '@/app/components/ui/Button';
 import { SocialLoginButton } from '@/app/components/ui/SocialLoginButton';
 import { NairaguideLoginButton } from '@/app/components/ui/NairaguideLoginButton';
+import { SubskriptionLoginButton } from '@/app/components/ui/SubskriptionLoginButton';
 import AuthShell from '@/app/components/AuthShell';
 import { showToast } from '@/app/components/ui/Toast';
 import { REFERRAL_STORAGE_KEY } from '@/app/components/ReferralCapture';
@@ -119,6 +120,7 @@ function RegisterInner() {
     >
       <SocialLoginButton onClick={handleGoogleSignUp} loading={loading} label="Continue with Google" />
       <NairaguideLoginButton developa={isDevelopa} label="Continue with Nairaguide" />
+      {isDevelopa && <SubskriptionLoginButton />}
 
       <div className="flex items-center gap-3 my-5 text-xs text-secondary">
         <span className="flex-1 h-px bg-[var(--border)]" /> or use email <span className="flex-1 h-px bg-[var(--border)]" />

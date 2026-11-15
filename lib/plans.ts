@@ -132,7 +132,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'none',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 2 sites on one account', 'Custom domain (yourbrand.com)', 'Up to 50 products (3 photos each)', 'Paystack split payouts to your bank (3% fee)', 'Run house ads on your own site & sell ad slots', 'Reviews, receipts, business card & phone alerts'],
+    highlights: ['Up to 2 sites on one account', 'Custom domain (yourbrand.com)', 'Up to 50 products (3 photos each)', 'Get paid online straight to your bank (we keep 3%)', 'Run house ads on your own site & sell ad slots', 'Reviews, receipts, business card & phone alerts'],
   },
   pro: {
     tier: 'pro',
@@ -173,7 +173,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'plus',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 4 sites on one account', 'Unlimited products & 6 photos each', 'Paystack split payouts to your bank (2% fee)', 'Every Plus-tier premium theme included', 'Variants, delivery zones, coupons & abandoned carts', 'Run house ads, chat with buyers & no platform ads'],
+    highlights: ['Up to 4 sites on one account', 'Unlimited products & 6 photos each', 'Get paid online straight to your bank (we keep 2%)', 'Every Plus-tier premium theme included', 'Variants, delivery zones, coupons & abandoned carts', 'Run house ads, chat with buyers & no platform ads'],
   },
   business: {
     tier: 'business',
@@ -214,7 +214,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'all',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 8 sites on one account', 'Everything in Pro + 1% Paystack split fee', 'Every premium theme included (incl. Signature)', 'Up to 3 staff accounts with roles', 'Paid memberships & booking slots', '5,000 newsletters/mo & priority WhatsApp support'],
+    highlights: ['Up to 8 sites on one account', 'Everything in Pro, and we keep only 1% of online payments', 'Every premium theme included (incl. Signature)', 'Up to 3 staff accounts with roles', 'Paid memberships & booking slots', '5,000 newsletters/mo & priority WhatsApp support'],
   },
   corporate: {
     tier: 'corporate',
@@ -255,7 +255,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'all',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 25 sites for agencies & branches', 'Everything in Business + 0.5% Paystack split fee', 'Up to 10 photos per product & 15 staff accounts', '20,000 newsletters/mo', 'Full white-label & priority support'],
+    highlights: ['Up to 25 sites for agencies & branches', 'Everything in Business, and we keep only 0.5% of online payments', 'Up to 10 photos per product & 15 staff accounts', '20,000 newsletters/mo', 'Full white-label & priority support'],
   },
 };
 

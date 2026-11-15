@@ -42,7 +42,7 @@ export default function SubaccountCard({ site, goToPlan }: { site: Site; goToPla
   if (!eligible) {
     return (
       <section className="g-tonal p-6 space-y-2">
-        <h3 className="font-medium">Paystack split payouts (direct to your bank)</h3>
+        <h3 className="font-medium">Get paid online, straight into your bank</h3>
         <p className="text-sm text-secondary">Accept cards, transfers and USSD on your store and let Paystack settle earnings directly into your bank account. Included on Student/Lite and above.</p>
         <button type="button" onClick={goToPlan} className="mt-2 bg-accent text-[var(--accent-foreground)] text-xs font-medium px-5 h-9 rounded-full">
           See plans
@@ -75,16 +75,16 @@ export default function SubaccountCard({ site, goToPlan }: { site: Site; goToPla
   return (
     <section className="g-card p-6 space-y-4">
       <div>
-        <h3 className="font-medium">Paystack split payouts (direct to your bank)</h3>
+        <h3 className="font-medium">Get paid online, straight into your bank</h3>
         <p className="text-sm text-secondary mt-1">
-          Buyers pay via Paystack and your share settles directly to your bank account ({PLANS[tier].splitFeePct}% platform split fee on {PLANS[tier].name}).
+          Customers pay by card, transfer or USSD and the money goes straight into your bank account. We keep {PLANS[tier].splitFeePct}% on your {PLANS[tier].name} plan.
         </p>
       </div>
 
       {linked && (
         <div className="p-3 rounded-xl bg-secondary/30 text-sm">
           <p className="font-medium text-primary">Active payout account: {linked.name}</p>
-          <p className="text-xs text-secondary mt-0.5">Subaccount: {linked.code} · Platform split fee: {linked.fee}%</p>
+          <p className="text-xs text-secondary mt-0.5">Bank connected · We keep {linked.fee}% of each online payment</p>
         </div>
       )}
 
