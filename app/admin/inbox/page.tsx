@@ -212,8 +212,8 @@ function ThreadView({ id, me, mailboxes, macros, onBack, onChanged, onDeleted, f
           <button onClick={() => patch({ starred: !t.starred })} aria-label={t.starred ? 'Remove star' : 'Star'} className="w-9 h-9 rounded-full hover:bg-hover flex items-center justify-center shrink-0"><Star className={`w-5 h-5 ${t.starred ? 'fill-warning text-warning' : ''}`} /></button>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <select value={t.status} onChange={(e) => patch({ status: e.target.value })} aria-label="Status" className="input-box h-9 py-0">{Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-          <select value={t.priority} onChange={(e) => patch({ priority: e.target.value })} aria-label="Priority" className="input-box h-9 py-0">{['low', 'normal', 'high', 'urgent'].map((p) => <option key={p} value={p}>{p[0].toUpperCase() + p.slice(1)} priority</option>)}</select>
+          <select value={t.status} onChange={(e) => patch({ status: e.target.value })} aria-label="Status" className="input-box h-9 py-0 min-w-[12rem]">{Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+          <select value={t.priority} onChange={(e) => patch({ priority: e.target.value })} aria-label="Priority" className="input-box h-9 py-0 min-w-[10rem]">{['low', 'normal', 'high', 'urgent'].map((p) => <option key={p} value={p}>{p[0].toUpperCase() + p.slice(1)} priority</option>)}</select>
           <button onClick={() => patch({ assigned_to: t.assigned_to ? null : me || null })} className="h-9 px-3 rounded-full border border-theme hover:bg-hover text-xs">{t.assigned_to ? `Assigned to ${t.assigned_to.split('@')[0]} · unassign` : 'Assign to me'}</button>
           <button onClick={() => patch({ unread: true })} className="h-9 px-3 rounded-full border border-theme hover:bg-hover text-xs">Mark unread</button>
           <button onClick={remove} aria-label="Delete conversation" className="h-9 w-9 rounded-full border border-danger/40 text-danger flex items-center justify-center ml-auto"><Trash2 className="w-4 h-4" /></button>
