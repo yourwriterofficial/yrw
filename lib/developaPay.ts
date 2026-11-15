@@ -151,7 +151,7 @@ export async function settleDevelopaPayment(reference: string): Promise<SettleRe
   if (meta.kind === 'store_order') {
     const { data: order } = await supabaseAdmin
       .from('site_orders')
-      .select('id, site_id, order_code, total_ngn, payment_status')
+      .select('id, site_id, order_code, total_amount, payment_status')
       .eq('paystack_reference', reference)
       .maybeSingle();
 
@@ -159,7 +159,7 @@ export async function settleDevelopaPayment(reference: string): Promise<SettleRe
     if (order.payment_status === 'paid') {
       return { ok: true, kind: 'store_order', alreadyPaid: true, redirectPath: meta.slug ? `/forums/${meta.slug}?order=${order.order_code}&paid=1` : '/' };
     }
-    if (tx.amount < Math.round(Number(order.total_ngn) * 100)) {
+    if (tx.amount < Math.round(Number(order.total_amount) * 100)) {
       return { ok: false, error: 'Paid amount is less than expected.' };
     }
 
@@ -170,7 +170,7 @@ export async function settleDevelopaPayment(reference: string): Promise<SettleRe
       .maybeSingle();
 
     const feePct = Number(site?.paystack_split_fee_pct ?? 2);
-    const gross = Number(order.total_ngn);
+    const gross = Number(order.total_amount);
     const platformFee = Math.round(((gross * feePct) / 100) * 100) / 100;
     const sellerNet = Math.max(0, Math.round((gross - platformFee) * 100) / 100);
 

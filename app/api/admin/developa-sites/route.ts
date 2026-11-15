@@ -23,7 +23,7 @@ export async function GET() {
     const [sitesRes, productsRes, ordersRes] = await Promise.all([
       supabaseAdmin.from('forums').select('*').order('created_at', { ascending: false }),
       supabaseAdmin.from('site_products').select('id, site_id, is_active'),
-      supabaseAdmin.from('site_orders').select('id, site_id, total_amount, total_ngn, payment_status, platform_fee_ngn, seller_net_ngn, created_at'),
+      supabaseAdmin.from('site_orders').select('id, site_id, total_amount, payment_status, platform_fee_ngn, seller_net_ngn, created_at'),
     ]);
 
     if (sitesRes.error) throw sitesRes.error;
@@ -41,7 +41,7 @@ export async function GET() {
     const monthlyMap = new Map<string, { month: string; orders: number; gross: number; platform_fee: number; seller_net: number }>();
     for (const o of ordersRes.data || []) {
       const cur = ordersBySite.get(o.site_id) || { count: 0, gmv: 0 };
-      const gross = Number((o as { total_ngn?: number; total_amount?: number }).total_ngn ?? o.total_amount ?? 0);
+      const gross = Number(o.total_amount ?? 0);
       cur.count += 1;
       cur.gmv += gross;
       ordersBySite.set(o.site_id, cur);

@@ -187,7 +187,7 @@ export async function POST(request: Request) {
 
     const { data: order } = await supabaseAdmin
       .from('site_orders')
-      .select('id, order_code, total_ngn, buyer_email, payment_status')
+      .select('id, order_code, total_amount, buyer_email, payment_status')
       .eq('site_id', site.id)
       .eq('order_code', data.order_code)
       .maybeSingle();
@@ -205,7 +205,7 @@ export async function POST(request: Request) {
     const splitFeePct = Number(site.paystack_split_fee_pct ?? PLANS[tier].splitFeePct);
     const checkout = await initializeCheckout({
       email: data.buyer_email || order.buyer_email,
-      amountKobo: Math.round(Number(order.total_ngn) * 100),
+      amountKobo: Math.round(Number(order.total_amount) * 100),
       reference: ref,
       callbackUrl,
       subaccount: site.paystack_subaccount_code,
