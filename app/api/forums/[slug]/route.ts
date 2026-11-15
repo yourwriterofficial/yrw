@@ -288,6 +288,8 @@ export async function GET(
       );
     }
 
+    // Buyers only need to know whether online payment is ready, never the seller's subaccount code.
+    const { data: payRow } = forum ? await supabaseAdmin.from('forums').select('paystack_subaccount_code').eq('id', forum.id).maybeSingle() : { data: null };
     const enrichedForum = forum ? {
       ...forum,
       seo_title: seo.seo_title,
@@ -313,6 +315,7 @@ export async function GET(
       custom_domain: (forum as Record<string, unknown>).custom_domain ?? null,
       custom_domain_verified: (forum as Record<string, unknown>).custom_domain_verified ?? false,
       plan_tier: (forum as Record<string, unknown>).plan_tier ?? 'free',
+      online_payments_ready: !!payRow?.paystack_subaccount_code,
       logo_url: (forum as Record<string, unknown>).logo_url ?? '',
       hide_branding: (forum as Record<string, unknown>).hide_branding ?? false,
     } : null;

@@ -52,6 +52,8 @@ export interface ForumSummary {
   plan_tier?: import('./plans').PlanTier;
   plan_expires_at?: string | null;
   paystack_subaccount_code?: string | null;
+  /** True when the seller has connected a bank, so buyers can pay online. The code itself is never sent to buyers. */
+  online_payments_ready?: boolean;
   logo_url?: string;
   hide_branding?: boolean;
   /** Owner's plugin switches. A missing entry means on. */

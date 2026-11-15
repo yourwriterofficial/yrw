@@ -6,7 +6,7 @@ import { supabaseAdmin, requireOwnedSite } from '@/lib/forumServer';
 import { PAID_TIERS, PLANS, effectiveTier, priceForPeriod, type PlanTier } from '@/lib/plans';
 import { pluginOn } from '@/lib/plugins';
 import { readPluginSettings } from '@/lib/pluginsServer';
-import { initializeCheckout, referenceFor } from '@/lib/paystack';
+import { initializeCheckout, paystackErrorResponse, referenceFor } from '@/lib/paystack';
 import { clientIp, overLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
@@ -221,9 +221,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ authorization_url: checkout.authorization_url, reference: checkout.reference });
   } catch (err: unknown) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Could not start checkout.' },
-      { status: 500 }
-    );
+    return paystackErrorResponse(err, 'Could not start checkout. Please try again.');
   }
 }

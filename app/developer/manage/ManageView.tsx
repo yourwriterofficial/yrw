@@ -32,6 +32,7 @@ import CartsLeftCard from './CartsLeftCard';
 import AnalyticsCard from './AnalyticsCard';
 
 type TabKey = 'overview' | 'products' | 'orders' | 'customers' | 'bookings' | 'community' | 'memberships' | 'coupons' | 'shipping' | 'plugins' | 'messages' | 'adspace' | 'domain' | 'plan' | 'settings';
+const TAB_KEYS: TabKey[] = ['overview', 'products', 'orders', 'customers', 'bookings', 'community', 'memberships', 'coupons', 'shipping', 'plugins', 'messages', 'adspace', 'domain', 'plan', 'settings'];
 type NavGroup = 'main' | 'sell' | 'community' | 'grow' | 'account';
 
 const GROUPS: { key: NavGroup; label: string }[] = [
@@ -68,6 +69,7 @@ export default function ManageView() {
   const [sites, setSites] = useState<Site[]>([]);
   const [slug, setSlug] = useState<string>('');
   const [tab, setTab] = useState<TabKey>('overview');
+  const [paidNotice, setPaidNotice] = useState(false);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [orders, setOrders] = useState<SiteOrder[]>([]);
   const [loadingSite, setLoadingSite] = useState(false);
@@ -89,6 +91,11 @@ export default function ManageView() {
       setSites(mine);
       const wanted = new URLSearchParams(window.location.search).get('site');
       setSlug(mine.find((s) => s.slug === wanted)?.slug || mine[0]?.slug || '');
+      // Coming back from a payment (or a shared link): open the tab named in the address, and say so when paid.
+      const q = new URLSearchParams(window.location.search);
+      const wantedTab = q.get('tab') as TabKey | null;
+      if (wantedTab && TAB_KEYS.includes(wantedTab)) setTab(wantedTab);
+      if (q.get('paid') === '1' || q.get('theme_paid') === '1') setPaidNotice(true);
     })();
   }, []);
 
@@ -239,6 +246,12 @@ export default function ManageView() {
               <a href={siteLink} target="_blank" rel="noopener noreferrer" className="shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full border border-theme text-sm font-medium hover:bg-hover"><ExternalLink className="w-4 h-4" /> <span className="hidden sm:inline">View site</span></a>
             </div>
 
+            {paidNotice && (
+              <div role="status" className="mb-6 flex items-start justify-between gap-3 rounded-2xl g-tonal-strong p-4 text-sm">
+                <p><strong className="text-accent">Payment received.</strong> Thank you! Your upgrade is switched on.</p>
+                <button type="button" onClick={() => setPaidNotice(false)} className="text-secondary hover:text-primary cursor-pointer" aria-label="Dismiss">Dismiss</button>
+              </div>
+            )}
             {activeTab === 'overview' && <Overview site={site} detail={detail!} orders={orders} origin={origin} go={setTab} tier={tier} />}
             {activeTab === 'products' && <ProductsTab site={site} products={detail!.products} reload={reload} />}
             {activeTab === 'orders' && <OrdersTab site={site} orders={orders} reload={reload} />}

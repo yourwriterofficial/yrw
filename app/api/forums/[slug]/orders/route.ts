@@ -368,6 +368,7 @@ export async function POST(
 
     return NextResponse.json({ order }, { status: 201 });
   } catch (err: unknown) {
+    console.error('Order creation failed:', err);
     const message = err instanceof Error ? err.message : 'Failed to place order';
     return NextResponse.json({ error: message }, { status: 500 });
   }

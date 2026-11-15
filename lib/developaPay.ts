@@ -45,7 +45,7 @@ export async function settleDevelopaPayment(reference: string): Promise<SettleRe
 
     if (!pending) return { ok: false, error: 'Plan payment record not found.' };
     if (pending.status === 'paid') {
-      return { ok: true, kind: 'plan', alreadyPaid: true, redirectPath: meta.slug ? `/developer/manage/${meta.slug}` : '/create' };
+      return { ok: true, kind: 'plan', alreadyPaid: true, redirectPath: meta.slug ? `/developer/manage?site=${meta.slug}` : '/create' };
     }
     if (tx.amount < Math.round(Number(pending.amount) * 100)) {
       return { ok: false, error: 'Paid amount is less than expected.' };
@@ -60,7 +60,7 @@ export async function settleDevelopaPayment(reference: string): Promise<SettleRe
       .maybeSingle();
 
     if (!claimed) {
-      return { ok: true, kind: 'plan', alreadyPaid: true, redirectPath: meta.slug ? `/developer/manage/${meta.slug}` : '/create' };
+      return { ok: true, kind: 'plan', alreadyPaid: true, redirectPath: meta.slug ? `/developer/manage?site=${meta.slug}` : '/create' };
     }
 
     const { data: site } = await supabaseAdmin
@@ -81,7 +81,7 @@ export async function settleDevelopaPayment(reference: string): Promise<SettleRe
         hide_branding: PLANS[tier]?.hideBranding ?? false,
         updated_at: new Date().toISOString(),
       }).eq('id', site.id);
-      return { ok: true, kind: 'plan', redirectPath: `/developer/manage/${site.slug}?tab=plan&paid=1` };
+      return { ok: true, kind: 'plan', redirectPath: `/developer/manage?site=${site.slug}&tab=plan&paid=1` };
     }
     return { ok: true, kind: 'plan', redirectPath: '/create?paid=1' };
   }
@@ -95,7 +95,7 @@ export async function settleDevelopaPayment(reference: string): Promise<SettleRe
 
     if (!pending) return { ok: false, error: 'Theme purchase record not found.' };
     if (pending.status === 'paid') {
-      return { ok: true, kind: 'theme', alreadyPaid: true, redirectPath: meta.slug ? `/developer/manage/${meta.slug}?tab=settings` : '/create' };
+      return { ok: true, kind: 'theme', alreadyPaid: true, redirectPath: meta.slug ? `/developer/manage?site=${meta.slug}&tab=settings` : '/create' };
     }
     if (tx.amount < Math.round(Number(pending.amount_ngn) * 100)) {
       return { ok: false, error: 'Paid amount is less than expected.' };
@@ -107,7 +107,7 @@ export async function settleDevelopaPayment(reference: string): Promise<SettleRe
       .eq('id', pending.id)
       .eq('status', 'pending');
 
-    return { ok: true, kind: 'theme', redirectPath: meta.slug ? `/developer/manage/${meta.slug}?tab=settings&theme_paid=1` : '/create' };
+    return { ok: true, kind: 'theme', redirectPath: meta.slug ? `/developer/manage?site=${meta.slug}&tab=settings&theme_paid=1` : '/create' };
   }
 
   if (meta.kind === 'ad_booking') {

@@ -6,7 +6,14 @@
  * zero collision with ProsePen's webhook or transactions.
  */
 
-const API = 'https://api.paystack.co';
+import { NextResponse } from 'next/server';
+
+const LIVE_API = 'https://api.paystack.co';
+/**
+ * Development only: PAYSTACK_API_URL points the helper at a local stand-in (scripts/mock-paystack.mjs) so the
+ * whole payment flow can be exercised without the hosted checkout page. Production always uses the real API.
+ */
+const API = process.env.NODE_ENV !== 'production' && process.env.PAYSTACK_API_URL ? process.env.PAYSTACK_API_URL.replace(/\/$/, '') : LIVE_API;
 const TEST_MARK = '_t';
 
 export const isTestReference = (reference: string) => reference.endsWith(TEST_MARK);
@@ -22,13 +29,69 @@ export function referenceFor(base: string, isTestAccount = false): string {
 function getKey(reference = ''): string {
   if (isTestReference(reference) || forceTest()) {
     const t = process.env.PAYSTACK_TEST_SECRET_KEY;
-    if (!t || !t.startsWith('sk_test_')) throw new Error('PAYSTACK_TEST_SECRET_KEY is not set');
+    if (!t || !t.startsWith('sk_test_')) throw new PaystackError('Online payments are not set up yet. Please contact support.', 503, 'not_configured');
     return t;
   }
   const k = process.env.PAYSTACK_SECRET_KEY;
-  if (!k) throw new Error('PAYSTACK_SECRET_KEY is not set');
+  if (!k) throw new PaystackError('Online payments are not set up yet. Please contact support.', 503, 'not_configured');
   return k;
 }
+
+/* ------------------------------------------------------------------ errors */
+
+/** A failure from Paystack, already translated into a status code and a message a shop owner can act on. */
+export class PaystackError extends Error {
+  constructor(message: string, public status: number, public code: string) {
+    super(message);
+    this.name = 'PaystackError';
+  }
+}
+
+interface PaystackBody { status?: boolean; message?: string; type?: string; code?: string; data?: unknown }
+
+/** Maps what Paystack said to the right HTTP status: our caller's mistake (4xx), a rate limit (429), or their outage (503). */
+function failure(status: number, body: PaystackBody, fallback: string): PaystackError {
+  const raw = String(body?.message || '');
+  if (status === 401 || status === 403) return new PaystackError('Online payments are not set up correctly on our side. Please contact support.', 502, 'provider_auth');
+  if (status === 429 || /daily limit|rate limit|too many/i.test(raw)) return new PaystackError('Too many attempts right now. Please try again in a few minutes.', 429, 'rate_limited');
+  if (/account details are invalid|could not resolve account|invalid account/i.test(raw)) {
+    return new PaystackError('We could not verify that bank account. Check the account number and the bank, then try again.', 422, 'bank_invalid');
+  }
+  if (/email/i.test(raw) && /valid/i.test(raw)) return new PaystackError('Enter a valid email address.', 422, 'email_invalid');
+  if (status >= 500 || body?.type === 'api_error' || /cannot add subaccount|try again later/i.test(raw)) {
+    return new PaystackError('Our payment partner is unavailable right now. Please try again shortly.', 503, 'provider_unavailable');
+  }
+  if (status >= 400) return new PaystackError(raw || fallback, 422, 'provider_rejected');
+  return new PaystackError(fallback, 502, 'provider_error');
+}
+
+/** The one place that talks to Paystack. Network problems and bad replies become PaystackErrors too. */
+async function call<T>(path: string, key: string, fallback: string, init: { method?: 'GET' | 'POST'; body?: unknown; cache?: RequestCache } = {}): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${API}${path}`, {
+      method: init.method || 'GET',
+      headers: { Authorization: `Bearer ${key}`, ...(init.body ? { 'Content-Type': 'application/json' } : {}) },
+      body: init.body ? JSON.stringify(init.body) : undefined,
+      cache: init.cache || 'no-store',
+      signal: AbortSignal.timeout(20000),
+    });
+  } catch {
+    throw new PaystackError('We could not reach our payment partner. Please try again shortly.', 503, 'network');
+  }
+  const json = (await res.json().catch(() => ({}))) as PaystackBody;
+  if (!res.ok || json?.status !== true || json?.data === undefined || json?.data === null) throw failure(res.status, json, fallback);
+  return json.data as T;
+}
+
+/** For route handlers: a PaystackError keeps its own status and message; anything else is a plain 500 with a safe message. */
+export function paystackErrorResponse(err: unknown, fallback: string) {
+  if (err instanceof PaystackError) return NextResponse.json({ error: err.message, code: err.code }, { status: err.status });
+  console.error('Unexpected payment error:', err);
+  return NextResponse.json({ error: fallback, code: 'internal' }, { status: 500 });
+}
+
+/* --------------------------------------------------------------- operations */
 
 export interface DevelopaPayMeta {
   app: 'developa';
@@ -66,25 +129,15 @@ export async function initializeCheckout(p: {
   if (p.subaccount) {
     payload.subaccount = p.subaccount;
     if (typeof p.percentageCharge === 'number' && p.percentageCharge >= 0) {
-      // Paystack subaccount split: `bearer: 'account'` means main account bears Paystack fee or default;
-      // `transaction_charge` is flat kobo fee. Using subaccount's configured percentage_charge or flat override:
+      // The platform's cut, in kobo. Paystack sends the rest of the payment to the seller's subaccount.
       payload.transaction_charge = Math.round((p.amountKobo * p.percentageCharge) / 100);
     }
   }
-
-  const res = await fetch(`${API}/transaction/initialize`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${getKey(p.reference)}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json?.status || !json?.data?.authorization_url) {
-    throw new Error(json?.message || 'Could not start Paystack checkout.');
-  }
-  return json.data;
+  const data = await call<{ authorization_url: string; access_code: string; reference: string }>(
+    '/transaction/initialize', getKey(p.reference), 'Could not start checkout.', { method: 'POST', body: payload }
+  );
+  if (!data.authorization_url) throw new PaystackError('Could not start checkout.', 502, 'provider_error');
+  return data;
 }
 
 export interface PaystackVerifiedTx {
@@ -95,67 +148,40 @@ export interface PaystackVerifiedTx {
   metadata?: Partial<DevelopaPayMeta>;
 }
 
-export async function verifyTransaction(reference: string): Promise<PaystackVerifiedTx> {
-  const res = await fetch(`${API}/transaction/verify/${encodeURIComponent(reference)}`, {
-    headers: { Authorization: `Bearer ${getKey(reference)}` },
-    cache: 'no-store',
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json?.status || !json?.data) {
-    throw new Error(json?.message || 'Could not verify Paystack payment.');
-  }
-  return json.data as PaystackVerifiedTx;
+export function verifyTransaction(reference: string): Promise<PaystackVerifiedTx> {
+  return call<PaystackVerifiedTx>(`/transaction/verify/${encodeURIComponent(reference)}`, getKey(reference), 'Could not verify the payment.');
 }
 
 export async function listNigerianBanks(): Promise<{ name: string; code: string }[]> {
-  const res = await fetch(`${API}/bank?country=nigeria&perPage=100`, {
-    headers: { Authorization: `Bearer ${getKey()}` },
-    next: { revalidate: 86400 },
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json?.status || !Array.isArray(json?.data)) return [];
-  return (json.data as { name: string; code: string; active?: boolean }[])
-    .filter((b) => b.active !== false)
-    .map((b) => ({ name: b.name, code: b.code }));
-}
-
-export async function resolveBankAccount(accountNumber: string, bankCode: string): Promise<{ account_name: string; account_number: string }> {
-  const res = await fetch(
-    `${API}/bank/resolve?account_number=${encodeURIComponent(accountNumber)}&bank_code=${encodeURIComponent(bankCode)}`,
-    { headers: { Authorization: `Bearer ${getKey()}` }, cache: 'no-store' }
+  const data = await call<{ name: string; code: string; active?: boolean }[]>(
+    '/bank?country=nigeria&perPage=100', getKey(), 'Could not load banks.', { cache: 'force-cache' }
   );
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json?.status || !json?.data?.account_name) {
-    throw new Error(json?.message || 'Could not verify bank account details.');
-  }
-  return json.data;
+  return (Array.isArray(data) ? data : []).filter((b) => b.active !== false).map((b) => ({ name: b.name, code: b.code }));
 }
 
-export async function createSubaccount(p: {
+export function resolveBankAccount(accountNumber: string, bankCode: string): Promise<{ account_name: string; account_number: string }> {
+  return call(
+    `/bank/resolve?account_number=${encodeURIComponent(accountNumber)}&bank_code=${encodeURIComponent(bankCode)}`,
+    getKey(), 'Could not verify the bank account.'
+  );
+}
+
+export function createSubaccount(p: {
   businessName: string;
   settlementBank: string;
   accountNumber: string;
   percentageCharge: number;
   description?: string;
 }): Promise<{ subaccount_code: string; business_name: string; account_number: string }> {
-  const res = await fetch(`${API}/subaccount`, {
+  return call('/subaccount', getKey(), 'Could not connect the bank account.', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${getKey()}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
+    body: {
       business_name: p.businessName,
       settlement_bank: p.settlementBank,
       account_number: p.accountNumber,
       percentage_charge: p.percentageCharge,
       settlement_schedule: 'monthly',
       description: p.description || 'Developa seller split subaccount',
-    }),
+    },
   });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json?.status || !json?.data?.subaccount_code) {
-    throw new Error(json?.message || 'Could not create Paystack subaccount.');
-  }
-  return json.data;
 }

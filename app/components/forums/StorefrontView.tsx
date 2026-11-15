@@ -61,7 +61,7 @@ export default function StorefrontView({
   const [notes, setNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'manual_transfer' | 'pay_on_delivery' | 'paystack'>('manual_transfer');
   const [previewCurrency, setPreviewCurrency] = useState<PreviewCurrency>('NGN');
-  const canPayOnline = Boolean(site.paystack_subaccount_code) && pluginOn('online_payments', site.plan_tier, site.plan_expires_at, site.plugins);
+  const canPayOnline = (Boolean(site.online_payments_ready) || Boolean(site.paystack_subaccount_code)) && pluginOn('online_payments', site.plan_tier, site.plan_expires_at, site.plugins);
   const [paymentRef, setPaymentRef] = useState('');
   const [proofNote, setProofNote] = useState('');
   const [marketingConsent, setMarketingConsent] = useState(false);

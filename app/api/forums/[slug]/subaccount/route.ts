@@ -4,7 +4,7 @@ import { requireOwnedSite, supabaseAdmin } from '@/lib/forumServer';
 import { PLANS, effectiveTier } from '@/lib/plans';
 import { pluginOn } from '@/lib/plugins';
 import { readPluginSettings } from '@/lib/pluginsServer';
-import { createSubaccount, listNigerianBanks, resolveBankAccount } from '@/lib/paystack';
+import { createSubaccount, listNigerianBanks, paystackErrorResponse, resolveBankAccount } from '@/lib/paystack';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,9 +83,6 @@ export async function POST(request: Request, ctx: { params: Promise<{ slug: stri
       split_fee_pct: feePct,
     });
   } catch (err: unknown) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Could not link bank subaccount.' },
-      { status: 500 }
-    );
+    return paystackErrorResponse(err, 'Could not connect your bank account. Please try again.');
   }
 }
