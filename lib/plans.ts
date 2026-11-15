@@ -8,9 +8,11 @@ export type PlanTier = 'free' | 'lite' | 'pro' | 'business' | 'corporate';
 /** Extra customer emails, bought separately and kept until used. Prices are in naira. Change them here. */
 export interface EmailPack { id: string; emails: number; priceNgn: number }
 export const EMAIL_PACKS: EmailPack[] = [
-  { id: 'e100', emails: 100, priceNgn: 20000 },
-  { id: 'e500', emails: 500, priceNgn: 80000 },
-  { id: 'e2000', emails: 2000, priceNgn: 267000 },
+  // About N14 to N30 an email. Our cost is roughly N1 to N2 an email plus the Paystack fee, so every pack keeps about 84% to 88%.
+  { id: 'e100', emails: 100, priceNgn: 3000 },
+  { id: 'e500', emails: 500, priceNgn: 11000 },
+  { id: 'e2000', emails: 2000, priceNgn: 36000 },
+  { id: 'e10000', emails: 10000, priceNgn: 140000 },
 ];
 
 export const PLAN_ORDER: PlanTier[] = ['free', 'lite', 'pro', 'business', 'corporate'];
