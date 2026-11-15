@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export function GET(req: NextRequest) {
   const origin = req.nextUrl.origin;
   const rawNext = req.nextUrl.searchParams.get('next') || '';
-  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '';
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.startsWith('/\\') ? rawNext : '';
 
   if (!subskriptionConfigured()) {
     return NextResponse.redirect(`${origin}/login?brand=developa&message=${encodeURIComponent('Subskription sign-in is not switched on yet.')}`);
