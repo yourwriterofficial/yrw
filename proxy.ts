@@ -52,7 +52,7 @@ export default async function proxy(request: NextRequest) {
     host.includes('developa.local') ||
     request.nextUrl.searchParams.get('brand') === 'developa'
 
-  const bypassPrefixes = ['/api/', '/_next/', '/auth/', '/login', '/register', '/dashboard', '/admin', '/forums/']
+  const bypassPrefixes = ['/api/', '/oauth/', '/_next/', '/auth/', '/login', '/register', '/dashboard', '/admin', '/forums/']
   const shouldBypass = bypassPrefixes.some((prefix) => path === prefix.replace(/\/$/, '') || path.startsWith(prefix))
 
   // Portal routing: create.developa.me -> /create
