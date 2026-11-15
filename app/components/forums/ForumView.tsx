@@ -297,17 +297,19 @@ export default function ForumView({ slug }: { slug: string }) {
 
               <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-theme">
                 <div className="flex items-center gap-5 text-xs text-secondary">
-                  <span className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5" /> {forum.member_count} members
-                  </span>
                   {siteMode !== 'store' && (
                     <span className="flex items-center gap-1.5">
-                      <MessageSquare className="w-3.5 h-3.5" /> {forum.thread_count} threads
+                      <Users className="w-3.5 h-3.5" /> {forum.member_count} {forum.member_count === 1 ? 'member' : 'members'}
+                    </span>
+                  )}
+                  {siteMode !== 'store' && (
+                    <span className="flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5" /> {forum.thread_count} {forum.thread_count === 1 ? 'thread' : 'threads'}
                     </span>
                   )}
                   {siteMode !== 'forum' && (
                     <span className="flex items-center gap-1.5">
-                      <ShoppingBag className="w-3.5 h-3.5" /> {products.filter((p) => p.is_active).length} products
+                      <ShoppingBag className="w-3.5 h-3.5" /> {products.filter((p) => p.is_active).length} {products.filter((p) => p.is_active).length === 1 ? 'product' : 'products'}
                     </span>
                   )}
                 </div>

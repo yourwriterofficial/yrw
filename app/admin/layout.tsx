@@ -69,7 +69,30 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-const NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
+// On Developa hosts the admin only shows Developa's own tools; YourResearchWriter's orders, quotes,
+// invoices and catalogue stay on the main domain.
+const DEVELOPA_NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Developa',
+    items: [
+      { href: '/admin/developa-sites', label: 'Sites & revenue', icon: lucide.Globe },
+      { href: '/admin/dev-shop', label: 'Script Shop', icon: lucide.ShoppingBag },
+    ],
+  },
+  {
+    label: 'People',
+    items: [
+      { href: '/admin/users', label: 'Users', icon: lucide.Users },
+      { href: '/admin/email', label: 'Messaging', icon: lucide.Send },
+    ],
+  },
+];
+
+function onDevelopaHost(): boolean {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname;
+  return host.includes('developa') || new URLSearchParams(window.location.search).get('brand') === 'developa';
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -77,6 +100,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
+  const [isDevelopa, setIsDevelopa] = useState(false);
+  useEffect(() => { setIsDevelopa(onDevelopaHost()); }, []);
+  const navGroups = isDevelopa ? DEVELOPA_NAV_GROUPS : NAV_GROUPS;
+  const navItems = navGroups.flatMap((g) => g.items);
+  const portalHref = isDevelopa ? '/create' : '/dashboard/client';
+  const portalLabel = isDevelopa ? 'My sites' : 'Client Portal';
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -86,7 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }
       const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', data.user.id).single();
       if (!profile?.is_admin) {
-        router.replace('/dashboard/client');
+        router.replace(onDevelopaHost() ? '/create' : '/dashboard/client');
         return;
       }
       setUser(data.user);
@@ -117,7 +146,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         : 'text-secondary hover:bg-hover hover:text-primary'
     }`;
 
-  const currentPage = NAV_ITEMS.find((item) => isActive(item.href, item.exact));
+  const currentPage = navItems.find((item) => isActive(item.href, item.exact));
 
   if (checkingAdmin) {
     return (
@@ -135,13 +164,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <lucide.Shield className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="font-black tracking-tight leading-none text-lg">YRW</h1>
-            <p className="text-[10px] text-accent uppercase tracking-widest font-bold">SysAdmin</p>
+            <h1 className="font-black tracking-tight leading-none text-lg">{isDevelopa ? 'Developa' : 'YRW'}</h1>
+            <p className="text-[10px] text-accent uppercase tracking-widest font-bold">{isDevelopa ? 'Platform admin' : 'SysAdmin'}</p>
           </div>
         </div>
 
         <nav className="flex flex-col gap-4 flex-1 overflow-y-auto">
-          {NAV_GROUPS.map((group) => (
+          {navGroups.map((group) => (
             <div key={group.label}>
               <p className="text-[9px] uppercase tracking-widest text-secondary/70 font-black pl-3 mb-1.5">{group.label}</p>
               <div className="flex flex-col gap-0.5">
@@ -156,8 +185,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           <div className="my-2 border-t border-theme" />
 
-          <Button variant="outline" size="sm" className="border-accent/30 text-accent hover:bg-accent/10" onClick={() => router.push('/dashboard/client')}>
-            <lucide.User className="w-4 h-4 mr-2" /> Client Portal
+          <Button variant="outline" size="sm" className="border-accent/30 text-accent hover:bg-accent/10" onClick={() => router.push(portalHref)}>
+            <lucide.User className="w-4 h-4 mr-2" /> {portalLabel}
           </Button>
         </nav>
 
@@ -183,7 +212,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-accent-foreground">
             <lucide.Shield className="w-4 h-4" />
           </div>
-          <span className="font-bold text-sm uppercase tracking-widest text-accent">Admin</span>
+          <span className="font-bold text-sm uppercase tracking-widest text-accent">{isDevelopa ? 'Developa admin' : 'Admin'}</span>
         </div>
         <button
           type="button"
@@ -198,7 +227,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {mobileMenuOpen && (
         <div className="md:hidden bg-secondary border-b border-theme p-4 flex flex-col gap-3 absolute w-full z-40 dropdown-top-safe shadow-elevation-3 max-h-[70vh] overflow-y-auto">
-          {NAV_GROUPS.map((group) => (
+          {navGroups.map((group) => (
             <div key={group.label}>
               <p className="text-[9px] uppercase tracking-widest text-secondary/70 font-black pl-3 mb-1">{group.label}</p>
               <div className="flex flex-col gap-0.5">
@@ -210,8 +239,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             </div>
           ))}
-          <Button variant="outline" size="sm" className="border-accent/30 text-accent" onClick={() => { router.push('/dashboard/client'); setMobileMenuOpen(false); }}>
-            <lucide.User className="w-4 h-4 mr-2" /> Client Portal
+          <Button variant="outline" size="sm" className="border-accent/30 text-accent" onClick={() => { router.push(portalHref); setMobileMenuOpen(false); }}>
+            <lucide.User className="w-4 h-4 mr-2" /> {portalLabel}
           </Button>
           <ThemeToggle />
           <button type="button" onClick={handleLogout} className="mt-2 p-3 text-danger font-bold text-left flex items-center gap-2 rounded-xl hover:bg-danger/10">
