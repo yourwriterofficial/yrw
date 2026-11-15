@@ -52,7 +52,7 @@ export function WishHeart({ slug, productId, accent }: { slug: string; productId
       onClick={(e) => { e.stopPropagation(); toggle(productId); }}
       aria-label={on ? 'Remove from saved' : 'Save for later'}
       aria-pressed={on}
-      className="absolute top-2.5 left-2.5 z-10 w-9 h-9 rounded-full bg-white/90 shadow flex items-center justify-center backdrop-blur hover:scale-105 transition"
+      className="absolute top-2.5 right-2.5 z-10 w-9 h-9 rounded-full bg-white/90 shadow flex items-center justify-center backdrop-blur hover:scale-105 transition"
     >
       <Heart className="w-[18px] h-[18px]" style={on ? { fill: accent, color: accent } : { color: '#555' }} />
     </button>
