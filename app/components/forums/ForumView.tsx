@@ -13,6 +13,7 @@ import SellerChat from '@/app/components/forums/SellerChat';
 import SitePwa from '@/app/components/forums/SitePwa';
 import ThreadListThemes, { FORUM_LAYOUTS } from '@/app/components/forums/ThreadListThemes';
 import { isPremiumTemplate } from '@/lib/premium';
+import { pluginOn } from '@/lib/plugins';
 import { PremiumFloaters, TrendingRail } from '@/app/components/forums/PremiumExtras';
 import { getTemplateById } from '@/lib/siteTemplates';
 import StoreManagerModal from '@/app/components/forums/StoreManagerModal';
@@ -46,6 +47,11 @@ function AdStrip({ ad }: { ad: PlatformAd }) {
 
 export default function ForumView({ slug }: { slug: string }) {
   const [forum, setForum] = useState<ForumSummary | null>(null);
+  // Parts a site's plan does not include are not even requested, which keeps the first load light.
+  const planEff = forum ? ((forum as unknown as { plan_effective?: string }).plan_effective || forum.plan_tier || 'free') : 'free';
+  const hasAdSpace = !!forum && pluginOn('adspace', planEff, null, forum.plugins);
+  const hasChat = !!forum && pluginOn('chat', planEff, null, forum.plugins);
+  const hasMemberships = !!forum && forum.site_mode !== 'store' && pluginOn('memberships', planEff, null, forum.plugins);
   const [threads, setThreads] = useState<ForumThread[]>([]);
   const [products, setProducts] = useState<SiteProduct[]>([]);
   const [activeTab, setActiveTab] = useState<'store' | 'forum'>('forum');
@@ -112,10 +118,15 @@ export default function ForumView({ slug }: { slug: string }) {
       await Promise.resolve();
       if (!active) return;
       setIsSubdomain(!!extractDevelopaSubdomain(window.location.host));
-      await Promise.all([loadForum(), loadMemberships()]);
+      await loadForum();
     })();
     return () => { active = false; };
   }, [loadForum, loadMemberships]);
+
+  // Paid memberships are only looked up for sites whose plan includes them.
+  useEffect(() => {
+    if (hasMemberships) void loadMemberships();
+  }, [hasMemberships, loadMemberships]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -189,7 +200,7 @@ export default function ForumView({ slug }: { slug: string }) {
           </div>
         )}
       {ads.filter((a) => a.placement === 'banner').slice(0, 1).map((a) => <AdStrip key={a.id} ad={a} />)}
-      <div className="max-w-6xl mx-auto px-4"><SiteAdSpace slug={slug} placement="banner" /></div>
+      {hasAdSpace && <div className="max-w-6xl mx-auto px-4"><SiteAdSpace slug={slug} placement="banner" /></div>}
 
       {/* Store Owner Toolbar */}
       {isOwner && (
@@ -465,8 +476,8 @@ export default function ForumView({ slug }: { slug: string }) {
         )}
       </main>
 
-      <div className="max-w-6xl mx-auto px-4"><SiteAdSpace slug={slug} placement="footer" /></div>
-      {forum && siteMode !== 'forum' && <SellerChat slug={slug} siteName={forum.name} />}
+      {hasAdSpace && <div className="max-w-6xl mx-auto px-4"><SiteAdSpace slug={slug} placement="footer" /></div>}
+      {forum && hasChat && siteMode !== 'forum' && <SellerChat slug={slug} siteName={forum.name} />}
       {ads.filter((a) => a.placement === 'footer').slice(0, 1).map((a) => <AdStrip key={a.id} ad={a} />)}
 
       {forum && (() => {

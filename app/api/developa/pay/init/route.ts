@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { blockedReason } from '@/lib/adminState';
 import { randomBytes } from 'crypto';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
@@ -200,6 +201,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Online card/transfer checkout is not enabled on this store.' }, { status: 400 });
     }
 
+    const blockedPay = await blockedReason(site.id, 'no_online_payments');
+    if (blockedPay) return NextResponse.json({ error: 'Online payments are switched off for this store.' }, { status: 403 });
     const tier = effectiveTier(site.plan_tier, site.plan_expires_at);
     const settings = await readPluginSettings(site.id);
     if (!PLANS[tier].onlinePayments || !pluginOn('online_payments', site.plan_tier, site.plan_expires_at, settings)) {

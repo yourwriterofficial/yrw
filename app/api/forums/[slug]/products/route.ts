@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { blockedReason, getSiteState } from '@/lib/adminState';
 import { z } from 'zod';
 import xss from 'xss';
 import { planFor } from '@/lib/plans';
@@ -35,6 +36,13 @@ export async function POST(
     if ('error' in access) return access.error;
     const { site } = access;
 
+    const noNew = await blockedReason(site.id, 'no_new_products');
+    if (noNew) return NextResponse.json({ error: noNew }, { status: 403 });
+    const adminCap = (await getSiteState(site.id)).restrictions.product_cap;
+    if (typeof adminCap === 'number') {
+      const { count: have } = await supabaseAdmin.from('site_products').select('id', { count: 'exact', head: true }).eq('site_id', site.id);
+      if ((have ?? 0) >= adminCap) return NextResponse.json({ error: `This site is limited to ${adminCap} products.` }, { status: 403 });
+    }
     const plan = planFor(site.plan_tier, site.plan_expires_at);
     if (plan.maxProducts !== null) {
       const { count } = await supabaseAdmin.from('site_products').select('id', { count: 'exact', head: true }).eq('site_id', site.id);

@@ -1,4 +1,5 @@
 import { findUsableCoupon, discountFor } from '@/lib/coupons';
+import { blockedReason } from '@/lib/adminState';
 import { downloadsForOrder, isMissingColumnError, readExtendedSite, readSiteTools, requireSiteAccess, reserveStock, releaseStock } from '@/lib/forumServer';
 import { emailOrderReceived } from '@/lib/storeEmails';
 import { computeShipping, type ShippingZoneRow } from '@/lib/shipping';
@@ -111,6 +112,8 @@ export async function POST(
     if (!site || site.site_mode === 'forum') {
       return NextResponse.json({ error: 'Storefront not found' }, { status: 404 });
     }
+    const blocked = await blockedReason(site.id);
+    if (blocked) return NextResponse.json({ error: 'This store is not taking orders right now.' }, { status: 403 });
 
     const raw = await request.json().catch(() => null);
     const parsed = createOrderSchema.safeParse(raw);

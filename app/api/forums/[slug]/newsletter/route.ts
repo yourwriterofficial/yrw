@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { blockedReason } from '@/lib/adminState';
 import { z } from 'zod';
 import xss from 'xss';
 import { isMissingRelationError, requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
@@ -84,6 +85,8 @@ export async function POST(
     if ('error' in access) return access.error;
 
     const plan = planFor(access.site.plan_tier, access.site.plan_expires_at);
+    const switchedOff = await blockedReason(access.site.id, 'no_newsletters');
+    if (switchedOff) return NextResponse.json({ error: switchedOff }, { status: 403 });
     if (plan.newsletterLimitPerMonth <= 0) {
       return NextResponse.json({ error: 'Customer emails are switched off for this plan.' }, { status: 403 });
     }

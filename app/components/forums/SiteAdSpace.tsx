@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { sharedJson } from '@/lib/sharedFetch';
 import { X } from 'lucide-react';
 
 interface Slot { id: string; name: string; placement: string; price_ngn: number; days: number; description: string }
@@ -19,10 +20,8 @@ export default function SiteAdSpace({ slug, placement }: { slug: string; placeme
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/forums/${encodeURIComponent(slug)}/ad-space`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => { if (active && j?.enabled) setData(j); })
-      .catch(() => {});
+    sharedJson<{ enabled: boolean; slots: Slot[]; running: Running[] }>(`/api/forums/${encodeURIComponent(slug)}/ad-space`)
+      .then((j) => { if (active && j?.enabled) setData(j); });
     return () => { active = false; };
   }, [slug]);
 

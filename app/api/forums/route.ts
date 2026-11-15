@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { hiddenFromPublic, getUserState } from '@/lib/adminState';
 import { z } from 'zod';
 import xss from 'xss';
 import { createClient as createServerClient } from '@/lib/supabase/server';
@@ -136,8 +137,10 @@ export async function GET(request: Request) {
     const { data, error } = await query;
     if (error) throw error;
 
-    const verifiedMap = await readVerifiedMap((data || []).map((r) => r.id));
-    const enriched = (data || []).map((row) => ({
+    const hidden = await hiddenFromPublic();
+    const visible = (data || []).filter((r) => !hidden.has(r.id));
+    const verifiedMap = await readVerifiedMap(visible.map((r) => r.id));
+    const enriched = visible.map((row) => ({
       ...row,
       verified: verifiedMap.get(row.id) ?? false,
       custom_domain: (row as Record<string, unknown>).custom_domain ?? null,
@@ -185,7 +188,12 @@ export async function POST(request: Request) {
       .from('forums')
       .select('id', { count: 'exact', head: true })
       .eq('owner_id', user.id);
-    const { limit } = await maxSitesFor(user.id);
+    const accountState = await getUserState(user.id);
+    if (accountState.status === 'banned') {
+      return NextResponse.json({ error: 'This account cannot create sites.' }, { status: 403 });
+    }
+    const { limit: planLimit } = await maxSitesFor(user.id);
+    const limit = accountState.max_sites_override ?? planLimit;
     if ((owned ?? 0) >= limit) {
       return NextResponse.json({
         error: limit === 1

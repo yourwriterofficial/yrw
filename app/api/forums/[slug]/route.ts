@@ -1,11 +1,12 @@
 import { planFor, effectiveTier, PLANS } from '@/lib/plans';
 import { canUseTheme } from '@/lib/themeCatalog';
+import { getSiteState, isSiteBlocked } from '@/lib/adminState';
 import { readPluginSettings } from '@/lib/pluginsServer';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import xss from 'xss';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { resolveAuthorNames, resolveUserSiteRole, requireSiteAccess, supabaseAdmin, readExtendedSite, readSeo, readSiteTools } from '@/lib/forumServer';
+import { resolveAuthorNames, resolveUserSiteRole, requireSiteAccess, isPlatformAdmin, supabaseAdmin, readExtendedSite, type SiteRole, readSeo, readSiteTools } from '@/lib/forumServer';
 
 const SITE_SELECT =
   'id, slug, name, description, owner_id, is_public, accent_color, member_count, thread_count, created_at, site_mode, template_id, hero_headline, hero_subheadline, currency, whatsapp_number, bank_name, bank_account_number, bank_account_name, payment_instructions, plan_tier, custom_domain, custom_domain_verified, hide_branding, logo_url';
@@ -82,101 +83,139 @@ export async function GET(
     const { slug } = await context.params;
     const normalized = slug.toLowerCase().trim();
 
-    const { data: forum, error: forumErr } = await supabaseAdmin
-      .from('forums')
-      .select(SITE_SELECT)
-      .eq('slug', normalized)
-      .maybeSingle();
+    // The site lookup and the sign-in check do not depend on each other, so they run together.
+    const [forumRes, authRes] = await Promise.all([
+      supabaseAdmin.from('forums').select(SITE_SELECT).eq('slug', normalized).maybeSingle(),
+      createServerClient().then((c) => c.auth.getUser()),
+    ]);
+    const { data: forum, error: forumErr } = forumRes;
 
     if (forumErr) throw forumErr;
     if (!forum) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
 
-    const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
+    const user = authRes.data.user;
     const isOwner = !!user && forum.owner_id === user.id;
-    const extEarly = await readExtendedSite(forum.id);
-    const myRole = await resolveUserSiteRole(
-      forum.id,
-      forum.owner_id,
-      forum.plan_tier,
-      extEarly?.plan_expires_at,
-      user?.id,
-      user?.email
-    );
-    const canManageCatalog = myRole === 'owner' || myRole === 'manager';
-    let isMember = !!myRole;
 
-    if (user && !isMember) {
-      const { data: memberRow } = await supabaseAdmin
-        .from('forum_members')
-        .select('role')
-        .eq('forum_id', forum.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      isMember = !!memberRow;
-    }
+    const hasCatalog = forum.site_mode !== 'forum';
+    const wantsThreads = forum.site_mode !== 'store';
 
-    if (!forum.is_public && !isMember) {
-      return NextResponse.json({ error: 'This site is private.' }, { status: 403 });
-    }
+    // The posts, products and membership lookups only depend on whether the viewer manages the catalogue.
+    const startCatalog = (role: SiteRole | null) => {
+      const canManage = role === 'owner' || role === 'manager';
+      return Promise.all([
+        forum.site_mode === 'store'
+          ? Promise.resolve({ data: [], error: null })
+          : supabaseAdmin
+              .from('forum_threads')
+              .select('id, forum_id, author_id, title, body, is_pinned, is_locked, reply_count, last_activity_at, created_at')
+              .eq('forum_id', forum.id)
+              .order('is_pinned', { ascending: false })
+              .order('last_activity_at', { ascending: false })
+              .limit(50),
+        forum.site_mode === 'forum'
+          ? Promise.resolve({ data: [], error: null })
+          : (() => {
+              let pq = supabaseAdmin
+                .from('site_products')
+                // digital_url is the paid download. Only the owner gets it here; buyers get it from
+                // their paid order (see the orders endpoint).
+                .select(
+                  canManage
+                    ? 'id, site_id, title, description, category, product_type, price, compare_at_price, image_url, digital_url, stock_qty, is_active, sort_order, created_at'
+                    : 'id, site_id, title, description, category, product_type, price, compare_at_price, image_url, stock_qty, is_active, sort_order, created_at'
+                )
+                .eq('site_id', forum.id)
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: false });
+              if (!canManage) pq = pq.eq('is_active', true);
+              return pq;
+            })(),
+        hasCatalog
+          ? (() => {
+              let vq = supabaseAdmin
+                .from('site_product_variants')
+                .select('id, site_id, product_id, label, options, price, stock_qty, sku, sort_order, is_active')
+                .eq('site_id', forum.id)
+                .order('sort_order', { ascending: true });
+              if (!canManage) vq = vq.eq('is_active', true);
+              return vq;
+            })()
+          : Promise.resolve({ data: null }),
+        user && !role
+          ? supabaseAdmin.from('forum_members').select('role').eq('forum_id', forum.id).eq('user_id', user.id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        wantsThreads
+          ? supabaseAdmin.from('forum_threads').select('id, is_members_only').eq('forum_id', forum.id)
+          : Promise.resolve({ data: null }),
+        wantsThreads && user && !role
+          ? supabaseAdmin.from('site_memberships').select('id, expires_at').eq('site_id', forum.id).eq('user_id', user.id).eq('status', 'active').maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+    };
 
-    const [threadsRes, productsRes] = await Promise.all([
-      forum.site_mode === 'store'
-        ? Promise.resolve({ data: [], error: null })
-        : supabaseAdmin
-            .from('forum_threads')
-            .select('id, forum_id, author_id, title, body, is_pinned, is_locked, reply_count, last_activity_at, created_at')
-            .eq('forum_id', forum.id)
-            .order('is_pinned', { ascending: false })
-            .order('last_activity_at', { ascending: false })
-            .limit(50),
-      forum.site_mode === 'forum'
-        ? Promise.resolve({ data: [], error: null })
-        : (() => {
-            let pq = supabaseAdmin
-              .from('site_products')
-              // digital_url is the paid download. Only the owner gets it here; buyers get it from
-              // their paid order (see the orders endpoint).
-              .select(
-                canManageCatalog
-                  ? 'id, site_id, title, description, category, product_type, price, compare_at_price, image_url, digital_url, stock_qty, is_active, sort_order, created_at'
-                  : 'id, site_id, title, description, category, product_type, price, compare_at_price, image_url, stock_qty, is_active, sort_order, created_at'
-              )
-              .eq('site_id', forum.id)
-              .order('sort_order', { ascending: true })
-              .order('created_at', { ascending: false });
-            if (!canManageCatalog) pq = pq.eq('is_active', true);
-            return pq;
-          })(),
+    // Anonymous visitors and the owner are known right away, so their catalogue queries start now, alongside the
+    // lookups below. Anyone else (a signed-in buyer or staff member) needs the plan date first to work out their role.
+    let myRole: SiteRole | null | undefined = !user ? null : isOwner ? 'owner' : undefined;
+    let catalogPromise = myRole !== undefined ? startCatalog(myRole) : null;
+
+    // Everything else needs only the site id, so it is fetched in one go instead of one query after another.
+    const [adminState, extEarly, pluginSettings, payRowRes, seo, tools, extraProdRes, reviewsRes, shippingZonesRes, adRowsRes] = await Promise.all([
+      getSiteState(forum.id),
+      readExtendedSite(forum.id),
+      readPluginSettings(forum.id),
+      supabaseAdmin.from('forums').select('paystack_subaccount_code').eq('id', forum.id).maybeSingle(),
+      readSeo(forum.id),
+      readSiteTools(forum.id),
+      hasCatalog
+        ? supabaseAdmin.from('site_products').select('id, image_urls, variant_options, low_stock_at').eq('site_id', forum.id)
+        : Promise.resolve({ data: null }),
+      hasCatalog
+        ? supabaseAdmin.from('site_reviews').select('product_id, rating').eq('site_id', forum.id).eq('is_visible', true)
+        : Promise.resolve({ data: null }),
+      hasCatalog
+        ? supabaseAdmin.from('site_shipping_zones').select('id, name, states, fee, free_over, is_active').eq('site_id', forum.id).eq('is_active', true).order('created_at', { ascending: true })
+        : Promise.resolve({ data: null }),
+      supabaseAdmin
+        .from('platform_site_ads')
+        .select('id, title, body, link_url, image_url, placement, target_site_id, starts_at, ends_at')
+        .eq('is_active', true)
+        .or(`target_site_id.is.null,target_site_id.eq.${forum.id}`),
     ]);
+
+    if (isSiteBlocked(adminState) && !isOwner && !(await isPlatformAdmin())) {
+      void catalogPromise?.catch(() => undefined);
+      return NextResponse.json({ error: 'This site is not available right now.', unavailable: true }, { status: 404 });
+    }
+    if (myRole === undefined) {
+      myRole = await resolveUserSiteRole(
+        forum.id,
+        forum.owner_id,
+        forum.plan_tier,
+        extEarly?.plan_expires_at,
+        user?.id,
+        user?.email
+      );
+      catalogPromise = startCatalog(myRole);
+    }
+    const canManageCatalog = myRole === 'owner' || myRole === 'manager';
+    const [threadsRes, productsRes, variantsRes, memberRes, moRes, memShipRes] = await catalogPromise!;
 
     if (threadsRes.error) throw threadsRes.error;
     if (productsRes.error) throw productsRes.error;
 
+    const isMember = !!myRole || !!memberRes.data;
+    if (!forum.is_public && !isMember) {
+      return NextResponse.json({ error: 'This site is private.' }, { status: 403 });
+    }
+
     const threads = threadsRes.data || [];
-    const names = await resolveAuthorNames(threads.map((t) => t.author_id));
+    const namesPromise = resolveAuthorNames(threads.map((t) => t.author_id));
 
     const membersOnlyMap = new Map<string, boolean>();
     let hasActivePaidMembership = !!myRole;
-    if (forum.site_mode !== 'store' && threads.length > 0) {
-      const [moRes, memShipRes] = await Promise.all([
-        supabaseAdmin
-          .from('forum_threads')
-          .select('id, is_members_only')
-          .eq('forum_id', forum.id),
-        !hasActivePaidMembership && user
-          ? supabaseAdmin
-              .from('site_memberships')
-              .select('id, expires_at')
-              .eq('site_id', forum.id)
-              .eq('user_id', user.id)
-              .eq('status', 'active')
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-      ]);
+    if (wantsThreads && threads.length > 0) {
       if (moRes.data) {
         for (const r of moRes.data as { id: string; is_members_only?: boolean }[]) {
           membersOnlyMap.set(r.id, !!r.is_members_only);
@@ -188,6 +227,7 @@ export async function GET(
       }
     }
 
+    const names = await namesPromise;
     const enrichedThreads = threads.map((t) => {
       const isMembersOnly = membersOnlyMap.get(t.id) ?? false;
       const lockedForViewer = isMembersOnly && !hasActivePaidMembership;
@@ -201,43 +241,6 @@ export async function GET(
 
     // New-migration data, read tolerantly so stores keep working before it is applied.
     const ext = extEarly;
-    const [seo, tools, extraProdRes, variantsRes, reviewsRes, shippingZonesRes] = await Promise.all([
-      readSeo(forum.id),
-      readSiteTools(forum.id),
-      forum.site_mode === 'forum'
-        ? Promise.resolve({ data: null })
-        : supabaseAdmin
-            .from('site_products')
-            .select('id, image_urls, variant_options, low_stock_at')
-            .eq('site_id', forum.id),
-      forum.site_mode === 'forum'
-        ? Promise.resolve({ data: null })
-        : (() => {
-            let vq = supabaseAdmin
-              .from('site_product_variants')
-              .select('id, site_id, product_id, label, options, price, stock_qty, sku, sort_order, is_active')
-              .eq('site_id', forum.id)
-              .order('sort_order', { ascending: true });
-            if (!canManageCatalog) vq = vq.eq('is_active', true);
-            return vq;
-          })(),
-      forum.site_mode === 'forum'
-        ? Promise.resolve({ data: null })
-        : supabaseAdmin
-            .from('site_reviews')
-            .select('product_id, rating')
-            .eq('site_id', forum.id)
-            .eq('is_visible', true),
-      forum.site_mode === 'forum'
-        ? Promise.resolve({ data: null })
-        : supabaseAdmin
-            .from('site_shipping_zones')
-            .select('id, name, states, fee, free_over, is_active')
-            .eq('site_id', forum.id)
-            .eq('is_active', true)
-            .order('created_at', { ascending: true }),
-    ]);
-
     const prodExtraMap = new Map<string, { image_urls?: string[]; variant_options?: string[]; low_stock_at?: number }>();
     for (const row of (extraProdRes.data as { id: string; image_urls?: string[]; variant_options?: string[]; low_stock_at?: number }[] | null) || []) {
       prodExtraMap.set(row.id, row);
@@ -278,18 +281,13 @@ export async function GET(
     let ads: unknown[] = [];
     if (!PLANS[tier].hidesPlatformAds) {
       const nowIso = new Date().toISOString();
-      const { data: adRows } = await supabaseAdmin
-        .from('platform_site_ads')
-        .select('id, title, body, link_url, image_url, placement, target_site_id, starts_at, ends_at')
-        .eq('is_active', true)
-        .or(`target_site_id.is.null,target_site_id.eq.${forum.id}`);
-      ads = (adRows || []).filter((a) =>
+      ads = (adRowsRes.data || []).filter((a) =>
         (!a.starts_at || a.starts_at <= nowIso) && (!a.ends_at || a.ends_at >= nowIso)
       );
     }
 
     // Buyers only need to know whether online payment is ready, never the seller's subaccount code.
-    const { data: payRow } = forum ? await supabaseAdmin.from('forums').select('paystack_subaccount_code').eq('id', forum.id).maybeSingle() : { data: null };
+    const payRow = payRowRes.data;
     const enrichedForum = forum ? {
       ...forum,
       seo_title: seo.seo_title,
@@ -299,7 +297,7 @@ export async function GET(
       // The plan end date is for the owner and their staff only; visitors only need the effective plan below.
       ...(myRole ? { plan_expires_at: ext?.plan_expires_at ?? null } : {}),
       plan_effective: tier,
-      plugins: await readPluginSettings(forum.id),
+      plugins: pluginSettings,
       page_about: tools.page_about,
       page_delivery: tools.page_delivery,
       page_returns: tools.page_returns,

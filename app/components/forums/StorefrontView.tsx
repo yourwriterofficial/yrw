@@ -98,7 +98,8 @@ export default function StorefrontView({
     let active = true;
     (async () => {
       await Promise.resolve();
-      if (active) await loadBookings();
+      // Bookings only exist on plans that include them, so other sites skip the request.
+      if (active && pluginOn('bookings', (site as unknown as { plan_effective?: string }).plan_effective || site.plan_tier || 'free', null, site.plugins)) await loadBookings();
     })();
     return () => { active = false; };
   }, [loadBookings]);
