@@ -224,7 +224,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
               </div>
             )}
 
-            <div className={`relative bg-primary overflow-hidden ${phone ? 'rounded-[2rem]' : ''}`} style={{ minHeight: phone ? 700 : 640 }}>
+            <div className={`relative bg-primary overflow-hidden theme-frame ${phone ? 'rounded-[2rem]' : ''}`} data-skin={skinFor(site.template_id)} style={{ minHeight: phone ? 700 : 640 }}>
               {/* site header */}
               <header className="sticky top-0 z-20 bg-primary/95 backdrop-blur border-b border-theme">
                 <div className="px-4 sm:px-6 h-16 flex items-center gap-4">

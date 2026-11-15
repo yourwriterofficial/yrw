@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Roboto, Playfair_Display, Space_Grotesk, Fraunces, Oswald } from "next/font/google";
 import "./globals.css";
 import "./theme-skins.css";
+import "./theme-skins-2.css";
 import PWAUpdater from "./components/PWAUpdater";
 import { ThemeProvider } from "./components/ThemeProvider";
 import OrderAssistant from "./components/OrderAssistant";

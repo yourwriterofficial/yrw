@@ -4,7 +4,7 @@
  * the same layout still look like different brands. The CSS lives in app/globals.css ([data-skin="…"]).
  */
 export type ThemeSkin =
-  | 'clean' | 'luxury' | 'studio' | 'market' | 'warm' | 'editorial' | 'bright' | 'bold' | 'mono' | 'night' | 'sleek' | 'corporate';
+  | 'clean' | 'luxury' | 'studio' | 'market' | 'warm' | 'editorial' | 'bright' | 'bold' | 'mono' | 'night' | 'sleek' | 'corporate' | 'board' | 'social' | 'micro' | 'circle' | 'journal';
 
 const SKINS: Record<string, ThemeSkin> = {
   'premium-luxury': 'luxury',
@@ -21,13 +21,17 @@ const SKINS: Record<string, ThemeSkin> = {
   'restaurant-food': 'warm',
   'salon-beauty': 'warm',
   'real-estate': 'sleek',
+  'forum-board': 'board',
+  'social-feed': 'social',
+  'social-micro': 'micro',
+  'community-forum': 'circle',
   'retail-store': 'sleek',
   'shopify-clean': 'sleek',
   'services-booking': 'corporate',
   'wp-business': 'corporate',
   'store-community': 'warm',
   'blog-magazine': 'editorial',
-  'wp-blog': 'editorial',
+  'wp-blog': 'journal',
   'wp-magazine': 'editorial',
   'news-broadsheet': 'editorial',
   'news-tabloid': 'bold',
