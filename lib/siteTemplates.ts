@@ -806,7 +806,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     tagline: 'Sell seats in shared subscriptions and group buys with monthly renewals.',
     site_mode: 'store',
     layout_style: 'selar',
-    accent_color: '#0d9488',
+    accent_color: '#4f46e5',
     hero_headline: 'Premium tools at a fraction of the price.',
     hero_subheadline: 'Join a group plan, pay your share and get access fast. Renew each month.',
     sample_products: [

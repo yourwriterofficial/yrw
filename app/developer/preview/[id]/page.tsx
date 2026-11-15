@@ -103,7 +103,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
         const t = threads.find((x) => `#${x.id}` === a.getAttribute('href'));
         if (t) setOpenThread(t);
       }}>
-        <ThreadListThemes threads={list} layout={layout} accent={accent} threadHref={(tid) => `#${tid}`} coverFor={(t) => artFor(t.title, 'video', 'digital', accent, 360, 560)} />
+        <ThreadListThemes threads={list} layout={layout} accent={accent} threadHref={(tid) => `#${tid}`} onCompose={() => setNotice('Posting is live on your own site. This is a demo.')} />
       </div>
     )
     : (
@@ -282,7 +282,11 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
                   <>
                     {nav.store ? (
                       <StorefrontHeroAndTrust site={site} layoutStyle={layout} categories={categories} selectedCategory={category} onSelectCategory={(c) => { setCategory(c); setView('shop'); }} />
-                    ) : (
+                    ) : layout === 'board' ? (
+                      <div className="px-3 py-2 text-[13px] border border-theme bg-card" style={{ fontFamily: 'Tahoma, Verdana, sans-serif' }}>
+                        <b>Welcome to {brand}.</b> <span className="text-secondary">{threads.length} topics today · {threads.reduce((n, t) => n + t.reply_count + 1, 0)} posts · <a className="underline" style={{ color: '#0b3d91' }}>Start a topic</a></span>
+                      </div>
+                    ) : layout === 'feed' || layout === 'micro' || layout === 'reels' ? null : (
                       <div className="rounded-3xl p-7 sm:p-12 text-white relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}b0)` }}>
                         <div className="absolute -right-10 -top-10 w-56 h-56 rounded-full bg-white/10" />
                         <h1 className="text-2xl sm:text-4xl font-bold max-w-2xl relative">{tpl.hero_headline}</h1>
@@ -292,7 +296,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
                     )}
                     {nav.store && <BusinessCard site={site} accent={accent} />}
                     {nav.store && <Section title={arch === 'service' || arch === 'creative' || arch === 'beauty' ? 'Popular services' : arch === 'course' ? 'Featured courses' : 'Featured'} action={{ label: `View all ${nav.shopLabel.toLowerCase()}`, to: 'shop' }}>{productGrid(products4)}</Section>}
-                    {nav.forum && threads.length > 0 && <Section title={arch === 'news' ? 'Top stories' : arch === 'blog' ? 'Latest articles' : 'Recent discussions'} action={{ label: 'See all', to: 'community' }}>{forumList(threads.slice(0, 5))}</Section>}
+                    {nav.forum && threads.length > 0 && (layout === 'feed' || layout === 'micro' || layout === 'reels' ? forumList(threads.slice(0, 5)) : <Section title={arch === 'news' ? 'Top stories' : arch === 'blog' ? 'Latest articles' : 'Recent discussions'} action={{ label: 'See all', to: 'community' }}>{forumList(threads.slice(0, 5))}</Section>)}
                     {rails}
                     {nav.store && trust}
                     {testimonials}

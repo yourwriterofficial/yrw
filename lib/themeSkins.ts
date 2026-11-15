@@ -4,7 +4,7 @@
  * the same layout still look like different brands. The CSS lives in app/globals.css ([data-skin="…"]).
  */
 export type ThemeSkin =
-  | 'clean' | 'luxury' | 'studio' | 'market' | 'warm' | 'editorial' | 'bright' | 'bold' | 'mono' | 'night' | 'sleek' | 'corporate' | 'board' | 'social' | 'micro' | 'circle' | 'journal';
+  | 'clean' | 'luxury' | 'studio' | 'market' | 'warm' | 'editorial' | 'bright' | 'bold' | 'mono' | 'night' | 'sleek' | 'corporate' | 'board' | 'social' | 'micro' | 'circle' | 'journal' | 'seats';
 
 const SKINS: Record<string, ThemeSkin> = {
   'premium-luxury': 'luxury',
@@ -42,7 +42,7 @@ const SKINS: Record<string, ThemeSkin> = {
   'selar-course': 'bright',
   'online-academy': 'bright',
   'events-tickets': 'night',
-  'subscription-share': 'night',
+  'subscription-share': 'seats',
   'social-reels': 'night',
 };
 

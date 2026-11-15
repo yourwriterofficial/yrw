@@ -85,3 +85,14 @@
 .theme-frame[data-skin="board"] > header nav button { background: transparent !important; border-radius: 0 !important; }
 .theme-frame[data-skin="social"] > header { background: #ffffff !important; border-bottom: 1px solid #dfe3ea; box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
 .theme-frame[data-skin="micro"] > header { background: rgba(255, 255, 255, .92) !important; border-bottom: 1px solid #eff3f4; }
+
+/* Seats (Subskription look): pale slate page, white rounded cards, indigo actions, green saving pills. */
+.premium-skin[data-skin="seats"] { --bg-primary: #f8fafc; --bg-card: #ffffff; --border: #f1f5f9; --border-strong: #e2e8f0; --text-primary: #0f172a; --text-secondary: #64748b; }
+.premium-skin[data-skin="seats"]::before { display: none; }
+.premium-skin[data-skin="seats"] h1, .premium-skin[data-skin="seats"] h2 { font-weight: 800; letter-spacing: -.02em; }
+.premium-skin[data-skin="seats"] > .rounded-2xl:first-child { border: 1px solid #e0e7ff; border-radius: 1.25rem !important; background: linear-gradient(135deg, #eef2ff, #ffffff 70%); padding: 2.25rem 1.75rem; }
+.premium-skin[data-skin="seats"] > .rounded-2xl:first-child h2 { font-weight: 800; font-size: clamp(1.8rem, 4.5vw, 2.6rem); letter-spacing: -.03em; line-height: 1.1; }
+.premium-skin[data-skin="seats"] > section[aria-label="Contact"] { border-radius: 1rem !important; border: 1px solid #f1f5f9; }
+.premium-skin[data-skin="seats"] .premium-card > div { border-radius: 1rem !important; border: 1px solid #e2e8f0 !important; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
+.premium-skin[data-skin="seats"] .premium-card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -14px rgba(79, 70, 229, .35); }
+.theme-frame[data-skin="seats"] > header { background: #ffffff !important; border-bottom: 1px solid #e2e8f0; }

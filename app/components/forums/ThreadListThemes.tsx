@@ -1,14 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { Pin, Lock, MessageSquare } from 'lucide-react';
+import { Pin, Lock, MessageCircle, ThumbsUp, Share2, Repeat2, Heart, BadgeCheck, Globe, Bookmark, Image as ImageIcon, Plus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { ForumThread } from '@/lib/forums';
 import type { StoreLayoutStyle } from '@/lib/siteTemplates';
 
 /**
  * How a forum's posts are laid out. The "standard" layout stays in ForumView; every other theme
- * (discussion board, newspaper, social feed, microblog, short-video wall) is drawn here.
+ * (discussion board, newspaper, social feed, microblog, short-video wall) is drawn here and aims to feel
+ * like the thing it is named after: a dense text board, a feed with reactions, a timeline, a video wall.
  */
 
 interface Props {
@@ -18,11 +19,15 @@ interface Props {
   threadHref: (id: string) => string;
   /** Optional cover art per post (used by the reels wall; theme previews supply it). */
   coverFor?: (t: ForumThread) => string | undefined;
+  /** Opens the "write a post" form where the host page has one. */
+  onCompose?: () => void;
 }
 
 const ago = (d: string) => formatDistanceToNow(new Date(d), { addSuffix: true });
 const initial = (n?: string) => (n || 'M').trim().charAt(0).toUpperCase();
 const handle = (n?: string) => '@' + (n || 'member').toLowerCase().replace(/[^a-z0-9]+/g, '');
+// Stable pseudo numbers so a demo post always shows the same counts.
+const seed = (id: string) => Array.from(id).reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 
 export const FORUM_LAYOUTS: StoreLayoutStyle[] = ['board', 'newspaper', 'feed', 'micro', 'reels'];
 
@@ -34,26 +39,47 @@ function Avatar({ name, accent, size = 40 }: { name?: string; accent: string; si
   );
 }
 
-export default function ThreadListThemes({ threads, layout, accent, threadHref, coverFor }: Props) {
+function Composer({ accent, label, onCompose, rounded = 'rounded-xl' }: { accent: string; label: string; onCompose?: () => void; rounded?: string }) {
+  return (
+    <div className={`bg-card border border-theme ${rounded} p-3 flex items-center gap-3 shadow-sm`}>
+      <Avatar name="You" accent={accent} />
+      <button type="button" onClick={onCompose} className="flex-1 text-left text-sm text-secondary bg-secondary/40 hover:bg-secondary/60 rounded-full px-4 h-10 transition">{label}</button>
+      <ImageIcon className="w-5 h-5 text-secondary hidden sm:block" />
+    </div>
+  );
+}
+
+export default function ThreadListThemes({ threads, layout, accent, threadHref, coverFor, onCompose }: Props) {
   if (layout === 'board') {
+    // Dense, text-first board: small type, blue links, posts and views counts, page links.
     return (
-      <div className="border border-theme rounded-lg overflow-hidden bg-card">
-        <div className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-white" style={{ background: accent }}>Latest topics</div>
+      <div className="bg-card border border-theme text-[13px] leading-snug" style={{ fontFamily: 'Tahoma, Verdana, sans-serif' }}>
+        <div className="px-3 py-1.5 text-xs font-bold text-white flex items-center justify-between" style={{ background: accent }}>
+          <span>Latest topics</span>
+          <span className="font-normal opacity-90">{threads.length} shown</span>
+        </div>
         <ul>
-          {threads.map((t, i) => (
-            <li key={t.id} className={`px-4 py-3 border-t border-theme first:border-t-0 ${i % 2 ? 'bg-secondary/20' : ''}`}>
-              <Link href={threadHref(t.id)} className="block">
-                <p className="text-[15px] font-bold leading-snug hover:underline" style={{ color: accent }}>
-                  {t.is_pinned && <span className="mr-2 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-red-600 text-white align-middle">Featured</span>}
-                  {t.is_locked && <Lock className="inline w-3.5 h-3.5 mr-1 text-secondary" />}
-                  {t.title}
-                </p>
-                <p className="text-xs text-secondary mt-1">
-                  by <span className="font-semibold text-primary">{t.author_name || 'Member'}</span> · {t.reply_count} {t.reply_count === 1 ? 'reply' : 'replies'} · last post {ago(t.last_activity_at)}
-                </p>
-              </Link>
-            </li>
-          ))}
+          {threads.map((t) => {
+            const s = seed(t.id);
+            const posts = t.reply_count + 1;
+            const views = posts * 23 + (s % 400);
+            const pages = Math.ceil(posts / 20);
+            return (
+              <li key={t.id} className="px-3 py-2 border-t border-dotted border-theme first:border-t-0">
+                <Link href={threadHref(t.id)} className="block">
+                  <span className="font-bold underline-offset-2 hover:underline" style={{ color: '#0b3d91' }}>
+                    {t.is_pinned && <span className="mr-1.5 text-[10px] font-bold uppercase px-1 py-px bg-red-600 text-white align-middle">Sticky</span>}
+                    {t.is_locked && <Lock className="inline w-3 h-3 mr-1 text-secondary" />}
+                    {t.title}
+                  </span>
+                  {pages > 1 && <span className="text-[11px] text-secondary"> (1 2 {pages > 3 ? '… ' : ''}{pages > 2 ? pages : ''} <span className="font-bold">Last</span>)</span>}
+                  <span className="block text-[11px] text-secondary mt-0.5">
+                    by <span className="font-bold" style={{ color: '#0b3d91' }}>{t.author_name || 'Member'}</span>. <b>{posts}</b> posts &amp; <b>{views}</b> views. Last: {ago(t.last_activity_at)}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </div>
     );
@@ -105,74 +131,117 @@ export default function ThreadListThemes({ threads, layout, accent, threadHref, 
   }
 
   if (layout === 'feed') {
+    // Facebook-like: composer on top, posts with a reactions line and a Like / Comment / Share bar.
     return (
-      <div className="space-y-4 max-w-2xl mx-auto">
-        {threads.map((t) => (
-          <article key={t.id} className="bg-card border border-theme rounded-xl shadow-sm">
-            <div className="p-4 flex items-center gap-3">
-              <Avatar name={t.author_name} accent={accent} />
-              <div className="min-w-0">
-                <p className="font-semibold text-sm truncate">{t.author_name || 'Member'}</p>
-                <p className="text-xs text-secondary">{ago(t.created_at)}</p>
+      <div className="space-y-3 max-w-2xl mx-auto">
+        <Composer accent={accent} label="What's on your mind?" onCompose={onCompose} />
+        {threads.map((t) => {
+          const likes = 8 + (seed(t.id) % 90);
+          return (
+            <article key={t.id} className="bg-card border border-theme rounded-xl shadow-sm">
+              <div className="p-4 flex items-center gap-3">
+                <Avatar name={t.author_name} accent={accent} />
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm truncate">{t.author_name || 'Member'}</p>
+                  <p className="text-xs text-secondary flex items-center gap-1">{ago(t.created_at)} · <Globe className="w-3 h-3" /></p>
+                </div>
+                {t.is_pinned && <Pin className="w-4 h-4 text-secondary ml-auto" />}
               </div>
-              {t.is_pinned && <Pin className="w-4 h-4 text-secondary ml-auto" />}
-            </div>
-            <Link href={threadHref(t.id)} className="block px-4 pb-3">
-              <p className="font-medium">{t.title}</p>
-              <p className="text-sm text-secondary mt-1 line-clamp-4 whitespace-pre-line">{t.body}</p>
-            </Link>
-            <div className="px-4 py-2.5 border-t border-theme flex items-center justify-between text-sm text-secondary">
-              <span>{t.reply_count} {t.reply_count === 1 ? 'comment' : 'comments'}</span>
-              <Link href={threadHref(t.id)} className="font-medium hover:text-primary flex items-center gap-1.5"><MessageSquare className="w-4 h-4" /> Comment</Link>
-            </div>
-          </article>
-        ))}
+              <Link href={threadHref(t.id)} className="block px-4 pb-3">
+                <p className="text-[15px]">{t.title}</p>
+                {t.body && t.body !== t.title && <p className="text-sm text-secondary mt-1 line-clamp-4 whitespace-pre-line">{t.body}</p>}
+              </Link>
+              <div className="px-4 py-2 flex items-center justify-between text-xs text-secondary">
+                <span className="flex items-center gap-1.5"><span className="w-[18px] h-[18px] rounded-full flex items-center justify-center text-white" style={{ background: accent }}><ThumbsUp className="w-2.5 h-2.5" /></span>{likes}</span>
+                <span>{t.reply_count} {t.reply_count === 1 ? 'comment' : 'comments'} · {seed(t.id) % 7} shares</span>
+              </div>
+              <div className="mx-4 border-t border-theme grid grid-cols-3 text-sm font-semibold text-secondary">
+                <button type="button" className="py-2 flex items-center justify-center gap-2 hover:bg-secondary/40 rounded-md my-1"><ThumbsUp className="w-4 h-4" /> Like</button>
+                <Link href={threadHref(t.id)} className="py-2 flex items-center justify-center gap-2 hover:bg-secondary/40 rounded-md my-1"><MessageCircle className="w-4 h-4" /> Comment</Link>
+                <button type="button" className="py-2 flex items-center justify-center gap-2 hover:bg-secondary/40 rounded-md my-1"><Share2 className="w-4 h-4" /> Share</button>
+              </div>
+            </article>
+          );
+        })}
       </div>
     );
   }
 
   if (layout === 'micro') {
+    // Twitter-like: For you / Following tabs, compose row, then compact posts with an icon action row.
     return (
-      <div className="max-w-2xl mx-auto border border-theme rounded-2xl bg-card divide-y divide-theme overflow-hidden">
-        {threads.map((t) => (
-          <Link key={t.id} href={threadHref(t.id)} className="flex gap-3 p-4 hover:bg-secondary/20 transition">
-            <Avatar name={t.author_name} accent={accent} size={44} />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm truncate">
-                <span className="font-bold">{t.author_name || 'Member'}</span>
-                <span className="text-secondary"> {handle(t.author_name)} · {ago(t.created_at)}</span>
-              </p>
-              <p className="mt-1 whitespace-pre-line break-words">{t.title}</p>
-              {t.body && t.body !== t.title && <p className="text-sm text-secondary mt-1 line-clamp-3 whitespace-pre-line">{t.body}</p>}
-              <p className="mt-2 text-xs text-secondary flex items-center gap-1.5"><MessageSquare className="w-3.5 h-3.5" /> {t.reply_count}</p>
-            </div>
-          </Link>
-        ))}
+      <div className="max-w-xl mx-auto border border-theme bg-card overflow-hidden">
+        <div className="grid grid-cols-2 text-center text-[15px] font-bold border-b border-theme">
+          <span className="py-3 relative">For you<span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-14 rounded-full" style={{ background: accent }} /></span>
+          <span className="py-3 text-secondary font-medium">Following</span>
+        </div>
+        <div className="p-4 flex gap-3 border-b border-theme">
+          <Avatar name="You" accent={accent} size={40} />
+          <div className="flex-1">
+            <button type="button" onClick={onCompose} className="w-full text-left text-xl text-secondary py-2">What is happening?</button>
+            <div className="flex justify-end"><span className="h-8 px-4 rounded-full text-white text-sm font-bold flex items-center opacity-60" style={{ background: accent }}>Post</span></div>
+          </div>
+        </div>
+        <div className="divide-y divide-theme">
+          {threads.map((t) => {
+            const s = seed(t.id);
+            return (
+              <Link key={t.id} href={threadHref(t.id)} className="flex gap-3 px-4 py-3 hover:bg-secondary/20 transition">
+                <Avatar name={t.author_name} accent={accent} size={40} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] truncate flex items-center gap-1">
+                    <span className="font-bold truncate">{t.author_name || 'Member'}</span>
+                    {s % 3 === 0 && <BadgeCheck className="w-4 h-4 shrink-0" style={{ color: accent }} />}
+                    <span className="text-secondary truncate">{handle(t.author_name)} · {ago(t.created_at).replace('about ', '').replace(' ago', '')}</span>
+                  </p>
+                  <p className="mt-0.5 text-[15px] whitespace-pre-line break-words">{t.title}</p>
+                  {t.body && t.body !== t.title && <p className="text-[15px] text-secondary mt-1 line-clamp-3 whitespace-pre-line">{t.body}</p>}
+                  <div className="mt-2 flex items-center justify-between max-w-sm text-[13px] text-secondary">
+                    <span className="flex items-center gap-1.5"><MessageCircle className="w-4 h-4" /> {t.reply_count}</span>
+                    <span className="flex items-center gap-1.5"><Repeat2 className="w-4 h-4" /> {s % 12}</span>
+                    <span className="flex items-center gap-1.5"><Heart className="w-4 h-4" /> {20 + (s % 240)}</span>
+                    <span className="flex items-center gap-1.5"><Bookmark className="w-4 h-4" /></span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     );
   }
 
-  // reels: a dark wall of tall cards
+  // reels: TikTok-like, tall full-bleed clips one after another with a side action rail
   return (
     <div className="rounded-3xl bg-black p-3 sm:p-4">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {threads.map((t, i) => (
-          <Link
-            key={t.id}
-            href={threadHref(t.id)}
-            className="relative block aspect-[9/14] rounded-2xl overflow-hidden group"
-            style={coverFor?.(t) ? { backgroundImage: `url("${coverFor(t)}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: `linear-gradient(${160 + (i % 5) * 30}deg, ${accent}, #111 70%)` }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-              <p className="font-semibold leading-snug line-clamp-3 text-sm sm:text-base">{t.title}</p>
-              <div className="mt-2 flex items-center justify-between text-xs text-white/80">
-                <span className="flex items-center gap-1.5 min-w-0"><Avatar name={t.author_name} accent={accent} size={22} /> <span className="truncate">{t.author_name || 'Creator'}</span></span>
-                <span className="flex items-center gap-1 shrink-0"><MessageSquare className="w-3.5 h-3.5" /> {t.reply_count}</span>
+      <div className="flex justify-center gap-6 text-white text-[15px] font-bold pb-3">
+        <span className="border-b-2 border-white pb-1">For You</span>
+        <span className="text-white/60 font-semibold pb-1">Following</span>
+      </div>
+      <div className="mx-auto max-w-sm space-y-4">
+        {threads.map((t, i) => {
+          const s = seed(t.id);
+          return (
+            <div
+              key={t.id}
+              className="relative aspect-[9/14] rounded-2xl overflow-hidden"
+              style={coverFor?.(t) ? { backgroundImage: `url("${coverFor(t)}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: `linear-gradient(${160 + (i % 5) * 30}deg, ${accent}, #111 70%)` }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/5 to-transparent" />
+              <Link href={threadHref(t.id)} className="absolute inset-0" aria-label={t.title} />
+              <div className="absolute right-3 bottom-24 flex flex-col items-center gap-4 text-white text-[11px] font-semibold">
+                <span className="flex flex-col items-center gap-1"><Heart className="w-7 h-7" fill="currentColor" />{(s % 90) + 3}K</span>
+                <span className="flex flex-col items-center gap-1"><MessageCircle className="w-7 h-7" fill="currentColor" />{t.reply_count}</span>
+                <span className="flex flex-col items-center gap-1"><Bookmark className="w-7 h-7" fill="currentColor" />{s % 40}</span>
+                <span className="flex flex-col items-center gap-1"><Share2 className="w-7 h-7" />Share</span>
+              </div>
+              <div className="absolute bottom-0 left-0 right-16 p-4 text-white pointer-events-none">
+                <p className="font-bold text-sm flex items-center gap-2"><Avatar name={t.author_name} accent={accent} size={26} /> {handle(t.author_name)} <span className="ml-1 px-2 py-0.5 rounded border border-white/70 text-[10px] font-semibold flex items-center gap-0.5"><Plus className="w-3 h-3" />Follow</span></p>
+                <p className="mt-2 text-sm leading-snug line-clamp-3">{t.title}</p>
               </div>
             </div>
-          </Link>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
