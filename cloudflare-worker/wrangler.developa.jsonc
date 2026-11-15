@@ -1,0 +1,13 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "developa-reconcile-worker",
+  "account_id": "340b8244251b259e963356ae1e836691",
+  "main": "developa-worker.js",
+  "compatibility_date": "2026-01-01",
+  "triggers": {
+    "crons": ["*/30 * * * *"]
+  },
+  "vars": {
+    "RECONCILE_URL": "https://yourresearchwriter.com.ng/api/developa/reconcile"
+  }
+}

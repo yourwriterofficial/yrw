@@ -131,6 +131,7 @@ export default function AdvertisePage() {
   const [myAds, setMyAds] = useState<MyAdPurchase[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<{ id: string } | null>(null);
+  const [canRunAds, setCanRunAds] = useState(false);
   const [adCredits, setAdCredits] = useState<number>(0);
   const [walletBalance, setWalletBalance] = useState<number>(0);
 
@@ -152,11 +153,14 @@ export default function AdvertisePage() {
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser) {
       setUser({ id: currentUser.id });
-      const [{ data: prof }, { data: wallet }, { data: adsRes }] = await Promise.all([
-        supabase.from('profiles').select('ad_credits_balance').eq('id', currentUser.id).maybeSingle(),
+      const [{ data: prof }, { data: wallet }, { data: adsRes }, { data: paidSites }] = await Promise.all([
+        supabase.from('profiles').select('ad_credits_balance, is_admin').eq('id', currentUser.id).maybeSingle(),
         supabase.from('wallets').select('balance').eq('user_id', currentUser.id).maybeSingle(),
         supabase.from('user_ad_purchases').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false }),
+        supabase.from('forums').select('id, plan_tier, plan_expires_at').eq('owner_id', currentUser.id).in('plan_tier', ['lite', 'pro', 'business', 'corporate']),
       ]);
+      const hasPaidSite = (paidSites || []).some((s) => !s.plan_expires_at || new Date(s.plan_expires_at).getTime() > Date.now());
+      setCanRunAds(prof?.is_admin === true || hasPaidSite);
       const walletBal = Number(wallet?.balance || 0);
       setWalletBalance(walletBal);
       setAdCredits(Number(prof?.ad_credits_balance || walletBal || 0));
@@ -202,6 +206,10 @@ export default function AdvertisePage() {
     e.preventDefault();
     if (!user) {
       setMessage({ type: 'error', text: 'Please log in to purchase advertisement slots.' });
+      return;
+    }
+    if (!canRunAds) {
+      setMessage({ type: 'error', text: 'Free accounts cannot run ads. Upgrade a site to Student/Lite or higher to run ads on your own site.' });
       return;
     }
     if (selectedList.length === 0) {

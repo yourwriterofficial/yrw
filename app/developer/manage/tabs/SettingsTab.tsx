@@ -5,6 +5,8 @@ import { FORUM_ACCENTS } from '@/lib/forums';
 import { planFor } from '@/lib/plans';
 import { jsonFetch, type Site } from '../types';
 import StaffPanel from './StaffPanel';
+import SubaccountCard from './SubaccountCard';
+import ProToolsCard from './ProToolsCard';
 
 function Field({ id, label, children, hint }: { id: string; label: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -226,6 +228,8 @@ export default function SettingsTab({ site, reload, goToPlan }: { site: Site; re
         {msg && <p className={`text-sm ${msg.ok ? 'text-success' : 'text-danger'}`} role="status">{msg.text}</p>}
       </div>
     </form>
+    {(!site.my_role || site.my_role === 'owner') && <ProToolsCard site={site} reload={reload} />}
+    {(!site.my_role || site.my_role === 'owner') && <SubaccountCard site={site} goToPlan={goToPlan} />}
     {(!site.my_role || site.my_role === 'owner') && <StaffPanel site={site} goToPlan={goToPlan} />}
     </div>
   );

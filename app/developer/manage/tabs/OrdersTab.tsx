@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { formatMoney, type SiteOrder } from '@/lib/forums';
 import { waLink } from '@/lib/phone';
 import { planFor } from '@/lib/plans';
+import { buildPackingSlipHtml, openPrintWindow } from '@/lib/storefrontTools';
 import { jsonFetch, type Site } from '../types';
 import OrderRefundModal from './OrderRefundModal';
 
@@ -25,6 +26,7 @@ const PAY_TONE: Record<string, string> = {
 
 export default function OrdersTab({ site, orders, reload }: { site: Site; orders: SiteOrder[]; reload: () => Promise<void> }) {
   const [filter, setFilter] = useState<(typeof PAY_FILTERS)[number]['value']>('all');
+  const [query, setQuery] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [noteOpenId, setNoteOpenId] = useState<string | null>(null);
@@ -32,7 +34,14 @@ export default function OrdersTab({ site, orders, reload }: { site: Site; orders
   const [error, setError] = useState('');
   const plan = planFor(site.plan_tier, site.plan_expires_at);
 
-  const shown = useMemo(() => orders.filter((o) => filter === 'all' || o.payment_status === filter), [orders, filter]);
+  const shown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return orders.filter((o) => {
+      if (filter !== 'all' && o.payment_status !== filter) return false;
+      if (!q) return true;
+      return [o.order_code, o.buyer_name, o.buyer_email, o.buyer_phone || ''].some((v) => v.toLowerCase().includes(q));
+    });
+  }, [orders, filter, query]);
   const count = (v: string) => (v === 'all' ? orders.length : orders.filter((o) => o.payment_status === v).length);
 
   const patch = async (o: SiteOrder, body: Partial<Pick<SiteOrder, 'payment_status' | 'fulfillment_status' | 'internal_note'>>) => {
@@ -46,16 +55,28 @@ export default function OrdersTab({ site, orders, reload }: { site: Site; orders
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2 mb-5">
-        {PAY_FILTERS.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value)}
-            className={`px-4 h-9 rounded-full text-sm font-medium border transition-colors ${filter === f.value ? 'bg-accent text-[var(--accent-foreground)] border-accent' : 'border-theme text-secondary hover:bg-hover'}`}
-          >
-            {f.label} <span className="opacity-70">{count(f.value)}</span>
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div className="flex flex-wrap gap-2">
+          {PAY_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              className={`px-4 h-9 rounded-full text-sm font-medium border transition-colors ${filter === f.value ? 'bg-accent text-[var(--accent-foreground)] border-accent' : 'border-theme text-secondary hover:bg-hover'}`}
+            >
+              {f.label} <span className="opacity-70">{count(f.value)}</span>
+            </button>
+          ))}
+        </div>
+        {orders.length > 0 && (
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search order code, buyer, phone…"
+            aria-label="Search orders"
+            className="input-box !py-2 text-sm min-w-[210px]"
+          />
+        )}
       </div>
       {error && <p className="text-sm text-danger mb-4" role="alert">{error}</p>}
 
@@ -131,6 +152,35 @@ export default function OrdersTab({ site, orders, reload }: { site: Site; orders
                       className="text-sm px-4 h-9 rounded-full border border-theme hover:bg-hover inline-flex items-center text-primary"
                     >
                       Receipt
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openPrintWindow(
+                        `Packing Slip - ${o.order_code}`,
+                        buildPackingSlipHtml({
+                          siteName: site.name,
+                          orderCode: o.order_code,
+                          buyerName: o.buyer_name,
+                          buyerPhone: o.buyer_phone || '',
+                          deliveryAddress: o.delivery_address || '',
+                          items: (o.items || []).map((it) => ({ title: it.title, qty: it.qty })),
+                        })
+                      )
+                    }
+                    className="text-sm px-4 h-9 rounded-full border border-theme hover:bg-hover text-primary"
+                  >
+                    Packing slip
+                  </button>
+                  {o.buyer_phone && (
+                    <a
+                      href={waLink(o.buyer_phone, `Hi ${o.buyer_name}, update on your ${site.name} order ${o.order_code}: status is ${o.fulfillment_status}.`) || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm px-4 h-9 rounded-full border border-theme hover:bg-hover inline-flex items-center text-primary"
+                    >
+                      WhatsApp buyer
                     </a>
                   )}
                   <button

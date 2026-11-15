@@ -163,18 +163,22 @@ export default async function proxy(request: NextRequest) {
 
   // Protect dashboard and admin routes
   if ((path.startsWith('/dashboard') || path.startsWith('/admin')) && !user) {
-    const response = NextResponse.redirect(new URL('/login', request.url))
+    const loginUrl = new URL('/login', request.url)
+    if (isDevelopaDomain || isCreatePortal || Boolean(forumSubdomain)) {
+      loginUrl.searchParams.set('brand', 'developa')
+    }
+    const response = NextResponse.redirect(loginUrl)
     response.headers.set('Content-Security-Policy', CSP)
     return response
   }
 
-  // Redirect non-admin users away from /admin. Source of truth is profiles.is_admin —
-  // the same flag the admin UI (and RLS via is_admin()) already use — not a hardcoded
-  // email, so any account the admin panel promotes to admin actually gets edge access.
-  if (user && path.startsWith('/admin')) {
+  // Isolate Developa site owners from YourResearchWriter's shared /dashboard and /admin routes:
+  // non-platform-admin users on Developa domains are routed to /create (their own sites hub).
+  if (user && (path.startsWith('/admin') || (path.startsWith('/dashboard') && (isDevelopaDomain || isCreatePortal || Boolean(forumSubdomain))))) {
     const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single()
     if (!profile?.is_admin) {
-      const response = NextResponse.redirect(new URL('/dashboard/client', request.url))
+      const dest = (isDevelopaDomain || isCreatePortal || Boolean(forumSubdomain)) ? '/create' : '/dashboard/client'
+      const response = NextResponse.redirect(new URL(dest, request.url))
       response.headers.set('Content-Security-Policy', CSP)
       return response
     }

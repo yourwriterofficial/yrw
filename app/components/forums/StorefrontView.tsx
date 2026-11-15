@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { ShoppingCart, Search, Package, Calendar } from 'lucide-react';
+import { ShoppingCart, Search, Package, Calendar, ArrowUp } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
-import { type ForumSummary, type ProductVariant, type SiteOrder, type SiteProduct } from '@/lib/forums';
+import { formatMoney, type ForumSummary, type ProductVariant, type SiteOrder, type SiteProduct } from '@/lib/forums';
 import { getTemplateById } from '@/lib/siteTemplates';
 import { computeShipping } from '@/lib/shipping';
 import { planFor } from '@/lib/plans';
@@ -18,6 +18,8 @@ import { pluginOn } from '@/lib/plugins';
 import BusinessCard from '@/app/components/forums/BusinessCard';
 import { buildProductWaHref } from '@/app/components/forums/ProductDetailModal';
 import { PremiumFloaters, PremiumRails, Reveal, WishHeart, useRecentlyViewed } from '@/app/components/forums/PremiumExtras';
+import { StorefrontTrustBar, StorefrontFaqAccordion, StorefrontSafetyLinks, FlashSaleBanner, StorefrontCurrencyPreview } from '@/app/components/forums/StorefrontExtras';
+import type { PreviewCurrency } from '@/lib/storefrontTools';
 
 /** Fades content in on scroll for premium themes; free themes render it as is. */
 function RevealIf({ on, children }: { on: boolean; children: React.ReactNode }) {
@@ -42,6 +44,8 @@ export default function StorefrontView({
   const [sort, setSort] = useState<'featured' | 'price_asc' | 'price_desc' | 'newest'>('featured');
   const [inStockOnly, setInStockOnly] = useState(false);
   const [cart, setCart] = useState<StorefrontCartEntry[]>([]);
+  const [cartReady, setCartReady] = useState(false);
+  const [showTop, setShowTop] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [couponInput, setCouponInput] = useState('');
   const [coupon, setCoupon] = useState<{ code: string; discount: number } | null>(null);
@@ -55,7 +59,9 @@ export default function StorefrontView({
   const [deliveryState, setDeliveryState] = useState('Lagos');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [notes, setNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'manual_transfer' | 'pay_on_delivery'>('manual_transfer');
+  const [paymentMethod, setPaymentMethod] = useState<'manual_transfer' | 'pay_on_delivery' | 'paystack'>('manual_transfer');
+  const [previewCurrency, setPreviewCurrency] = useState<PreviewCurrency>('NGN');
+  const canPayOnline = Boolean(site.paystack_subaccount_code) && pluginOn('online_payments', site.plan_tier, site.plan_expires_at, site.plugins);
   const [paymentRef, setPaymentRef] = useState('');
   const [proofNote, setProofNote] = useState('');
   const [marketingConsent, setMarketingConsent] = useState(false);
@@ -108,13 +114,48 @@ export default function StorefrontView({
       }
       const orderParam = params.get('order');
       const trackParam = params.get('track');
+      const catParam = params.get('category');
+      if (catParam) setCategory(catParam);
       if (orderParam || trackParam === '1') {
         if (orderParam) setTrackInitialCode(orderParam.trim().toUpperCase());
         setTrackOpen(true);
       }
+      // Restore saved cart from localStorage
+      try {
+        const raw = localStorage.getItem(`developa_cart_${site.slug}`);
+        if (raw && visibleProducts.length > 0) {
+          const saved = JSON.parse(raw) as { productId: string; variantId?: string; qty: number }[];
+          if (Array.isArray(saved)) {
+            const restored: StorefrontCartEntry[] = [];
+            for (const s of saved) {
+              const p = visibleProducts.find((x) => x.id === s.productId);
+              if (!p) continue;
+              const v = s.variantId ? (p.variants || []).find((vx) => vx.id === s.variantId && vx.is_active) : undefined;
+              const qty = Math.max(1, Math.min(99, Number(s.qty) || 1));
+              restored.push({ key: v ? `${p.id}::${v.id}` : p.id, product: p, variant: v, qty });
+            }
+            if (restored.length > 0) setCart(restored);
+          }
+        }
+      } catch {}
+      setCartReady(true);
     })();
     return () => { active = false; };
-  }, [visibleProducts]);
+  }, [visibleProducts, site.slug]);
+
+  useEffect(() => {
+    if (!cartReady) return;
+    try {
+      const compact = cart.map((c) => ({ productId: c.product.id, variantId: c.variant?.id, qty: c.qty }));
+      localStorage.setItem(`developa_cart_${site.slug}`, JSON.stringify(compact));
+    } catch {}
+  }, [cart, cartReady, site.slug]);
+
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 360);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const categories = useMemo(() => {
     const set = new Set<string>(['All']);
@@ -278,6 +319,25 @@ export default function StorefrontView({
       setPaymentRef('');
       setProofNote('');
       setMarketingConsent(false);
+
+      if (paymentMethod === 'paystack' && data.order?.order_code) {
+        const payRes = await fetch('/api/developa/pay/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kind: 'store_order',
+            slug: site.slug,
+            order_code: data.order.order_code,
+            buyer_email: buyerEmail.trim(),
+          }),
+        });
+        const payData = await payRes.json().catch(() => ({}));
+        if (payRes.ok && payData.authorization_url) {
+          window.location.href = payData.authorization_url;
+          return;
+        }
+        setCheckoutError(payData.error || 'Order saved, but online payment could not start. You can pay via transfer.');
+      }
     } catch {
       setCheckoutError('Network error while placing order.');
     } finally {
@@ -378,6 +438,7 @@ export default function StorefrontView({
           <label className="hidden md:flex items-center gap-1.5 text-xs text-secondary whitespace-nowrap">
             <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="w-3.5 h-3.5" /> In stock
           </label>
+          <StorefrontCurrencyPreview sampleNgn={cartTotal > 0 ? cartTotal : 10000} currency={previewCurrency} onChange={setPreviewCurrency} />
           {bookingServices.length > 0 && (
             <Button
               variant="secondary"
@@ -442,9 +503,17 @@ export default function StorefrontView({
         </div></RevealIf>
       )}
 
+      {pluginOn('flash_sale', site.plan_tier, null, site.plugins) && (
+        <FlashSaleBanner />
+      )}
+
       {premium && (
         <PremiumRails site={site} products={visibleProducts} currency={currency} accent={site.accent_color || '#1a73e8'} onOpen={openProduct} recentId={selectedProduct?.id} />
       )}
+
+      <StorefrontTrustBar />
+      <StorefrontFaqAccordion />
+      <StorefrontSafetyLinks slug={site.slug} />
       {premium && !cartOpen && !selectedProduct && (
         <PremiumFloaters site={site} accent={site.accent_color || '#1a73e8'} currency={currency} cart={catalogue ? undefined : { count: cartCount, total: cartTotal }} onCart={() => setCartOpen(true)} />
       )}
@@ -454,6 +523,8 @@ export default function StorefrontView({
           key={selectedProduct.id}
           site={site}
           product={selectedProduct}
+          relatedProducts={visibleProducts.filter((p) => p.id !== selectedProduct.id && (p.category || 'General') === (selectedProduct.category || 'General')).slice(0, 3)}
+          onSelectProduct={(p) => setSelectedProduct(p)}
           onClose={() => setSelectedProduct(null)}
           onAddToCart={addToCart}
         />
@@ -478,6 +549,33 @@ export default function StorefrontView({
       )}
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+
+      {!catalogue && cartCount > 0 && !cartOpen && (
+        <div className="sm:hidden fixed bottom-4 inset-x-4 z-40">
+          <button
+            type="button"
+            onClick={() => setCartOpen(true)}
+            className="w-full h-12 px-5 rounded-full bg-accent text-[var(--accent-foreground)] shadow-lg flex items-center justify-between text-sm font-semibold"
+          >
+            <span className="inline-flex items-center gap-2">
+              <ShoppingCart className="w-4 h-4" />
+              {cartCount} {cartCount === 1 ? 'item' : 'items'}
+            </span>
+            <span>{formatMoney(cartTotal, currency)} · View cart</span>
+          </button>
+        </div>
+      )}
+
+      {showTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Back to top"
+          className={`fixed right-4 z-30 w-10 h-10 rounded-full bg-card border border-theme shadow-md flex items-center justify-center text-secondary hover:text-primary transition ${!catalogue && cartCount > 0 ? 'bottom-20 sm:bottom-6' : 'bottom-6'}`}
+        >
+          <ArrowUp className="w-4 h-4" />
+        </button>
+      )}
 
       {cartOpen && (
         <StorefrontCheckoutDrawer
@@ -515,6 +613,7 @@ export default function StorefrontView({
           notes={notes}
           setNotes={setNotes}
           abandonedCartsEnabled={plan.abandonedCarts}
+          canPayOnline={canPayOnline}
           paymentMethod={paymentMethod}
           setPaymentMethod={setPaymentMethod}
           paymentRef={paymentRef}

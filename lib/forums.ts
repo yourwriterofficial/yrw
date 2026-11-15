@@ -49,7 +49,9 @@ export interface ForumSummary {
   payment_instructions?: string;
   custom_domain?: string | null;
   custom_domain_verified?: boolean;
-  plan_tier?: 'free' | 'pro' | 'business';
+  plan_tier?: import('./plans').PlanTier;
+  plan_expires_at?: string | null;
+  paystack_subaccount_code?: string | null;
   logo_url?: string;
   hide_branding?: boolean;
   /** Owner's plugin switches. A missing entry means on. */

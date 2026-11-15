@@ -10,8 +10,67 @@ async function access(slug: string) {
   const a = await requireSiteAccess(slug, ['owner', 'manager']);
   if ('error' in a) return { error: a.error } as const;
   const planOk = PLANS[effectiveTier(a.site.plan_tier, (a.site as { plan_expires_at?: string | null }).plan_expires_at)].adSpace;
-  if (!planOk) return { error: NextResponse.json({ error: 'Selling ad space is part of the Pro plan.' }, { status: 403 }) } as const;
-  return { site: a.site } as const;
+  if (!planOk) return { error: NextResponse.json({ error: 'Running ads and selling ad space require a paid plan (Lite or higher).' }, { status: 403 }) } as const;
+  return { site: a.site, user: a.user } as const;
+}
+
+const houseAdSchema = z.object({
+  slot_id: z.string().uuid(),
+  title: z.string().trim().min(2).max(100),
+  link_url: z.string().trim().max(500).refine((v) => v === '' || /^https?:\/\//.test(v), 'Links must start with http:// or https://').optional().default(''),
+  image_url: z.string().trim().max(600).refine((v) => v === '' || /^https:\/\//.test(v), 'Images must be https links').optional().default(''),
+  days: z.number().int().min(1).max(365).default(30),
+});
+
+/** Paid owner/manager: place a house ad on their own site alone (no payment needed). */
+export async function POST(request: Request, ctx: { params: Promise<{ slug: string }> }) {
+  const { slug } = await ctx.params;
+  const a = await access(slug);
+  if ('error' in a) return a.error;
+
+  const tier = effectiveTier(a.site.plan_tier, (a.site as { plan_expires_at?: string | null }).plan_expires_at);
+  if (!PLANS[tier].houseAds) {
+    return NextResponse.json({ error: 'Free accounts cannot run ads. Upgrade to Lite or higher.' }, { status: 403 });
+  }
+
+  const parsed = houseAdSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Check your ad details.' }, { status: 400 });
+  }
+
+  const { data: slot } = await supabaseAdmin
+    .from('site_ad_slots')
+    .select('id')
+    .eq('id', parsed.data.slot_id)
+    .eq('site_id', a.site.id)
+    .maybeSingle();
+
+  if (!slot) {
+    return NextResponse.json({ error: 'Ad slot not found on this site.' }, { status: 404 });
+  }
+
+  const now = new Date();
+  const ends = new Date(now.getTime() + parsed.data.days * 86_400_000);
+
+  const { error } = await supabaseAdmin.from('site_ad_bookings').insert({
+    site_id: a.site.id,
+    slot_id: slot.id,
+    advertiser_name: a.site.name,
+    advertiser_email: a.user.email || 'owner@developa.me',
+    advertiser_phone: '',
+    title: xss(parsed.data.title),
+    link_url: parsed.data.link_url,
+    image_url: parsed.data.image_url,
+    amount_ngn: 0,
+    reference: `HOUSE-${Date.now().toString(36).toUpperCase()}`,
+    status: 'approved',
+    is_house_ad: true,
+    starts_at: now.toISOString(),
+    ends_at: ends.toISOString(),
+  });
+
+  if (error) return NextResponse.json({ error: 'Could not publish house ad.' }, { status: 500 });
+  return NextResponse.json({ ok: true });
 }
 
 /** Owner: slots and bookings. Ends bookings that have run out as it reads. */

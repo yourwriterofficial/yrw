@@ -16,6 +16,7 @@ export default function AdSpaceTab({ site, goToPlan }: { site: Site; goToPlan: (
   const [slots, setSlots] = useState<Slot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [form, setForm] = useState(EMPTY);
+  const [houseForm, setHouseForm] = useState({ slot_id: '', title: '', link_url: '', image_url: '', days: 30 });
   const [editing, setEditing] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -30,8 +31,8 @@ export default function AdSpaceTab({ site, goToPlan }: { site: Site; goToPlan: (
   if (!allowed) {
     return (
       <div className="g-tonal p-6 max-w-xl">
-        <h3 className="g-h3">Sell ad space on your site</h3>
-        <p className="text-sm text-secondary mt-2">Let businesses pay to put a banner on your site. You set the price, they send their banner, you approve it. Included in the Pro plan.</p>
+        <h3 className="g-h3">Run ads or sell ad space on your site</h3>
+        <p className="text-sm text-secondary mt-2">Free accounts cannot run ads. Upgrade to Student/Lite or higher to place your own promo banners on your site or sell banner slots to businesses.</p>
         <button onClick={goToPlan} className="mt-4 bg-accent text-[var(--accent-foreground)] font-medium text-sm px-6 h-11 rounded-full">See plans</button>
       </div>
     );
@@ -126,6 +127,51 @@ export default function AdSpaceTab({ site, goToPlan }: { site: Site; goToPlan: (
           </div>
         </form>
       </section>
+
+      {slots.length > 0 && (
+        <section className="g-card p-5">
+          <h3 className="font-medium">Run your own ad on this site</h3>
+          <p className="text-sm text-secondary mt-1">Promote your own products, events or links in any of your active slots above—free of charge, on your own site only.</p>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true); setMsg(null);
+              const targetSlot = houseForm.slot_id || slots[0]?.id;
+              const r = await jsonFetch(base, { method: 'POST', body: { ...houseForm, slot_id: targetSlot, days: Number(houseForm.days) } });
+              setBusy(false);
+              if (r.ok) {
+                setHouseForm({ slot_id: '', title: '', link_url: '', image_url: '', days: 30 });
+                setMsg({ ok: true, text: 'Your house ad is now live on your site.' });
+                load();
+              } else {
+                setMsg({ ok: false, text: r.data.error || 'Could not publish ad.' });
+              }
+            }}
+            className="mt-4 grid sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
+          >
+            <label className="text-xs font-medium">Slot
+              <select value={houseForm.slot_id || slots[0]?.id || ''} onChange={(e) => setHouseForm({ ...houseForm, slot_id: e.target.value })} className="input-box w-full mt-1 text-sm">
+                {slots.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.placement})</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-medium lg:col-span-2">Ad headline
+              <input required minLength={2} maxLength={100} value={houseForm.title} onChange={(e) => setHouseForm({ ...houseForm, title: e.target.value })} placeholder="Weekend 20% off sale" className="input-box w-full mt-1 text-sm" />
+            </label>
+            <label className="text-xs font-medium">Link URL (optional)
+              <input type="url" value={houseForm.link_url} onChange={(e) => setHouseForm({ ...houseForm, link_url: e.target.value })} placeholder="https://..." className="input-box w-full mt-1 text-sm" />
+            </label>
+            <label className="text-xs font-medium">Days
+              <input type="number" min={1} max={365} required value={houseForm.days} onChange={(e) => setHouseForm({ ...houseForm, days: Number(e.target.value) })} className="input-box w-full mt-1 text-sm" />
+            </label>
+            <label className="text-xs font-medium sm:col-span-2 lg:col-span-4">Banner image HTTPS URL (optional)
+              <input type="url" value={houseForm.image_url} onChange={(e) => setHouseForm({ ...houseForm, image_url: e.target.value })} placeholder="https://..." className="input-box w-full mt-1 text-sm" />
+            </label>
+            <div>
+              <button type="submit" disabled={busy} className="bg-accent text-[var(--accent-foreground)] px-6 h-11 rounded-full text-sm font-medium disabled:opacity-50">Publish ad</button>
+            </div>
+          </form>
+        </section>
+      )}
 
       {bookings.filter((b) => b.status !== 'pending').length > 0 && (
         <section className="g-card p-5">

@@ -565,7 +565,7 @@ export default function ForumView({ slug }: { slug: string }) {
           installEnabled={forum.plugins?.appinstall !== false}
           canPush={
             (isOwner || ['owner', 'manager', 'packer'].includes(forum.my_role || '')) &&
-            ['pro', 'business'].includes((forum as unknown as { plan_effective?: string }).plan_effective || '')
+            ['lite', 'pro', 'business', 'corporate'].includes((forum as unknown as { plan_effective?: string }).plan_effective || '')
           }
         />
       )}

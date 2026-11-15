@@ -3,17 +3,21 @@
  * includes, so the owner dashboard, the founder panel and the API checks never disagree.
  * To change a price or a limit, change it here.
  */
-export type PlanTier = 'free' | 'pro' | 'business';
+export type PlanTier = 'free' | 'lite' | 'pro' | 'business' | 'corporate';
+
+export const PLAN_ORDER: PlanTier[] = ['free', 'lite', 'pro', 'business', 'corporate'];
+export const PAID_TIERS: PlanTier[] = ['lite', 'pro', 'business', 'corporate'];
 
 export interface PlanDefinition {
   tier: PlanTier;
   name: string;
   priceNgn: number;           // per month
   maxProducts: number | null; // null = unlimited
-  maxProductPhotos: number;   // 1 on Starter, 6 on Pro/Business
+  maxProductPhotos: number;   // 1 on Starter, 3 on Lite, 6 on Pro/Business, 10 on Corporate
   customDomain: boolean;
   hideBranding: boolean;
   coupons: boolean;
+  maxCoupons: number | null;  // null = unlimited
   hidesPlatformAds: boolean;  // the founder's ads are not shown on this site
   variants: boolean;
   reviews: boolean;
@@ -25,6 +29,7 @@ export interface PlanDefinition {
   customerExport: boolean;
   bulkImport: boolean;
   staffAccounts: boolean;
+  maxStaff: number;
   deeperAnalytics: boolean;
   newsletterLimitPerMonth: number;
   scheduledBackup: boolean;
@@ -32,7 +37,10 @@ export interface PlanDefinition {
   bookings: boolean;
   prioritySupport: boolean;
   maxSites: number;           // how many sites one account can run
-  adSpace: boolean;           // sell banner space on your own site
+  adSpace: boolean;           // sell banner space or place house ads on your own site
+  houseAds: boolean;          // run your own promo banners on your own site(s)
+  onlinePayments: boolean;    // Paystack subaccount split payments directly to seller's bank
+  splitFeePct: number;        // platform fee % taken on split transactions
   directMessages: boolean;    // buyers can chat with the seller inside the site
   pushNotifications: boolean; // phone alerts for new orders and order updates
   appInstall: boolean;        // each site can be installed on a phone like an app
@@ -53,6 +61,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     customDomain: false,
     hideBranding: false,
     coupons: false,
+    maxCoupons: 1,
     hidesPlatformAds: false,
     variants: false,
     reviews: false,
@@ -64,6 +73,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     customerExport: false,
     bulkImport: false,
     staffAccounts: false,
+    maxStaff: 0,
     deeperAnalytics: false,
     newsletterLimitPerMonth: 0,
     scheduledBackup: false,
@@ -72,23 +82,68 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     prioritySupport: false,
     maxSites: 1,
     adSpace: false,
+    houseAds: false,
+    onlinePayments: false,
+    splitFeePct: 0,
     directMessages: false,
     pushNotifications: false,
     appInstall: true,
     includedThemes: 'none',
     businessCard: false,
     catalogueMode: true,
-    highlights: ['1 site on your own yourname.developa.me address', 'Up to 10 products with 1 photo each', '10 free themes', 'Advertise your business: buyers tap WhatsApp to order', 'Orders by bank transfer or pay on delivery', 'Installable as a phone app'],
+    highlights: ['1 site on yourname.developa.me', 'Up to 10 products with 1 photo each', '10 free themes', 'WhatsApp ordering & catalogue mode', 'Orders by bank transfer or pay on delivery', 'Installable as a phone app'],
+  },
+  lite: {
+    tier: 'lite',
+    name: 'Student / Lite',
+    priceNgn: 2000,
+    maxProducts: 50,
+    maxProductPhotos: 3,
+    customDomain: true,
+    hideBranding: true,
+    coupons: true,
+    maxCoupons: 5,
+    hidesPlatformAds: false,
+    variants: false,
+    reviews: true,
+    shippingZones: false,
+    receipts: true,
+    lowStockAlerts: false,
+    abandonedCarts: false,
+    refundsLog: false,
+    customerExport: false,
+    bulkImport: false,
+    staffAccounts: false,
+    maxStaff: 0,
+    deeperAnalytics: false,
+    newsletterLimitPerMonth: 200,
+    scheduledBackup: false,
+    paidMemberships: false,
+    bookings: false,
+    prioritySupport: false,
+    maxSites: 2,
+    adSpace: true,
+    houseAds: true,
+    onlinePayments: true,
+    splitFeePct: 3,
+    directMessages: false,
+    pushNotifications: true,
+    appInstall: true,
+    includedThemes: 'none',
+    businessCard: true,
+    catalogueMode: true,
+    highlights: ['Up to 2 sites on one account', 'Custom domain (yourbrand.com)', 'Up to 50 products (3 photos each)', 'Paystack split payouts to your bank (3% fee)', 'Run house ads on your own site & sell ad slots', 'Reviews, receipts, business card & phone alerts'],
   },
   pro: {
     tier: 'pro',
     name: 'Pro',
-    priceNgn: 7500,
+    priceNgn: 6000,
     maxProducts: null,
     maxProductPhotos: 6,
     customDomain: true,
     hideBranding: true,
     coupons: true,
+    maxCoupons: null,
     hidesPlatformAds: true,
     variants: true,
     reviews: true,
@@ -100,6 +155,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     customerExport: true,
     bulkImport: true,
     staffAccounts: false,
+    maxStaff: 0,
     deeperAnalytics: true,
     newsletterLimitPerMonth: 1000,
     scheduledBackup: true,
@@ -108,23 +164,27 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     prioritySupport: false,
     maxSites: 4,
     adSpace: true,
+    houseAds: true,
+    onlinePayments: true,
+    splitFeePct: 2,
     directMessages: true,
     pushNotifications: true,
     appInstall: true,
     includedThemes: 'plus',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 4 sites on one account', 'Your own domain (yourbrand.com)', 'Unlimited products & variants', 'Every Plus-tier premium theme included (worth up to ₦4,000 each)', 'Business card: opening hours, call button, map link', 'Up to 6 photos per product and product variants', 'Coupons, delivery zones and abandoned-cart reminders', 'Sell ad space, chat with buyers, phone push alerts', 'No "Powered by Developa" and no platform ads'],
+    highlights: ['Up to 4 sites on one account', 'Unlimited products & 6 photos each', 'Paystack split payouts to your bank (2% fee)', 'Every Plus-tier premium theme included', 'Variants, delivery zones, coupons & abandoned carts', 'Run house ads, chat with buyers & no platform ads'],
   },
   business: {
     tier: 'business',
     name: 'Business',
-    priceNgn: 20000,
+    priceNgn: 18000,
     maxProducts: null,
     maxProductPhotos: 6,
     customDomain: true,
     hideBranding: true,
     coupons: true,
+    maxCoupons: null,
     hidesPlatformAds: true,
     variants: true,
     reviews: true,
@@ -136,6 +196,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     customerExport: true,
     bulkImport: true,
     staffAccounts: true,
+    maxStaff: 3,
     deeperAnalytics: true,
     newsletterLimitPerMonth: 5000,
     scheduledBackup: true,
@@ -144,19 +205,63 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     prioritySupport: true,
     maxSites: 8,
     adSpace: true,
+    houseAds: true,
+    onlinePayments: true,
+    splitFeePct: 1,
     directMessages: true,
     pushNotifications: true,
     appInstall: true,
     includedThemes: 'all',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 8 sites on one account', 'Everything in Pro', 'Every premium theme included, including Signature', 'Staff accounts with roles', 'Paid memberships & booking slots', 'Priority support on WhatsApp'],
+    highlights: ['Up to 8 sites on one account', 'Everything in Pro + 1% Paystack split fee', 'Every premium theme included (incl. Signature)', 'Up to 3 staff accounts with roles', 'Paid memberships & booking slots', '5,000 newsletters/mo & priority WhatsApp support'],
+  },
+  corporate: {
+    tier: 'corporate',
+    name: 'Corporate',
+    priceNgn: 45000,
+    maxProducts: null,
+    maxProductPhotos: 10,
+    customDomain: true,
+    hideBranding: true,
+    coupons: true,
+    maxCoupons: null,
+    hidesPlatformAds: true,
+    variants: true,
+    reviews: true,
+    shippingZones: true,
+    receipts: true,
+    lowStockAlerts: true,
+    abandonedCarts: true,
+    refundsLog: true,
+    customerExport: true,
+    bulkImport: true,
+    staffAccounts: true,
+    maxStaff: 15,
+    deeperAnalytics: true,
+    newsletterLimitPerMonth: 20000,
+    scheduledBackup: true,
+    paidMemberships: true,
+    bookings: true,
+    prioritySupport: true,
+    maxSites: 25,
+    adSpace: true,
+    houseAds: true,
+    onlinePayments: true,
+    splitFeePct: 0.5,
+    directMessages: true,
+    pushNotifications: true,
+    appInstall: true,
+    includedThemes: 'all',
+    businessCard: true,
+    catalogueMode: true,
+    highlights: ['Up to 25 sites for agencies & branches', 'Everything in Business + 0.5% Paystack split fee', 'Up to 10 photos per product & 15 staff accounts', '20,000 newsletters/mo', 'Full white-label & priority support'],
   },
 };
 
 /** A paid plan that has run out is treated as Starter until it is renewed. */
 export function effectiveTier(tier: string | null | undefined, expiresAt?: string | null): PlanTier {
-  const t = (tier === 'pro' || tier === 'business' ? tier : 'free') as PlanTier;
+  const t = (PLAN_ORDER.includes(tier as PlanTier) ? tier : 'free') as PlanTier;
   if (t === 'free') return 'free';
   if (expiresAt && new Date(expiresAt).getTime() < Date.now()) return 'free';
   return t;

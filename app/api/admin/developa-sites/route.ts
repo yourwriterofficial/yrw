@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { supabaseAdmin, resolveAuthorNames, isMissingColumnError } from '@/lib/forumServer';
-import { PLANS } from '@/lib/plans';
+import { PLANS, PLAN_ORDER, PAID_TIERS, type PlanTier } from '@/lib/plans';
 
 async function verifyAdmin() {
   const supabase = await createServerClient();
@@ -23,7 +23,7 @@ export async function GET() {
     const [sitesRes, productsRes, ordersRes] = await Promise.all([
       supabaseAdmin.from('forums').select('*').order('created_at', { ascending: false }),
       supabaseAdmin.from('site_products').select('id, site_id, is_active'),
-      supabaseAdmin.from('site_orders').select('id, site_id, total_amount, payment_status'),
+      supabaseAdmin.from('site_orders').select('id, site_id, total_amount, total_ngn, payment_status, platform_fee_ngn, seller_net_ngn, created_at'),
     ]);
 
     if (sitesRes.error) throw sitesRes.error;
@@ -31,18 +31,30 @@ export async function GET() {
 
     const ownerNames = await resolveAuthorNames(sites.map((s) => s.owner_id));
 
-    // Aggregate counts
+    // Aggregate counts + monthly admin settlements
     const productsBySite = new Map<string, number>();
     for (const p of productsRes.data || []) {
       productsBySite.set(p.site_id, (productsBySite.get(p.site_id) || 0) + 1);
     }
 
     const ordersBySite = new Map<string, { count: number; gmv: number }>();
+    const monthlyMap = new Map<string, { month: string; orders: number; gross: number; platform_fee: number; seller_net: number }>();
     for (const o of ordersRes.data || []) {
       const cur = ordersBySite.get(o.site_id) || { count: 0, gmv: 0 };
+      const gross = Number((o as { total_ngn?: number; total_amount?: number }).total_ngn ?? o.total_amount ?? 0);
       cur.count += 1;
-      cur.gmv += Number(o.total_amount || 0);
+      cur.gmv += gross;
       ordersBySite.set(o.site_id, cur);
+
+      if (o.payment_status === 'paid' && o.created_at) {
+        const month = String(o.created_at).slice(0, 7);
+        const m = monthlyMap.get(month) || { month, orders: 0, gross: 0, platform_fee: 0, seller_net: 0 };
+        m.orders += 1;
+        m.gross += gross;
+        m.platform_fee += Number((o as { platform_fee_ngn?: number }).platform_fee_ngn ?? 0);
+        m.seller_net += Number((o as { seller_net_ngn?: number }).seller_net_ngn ?? gross);
+        monthlyMap.set(month, m);
+      }
     }
 
     const enriched = sites.map((s) => ({
@@ -53,7 +65,9 @@ export async function GET() {
       total_gmv: ordersBySite.get(s.id)?.gmv || 0,
     }));
 
-    return NextResponse.json({ sites: enriched });
+    const monthly_settlements = Array.from(monthlyMap.values()).sort((a, b) => b.month.localeCompare(a.month));
+
+    return NextResponse.json({ sites: enriched, monthly_settlements });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to load sites';
     return NextResponse.json({ error: message }, { status: 500 });
@@ -71,7 +85,7 @@ export async function PATCH(request: Request) {
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (is_public !== undefined) updates.is_public = is_public;
     if (plan_tier !== undefined) {
-      if (!['free', 'pro', 'business'].includes(plan_tier)) return NextResponse.json({ error: 'Unknown plan' }, { status: 400 });
+      if (!PLAN_ORDER.includes(plan_tier as PlanTier)) return NextResponse.json({ error: 'Unknown plan' }, { status: 400 });
       updates.plan_tier = plan_tier;
     }
     if (plan_expires_at !== undefined) updates.plan_expires_at = plan_expires_at;
@@ -114,9 +128,9 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => null);
     if (body?.action !== 'record_payment') return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
 
-    const tier = body.plan_tier as 'pro' | 'business';
+    const tier = body.plan_tier as PlanTier;
     const months = Number(body.months);
-    if (!['pro', 'business'].includes(tier) || !Number.isInteger(months) || months < 1 || months > 36 || !body.site_id) {
+    if (!PAID_TIERS.includes(tier) || !Number.isInteger(months) || months < 1 || months > 36 || !body.site_id) {
       return NextResponse.json({ error: 'Choose a plan, a site and 1 to 36 months.' }, { status: 400 });
     }
     const amount = body.amount !== undefined && body.amount !== '' ? Number(body.amount) : PLANS[tier].priceNgn * months;

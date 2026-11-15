@@ -1,7 +1,7 @@
 import { supabaseAdmin, isMissingRelationError } from '@/lib/forumServer';
 import { SITE_TEMPLATES as ALL_TEMPLATES } from '@/lib/siteTemplates';
 import { SITE_TEMPLATES, templateGroup, type TemplateGroup } from '@/lib/siteTemplates';
-import { PLANS, TRIAL_DAYS, daysLeft, effectiveTier } from '@/lib/plans';
+import { PLANS, PAID_TIERS, TRIAL_DAYS, daysLeft, effectiveTier } from '@/lib/plans';
 import { tierForPrice } from '@/lib/premium';
 
 /**
@@ -40,7 +40,7 @@ async function overrides(): Promise<Map<string, CatalogRow>> {
  * count, otherwise anyone could try Pro and keep a premium theme.
  */
 async function includedUpTo(userId: string): Promise<number> {
-  const { data } = await supabaseAdmin.from('forums').select('plan_tier, plan_expires_at').eq('owner_id', userId).in('plan_tier', ['pro', 'business']);
+  const { data } = await supabaseAdmin.from('forums').select('plan_tier, plan_expires_at').eq('owner_id', userId).in('plan_tier', PAID_TIERS);
   let best = 0;
   for (const f of data || []) {
     const tier = effectiveTier(f.plan_tier as string, f.plan_expires_at as string | null);

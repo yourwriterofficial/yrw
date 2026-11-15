@@ -1,5 +1,6 @@
 import type { SiteSocialLinks } from '@/lib/forums';
 import type { SiteRole } from '@/lib/forumServer';
+import type { PlanTier } from '@/lib/plans';
 
 export interface Site {
   id: string;
@@ -21,7 +22,7 @@ export interface Site {
   payment_instructions?: string;
   hero_headline?: string;
   hero_subheadline?: string;
-  plan_tier: 'free' | 'pro' | 'business';
+  plan_tier: PlanTier;
   plan_expires_at?: string | null;
   custom_domain?: string | null;
   custom_domain_verified?: boolean;
@@ -40,6 +41,7 @@ export interface Site {
   summary_email?: boolean;
   weekly_backup_email?: boolean;
   verified?: boolean;
+  plugins?: Record<string, unknown>;
   my_role?: SiteRole;
 }
 

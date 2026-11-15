@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PLANS, BILLING_PERIODS, priceForPeriod, PRUNE_NOTICE, daysLeft, effectiveTier, type PlanTier } from '@/lib/plans';
+import { PLANS, PLAN_ORDER, BILLING_PERIODS, priceForPeriod, PRUNE_NOTICE, daysLeft, effectiveTier, type PlanTier } from '@/lib/plans';
 import { waLink } from '@/lib/phone';
 import { FOUNDER_WA, jsonFetch, type Site } from '../types';
 
@@ -28,6 +28,7 @@ export default function PlanTab({ site }: { site: Site }) {
   const [whatsappNumber, setWhatsappNumber] = useState(site.whatsapp_number || '');
   const [busy, setBusy] = useState(false);
   const [months, setMonths] = useState(1);
+  const [payBusy, setPayBusy] = useState<PlanTier | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
@@ -62,6 +63,22 @@ export default function PlanTab({ site }: { site: Site }) {
 
   const upgrade = (to: PlanTier) =>
     waLink(FOUNDER_WA, `Hello, I want to upgrade my developa site "${site.name}" (${site.slug}.developa.me) to the ${PLANS[to].name} plan for ${months} ${months === 1 ? 'month' : 'months'} (${naira(priceForPeriod(to, months))}).`);
+
+  const payWithPaystack = async (to: PlanTier) => {
+    if (to === 'free') return;
+    setPayBusy(to);
+    setMsg(null);
+    const r = await jsonFetch<{ authorization_url?: string }>('/api/developa/pay/init', {
+      method: 'POST',
+      body: { kind: 'plan', slug: site.slug, plan_tier: to, months },
+    });
+    if (r.ok && r.data.authorization_url) {
+      window.location.assign(r.data.authorization_url);
+      return;
+    }
+    setMsg({ ok: false, text: r.data.error || 'Could not start Paystack checkout.' });
+    setPayBusy(null);
+  };
   const priorityWa = waLink(FOUNDER_WA, `Priority Business support (${site.name} / ${site.slug}.developa.me): `);
 
   return (
@@ -87,8 +104,8 @@ export default function PlanTab({ site }: { site: Site }) {
         ))}
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
-        {(['free', 'pro', 'business'] as PlanTier[]).map((t) => {
+      <div className="grid sm:grid-cols-2 xl:grid-cols-5 gap-4">
+        {PLAN_ORDER.map((t) => {
           const p = PLANS[t];
           const current = t === tier;
           const link = t === 'free' ? null : upgrade(t);
@@ -101,12 +118,32 @@ export default function PlanTab({ site }: { site: Site }) {
                 {p.highlights.map((h) => <li key={h}>· {h}</li>)}
               </ul>
               {link && !current && (
-                <a href={link} target="_blank" rel="noopener noreferrer" className="mt-5 text-center bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-medium text-sm px-5 h-11 leading-[2.75rem] rounded-full">
-                  {tier === 'free' ? 'Upgrade on WhatsApp' : t === 'pro' && tier === 'business' ? 'Switch on WhatsApp' : 'Upgrade on WhatsApp'}
-                </a>
+                <div className="mt-5 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={payBusy !== null}
+                    onClick={() => payWithPaystack(t)}
+                    className="w-full text-center bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-medium text-sm px-4 h-10 rounded-full disabled:opacity-50"
+                  >
+                    {payBusy === t ? 'Starting Paystack…' : 'Pay with Paystack'}
+                  </button>
+                  <a href={link} target="_blank" rel="noopener noreferrer" className="text-center border border-theme font-medium text-xs px-4 h-9 leading-[2.25rem] rounded-full">
+                    {tier === 'free' ? 'Or transfer via WhatsApp' : 'Switch on WhatsApp'}
+                  </a>
+                </div>
               )}
               {link && current && tier !== 'free' && (
-                <a href={upgrade(t) || '#'} target="_blank" rel="noopener noreferrer" className="mt-5 text-center border border-theme font-medium text-sm px-5 h-11 leading-[2.75rem] rounded-full">Renew on WhatsApp</a>
+                <div className="mt-5 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={payBusy !== null}
+                    onClick={() => payWithPaystack(t)}
+                    className="w-full text-center bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-medium text-sm px-4 h-10 rounded-full disabled:opacity-50"
+                  >
+                    {payBusy === t ? 'Starting Paystack…' : 'Renew with Paystack'}
+                  </button>
+                  <a href={upgrade(t) || '#'} target="_blank" rel="noopener noreferrer" className="text-center border border-theme font-medium text-xs px-4 h-9 leading-[2.25rem] rounded-full">Renew on WhatsApp</a>
+                </div>
               )}
             </div>
           );

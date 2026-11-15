@@ -58,13 +58,15 @@ export async function GET(request: NextRequest) {
         const brand = requestUrl.searchParams.get('brand');
         const isDevelopa = brand === 'developa' || (next && next.includes('brand=developa')) || requestUrl.hostname.includes('developa.me');
 
-        let redirectUrl = next && next.startsWith('/')
+        let redirectUrl = next && next.startsWith('/') && (!isDevelopa || !next.startsWith('/dashboard'))
           ? `${requestUrl.origin}${next}`
           : isAdminEmail
             ? `${requestUrl.origin}/admin`
-            : `${requestUrl.origin}/dashboard/client?verified=true`;
+            : isDevelopa
+              ? `${requestUrl.origin}/create?verified=true`
+              : `${requestUrl.origin}/dashboard/client?verified=true`;
 
-        if (!isAdminEmail && isDevelopa && !redirectUrl.includes('brand=developa')) {
+        if (!isAdminEmail && isDevelopa && !redirectUrl.includes('brand=developa') && !redirectUrl.includes('/create')) {
           redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 'brand=developa';
         }
 

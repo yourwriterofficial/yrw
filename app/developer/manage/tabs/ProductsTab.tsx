@@ -108,10 +108,10 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
     setBusy(false);
   };
 
-  const edit = (p: SiteProduct) => {
-    setEditing(p.id);
+  const populateForm = (p: SiteProduct, asCopy = false) => {
+    setEditing(asCopy ? null : p.id);
     setForm({
-      title: p.title,
+      title: asCopy ? `${p.title} (Copy)` : p.title,
       description: p.description || '',
       category: p.category || 'General',
       product_type: p.product_type,
@@ -125,6 +125,9 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
     setImageUrls(urls);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const edit = (p: SiteProduct) => populateForm(p, false);
+  const duplicate = (p: SiteProduct) => populateForm(p, true);
 
   const toggle = async (p: SiteProduct) => {
     await jsonFetch(`/api/forums/${site.slug}/products/${p.id}`, { method: 'PATCH', body: { is_active: !p.is_active } });
@@ -283,6 +286,7 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
               </div>
               <div className="flex flex-wrap gap-1 shrink-0 text-sm">
                 <button onClick={() => setVariantProduct(p)} className="px-3 h-9 rounded-full hover:bg-hover font-medium">Variants</button>
+                <button onClick={() => duplicate(p)} className="px-3 h-9 rounded-full hover:bg-hover">Duplicate</button>
                 <button onClick={() => edit(p)} className="px-3 h-9 rounded-full hover:bg-hover text-accent font-medium">Edit</button>
                 <button onClick={() => toggle(p)} className="px-3 h-9 rounded-full hover:bg-hover">{p.is_active ? 'Hide' : 'Show'}</button>
                 <button onClick={() => remove(p)} className="px-3 h-9 rounded-full hover:bg-hover text-danger">Delete</button>

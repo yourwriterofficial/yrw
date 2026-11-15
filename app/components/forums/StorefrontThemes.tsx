@@ -155,11 +155,18 @@ export function StoreProductCard({
   const { label, Icon } = typeMeta(product.product_type);
   const pct = discountPercent(Number(product.price), product.compare_at_price ? Number(product.compare_at_price) : null);
   const outOfStock = product.stock_qty !== null && product.stock_qty <= 0;
+  const lowStock = product.stock_qty !== null && product.stock_qty > 0 && product.stock_qty <= 3;
   const waHref = buildProductWaHref(site, product);
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const url = buildProductShareUrl(site.slug, product.id);
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: product.title, text: `Check out ${product.title} on ${site.name}`, url });
+        return;
+      } catch {}
+    }
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -216,6 +223,11 @@ export function StoreProductCard({
           {pct && (
             <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-[#feefde] text-[#f68b1e] text-[11px] font-black">
               -{pct}%
+            </span>
+          )}
+          {lowStock && (
+            <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-amber-500/90 text-white text-[10px] font-bold">
+              Only {product.stock_qty} left
             </span>
           )}
         </button>

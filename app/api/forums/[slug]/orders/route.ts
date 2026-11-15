@@ -21,7 +21,7 @@ const createOrderSchema = z.object({
   delivery_method: z.enum(['delivery', 'pickup']).optional().default('delivery'),
   delivery_state: z.string().trim().max(60).optional().default(''),
   notes: z.string().trim().max(500).optional().default(''),
-  payment_method: z.enum(['manual_transfer', 'pay_on_delivery']).default('manual_transfer'),
+  payment_method: z.enum(['manual_transfer', 'pay_on_delivery', 'paystack']).default('manual_transfer'),
   payment_reference: z.string().trim().max(120).optional().default(''),
   payment_proof_note: z.string().trim().max(400).optional().default(''),
   marketing_consent: z.boolean().optional().default(false),

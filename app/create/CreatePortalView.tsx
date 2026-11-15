@@ -115,7 +115,7 @@ export default function CreatePortalView() {
 
   const scrollToStart = () => document.getElementById('start')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const naira = (n: number) => '₦' + n.toLocaleString('en-NG');
-  const tiers: PlanTier[] = ['free', 'pro', 'business'];
+  const tiers: PlanTier[] = ['free', 'lite', 'pro', 'business', 'corporate'];
 
   return (
     <div className="g-font min-h-screen bg-primary text-primary">

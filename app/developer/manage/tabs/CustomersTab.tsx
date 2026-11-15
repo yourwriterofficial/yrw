@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatMoney } from '@/lib/forums';
 import { planFor } from '@/lib/plans';
+import { formatWhatsAppBroadcastList } from '@/lib/storefrontTools';
 import { jsonFetch, type Site } from '../types';
 
 interface CustomerRow {
@@ -31,6 +32,7 @@ export default function CustomersTab({ site, goToPlan }: { site: Site; goToPlan:
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [waCopied, setWaCopied] = useState(false);
 
   // Add subscriber manually
   const [subEmail, setSubEmail] = useState('');
@@ -138,12 +140,27 @@ export default function CustomersTab({ site, goToPlan }: { site: Site; goToPlan:
           </p>
         </div>
         {plan.customerExport ? (
-          <a
-            href={`/api/forums/${encodeURIComponent(site.slug)}/customers?format=csv`}
-            className="inline-flex items-center px-5 h-10 rounded-full border border-theme hover:bg-hover text-sm font-medium"
-          >
-            Export CSV
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                const list = formatWhatsAppBroadcastList(customers.map((c) => c.phone).filter(Boolean));
+                if (!list) return;
+                await navigator.clipboard.writeText(list).catch(() => {});
+                setWaCopied(true);
+                setTimeout(() => setWaCopied(false), 1800);
+              }}
+              className="inline-flex items-center px-4 h-10 rounded-full border border-theme hover:bg-hover text-sm font-medium"
+            >
+              {waCopied ? 'Copied WhatsApp numbers' : 'Copy WhatsApp list'}
+            </button>
+            <a
+              href={`/api/forums/${encodeURIComponent(site.slug)}/customers?format=csv`}
+              className="inline-flex items-center px-5 h-10 rounded-full border border-theme hover:bg-hover text-sm font-medium"
+            >
+              Export CSV
+            </a>
+          </div>
         ) : (
           <button
             type="button"

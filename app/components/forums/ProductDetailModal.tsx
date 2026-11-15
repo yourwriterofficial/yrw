@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, ShoppingCart, MessageCircle, Share2, Check, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import { X, ShoppingCart, MessageCircle, Share2, Check, ChevronLeft, ChevronRight, Star, QrCode } from 'lucide-react';
 import { formatMoney, type ForumSummary, type ProductVariant, type SiteProduct } from '@/lib/forums';
 import { waLink } from '@/lib/phone';
 import { planFor } from '@/lib/plans';
+import PaymentQR from '@/app/components/PaymentQR';
 
 interface PublicReview {
   id: string;
@@ -42,13 +43,18 @@ export default function ProductDetailModal({
   product,
   onClose,
   onAddToCart,
+  relatedProducts = [],
+  onSelectProduct,
 }: {
   site: ForumSummary;
   product: SiteProduct;
   onClose: () => void;
   onAddToCart: (product: SiteProduct, variant?: ProductVariant) => void;
+  relatedProducts?: SiteProduct[];
+  onSelectProduct?: (product: SiteProduct) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const [photoIdx, setPhotoIdx] = useState(0);
   const [reviews, setReviews] = useState<PublicReview[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
@@ -315,7 +321,29 @@ export default function ProductDetailModal({
               {copied ? <Check className="w-4 h-4 text-success" /> : <Share2 className="w-4 h-4" />}
               {copied ? 'Copied' : 'Share'}
             </button>
+
+            <button
+              type="button"
+              onClick={() => setQrOpen((v) => !v)}
+              aria-label="Product QR code"
+              className="min-h-11 px-3.5 py-2.5 rounded-full border border-theme hover:bg-hover text-primary text-sm font-medium flex items-center justify-center gap-1.5 transition cursor-pointer"
+            >
+              <QrCode className="w-4 h-4" />
+              QR
+            </button>
           </div>
+
+          {qrOpen && (
+            <div className="p-3.5 rounded-2xl border border-theme bg-secondary/20 flex items-center gap-4">
+              <div className="p-1.5 rounded-xl bg-white shrink-0">
+                <PaymentQR value={buildProductShareUrl(site.slug, product.id)} size={96} />
+              </div>
+              <div className="text-xs space-y-1">
+                <p className="font-semibold text-primary">Scan to open this product</p>
+                <p className="text-secondary">Share or screenshot this QR code for flyers, Instagram stories or packaging.</p>
+              </div>
+            </div>
+          )}
 
           {/* Customer Reviews */}
           {(reviews.length > 0 || plan.reviews) && (
@@ -422,6 +450,29 @@ export default function ProductDetailModal({
                   ))}
                 </ul>
               )}
+            </div>
+          )}
+
+          {relatedProducts.length > 0 && onSelectProduct && (
+            <div className="pt-4 border-t border-theme space-y-3">
+              <h3 className="text-sm font-bold text-primary">Related items</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {relatedProducts.slice(0, 3).map((rp) => (
+                  <button
+                    key={rp.id}
+                    type="button"
+                    onClick={() => onSelectProduct(rp)}
+                    className="text-left p-2.5 rounded-xl border border-theme bg-secondary/20 hover:bg-hover transition space-y-1 cursor-pointer"
+                  >
+                    {rp.image_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={rp.image_url} alt={rp.title} className="w-full h-20 object-cover rounded-lg mb-1.5" />
+                    )}
+                    <p className="text-xs font-semibold text-primary line-clamp-1">{rp.title}</p>
+                    <p className="text-xs font-bold text-accent">{formatMoney(rp.price, currency)}</p>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

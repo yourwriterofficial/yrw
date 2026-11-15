@@ -6,7 +6,7 @@ import { PLUGINS, PLUGIN_GROUPS, planIncludes } from '@/lib/plugins';
 import { jsonFetch, type Site } from '../types';
 
 const STORE_ONLY = ['coupons', 'variants', 'shipping', 'bookings', 'carts', 'receipts', 'reviews', 'lowstock', 'chat'];
-const TIER_LABEL = { free: 'Free', pro: 'Pro', business: 'Business' } as const;
+const TIER_LABEL = { free: 'Free', lite: 'Lite', pro: 'Pro', business: 'Business', corporate: 'Corporate' } as const;
 
 export default function PluginsTab({ site, go }: { site: Site; go: (tab: string) => void }) {
   const tier = effectiveTier(site.plan_tier, site.plan_expires_at);

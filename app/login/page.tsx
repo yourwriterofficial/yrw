@@ -100,10 +100,10 @@ function LoginInner() {
 
     if (isAdmin) {
       window.location.href = '/admin';
-    } else if (nextPath && nextPath.startsWith('/')) {
+    } else if (nextPath && nextPath.startsWith('/') && (!isDevelopa || !nextPath.startsWith('/dashboard'))) {
       window.location.href = nextPath;
     } else {
-      window.location.href = isDevelopa ? '/dashboard/client?brand=developa' : '/dashboard/client';
+      window.location.href = isDevelopa ? '/create' : '/dashboard/client';
     }
   };
 
@@ -136,7 +136,7 @@ function LoginInner() {
     <AuthShell
       developa={isDevelopa}
       title="Log in"
-      subtitle={isDevelopa ? 'See your project progress and milestones.' : 'See your orders and download your files.'}
+      subtitle={isDevelopa ? 'Manage your sites, orders and storefront.' : 'See your orders and download your files.'}
       footer={<>New here? <a href={isDevelopa ? '/register?brand=developa' : '/register'} className="text-accent font-semibold hover:underline">Create a free account</a></>}
     >
       <SocialLoginButton onClick={handleGoogleLogin} loading={loading} label="Continue with Google" />

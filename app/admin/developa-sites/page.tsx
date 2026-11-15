@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import PageHeader from '@/app/components/ui/PageHeader';
 import { formatMoney, type ForumSummary } from '@/lib/forums';
-import { PLANS, daysLeft, effectiveTier, type PlanTier } from '@/lib/plans';
+import { PLANS, PAID_TIERS, daysLeft, effectiveTier, type PlanTier } from '@/lib/plans';
 import SupportInboxTab from './SupportInboxTab';
 import ThemesTab from './ThemesTab';
 
@@ -15,6 +15,7 @@ interface AdminSiteRow extends ForumSummary {
   plan_expires_at?: string | null;
 }
 interface PaymentRow { id: number; site_id: string; site_name: string; site_slug: string; plan_tier: string; months: number; amount: number; reference: string | null; note: string | null; created_at: string }
+interface MonthlySettlementRow { month: string; orders: number; gross: number; platform_fee: number; seller_net: number }
 interface AdRow { id: string; title: string; body: string; link_url: string; image_url: string; placement: 'banner' | 'footer'; target_site_id: string | null; is_active: boolean; starts_at: string | null; ends_at: string | null }
 
 type Tab = 'sites' | 'payments' | 'themes' | 'ads' | 'support';
@@ -30,6 +31,7 @@ export default function AdminDevelopaSitesPage() {
   const [tab, setTab] = useState<Tab>('sites');
   const [sites, setSites] = useState<AdminSiteRow[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [settlements, setSettlements] = useState<MonthlySettlementRow[]>([]);
   const [ads, setAds] = useState<AdRow[]>([]);
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -38,11 +40,12 @@ export default function AdminDevelopaSitesPage() {
   const loadAll = useCallback(async () => {
     setLoading(true);
     const [s, p, a] = await Promise.all([
-      api<{ sites?: AdminSiteRow[] }>('/api/admin/developa-sites'),
+      api<{ sites?: AdminSiteRow[]; monthly_settlements?: MonthlySettlementRow[] }>('/api/admin/developa-sites'),
       api<{ payments?: PaymentRow[]; needs_update?: boolean }>('/api/admin/developa-sites/payments'),
       api<{ ads?: AdRow[]; needs_update?: boolean }>('/api/admin/developa-ads'),
     ]);
     setSites(s.data.sites || []);
+    setSettlements(s.data.monthly_settlements || []);
     setPayments(p.data.payments || []);
     setAds(a.data.ads || []);
     setNeedsUpdate(!!p.data.needs_update || !!a.data.needs_update);
@@ -113,7 +116,7 @@ export default function AdminDevelopaSitesPage() {
       {loading ? <p className="text-sm text-secondary">Loading…</p> : (
         <>
           {tab === 'sites' && <SitesTab sites={sites} reload={loadAll} flash={flash} />}
-          {tab === 'payments' && <PaymentsTab payments={payments} />}
+          {tab === 'payments' && <PaymentsTab payments={payments} settlements={settlements} />}
           {tab === 'themes' && <ThemesTab flash={flash} />}
           {tab === 'ads' && <AdsTab ads={ads} sites={sites} reload={loadAll} flash={flash} />}
           {tab === 'support' && <SupportInboxTab flash={flash} />}
@@ -277,7 +280,7 @@ function VerifySellerModal({ site, onClose, onConfirm }: { site: AdminSiteRow; o
 }
 
 function PaymentModal({ site, onClose, onDone, flash }: { site: AdminSiteRow; onClose: () => void; onDone: (t: string) => Promise<void>; flash: (ok: boolean, t: string) => void }) {
-  const [tier, setTier] = useState<'pro' | 'business'>(site.plan_tier === 'business' ? 'business' : 'pro');
+  const [tier, setTier] = useState<PlanTier>(site.plan_tier && PAID_TIERS.includes(site.plan_tier) ? site.plan_tier : 'pro');
   const [months, setMonths] = useState(1);
   const [amount, setAmount] = useState('');
   const [reference, setReference] = useState('');
@@ -301,8 +304,8 @@ function PaymentModal({ site, onClose, onDone, flash }: { site: AdminSiteRow; on
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium mb-1.5" htmlFor="pm-tier">Plan</label>
-            <select id="pm-tier" value={tier} onChange={(e) => setTier(e.target.value as 'pro' | 'business')} className="input-box w-full">
-              {(['pro', 'business'] as PlanTier[]).map((t) => <option key={t} value={t}>{PLANS[t].name} · {naira(PLANS[t].priceNgn)}/mo</option>)}
+            <select id="pm-tier" value={tier} onChange={(e) => setTier(e.target.value as PlanTier)} className="input-box w-full">
+              {PAID_TIERS.map((t) => <option key={t} value={t}>{PLANS[t].name} · {naira(PLANS[t].priceNgn)}/mo</option>)}
             </select>
           </div>
           <div>
@@ -332,25 +335,57 @@ function PaymentModal({ site, onClose, onDone, flash }: { site: AdminSiteRow; on
 }
 
 /* ----------------------------- Payments ----------------------------- */
-function PaymentsTab({ payments }: { payments: PaymentRow[] }) {
-  if (payments.length === 0) return <p className="text-sm text-secondary border border-dashed border-theme rounded-2xl p-8 text-center">No plan payments recorded yet. Use “Record payment” on the Sites tab when someone pays you.</p>;
+function PaymentsTab({ payments, settlements }: { payments: PaymentRow[]; settlements: MonthlySettlementRow[] }) {
   return (
-    <div className="g-card overflow-x-auto">
-      <table className="w-full text-sm text-left min-w-[640px]">
-        <thead className="text-secondary border-b border-theme"><tr>{['Date', 'Site', 'Plan', 'Months', 'Amount', 'Reference / note'].map((h) => <th key={h} className="p-3.5 font-medium">{h}</th>)}</tr></thead>
-        <tbody className="divide-y divide-theme">
-          {payments.map((p) => (
-            <tr key={p.id}>
-              <td className="p-3.5 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString('en-GB')}</td>
-              <td className="p-3.5">{p.site_name}<br /><span className="font-mono text-xs text-secondary">{p.site_slug}</span></td>
-              <td className="p-3.5 capitalize">{p.plan_tier}</td>
-              <td className="p-3.5">{p.months}</td>
-              <td className="p-3.5 font-medium">{naira(Number(p.amount))}</td>
-              <td className="p-3.5 text-secondary">{[p.reference, p.note].filter(Boolean).join(' · ') || '—'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="space-y-6">
+      <div className="g-card overflow-x-auto">
+        <div className="p-4 border-b border-theme">
+          <h3 className="font-medium">Monthly split settlements</h3>
+          <p className="text-xs text-secondary mt-0.5">ProsePen platform fees and seller net payouts aggregated monthly across all online orders.</p>
+        </div>
+        {settlements.length === 0 ? (
+          <p className="p-6 text-sm text-secondary">No online split orders settled yet.</p>
+        ) : (
+          <table className="w-full text-sm text-left min-w-[560px]">
+            <thead className="text-secondary border-b border-theme">
+              <tr>{['Month', 'Orders', 'Gross Sales', 'Platform Fee', 'Seller Net'].map((h) => <th key={h} className="p-3.5 font-medium">{h}</th>)}</tr>
+            </thead>
+            <tbody className="divide-y divide-theme">
+              {settlements.map((m) => (
+                <tr key={m.month}>
+                  <td className="p-3.5 font-mono font-medium">{m.month}</td>
+                  <td className="p-3.5">{m.orders}</td>
+                  <td className="p-3.5">{naira(m.gross)}</td>
+                  <td className="p-3.5 text-success font-medium">{naira(m.platform_fee)}</td>
+                  <td className="p-3.5 font-medium">{naira(m.seller_net)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {payments.length === 0 ? (
+        <p className="text-sm text-secondary border border-dashed border-theme rounded-2xl p-8 text-center">No plan payments recorded yet. Use “Record payment” on the Sites tab when someone pays you.</p>
+      ) : (
+        <div className="g-card overflow-x-auto">
+          <table className="w-full text-sm text-left min-w-[640px]">
+            <thead className="text-secondary border-b border-theme"><tr>{['Date', 'Site', 'Plan', 'Months', 'Amount', 'Reference / note'].map((h) => <th key={h} className="p-3.5 font-medium">{h}</th>)}</tr></thead>
+            <tbody className="divide-y divide-theme">
+              {payments.map((p) => (
+                <tr key={p.id}>
+                  <td className="p-3.5 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString('en-GB')}</td>
+                  <td className="p-3.5">{p.site_name}<br /><span className="font-mono text-xs text-secondary">{p.site_slug}</span></td>
+                  <td className="p-3.5 capitalize">{p.plan_tier}</td>
+                  <td className="p-3.5">{p.months}</td>
+                  <td className="p-3.5 font-medium">{naira(Number(p.amount))}</td>
+                  <td className="p-3.5 text-secondary">{[p.reference, p.note].filter(Boolean).join(' · ') || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

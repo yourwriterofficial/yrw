@@ -13,6 +13,7 @@ import {
   Landmark,
   Truck,
   MessageCircle,
+  CreditCard,
 } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
 import { waNumber } from '@/lib/phone';
@@ -61,8 +62,9 @@ interface Props {
   notes: string;
   setNotes: (v: string) => void;
   abandonedCartsEnabled: boolean;
-  paymentMethod: 'manual_transfer' | 'pay_on_delivery';
-  setPaymentMethod: (v: 'manual_transfer' | 'pay_on_delivery') => void;
+  canPayOnline?: boolean;
+  paymentMethod: 'manual_transfer' | 'pay_on_delivery' | 'paystack';
+  setPaymentMethod: (v: 'manual_transfer' | 'pay_on_delivery' | 'paystack') => void;
   paymentRef: string;
   setPaymentRef: (v: string) => void;
   proofNote: string;
@@ -379,7 +381,18 @@ export default function StorefrontCheckoutDrawer(props: Props) {
               </label>
 
               <h4 className="text-xs font-semibold text-secondary pt-2">Payment method</h4>
-              <div className="grid grid-cols-2 gap-2">
+              <div className={`grid gap-2 ${props.canPayOnline ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                {props.canPayOnline && (
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('paystack')}
+                    className={`h-10 px-2 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 ${
+                      paymentMethod === 'paystack' ? 'border-accent bg-accent/10 text-accent' : 'border-theme bg-card text-secondary'
+                    }`}
+                  >
+                    <CreditCard className="w-3.5 h-3.5" /> Pay Online
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('manual_transfer')}
@@ -399,6 +412,11 @@ export default function StorefrontCheckoutDrawer(props: Props) {
                   <Truck className="w-3.5 h-3.5" /> Pay on Delivery
                 </button>
               </div>
+              {paymentMethod === 'paystack' && (
+                <p className="text-xs text-secondary p-3 rounded-xl bg-card border border-theme">
+                  You will be redirected to secure Paystack checkout (Card, Bank Transfer, USSD) to complete payment for this order.
+                </p>
+              )}
 
               {paymentMethod === 'manual_transfer' && (
                 <div className="p-3.5 rounded-xl bg-card border border-theme space-y-2 text-xs">
