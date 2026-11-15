@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, CalendarDays, Ticket, Truck, MessagesSquare, Crown, MessageCircle, Puzzle, Megaphone,
-  Globe, Sparkles, Settings as SettingsIcon, ExternalLink, Copy, Check, Menu, X, ChevronRight, Share2, Plus, TrendingUp, Wallet, Eye,
+  Globe, Gem, Settings as SettingsIcon, ExternalLink, Copy, Check, Menu, X, ChevronRight, Share2, Plus, TrendingUp, Wallet, Eye,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import DevelopaHeader from '@/app/components/DevelopaHeader';
@@ -57,7 +57,7 @@ const TABS: { key: TabKey; label: string; group: NavGroup; Icon: typeof Package;
   { key: 'plugins', label: 'Plugins', group: 'grow', Icon: Puzzle },
   { key: 'adspace', label: 'Ad space', group: 'grow', Icon: Megaphone },
   { key: 'domain', label: 'Domain', group: 'grow', Icon: Globe },
-  { key: 'plan', label: 'Plan', group: 'account', Icon: Sparkles },
+  { key: 'plan', label: 'Plan', group: 'account', Icon: Gem },
   { key: 'settings', label: 'Settings', group: 'account', Icon: SettingsIcon },
 ];
 
@@ -418,7 +418,7 @@ function Overview({ site, detail, orders, origin, go, tier }: { site: Site; deta
           <>
             <Stat Icon={Users} label="Members" value={String(site.member_count)} tone={accent} />
             <Stat Icon={MessagesSquare} label="Discussions" value={String(detail.threads.length)} tone={accent} />
-            <Stat Icon={Sparkles} label="Plan" value={PLANS[tier].name} tone={accent} />
+            <Stat Icon={Gem} label="Plan" value={PLANS[tier].name} tone={accent} />
             <Stat Icon={Eye} label="Visibility" value={site.is_public ? 'Public' : 'Hidden'} tone={accent} />
           </>
         )}
@@ -505,7 +505,7 @@ function Overview({ site, detail, orders, origin, go, tier }: { site: Site; deta
 
           {isStore && tier === 'free' && (
             <section className="rounded-2xl p-5 text-white" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}b0)` }}>
-              <h3 className="font-semibold flex items-center gap-2"><Sparkles className="w-4 h-4" /> Grow with Pro</h3>
+              <h3 className="font-semibold flex items-center gap-2"><Gem className="w-4 h-4" /> Grow with Pro</h3>
               <p className="text-sm text-white/90 mt-2">
                 {detail.products.length} of {PLANS.free.maxProducts} free {itemLabels(site.template_id)[1].toLowerCase()} used. Pro gives you unlimited items, a business card with opening hours and a call button, premium themes included, your own domain and no platform ads for {'₦'}{PLANS.pro.priceNgn.toLocaleString('en-NG')} a month.
               </p>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { ArrowUp, Flame, Heart, MessageCircle, ShoppingCart, Sparkles, Clock, TrendingUp } from 'lucide-react';
+import { ArrowUp, Flame, Heart, MessageCircle, ShoppingCart, Clock, TrendingUp } from 'lucide-react';
 import { formatMoney, type ForumSummary, type ForumThread, type SiteProduct } from '@/lib/forums';
 import { waLink } from '@/lib/phone';
 
@@ -83,7 +83,7 @@ function MiniCard({ p, currency, accent, onOpen }: { p: SiteProduct; currency: s
         {p.image_url
           // eslint-disable-next-line @next/next/no-img-element
           ? <img src={p.image_url} alt={p.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-          : <div className="w-full h-full flex items-center justify-center" style={{ background: `${accent}18` }}><Sparkles className="w-6 h-6" style={{ color: accent }} /></div>}
+          : <div className="w-full h-full flex items-center justify-center" style={{ background: `${accent}18` }}><ShoppingCart className="w-6 h-6" style={{ color: accent }} /></div>}
       </div>
       <p className="text-sm font-medium mt-2 line-clamp-1">{p.title}</p>
       <p className="text-sm font-semibold" style={{ color: accent }}>{formatMoney(Number(p.price), currency)}</p>
@@ -121,7 +121,7 @@ export function PremiumRails({ site, products, currency, accent, onOpen, recentI
     <div className="space-y-7">
       <Rail title="Saved for later" icon={<Heart className="w-4 h-4" />} items={saved} currency={currency} accent={accent} onOpen={onOpen} />
       {hasRatings && <Rail title="Best sellers" icon={<Flame className="w-4 h-4" />} items={best} currency={currency} accent={accent} onOpen={onOpen} />}
-      <Rail title="New arrivals" icon={<Sparkles className="w-4 h-4" />} items={fresh} currency={currency} accent={accent} onOpen={onOpen} />
+      <Rail title="New arrivals" icon={<Clock className="w-4 h-4" />} items={fresh} currency={currency} accent={accent} onOpen={onOpen} />
       <Rail title="Recently viewed" icon={<Clock className="w-4 h-4" />} items={seen} currency={currency} accent={accent} onOpen={onOpen} />
     </div>
   );

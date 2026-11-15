@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search, Store, MessageSquare, ArrowRight, Eye, Sparkles, Check } from 'lucide-react';
+import { Search, Store, MessageSquare, ArrowRight, Eye, Gem, Check } from 'lucide-react';
 import DevelopaHeader from '@/app/components/DevelopaHeader';
 import DevelopaFooter from '@/app/components/DevelopaFooter';
 import { SITE_TEMPLATES, TEMPLATE_GROUPS, type SiteTemplate } from '@/lib/siteTemplates';
@@ -119,7 +119,7 @@ export default function TemplatesGalleryPage() {
 
         <section className="g-wrap pb-6">
           <div className="rounded-3xl g-tonal p-5 sm:p-7">
-            <h2 className="text-lg font-semibold flex items-center gap-2"><Sparkles className="w-5 h-5 text-accent" /> Why go premium?</h2>
+            <h2 className="text-lg font-semibold flex items-center gap-2"><Gem className="w-5 h-5 text-accent" /> Why go premium?</h2>
             <p className="text-sm text-secondary mt-1">One small payment, yours to keep. Premium themes turn on extra features for every visitor, with nothing to set up.</p>
             <ul className="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2.5">
               {PREMIUM_PERKS.slice(0, 8).map((p) => <li key={p.id} className="flex items-start gap-2 text-sm"><Check className="w-4 h-4 text-accent mt-0.5 shrink-0" /><span>{p.label}</span></li>)}
@@ -155,7 +155,7 @@ export default function TemplatesGalleryPage() {
                       <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] text-secondary">
                         {t.site_mode !== 'forum' && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-theme"><Store className="w-3 h-3" /> Store</span>}
                         {t.site_mode !== 'store' && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-theme"><MessageSquare className="w-3 h-3" /> Community</span>}
-                        {p.price > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-white font-medium" style={{ background: t.accent_color }}><Sparkles className="w-3 h-3" /> {TIER_LABEL[tierForPrice(p.price)]}</span>}
+                        {p.price > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-white font-medium" style={{ background: t.accent_color }}><Gem className="w-3 h-3" /> {TIER_LABEL[tierForPrice(p.price)]}</span>}
                         <span className="px-2 py-0.5 rounded-full border border-theme">Mobile ready</span>
                       </div>
                       <div className="mt-4 pt-4 flex gap-2 mt-auto">

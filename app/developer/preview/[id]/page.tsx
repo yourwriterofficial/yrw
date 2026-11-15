@@ -3,7 +3,7 @@
 import { use, useEffect, useMemo, useState } from 'react';
 import { skinFor } from '@/lib/themeSkins';
 import Link from 'next/link';
-import { ArrowLeft, Monitor, Smartphone, ShoppingCart, Search, X, Minus, Plus, Star, MessageSquare, Lock, Check, Menu, Sparkles, Truck, ShieldCheck, Headphones, Mail } from 'lucide-react';
+import { ArrowLeft, Monitor, Smartphone, ShoppingCart, Search, X, Minus, Plus, Star, MessageSquare, Lock, Check, Menu, Gem, Truck, ShieldCheck, Headphones, Mail } from 'lucide-react';
 import { SITE_TEMPLATES } from '@/lib/siteTemplates';
 import { formatMoney, type ForumSummary, type ForumThread, type SiteProduct } from '@/lib/forums';
 import { StoreProductCard, StorefrontHeroAndTrust } from '@/app/components/forums/StorefrontThemes';
@@ -192,7 +192,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
           <div className="flex items-center gap-3 min-w-0">
             <Link href="/developer/templates" className="flex items-center gap-1.5 text-sm text-secondary hover:text-primary"><ArrowLeft className="w-4 h-4" /> All themes</Link>
             <p className="font-medium truncate">{tpl.label}</p>
-            {premium && <span className="text-xs px-2.5 py-1 rounded-full text-white font-medium inline-flex items-center gap-1" style={{ background: accent }}><Sparkles className="w-3 h-3" />{TIER_LABEL[tier]}</span>}
+            {premium && <span className="text-xs px-2.5 py-1 rounded-full text-white font-medium inline-flex items-center gap-1" style={{ background: accent }}><Gem className="w-3 h-3" />{TIER_LABEL[tier]}</span>}
             {price && price.price > 0 && <span className="text-xs px-2.5 py-1 rounded-full g-tonal-strong">{price.owned ? 'You own this' : `₦${price.price.toLocaleString('en-NG')} once`}</span>}
           </div>
           <div className="flex items-center gap-2">
@@ -393,7 +393,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
         <section className="max-w-6xl mx-auto mt-8 g-card p-5 sm:p-7">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
-              <h2 className="text-lg font-semibold flex items-center gap-2">{premium ? <><Sparkles className="w-5 h-5" style={{ color: accent }} /> Premium features in this theme</> : 'Want more? Premium themes add these'}</h2>
+              <h2 className="text-lg font-semibold flex items-center gap-2">{premium ? <><Gem className="w-5 h-5" style={{ color: accent }} /> Premium features in this theme</> : 'Want more? Premium themes add these'}</h2>
               <p className="text-sm text-secondary mt-1">{premium ? 'Everything below is switched on from day one. Try the hearts, rails and floating buttons in the preview above.' : 'This theme is free. Premium themes switch these features on automatically.'}</p>
             </div>
             {!premium && <Link href="/developer/templates?premium=1" className="h-10 px-5 rounded-full g-tonal-strong text-sm font-medium inline-flex items-center">See premium themes</Link>}

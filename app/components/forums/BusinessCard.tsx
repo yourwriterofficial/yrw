@@ -25,7 +25,7 @@ export default function BusinessCard({ site, accent }: { site: ForumSummary; acc
       <div className="flex flex-wrap gap-2">
         {phone && <a href={`tel:${phone}`} className={`${btn} text-white`} style={{ background: accent }}><Phone className="w-4 h-4" /> Call</a>}
         {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className={`${btn} bg-[#25D366] text-white`}><MessageCircle className="w-4 h-4" /> WhatsApp</a>}
-        {address && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`} target="_blank" rel="noopener noreferrer" className={`${btn} g-tonal-strong text-primary`}><MapPin className="w-4 h-4" /> Directions</a>}
+        {address && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`} target="_blank" rel="noopener noreferrer" className={`${btn} border border-theme bg-card text-primary`}><MapPin className="w-4 h-4" /> Directions</a>}
       </div>
     </section>
   );
