@@ -1,5 +1,6 @@
 'use client';
 
+import { shrinkImage } from '@/lib/resizeImage';
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { formatMoney, type SiteProduct } from '@/lib/forums';
@@ -55,7 +56,7 @@ export default function ProductsTab({ site, products, reload }: { site: Site; pr
     for (const file of Array.from(files)) {
       if (next.length >= plan.maxProductPhotos) break;
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', await shrinkImage(file));
       try {
         const res = await fetch('/api/upload/drive', { method: 'POST', body: fd });
         const data = await res.json();

@@ -8,6 +8,8 @@ import StaffPanel from './StaffPanel';
 import SubaccountCard from './SubaccountCard';
 import ProToolsCard from './ProToolsCard';
 import LayoutCard from './LayoutCard';
+import LivePreview from './LivePreview';
+import { shrinkImage } from '@/lib/resizeImage';
 
 function Field({ id, label, children, hint }: { id: string; label: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -65,7 +67,7 @@ export default function SettingsTab({ site, reload, goToPlan }: { site: Site; re
     if (!file) return;
     setUploading(true);
     const fd = new FormData();
-    fd.append('file', file);
+    fd.append('file', await shrinkImage(file, 600, 0.9));
     try {
       const res = await fetch('/api/upload/drive', { method: 'POST', body: fd });
       const data = await res.json();
@@ -229,6 +231,7 @@ export default function SettingsTab({ site, reload, goToPlan }: { site: Site; re
         {msg && <p className={`text-sm ${msg.ok ? 'text-success' : 'text-danger'}`} role="status">{msg.text}</p>}
       </div>
     </form>
+    <LivePreview site={site} />
     {(!site.my_role || site.my_role === 'owner') && site.site_mode !== 'forum' && <LayoutCard site={site} reload={reload} />}
     {(!site.my_role || site.my_role === 'owner') && <ProToolsCard site={site} reload={reload} />}
     {(!site.my_role || site.my_role === 'owner') && <SubaccountCard site={site} goToPlan={goToPlan} />}

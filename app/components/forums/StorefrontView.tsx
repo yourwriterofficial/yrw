@@ -508,7 +508,7 @@ export default function StorefrontView({
             // Every theme gets the modern card; the wishlist heart stays a premium extra.
             return (
               <div key={p.id} className="relative premium-card">
-                {premium && <WishHeart slug={site.slug} productId={p.id} accent={site.accent_color || '#1a73e8'} />}
+                {<WishHeart slug={site.slug} productId={p.id} accent={site.accent_color || '#1a73e8'} />}
                 {card}
               </div>
             );

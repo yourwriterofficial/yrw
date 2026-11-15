@@ -31,6 +31,7 @@ export interface PlanDefinition {
   staffAccounts: boolean;
   maxStaff: number;
   deeperAnalytics: boolean;
+  /** Customer emails (newsletters) a site can send each month. Never unlimited: every plan has a cap. */
   newsletterLimitPerMonth: number;
   scheduledBackup: boolean;
   paidMemberships: boolean;
@@ -75,7 +76,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     staffAccounts: false,
     maxStaff: 0,
     deeperAnalytics: false,
-    newsletterLimitPerMonth: 0,
+    newsletterLimitPerMonth: 50,
     scheduledBackup: false,
     paidMemberships: false,
     bookings: false,
@@ -91,7 +92,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'none',
     businessCard: false,
     catalogueMode: true,
-    highlights: ['1 site on yourname.developa.me', 'Up to 10 products with 1 photo each', '10 free themes', 'WhatsApp ordering & catalogue mode', 'Orders by bank transfer or pay on delivery', 'Installable as a phone app'],
+    highlights: ['1 site on yourname.developa.me', 'Up to 10 products with 1 photo each', '10 free themes', 'WhatsApp ordering & catalogue mode', 'Orders by bank transfer or pay on delivery', 'Installable as a phone app', '50 customer emails a month'],
   },
   lite: {
     tier: 'lite',
@@ -116,7 +117,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     staffAccounts: false,
     maxStaff: 0,
     deeperAnalytics: false,
-    newsletterLimitPerMonth: 200,
+    newsletterLimitPerMonth: 500,
     scheduledBackup: false,
     paidMemberships: false,
     bookings: false,
@@ -132,7 +133,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'none',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 2 sites on one account', 'Custom domain (yourbrand.com)', 'Up to 50 products (3 photos each)', 'Get paid online straight to your bank (we keep 3%)', 'Run house ads on your own site & sell ad slots', 'Reviews, receipts, business card & phone alerts'],
+    highlights: ['Up to 2 sites on one account', 'Custom domain (yourbrand.com)', 'Up to 50 products (3 photos each)', 'Get paid online straight to your bank (we keep 3%)', 'Run house ads on your own site & sell ad slots', 'Reviews, receipts, business card & phone alerts', '500 customer emails a month'],
   },
   pro: {
     tier: 'pro',
@@ -157,7 +158,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     staffAccounts: false,
     maxStaff: 0,
     deeperAnalytics: true,
-    newsletterLimitPerMonth: 1000,
+    newsletterLimitPerMonth: 2000,
     scheduledBackup: true,
     paidMemberships: false,
     bookings: false,
@@ -173,7 +174,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'plus',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 4 sites on one account', 'Unlimited products & 6 photos each', 'Get paid online straight to your bank (we keep 2%)', 'Every Plus-tier premium theme included', 'Variants, delivery zones, coupons & abandoned carts', 'Run house ads, chat with buyers & no platform ads'],
+    highlights: ['Up to 4 sites on one account', 'Unlimited products & 6 photos each', 'Get paid online straight to your bank (we keep 2%)', 'Every Plus-tier premium theme included', 'Variants, delivery zones, coupons & abandoned carts', 'Run house ads, chat with buyers & no platform ads', '2,000 customer emails a month'],
   },
   business: {
     tier: 'business',
@@ -198,7 +199,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     staffAccounts: true,
     maxStaff: 3,
     deeperAnalytics: true,
-    newsletterLimitPerMonth: 5000,
+    newsletterLimitPerMonth: 10000,
     scheduledBackup: true,
     paidMemberships: true,
     bookings: true,
@@ -214,7 +215,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'all',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 8 sites on one account', 'Everything in Pro, and we keep only 1% of online payments', 'Every premium theme included (incl. Signature)', 'Up to 3 staff accounts with roles', 'Paid memberships & booking slots', '5,000 newsletters/mo & priority WhatsApp support'],
+    highlights: ['Up to 8 sites on one account', 'Everything in Pro, and we keep only 1% of online payments', 'Every premium theme included (incl. Signature)', 'Up to 3 staff accounts with roles', 'Paid memberships & booking slots', '10,000 customer emails a month & priority WhatsApp support'],
   },
   corporate: {
     tier: 'corporate',
@@ -239,7 +240,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     staffAccounts: true,
     maxStaff: 15,
     deeperAnalytics: true,
-    newsletterLimitPerMonth: 20000,
+    newsletterLimitPerMonth: 30000,
     scheduledBackup: true,
     paidMemberships: true,
     bookings: true,
@@ -255,7 +256,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'all',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 25 sites for agencies & branches', 'Everything in Business, and we keep only 0.5% of online payments', 'Up to 10 photos per product & 15 staff accounts', '20,000 newsletters/mo', 'Full white-label & priority support'],
+    highlights: ['Up to 25 sites for agencies & branches', 'Everything in Business, and we keep only 0.5% of online payments', 'Up to 10 photos per product & 15 staff accounts', '30,000 customer emails a month', 'Full white-label & priority support'],
   },
 };
 

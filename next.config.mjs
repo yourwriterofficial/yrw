@@ -88,6 +88,11 @@ const nextConfig = {
           },
         ],
       },
+      {
+        // The store pages may be shown inside this site's own dashboard (live preview). No other site may frame them.
+        source: '/forums/:slug',
+        headers: [{ key: 'X-Frame-Options', value: 'SAMEORIGIN' }],
+      },
     ];
   },
 };

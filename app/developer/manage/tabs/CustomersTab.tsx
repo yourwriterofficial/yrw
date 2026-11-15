@@ -204,6 +204,11 @@ export default function CustomersTab({ site, goToPlan }: { site: Site; goToPlan:
                   {sentThisMonth.toLocaleString()} / {limitPerMonth.toLocaleString()} emails this month · {subscriberCount} subscribed
                 </span>
               )}
+              {limitPerMonth > 0 && sentThisMonth >= limitPerMonth * 0.8 && plan.tier !== 'corporate' && (
+                <button type="button" onClick={goToPlan} className="text-xs font-medium text-accent hover:underline">
+                  {sentThisMonth >= limitPerMonth ? 'Limit reached. Upgrade for more' : 'Running low. Upgrade for more'}
+                </button>
+              )}
             </div>
             {plan.newsletterLimitPerMonth <= 0 ? (
               <div className="space-y-3">

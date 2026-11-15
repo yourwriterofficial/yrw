@@ -79,7 +79,7 @@ export async function POST(
 
     const plan = planFor(access.site.plan_tier, access.site.plan_expires_at);
     if (plan.newsletterLimitPerMonth <= 0) {
-      return NextResponse.json({ error: 'Customer newsletters are available on Pro and Business plans.' }, { status: 403 });
+      return NextResponse.json({ error: 'Customer emails are switched off for this plan.' }, { status: 403 });
     }
 
     const raw = await request.json().catch(() => null);
@@ -100,7 +100,7 @@ export async function POST(
     }
     const usedEmails = (monthLogs || []).reduce((sum, row) => sum + (Number(row.sent_count) || 0), 0);
     if (usedEmails >= plan.newsletterLimitPerMonth) {
-      return NextResponse.json({ error: `Monthly send limit of ${plan.newsletterLimitPerMonth.toLocaleString()} emails reached.` }, { status: 403 });
+      return NextResponse.json({ error: `Monthly send limit of ${plan.newsletterLimitPerMonth.toLocaleString()} emails reached. It resets on the 1st. Upgrade your plan for a bigger monthly allowance.` }, { status: 403 });
     }
 
     const remainingQuota = plan.newsletterLimitPerMonth - usedEmails;

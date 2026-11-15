@@ -133,9 +133,7 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
 
   const productGrid = (list: SiteProduct[]) => list.length === 0
     ? <p className="text-center text-secondary py-12">No matches. Try another word or category.</p>
-    : <div className={grid}>{list.map((p) => premium
-      ? <div key={p.id} className="relative premium-card"><WishHeart slug="preview" productId={p.id} accent={accent} /><StoreProductCard site={site} product={p} currency="NGN" layoutStyle={layout} onAdd={add} onOpen={openItem} catalogue={advertise} /></div>
-      : <StoreProductCard key={p.id} site={site} product={p} currency="NGN" layoutStyle={layout} onAdd={add} onOpen={openItem} catalogue={advertise} />)}</div>;
+    : <div className={grid}>{list.map((p) => <div key={p.id} className="relative premium-card"><WishHeart slug="preview" productId={p.id} accent={accent} /><StoreProductCard site={site!} product={p} currency="NGN" layoutStyle={layout} onAdd={add} onOpen={openItem} catalogue={advertise} /></div>)}</div>;
 
   const filters = (
     <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import ShareCard from './ShareCard';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, CalendarDays, Ticket, Truck, MessagesSquare, Crown, MessageCircle, Puzzle, Megaphone,
   Globe, Gem, Settings as SettingsIcon, ExternalLink, Copy, Check, Menu, X, ChevronRight, Share2, Plus, TrendingUp, Wallet, Eye,
@@ -341,7 +342,9 @@ function Overview({ site, detail, orders, origin, go, tier }: { site: Site; deta
   const steps = [
     { done: !isStore || detail.products.length > 0, label: `Add your first ${itemLabels(site.template_id)[0].toLowerCase()}`, tab: 'products' as TabKey, show: isStore },
     { done: !!site.bank_account_number || !!site.whatsapp_number, label: 'Tell buyers how to reach or pay you', tab: 'settings' as TabKey, show: isStore },
+    { done: detail.products.some((p) => !!p.image_url), label: 'Add a photo to a product', tab: 'products' as TabKey, show: isStore },
     { done: !!site.logo_url, label: 'Add your logo', tab: 'settings' as TabKey, show: true },
+    { done: !!site.hero_headline && site.hero_headline.trim().length > 3, label: 'Write your own welcome headline', tab: 'settings' as TabKey, show: true },
     { done: site.is_public, label: 'Make your site visible', tab: 'settings' as TabKey, show: true },
   ].filter((s) => s.show);
   const doneCount = steps.filter((s) => s.done).length;
@@ -491,6 +494,8 @@ function Overview({ site, detail, orders, origin, go, tier }: { site: Site; deta
               ))}
             </ul>
           </section>
+
+          <ShareCard name={site.name} link={link} accent={accent} />
 
           {isStore && !adsOn && (
             <section className="g-tonal p-5 rounded-2xl">
