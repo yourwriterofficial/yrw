@@ -11,13 +11,16 @@ const TEST_MARK = '_t';
 
 export const isTestReference = (reference: string) => reference.endsWith(TEST_MARK);
 
+/** Local/dev switch: when PAYSTACK_FORCE_TEST=true every call uses the test key, so dev can never touch live money. */
+const forceTest = () => process.env.PAYSTACK_FORCE_TEST === 'true' && !!process.env.PAYSTACK_TEST_SECRET_KEY;
+
 export function referenceFor(base: string, isTestAccount = false): string {
-  if (isTestAccount && process.env.PAYSTACK_TEST_SECRET_KEY) return `${base}${TEST_MARK}`;
+  if ((isTestAccount || forceTest()) && process.env.PAYSTACK_TEST_SECRET_KEY) return `${base}${TEST_MARK}`;
   return base;
 }
 
 function getKey(reference = ''): string {
-  if (isTestReference(reference)) {
+  if (isTestReference(reference) || forceTest()) {
     const t = process.env.PAYSTACK_TEST_SECRET_KEY;
     if (!t || !t.startsWith('sk_test_')) throw new Error('PAYSTACK_TEST_SECRET_KEY is not set');
     return t;
@@ -49,8 +52,11 @@ export async function initializeCheckout(p: {
   subaccount?: string | null;
   percentageCharge?: number;
 }): Promise<{ authorization_url: string; access_code: string; reference: string }> {
+  // Paystack rejects reserved domains such as .test. In test mode only, send a deliverable-looking address.
+  const testMode = isTestReference(p.reference) || forceTest();
+  const email = testMode && /@[^@]+\.(test|local|invalid|localhost)$/i.test(p.email) ? `${p.email.split('@')[0]}@example.com` : p.email;
   const payload: Record<string, unknown> = {
-    email: p.email,
+    email,
     amount: Math.round(p.amountKobo),
     currency: 'NGN',
     reference: p.reference,
