@@ -19,6 +19,8 @@ export default function ThemesTab({ flash }: { flash: (ok: boolean, text: string
   const [edits, setEdits] = useState<Record<string, { price: string; active: boolean }>>({});
   const [grant, setGrant] = useState({ email: '', template_id: '' });
   const [needsUpdate, setNeedsUpdate] = useState(false);
+  const [q, setQ] = useState('');
+  const [grp, setGrp] = useState('all');
 
   const load = useCallback(async () => {
     const r = await api<{ themes?: Theme[]; purchases?: Purchase[]; needs_update?: boolean }>('GET');
@@ -54,6 +56,9 @@ export default function ThemesTab({ flash }: { flash: (ok: boolean, text: string
   const label = (id: string) => themes.find((t) => t.id === id)?.label || id;
   const pending = purchases.filter((p) => p.status === 'pending');
   const premiumCount = themes.filter((t) => t.price_ngn > 0).length;
+  const hiddenCount = themes.filter((t) => !t.is_active).length;
+  const groups = Array.from(new Set(themes.map((t) => t.group)));
+  const shownThemes = themes.filter((t) => (grp === 'all' || t.group === grp) && (!q.trim() || t.label.toLowerCase().includes(q.trim().toLowerCase())));
 
   return (
     <div className="space-y-6">
@@ -76,28 +81,56 @@ export default function ThemesTab({ flash }: { flash: (ok: boolean, text: string
         </section>
       )}
 
-      <section className="g-card p-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <div><h3 className="font-medium">Theme prices</h3><p className="text-sm text-secondary mt-1">Set a price to make a theme premium. Set it to 0 to make it free. Switch a theme off to hide it from new sites. {premiumCount} premium now.</p></div>
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Themes', value: themes.length },
+          { label: 'Premium (paid)', value: premiumCount },
+          { label: 'Hidden from new sites', value: hiddenCount },
+        ].map((x) => (
+          <div key={x.label} className="bg-card border border-theme rounded-2xl p-4 min-w-0">
+            <p className="text-xs font-semibold text-secondary truncate">{x.label}</p>
+            <p className="text-xl font-black mt-1 tabular-nums">{x.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <section className="bg-card border border-theme rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-theme space-y-3">
+          <div>
+            <h3 className="font-bold">Theme prices</h3>
+            <p className="text-xs text-secondary mt-0.5">A price above ₦0 makes a theme premium. ₦0 makes it free. Untick &quot;Shown&quot; to hide a theme from new sites.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search themes" aria-label="Search themes" className="h-9 flex-1 min-w-[160px] rounded-lg border border-theme bg-card px-3 text-sm" />
+            {['all', ...groups].map((g) => (
+              <button key={g} onClick={() => setGrp(g)} aria-pressed={grp === g} className={`h-9 px-3 rounded-lg text-xs font-semibold border capitalize ${grp === g ? 'border-accent bg-accent/10 text-accent' : 'border-theme text-secondary hover:bg-hover'}`}>{g === 'all' ? 'All' : g}</button>
+            ))}
+          </div>
         </div>
-        <div className="g-scroll-x mt-4">
-          <table className="w-full text-sm min-w-[560px]">
-            <thead><tr className="text-left text-secondary text-xs"><th className="py-2 pr-3 font-medium">Theme</th><th className="py-2 pr-3 font-medium">Price (₦)</th><th className="py-2 pr-3 font-medium">Shown</th><th /></tr></thead>
-            <tbody className="divide-y divide-theme">
-              {themes.map((t) => {
-                const v = value(t);
-                return (
-                  <tr key={t.id}>
-                    <td className="py-2.5 pr-3"><p className="font-medium">{t.label}</p><p className="text-xs text-secondary capitalize">{t.group}{t.default_price_ngn !== t.price_ngn ? ` · default ${naira(t.default_price_ngn)}` : ''}</p></td>
-                    <td className="py-2.5 pr-3"><input type="number" min={0} step={500} value={v.price} onChange={(e) => setEdits({ ...edits, [t.id]: { ...v, price: e.target.value } })} aria-label={`Price for ${t.label}`} className="input-box w-32 !py-2 text-sm" /></td>
-                    <td className="py-2.5 pr-3"><input type="checkbox" checked={v.active} onChange={(e) => setEdits({ ...edits, [t.id]: { ...v, active: e.target.checked } })} aria-label={`Show ${t.label}`} className="w-5 h-5 accent-[var(--accent)]" /></td>
-                    <td className="py-2.5 text-right"><button disabled={!dirty(t)} onClick={() => save(t)} className="px-4 h-9 rounded-full bg-accent text-[var(--accent-foreground)] text-xs font-medium disabled:opacity-30">Save</button></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ul className="divide-y divide-theme">
+          {shownThemes.length === 0 && <li className="p-6 text-sm text-secondary text-center">No themes match.</li>}
+          {shownThemes.map((t) => {
+            const v = value(t);
+            const changed = dirty(t);
+            return (
+              <li key={t.id} className="px-5 py-3 flex flex-wrap items-center gap-3">
+                <div className="min-w-0 flex-1 basis-44">
+                  <p className="text-sm font-semibold truncate">{t.label}</p>
+                  <p className="text-xs text-secondary capitalize">{t.group}{t.default_price_ngn !== t.price_ngn ? ` · default ${naira(t.default_price_ngn)}` : ''}</p>
+                </div>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${Number(v.price) > 0 ? 'bg-accent/10 text-accent' : 'bg-secondary text-secondary'}`}>{Number(v.price) > 0 ? 'Premium' : 'Free'}</span>
+                <div className="relative shrink-0">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-secondary">₦</span>
+                  <input type="number" min={0} step={500} value={v.price} onChange={(e) => setEdits({ ...edits, [t.id]: { ...v, price: e.target.value } })} aria-label={`Price for ${t.label}`} className="h-9 w-28 rounded-lg border border-theme bg-primary pl-7 pr-2 text-sm font-semibold tabular-nums" />
+                </div>
+                <label className="inline-flex items-center gap-2 text-xs font-medium shrink-0 cursor-pointer select-none">
+                  <input type="checkbox" checked={v.active} onChange={(e) => setEdits({ ...edits, [t.id]: { ...v, active: e.target.checked } })} aria-label={`Show ${t.label}`} className="w-4 h-4 accent-[var(--accent)]" /> Shown
+                </label>
+                <button disabled={!changed} onClick={() => save(t)} className={`h-9 px-4 rounded-lg text-xs font-bold shrink-0 ${changed ? 'bg-accent text-[var(--accent-foreground)]' : 'bg-secondary text-secondary opacity-50'}`}>Save</button>
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       <section className="g-card p-5">

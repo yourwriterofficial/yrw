@@ -43,6 +43,8 @@ export default function AdminDevShopPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'products' | 'settings'>('products');
+  const [shopQuery, setShopQuery] = useState('');
+  const [shopCat, setShopCat] = useState('all');
   const [products, setProducts] = useState<Product[]>([]);
   const [editing, setEditing] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
@@ -189,12 +191,11 @@ export default function AdminDevShopPage() {
   if (loading) return <LoadingScreen label="Loading dev shop..." accent="brand" />;
 
   return (
-    <div className="p-6 md:p-10">
+    <div className="p-6 md:p-10 max-w-6xl">
       <PageHeader
-        title="Dev Shop"
-        description="Manage the /developer page content and the script marketplace catalogue."
-        breadcrumb="Admin / Dev Shop"
-        icon={<lucide.ShoppingBag className="w-8 h-8 text-accent" />}
+        title="Script Shop"
+        description="The ready-made scripts you sell on developa.me, and the text on the /developer page."
+        icon={<lucide.ShoppingBag className="w-7 h-7 text-accent" />}
         actions={
           tab === 'products' ? (
             <Button size="sm" onClick={() => { setEditing({ ...BLANK }); setTechInput(''); }}>
@@ -204,48 +205,68 @@ export default function AdminDevShopPage() {
         }
       />
 
-      <div className="flex bg-secondary border border-theme rounded-full p-1 w-fit mb-6">
-        <button onClick={() => setTab('products')} className={`px-6 py-2 rounded-full text-xs font-bold transition ${tab === 'products' ? 'bg-accent text-[var(--accent-foreground)]' : 'text-secondary hover:text-primary'}`}>Scripts ({products.length})</button>
-        <button onClick={() => setTab('settings')} className={`px-6 py-2 rounded-full text-xs font-bold transition ${tab === 'settings' ? 'bg-accent text-[var(--accent-foreground)]' : 'text-secondary hover:text-primary'}`}>Page Content</button>
+      <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-secondary/60 border border-theme w-full sm:w-fit mb-6" role="tablist">
+        <button role="tab" aria-selected={tab === 'products'} onClick={() => setTab('products')} className={`h-9 px-5 rounded-lg text-sm font-semibold ${tab === 'products' ? 'bg-card shadow-sm text-primary' : 'text-secondary hover:text-primary'}`}>Scripts ({products.length})</button>
+        <button role="tab" aria-selected={tab === 'settings'} onClick={() => setTab('settings')} className={`h-9 px-5 rounded-lg text-sm font-semibold ${tab === 'settings' ? 'bg-card shadow-sm text-primary' : 'text-secondary hover:text-primary'}`}>Page text</button>
       </div>
 
-      {tab === 'products' && (
-        <div className="bg-secondary border border-theme rounded-2xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-card border-b border-theme text-secondary text-[10px] uppercase tracking-wider">
-                <tr><th className="p-4">Script</th><th className="p-4">Category</th><th className="p-4">Price</th><th className="p-4">Source File</th><th className="p-4">Status</th><th className="p-4 text-right">Actions</th></tr>
-              </thead>
-              <tbody className="divide-y divide-theme">
-                {products.map(p => (
-                  <tr key={p.id} className="hover:bg-white/[0.02]">
-                    <td className="p-4 font-bold text-primary max-w-sm"><span className="line-clamp-2">{p.title}</span></td>
-                    <td className="p-4 text-secondary">{p.category}</td>
-                    <td className="p-4 font-black text-info">₦{Number(p.price).toLocaleString()}</td>
-                    <td className="p-4">
-                      {p.file_path ? (
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border bg-success/10 text-success border-success/20">Uploaded</span>
-                      ) : (
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border bg-danger/10 text-danger border-danger/20">Missing</span>
-                      )}
-                    </td>
-                    <td className="p-4">
-                      <button onClick={() => toggleActive(p)} className={`text-[10px] font-black uppercase px-2 py-1 rounded border ${p.is_active ? 'bg-success/10 text-success border-success/20' : 'bg-secondary text-secondary border-theme'}`}>{p.is_active ? 'Active' : 'Hidden'}</button>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex gap-2 justify-end">
-                        <Button size="icon" variant="secondary" onClick={() => { setEditing({ ...p, tech_stack: [...p.tech_stack], license_terms: p.license_terms || '' }); setTechInput(''); }}><lucide.Pencil className="w-4 h-4" /></Button>
-                        <Button size="icon" variant="danger" onClick={() => removeProduct(p)}><lucide.Trash2 className="w-4 h-4" /></Button>
+      {tab === 'products' && (() => {
+        const cats = Array.from(new Set(products.map((x) => x.category).filter(Boolean)));
+        const shownProducts = products.filter((x) => (shopCat === 'all' || x.category === shopCat) && (!shopQuery.trim() || x.title.toLowerCase().includes(shopQuery.trim().toLowerCase())));
+        const live = products.filter((x) => x.is_active).length;
+        const missing = products.filter((x) => !x.file_path).length;
+        return (
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Scripts', value: products.length },
+                { label: 'On sale (shown)', value: live },
+                { label: 'No source file yet', value: missing, warn: missing > 0 },
+              ].map((x) => (
+                <div key={x.label} className="bg-card border border-theme rounded-2xl p-4 min-w-0">
+                  <p className="text-xs font-semibold text-secondary truncate">{x.label}</p>
+                  <p className={`text-xl font-black mt-1 tabular-nums ${x.warn ? 'text-warning' : ''}`}>{x.value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <input value={shopQuery} onChange={(e) => setShopQuery(e.target.value)} placeholder="Search scripts" aria-label="Search scripts" className="h-10 flex-1 min-w-[180px] rounded-xl border border-theme bg-card px-3 text-sm" />
+              <select value={shopCat} onChange={(e) => setShopCat(e.target.value)} aria-label="Category" className="h-10 rounded-xl border border-theme bg-card px-3 text-sm font-medium">
+                <option value="all">All categories</option>
+                {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div className="bg-card border border-theme rounded-2xl overflow-hidden">
+              {shownProducts.length === 0 ? (
+                <p className="p-10 text-center text-secondary text-sm">{products.length === 0 ? 'No scripts yet. Add your first one.' : 'No scripts match.'}</p>
+              ) : (
+                <ul className="divide-y divide-theme">
+                  {shownProducts.map((p) => (
+                    <li key={p.id} className="px-4 py-3 flex flex-wrap items-center gap-3">
+                      <div className="min-w-0 flex-1 basis-56">
+                        <p className="text-sm font-semibold line-clamp-2">{p.title}</p>
+                        <p className="text-xs text-secondary">{p.category}</p>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-                {products.length === 0 && <tr><td colSpan={6} className="p-10 text-center text-secondary text-sm">No scripts yet — add your first one.</td></tr>}
-              </tbody>
-            </table>
+                      <p className="text-sm font-black tabular-nums whitespace-nowrap shrink-0">₦{Number(p.price).toLocaleString()}</p>
+                      <span className={`text-[11px] font-bold px-2 py-1 rounded-md shrink-0 ${p.file_path ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>{p.file_path ? 'File uploaded' : 'File missing'}</span>
+                      <button onClick={() => toggleActive(p)} role="switch" aria-checked={p.is_active} aria-label={`${p.title} ${p.is_active ? 'shown' : 'hidden'}`} className="flex items-center gap-2 text-xs font-semibold shrink-0">
+                        <span className={`relative w-10 h-5 rounded-full transition ${p.is_active ? 'bg-accent' : 'bg-secondary border border-theme'}`}><span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${p.is_active ? 'translate-x-5' : ''}`} /></span>
+                        <span className="w-12 text-left text-secondary">{p.is_active ? 'Shown' : 'Hidden'}</span>
+                      </button>
+                      <div className="flex gap-2 shrink-0">
+                        <Button size="icon" variant="secondary" aria-label={`Edit ${p.title}`} onClick={() => { setEditing({ ...p, tech_stack: [...p.tech_stack], license_terms: p.license_terms || '' }); setTechInput(''); }}><lucide.Pencil className="w-4 h-4" /></Button>
+                        <Button size="icon" variant="danger" aria-label={`Delete ${p.title}`} onClick={() => removeProduct(p)}><lucide.Trash2 className="w-4 h-4" /></Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {tab === 'settings' && (
         <div className="space-y-6 max-w-4xl">

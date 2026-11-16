@@ -133,7 +133,7 @@ export default function AdminDevelopaSitesPage() {
       )}
       {note && <p className={`text-sm rounded-xl p-3 border ${note.ok ? 'text-success border-success/30' : 'text-danger border-danger/30'}`} role="status">{note.text}</p>}
 
-      {tab === 'sites' && <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {tab === 'sites' && <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         <Kpi label="Sites" value={String(kpi.sites)} sub={`${kpi.paidSites} on a paid plan`} />
         <Kpi label="Plan income per month" value={naira(kpi.mrr)} sub={kpi.soon ? `${kpi.soon} ending within 7 days` : 'from active paid plans'} />
         <Kpi label="Plan payments received" value={naira(kpi.received)} sub={`${payments.length} recorded`} />
@@ -159,10 +159,10 @@ export default function AdminDevelopaSitesPage() {
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="g-card p-5">
-      <p className="text-sm text-secondary">{label}</p>
-      <p className="text-2xl font-medium mt-1 break-words">{value}</p>
-      {sub && <p className="text-xs text-secondary mt-1">{sub}</p>}
+    <div className="bg-card border border-theme rounded-2xl p-4 min-w-0">
+      <p className="text-xs font-semibold text-secondary truncate">{label}</p>
+      <p className="text-xl font-black mt-1 tabular-nums whitespace-nowrap truncate" title={value}>{value}</p>
+      {sub && <p className="text-[11px] text-secondary mt-0.5 truncate">{sub}</p>}
     </div>
   );
 }
@@ -176,6 +176,7 @@ function SitesTab({ sites, reload, flash, siteStates, userStates, openSiteId, cl
   const [soonOnly, setSoonOnly] = useState(false);
   const [paying, setPaying] = useState<AdminSiteRow | null>(null);
   const [verifying, setVerifying] = useState<AdminSiteRow | null>(null);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
   const shown = sites.filter((s) => {
     if (soonOnly) {
       const l = daysLeft(s.plan_expires_at);
@@ -193,81 +194,78 @@ function SitesTab({ sites, reload, flash, siteStates, userStates, openSiteId, cl
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by site, owner or domain" aria-label="Search sites" className="input-box w-full max-w-md" />
-        <button
-          type="button"
-          onClick={() => setSoonOnly((p) => !p)}
-          className={`px-4 h-10 rounded-full text-xs font-medium border transition-colors ${soonOnly ? 'bg-accent text-[var(--accent-foreground)] border-transparent' : 'border-theme text-secondary hover:bg-hover'}`}
-        >
-          Ending soon (within 7d)
-        </button>
-        <button
-          type="button"
-          onClick={() => setStatusFilter((p) => (p === 'all' ? 'problem' : 'all'))}
-          className={`px-4 h-10 rounded-full text-xs font-medium border transition-colors ${statusFilter === 'problem' ? 'bg-accent text-[var(--accent-foreground)] border-transparent' : 'border-theme text-secondary hover:bg-hover'}`}
-        >
-          Limited, suspended or banned
-        </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[220px]">
+          <svg className="w-4 h-4 text-secondary absolute left-3 top-1/2 -translate-y-1/2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by site, owner or domain" aria-label="Search sites" className="w-full h-10 rounded-xl border border-theme bg-card pl-9 pr-3 text-sm" />
+        </div>
+        <button type="button" onClick={() => setSoonOnly((p) => !p)} aria-pressed={soonOnly} className={`h-10 px-4 rounded-xl text-sm font-medium border transition-colors ${soonOnly ? 'border-accent bg-accent/10 text-accent' : 'border-theme text-secondary hover:bg-hover'}`}>Ending within 7 days</button>
+        <button type="button" onClick={() => setStatusFilter((p) => (p === 'all' ? 'problem' : 'all'))} aria-pressed={statusFilter === 'problem'} className={`h-10 px-4 rounded-xl text-sm font-medium border transition-colors ${statusFilter === 'problem' ? 'border-accent bg-accent/10 text-accent' : 'border-theme text-secondary hover:bg-hover'}`}>Limited, suspended or banned</button>
       </div>
       {shown.length === 0 ? <p className="text-sm text-secondary border border-dashed border-theme rounded-2xl p-8 text-center">No sites match.</p> : (
-        <div className="g-card overflow-x-auto">
-          <table className="w-full text-sm text-left min-w-[860px]">
-            <thead className="text-secondary border-b border-theme">
-              <tr>{['Site', 'Owner', 'Type', 'Domain', 'Orders', 'Sales', 'Plan', ''].map((h) => <th key={h} className="p-3.5 font-medium">{h}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y divide-theme">
-              {shown.map((s) => {
-                const tier = effectiveTier(s.plan_tier, s.plan_expires_at);
-                const left = daysLeft(s.plan_expires_at);
-                return (
-                  <tr key={s.id}>
-                    <td className="p-3.5">
-                      <p className="font-medium">
-                        {s.name}{' '}
-                        {s.verified && <span className="text-xs text-success font-medium">· Verified seller</span>}
-                        {!s.is_public && <span className="text-xs text-warning font-normal">· hidden</span>}
-                        {siteStates[s.id] && siteStates[s.id].status !== 'active' && <span className={`text-xs font-medium capitalize ${STATUS_STYLE[siteStates[s.id].status]}`}>· {siteStates[s.id].status}</span>}
-                        {userStates[s.owner_id]?.status === 'banned' && <span className="text-xs font-medium text-danger">· owner banned</span>}
-                      </p>
-                      <a href={`/forums/${s.slug}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-accent hover:underline">{s.slug}.developa.me</a>
-                    </td>
-                    <td className="p-3.5 text-secondary">{s.owner_name}</td>
-                    <td className="p-3.5 text-secondary capitalize">{s.site_mode || 'forum'}</td>
-                    <td className="p-3.5 font-mono text-xs">
-                      {s.custom_domain ? <>{s.custom_domain}<br /><span className={s.custom_domain_verified ? 'text-success' : 'text-warning'}>{s.custom_domain_verified ? 'verified' : 'not verified'}</span></> : <span className="text-secondary">none</span>}
-                    </td>
-                    <td className="p-3.5">{s.total_orders}</td>
-                    <td className="p-3.5">{formatMoney(s.total_gmv, s.currency || 'NGN')}</td>
-                    <td className="p-3.5">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${tier === 'free' ? 'bg-secondary text-secondary' : 'bg-accent text-[var(--accent-foreground)]'}`}>{PLANS[tier].name}</span>
-                      {s.plan_tier !== 'free' && s.plan_expires_at && (
-                        <p className={`text-xs mt-1 ${left !== null && left <= 7 ? 'text-warning' : 'text-secondary'}`}>
-                          {left !== null && left < 0 ? 'ended' : `${left}d left`} · {new Date(s.plan_expires_at).toLocaleDateString('en-GB')}
-                        </p>
-                      )}
-                      {s.plan_tier !== 'free' && !s.plan_expires_at && <p className="text-xs text-secondary mt-1">no end date</p>}
-                    </td>
-                    <td className="p-3.5">
-                      <div className="flex flex-wrap gap-1 justify-end">
-                        <button onClick={() => setControlling(s)} className="px-3 h-8 rounded-full border border-accent text-accent text-xs font-medium">Control</button>
-                        <button onClick={() => setPaying(s)} className="px-3 h-8 rounded-full bg-accent text-[var(--accent-foreground)] text-xs font-medium">Record payment</button>
-                        {s.plan_tier !== 'free' && <button onClick={() => patch(s, { plan_tier: 'free', plan_expires_at: null }, `${s.name} moved to Starter`)} className="px-3 h-8 rounded-full border border-theme text-xs">Set Starter</button>}
-                        {s.verified ? (
-                          <button onClick={() => patch(s, { verified: false }, `${s.name} verification removed`)} className="px-3 h-8 rounded-full border border-theme text-xs">Unverify</button>
-                        ) : (
-                          <button onClick={() => setVerifying(s)} className="px-3 h-8 rounded-full border border-theme text-xs">Verify seller</button>
-                        )}
-                        {s.custom_domain && !s.custom_domain_verified && <button onClick={() => patch(s, { custom_domain_verified: true }, 'Domain marked verified')} className="px-3 h-8 rounded-full border border-theme text-xs">Verify domain</button>}
-                        <button onClick={() => patch(s, { is_public: !s.is_public }, s.is_public ? `${s.name} hidden` : `${s.name} is live`)} className="px-3 h-8 rounded-full border border-theme text-xs">{s.is_public ? 'Hide' : 'Show'}</button>
+        <ul className="space-y-3">
+          {shown.map((s) => {
+            const tier = effectiveTier(s.plan_tier, s.plan_expires_at);
+            const left = daysLeft(s.plan_expires_at);
+            const st = siteStates[s.id]?.status;
+            const accent = /^#[0-9a-fA-F]{6}$/.test(s.accent_color || '') ? s.accent_color : '#2563eb';
+            return (
+              <li key={s.id} className="bg-card border border-theme rounded-2xl p-4 flex flex-wrap items-center gap-4">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold shrink-0" style={{ background: accent }}>{(s.name[0] || '?').toUpperCase()}</div>
+                <div className="min-w-0 flex-1 basis-56">
+                  <p className="font-semibold flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="truncate">{s.name}</span>
+                    {s.verified && <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-success/10 text-success">Verified</span>}
+                    {!s.is_public && <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-warning/10 text-warning">Hidden</span>}
+                    {st && st !== 'active' && <span className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-secondary capitalize ${STATUS_STYLE[st]}`}>{st}</span>}
+                    {userStates[s.owner_id]?.status === 'banned' && <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-danger/10 text-danger">Owner banned</span>}
+                  </p>
+                  <a href={`/forums/${s.slug}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-accent hover:underline break-all">{s.slug}.developa.me</a>
+                  <p className="text-xs text-secondary mt-0.5 truncate">
+                    {s.owner_name} · <span className="capitalize">{s.site_mode || 'forum'}</span>
+                    {s.custom_domain ? <> · {s.custom_domain} <span className={s.custom_domain_verified ? 'text-success' : 'text-warning'}>({s.custom_domain_verified ? 'verified' : 'not verified'})</span></> : null}
+                  </p>
+                </div>
+                <div className="flex items-center gap-6 shrink-0 text-right">
+                  <div>
+                    <p className="text-[11px] text-secondary">Sales</p>
+                    <p className="text-sm font-bold tabular-nums whitespace-nowrap">{formatMoney(s.total_gmv, s.currency || 'NGN')}</p>
+                    <p className="text-[11px] text-secondary">{s.total_orders} {s.total_orders === 1 ? 'order' : 'orders'}</p>
+                  </div>
+                  <div className="min-w-[96px]">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${tier === 'free' ? 'bg-secondary text-secondary' : 'bg-accent text-[var(--accent-foreground)]'}`}>{PLANS[tier].name}</span>
+                    {s.plan_tier !== 'free' && s.plan_expires_at && (
+                      <p className={`text-[11px] mt-1 ${left !== null && left <= 7 ? 'text-warning font-semibold' : 'text-secondary'}`}>{left !== null && left < 0 ? 'ended' : `${left}d left`}</p>
+                    )}
+                    {s.plan_tier !== 'free' && !s.plan_expires_at && <p className="text-[11px] text-secondary mt-1">no end date</p>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 relative">
+                  <button onClick={() => setControlling(s)} className="h-9 px-4 rounded-lg bg-accent text-[var(--accent-foreground)] text-sm font-semibold">Manage</button>
+                  <button onClick={() => setMenuFor(menuFor === s.id ? null : s.id)} aria-label={`More actions for ${s.name}`} aria-expanded={menuFor === s.id} className="h-9 w-9 rounded-lg border border-theme hover:bg-hover inline-flex items-center justify-center text-lg leading-none">⋯</button>
+                  {menuFor === s.id && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setMenuFor(null)} />
+                      <div className="absolute right-0 top-11 z-20 w-56 bg-card border border-theme rounded-xl shadow-elevation-3 p-1.5 text-sm">
+                        {[
+                          { label: 'Record a plan payment', run: () => setPaying(s) },
+                          ...(s.plan_tier !== 'free' ? [{ label: 'Move to Starter (free)', run: () => patch(s, { plan_tier: 'free', plan_expires_at: null }, `${s.name} moved to Starter`) }] : []),
+                          s.verified
+                            ? { label: 'Remove Verified seller', run: () => patch(s, { verified: false }, `${s.name} verification removed`) }
+                            : { label: 'Verify seller', run: () => setVerifying(s) },
+                          ...(s.custom_domain && !s.custom_domain_verified ? [{ label: 'Mark domain verified', run: () => patch(s, { custom_domain_verified: true }, 'Domain marked verified') }] : []),
+                          { label: s.is_public ? 'Hide this site' : 'Make this site live', run: () => patch(s, { is_public: !s.is_public }, s.is_public ? `${s.name} hidden` : `${s.name} is live`) },
+                        ].map((m) => (
+                          <button key={m.label} onClick={() => { setMenuFor(null); m.run(); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-hover">{m.label}</button>
+                        ))}
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
       {controlling && (
         <ControlDrawer
@@ -390,56 +388,65 @@ function PaymentModal({ site, onClose, onDone, flash }: { site: AdminSiteRow; on
 
 /* ----------------------------- Payments ----------------------------- */
 function PaymentsTab({ payments, settlements }: { payments: PaymentRow[]; settlements: MonthlySettlementRow[] }) {
+  const totalPlans = payments.reduce((n, p) => n + Number(p.amount), 0);
+  const totalFees = settlements.reduce((n, m) => n + Number(m.platform_fee), 0);
+  const latest = settlements[0];
   return (
     <div className="space-y-6">
-      <div className="g-card overflow-x-auto">
-        <div className="p-4 border-b border-theme">
-          <h3 className="font-medium">Monthly split settlements</h3>
-          <p className="text-xs text-secondary mt-0.5">ProsePen platform fees and seller net payouts aggregated monthly across all online orders.</p>
-        </div>
-        {settlements.length === 0 ? (
-          <p className="p-6 text-sm text-secondary">No online split orders settled yet.</p>
-        ) : (
-          <table className="w-full text-sm text-left min-w-[560px]">
-            <thead className="text-secondary border-b border-theme">
-              <tr>{['Month', 'Orders', 'Gross Sales', 'Platform Fee', 'Seller Net'].map((h) => <th key={h} className="p-3.5 font-medium">{h}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y divide-theme">
-              {settlements.map((m) => (
-                <tr key={m.month}>
-                  <td className="p-3.5 font-mono font-medium">{m.month}</td>
-                  <td className="p-3.5">{m.orders}</td>
-                  <td className="p-3.5">{naira(m.gross)}</td>
-                  <td className="p-3.5 text-success font-medium">{naira(m.platform_fee)}</td>
-                  <td className="p-3.5 font-medium">{naira(m.seller_net)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <div className="grid grid-cols-3 gap-3">
+        <Kpi label="Plan payments received" value={naira(totalPlans)} sub={`${payments.length} recorded`} />
+        <Kpi label="Platform fees earned" value={naira(totalFees)} sub="from online orders" />
+        <Kpi label={latest ? `Fees in ${latest.month}` : 'Fees this month'} value={naira(latest ? Number(latest.platform_fee) : 0)} sub={latest ? `${latest.orders} online ${latest.orders === 1 ? 'order' : 'orders'}` : 'no online orders yet'} />
       </div>
 
-      {payments.length === 0 ? (
-        <p className="text-sm text-secondary border border-dashed border-theme rounded-2xl p-8 text-center">No plan payments recorded yet. Use “Record payment” on the Sites tab when someone pays you.</p>
-      ) : (
-        <div className="g-card overflow-x-auto">
-          <table className="w-full text-sm text-left min-w-[640px]">
-            <thead className="text-secondary border-b border-theme"><tr>{['Date', 'Site', 'Plan', 'Months', 'Amount', 'Reference / note'].map((h) => <th key={h} className="p-3.5 font-medium">{h}</th>)}</tr></thead>
-            <tbody className="divide-y divide-theme">
-              {payments.map((p) => (
-                <tr key={p.id}>
-                  <td className="p-3.5 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString('en-GB')}</td>
-                  <td className="p-3.5">{p.site_name}<br /><span className="font-mono text-xs text-secondary">{p.site_slug}</span></td>
-                  <td className="p-3.5 capitalize">{p.plan_tier}</td>
-                  <td className="p-3.5">{p.months}</td>
-                  <td className="p-3.5 font-medium">{naira(Number(p.amount))}</td>
-                  <td className="p-3.5 text-secondary">{[p.reference, p.note].filter(Boolean).join(' · ') || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <section className="bg-card border border-theme rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-theme">
+          <h3 className="font-bold">Online order settlements, by month</h3>
+          <p className="text-xs text-secondary mt-0.5">What shoppers paid online, the platform fee we kept, and what sellers received.</p>
         </div>
-      )}
+        {settlements.length === 0 ? (
+          <p className="p-6 text-sm text-secondary">No online orders settled yet.</p>
+        ) : (
+          <ul className="divide-y divide-theme">
+            {settlements.map((m) => (
+              <li key={m.month} className="px-5 py-3 grid grid-cols-2 sm:grid-cols-[110px_repeat(4,minmax(0,1fr))] gap-x-4 gap-y-1 items-center">
+                <p className="font-mono font-bold col-span-2 sm:col-span-1">{m.month}</p>
+                <div><p className="text-[11px] text-secondary">Orders</p><p className="text-sm font-semibold tabular-nums">{m.orders}</p></div>
+                <div><p className="text-[11px] text-secondary">Shoppers paid</p><p className="text-sm font-semibold tabular-nums">{naira(m.gross)}</p></div>
+                <div><p className="text-[11px] text-secondary">Platform fee</p><p className="text-sm font-bold tabular-nums text-success">{naira(m.platform_fee)}</p></div>
+                <div><p className="text-[11px] text-secondary">Sellers received</p><p className="text-sm font-semibold tabular-nums">{naira(m.seller_net)}</p></div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="bg-card border border-theme rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-theme">
+          <h3 className="font-bold">Plan payments</h3>
+          <p className="text-xs text-secondary mt-0.5">Each time a site owner paid for a paid plan.</p>
+        </div>
+        {payments.length === 0 ? (
+          <p className="p-8 text-sm text-secondary text-center">No plan payments recorded yet. Use “Record a plan payment” in the site&apos;s ⋯ menu on the Sites page when someone pays you.</p>
+        ) : (
+          <ul className="divide-y divide-theme">
+            {payments.map((p) => (
+              <li key={p.id} className="px-5 py-3 flex flex-wrap items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center font-bold shrink-0">{(p.site_name[0] || '?').toUpperCase()}</div>
+                <div className="min-w-0 flex-1 basis-44">
+                  <p className="text-sm font-semibold truncate">{p.site_name}</p>
+                  <p className="text-xs text-secondary truncate">{[p.reference, p.note].filter(Boolean).join(' · ') || p.site_slug}</p>
+                </div>
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-secondary capitalize shrink-0">{p.plan_tier} · {p.months} {p.months === 1 ? 'month' : 'months'}</span>
+                <div className="text-right shrink-0 min-w-[96px]">
+                  <p className="text-sm font-black tabular-nums">{naira(Number(p.amount))}</p>
+                  <p className="text-[11px] text-secondary">{new Date(p.created_at).toLocaleDateString('en-GB', { dateStyle: 'medium' })}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
@@ -469,8 +476,8 @@ function AdsTab({ ads, sites, reload, flash }: { ads: AdRow[]; sites: AdminSiteR
   const siteName = (id: string | null) => (id ? sites.find((s) => s.id === id)?.name || 'One site' : 'Every site');
 
   return (
-    <div className="grid lg:grid-cols-5 gap-6">
-      <form onSubmit={create} className="lg:col-span-2 g-card p-5 space-y-4 h-fit">
+    <div className="grid xl:grid-cols-5 gap-6">
+      <form onSubmit={create} className="xl:col-span-2 g-card p-5 space-y-4 h-fit">
         <h3 className="font-medium">New ad</h3>
         <p className="text-xs text-secondary">Shown on the stores and communities of owners on the Starter plan. Pro and Business sites do not show platform ads.</p>
         <div><label className="block text-sm font-medium mb-1.5" htmlFor="ad-t">Headline</label><input id="ad-t" required value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className="input-box w-full" /></div>
@@ -497,7 +504,7 @@ function AdsTab({ ads, sites, reload, flash }: { ads: AdRow[]; sites: AdminSiteR
         <button type="submit" disabled={busy} className="bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-medium text-sm px-6 h-11 rounded-full disabled:opacity-50">{busy ? 'Saving…' : 'Publish ad'}</button>
       </form>
 
-      <div className="lg:col-span-3 space-y-3">
+      <div className="xl:col-span-3 space-y-3">
         {ads.length === 0 && <p className="text-sm text-secondary border border-dashed border-theme rounded-2xl p-8 text-center">No ads yet.</p>}
         {ads.map((a) => (
           <div key={a.id} className="g-card p-4 flex flex-wrap items-center gap-3">
