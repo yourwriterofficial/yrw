@@ -101,9 +101,9 @@ export default function AdminInboxPage() {
       {panel === 'mailboxes' && <MailboxesPanel mailboxes={mailboxes} reload={async () => { const m = await api<{ mailboxes?: Mailbox[] }>('/api/admin/inbox/mailboxes'); setMailboxes(m.data.mailboxes || []); await load(); }} flash={flash} />}
       {panel === 'macros' && <MacrosPanel macros={macros} reload={async () => { const c = await api<{ macros?: Macro[] }>('/api/admin/inbox/macros'); setMacros(c.data.macros || []); }} flash={flash} />}
 
-      <div className="grid md:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] gap-4 md:h-[calc(100vh-230px)] md:min-h-[520px]">
+      <div className="grid xl:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] gap-4 h-[calc(100vh-230px)] min-h-[520px]">
         {/* list */}
-        <section className={`g-card overflow-hidden flex flex-col min-h-0 ${selected ? 'hidden md:flex' : 'flex'}`}>
+        <section className={`g-card overflow-hidden flex flex-col min-h-0 ${selected ? 'hidden xl:flex' : 'flex'}`}>
           <div className="p-3 border-b border-theme space-y-2.5 shrink-0">
             <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-secondary/60 border border-theme" role="group" aria-label="Which brand">
               {brandTabs.map((t) => (
@@ -160,7 +160,7 @@ export default function AdminInboxPage() {
         </section>
 
         {/* conversation */}
-        <section className={`min-h-0 ${selected ? 'flex' : 'hidden md:flex'} flex-col`}>
+        <section className={`min-h-0 ${selected ? 'flex' : 'hidden xl:flex'} flex-col`}>
           {selected ? <ThreadView key={selected} id={selected} me={me} mailboxes={mailboxes} macros={macros} onBack={() => setSelected(null)} onChanged={load} onDeleted={() => { setSelected(null); void load(); }} flash={flash} /> : (
             <div className="g-card flex-1 flex flex-col items-center justify-center text-center text-secondary p-10"><Mail className="w-10 h-10 mb-3 opacity-40" /><p className="text-sm font-medium">Pick a conversation</p><p className="text-xs mt-1">Read it, reply, resolve it, or leave a private note for the team.</p></div>
           )}
@@ -237,7 +237,7 @@ function ThreadView({ id, me, mailboxes, macros, onBack, onChanged, onDeleted, f
     <div className="g-card overflow-hidden flex flex-col flex-1 min-h-0">
       <div className="px-4 py-3 border-b border-theme space-y-3 shrink-0">
         <div className="flex items-start gap-3">
-          <button onClick={onBack} aria-label="Back to the list" className="md:hidden w-9 h-9 rounded-lg hover:bg-hover flex items-center justify-center shrink-0"><ArrowLeft className="w-5 h-5" /></button>
+          <button onClick={onBack} aria-label="Back to the list" className="xl:hidden w-9 h-9 rounded-lg hover:bg-hover flex items-center justify-center shrink-0"><ArrowLeft className="w-5 h-5" /></button>
           <Initial name={t.customer_name || t.customer_email} brand={t.brand} />
           <div className="min-w-0 flex-1">
             <h2 className="font-bold text-base leading-snug break-words">{t.subject}</h2>

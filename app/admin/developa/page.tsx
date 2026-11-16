@@ -72,12 +72,12 @@ export default function DevelopaOverviewPage() {
         <Stat icon={Store} label="Sites" value={sites ? String(k.total) : '…'} sub={`${k.paid} on a paid plan`} />
         <Stat icon={TrendingUp} label="Plan income / month" value={sites ? naira(k.mrr) : '…'} sub="from active paid plans" />
         <Stat icon={Wallet} label="Plan payments received" value={sites ? naira(received) : '…'} sub="all time" />
-        <Stat icon={Globe} label="Sales across stores" value={sites ? formatMoney(k.gmv) : '…'} sub={`${k.orders} orders`} />
+        <Stat icon={Globe} label="Sales across stores" value={sites ? formatMoney(k.gmv) : '…'} sub={`${k.orders} ${k.orders === 1 ? "order" : "orders"}`} />
       </div>
 
       <section>
         <h2 className="text-sm font-bold text-secondary uppercase tracking-wider mb-3">Needs your attention</h2>
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid xl:grid-cols-3 gap-4">
           {attention.map((a) => {
             const Icon = a.icon;
             const calm = a.n === 0;
@@ -86,7 +86,7 @@ export default function DevelopaOverviewPage() {
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${calm ? 'bg-secondary text-secondary' : a.tone === 'danger' ? 'bg-danger/10 text-danger' : a.tone === 'warning' ? 'bg-warning/10 text-warning' : 'bg-accent/10 text-accent'}`}><Icon className="w-5 h-5" /></div>
                 <div className="min-w-0 flex-1">
                   <p className="text-2xl font-black leading-none">{a.n}</p>
-                  <p className="text-sm font-semibold mt-1 truncate">{a.label}</p>
+                  <p className="text-sm font-semibold mt-1">{a.label}</p>
                   <p className="text-xs text-secondary truncate">{calm ? 'All clear' : a.hint}</p>
                 </div>
                 <ArrowRight className="w-4 h-4 text-secondary group-hover:text-accent shrink-0" />
@@ -96,7 +96,7 @@ export default function DevelopaOverviewPage() {
         </div>
       </section>
 
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
+      <div className="grid xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
         <section className="g-card overflow-hidden">
           <div className="px-5 py-4 border-b border-theme flex items-center justify-between">
             <h2 className="font-bold">Newest sites</h2>
