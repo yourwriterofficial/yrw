@@ -139,11 +139,18 @@ export async function ingestInbound(body: InboundPayload): Promise<{ success: bo
     const raw = body.rawBody;
     const sub = raw.match(/^Subject:\s*([^\r\n]+)/im);
     if (sub && (!subject || subject === '(No subject)' || subject.includes('=?'))) subject = decodeMimeWords(sub[1].trim());
-    const fm = raw.match(/^From:\s*(?:["']?([^"'<\r\n]+)["']?\s*)?<([^>\r\n]+)>/im);
-    if (fm) {
-      if (fm[1] && !name) name = decodeMimeWords(fm[1].trim());
-      if (fm[2] && !from) from = fm[2].trim().toLowerCase();
-    }
+    // The address a person would reply to. The envelope sender is often a machine address (a bounce or return-path
+    // address used by email services), so the visible Reply-To or From header wins, and the envelope is the last resort.
+    const addrOf = (header: string) => {
+      const m = raw.match(new RegExp('^' + header + ':\\s*(?:["\']?([^"\'<\\r\\n]+)["\']?\\s*)?<([^>\\r\\n]+)>', 'im')) || raw.match(new RegExp('^' + header + ':\\s*([^\\s<>,;]+@[^\\s<>,;]+)', 'im'));
+      if (!m) return null;
+      return m.length > 2 ? { name: m[1] ? decodeMimeWords(m[1].trim()) : '', email: m[2].trim().toLowerCase() } : { name: '', email: m[1].trim().toLowerCase() };
+    };
+    const fromHeader = addrOf('From');
+    const replyTo = addrOf('Reply-To');
+    const visible = replyTo || fromHeader;
+    if (visible?.email) from = visible.email;
+    if (!name && (fromHeader?.name || visible?.name)) name = fromHeader?.name || visible?.name || '';
     if (/^(Received:|ARC-|MIME-Version:|Return-Path:|DKIM-|Content-Type:)/im.test(raw)) {
       const decodePart = (head: string, content: string) => (/quoted-printable/i.test(head) ? decodeQuotedPrintable(content) : /base64/i.test(head) ? Buffer.from(content.replace(/\s+/g, ''), 'base64').toString('utf-8') : content);
       const h = raw.match(/Content-Type:\s*text\/html([^]*?)\r?\n\r?\n([\s\S]*?)(?:\r?\n--[A-Za-z0-9'()+_,./:=?-]+|$)/i);

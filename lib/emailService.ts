@@ -71,12 +71,19 @@ function parseSender(
 }
 
 export async function sendSystemEmail(params: SendSystemEmailParams) {
-  const { to, subject, html, text, orderId, attachments, batchId, fromName, from, replyTo } = params;
+  const { to, subject, html, text, orderId, attachments, batchId, fromName, from, replyTo: replyToParam } = params;
 
-  const defaultSenderName = fromName || 'YourResearchWriter';
-  const defaultSenderEmail = 'noreply@yourresearchwriter.com.ng';
+  // The email design carries a brand marker (see lib/emailTemplates.ts). Developa-branded mail leaves as Developa, from the
+  // developa.me address, and replies go to the shared support inbox. Everything else stays YourResearchWriter.
+  const isDevelopa = !from && /<!--\s*brand:developa\s*-->/.test(html);
+  const defaultSenderName = fromName || (isDevelopa ? 'Developa' : 'YourResearchWriter');
+  const defaultSenderEmail = isDevelopa ? (process.env.DEVELOPA_FROM_EMAIL || 'noreply@developa.me') : 'noreply@yourresearchwriter.com.ng';
+  const replyTo = replyToParam || (isDevelopa ? (process.env.DEVELOPA_REPLY_TO || 'support@developa.me') : undefined);
   const parsedSender = parseSender(from, defaultSenderName, defaultSenderEmail);
   const senderEmailString = `${parsedSender.name} <${parsedSender.email}>`;
+  // Only the main provider knows the developa.me domain. The backups send under the same name from the original address,
+  // so a message is never lost because a backup provider has not verified the new domain.
+  const backupSender = isDevelopa ? { name: parsedSender.name, email: 'noreply@yourresearchwriter.com.ng' } : parsedSender;
 
   let providerId: string | null = null;
   let deliveredVia: string | null = null;
@@ -124,7 +131,7 @@ export async function sendSystemEmail(params: SendSystemEmailParams) {
     if (brevoKey) {
       try {
         const body: Record<string, unknown> = {
-          sender: { name: parsedSender.name, email: parsedSender.email },
+          sender: { name: backupSender.name, email: backupSender.email },
           to: [{ email: to }],
           subject,
           htmlContent: html,
@@ -179,8 +186,8 @@ export async function sendSystemEmail(params: SendSystemEmailParams) {
             ...(sharedSecret ? { 'x-email-secret': sharedSecret, Authorization: `Bearer ${sharedSecret}` } : {}),
           },
           body: JSON.stringify({
-            from: senderEmailString,
-            fromName: parsedSender.name,
+            from: `${backupSender.name} <${backupSender.email}>`,
+            fromName: backupSender.name,
             replyTo,
             to,
             subject,
@@ -230,7 +237,7 @@ export async function sendSystemEmail(params: SendSystemEmailParams) {
             subject,
             html,
             text,
-            fromName: parsedSender.name,
+            fromName: backupSender.name,
             replyTo,
             attachments: attachments?.map((a) => ({
               filename: a.filename,
