@@ -2,22 +2,64 @@ import { gzipSync } from 'zlib';
 import { createCipheriv, randomBytes, scryptSync } from 'crypto';
 
 /**
- * The nightly platform backup. Every table is exported with the service key, the whole set is compressed and then
- * encrypted with AES-256-GCM (key from BACKUP_PASSPHRASE), and the scrambled file is sent to a private Google Drive
- * folder through the Apps Script receiver in scripts/google-apps-script-backup-receiver.gs.
+ * The nightly Developa backup. It covers ONLY:
+ *   1. PAID Developa stores (any plan above Starter) with everything that belongs to them: products, orders, customers,
+ *      coupons, bookings, memberships, messages, posts, staff, plan payments and so on, plus the accounts of their owners.
+ *   2. Developa admin settings: bans and limits, announcements, platform ads, theme prices and sales, the Script Shop,
+ *      the developer page text, the admin history, and the support inbox mailboxes and saved replies.
+ * It does NOT include free stores, project topics, wallets, quotes or any other YourResearchWriter data.
  *
- * What is included: every table in the public schema, plus the account list (id, email, dates and profile data; never
- * password hashes). The very large project_topics catalogue (100,000+ rows) is backed up in parts on Sundays. What is NOT included:
- * uploaded images and files in storage buckets.
- *
- * Restore with scripts/restore-backup.mjs.
+ * The set is compressed, encrypted with AES-256-GCM (key from BACKUP_PASSPHRASE) and sent to a private Google Drive folder
+ * through the Apps Script receiver in scripts/google-apps-script-backup-receiver.gs. Restore with scripts/restore-backup.mjs.
+ * Not included: uploaded images and files in storage buckets, and visitor analytics (site_visits).
  */
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const PAGE = 1000;
-const BIG_TABLES = new Set(['project_topics']);
-const BUDGET_MS = 52_000;
+
+/** Developa admin settings: copied in full. */
+export const SETTINGS_TABLES = [
+  'admin_audit_log',
+  'platform_announcements',
+  'platform_site_ads',
+  'theme_catalog',
+  'theme_purchases',
+  'developer_page_settings',
+  'dev_products',
+  'dev_product_purchases',
+  'user_admin_state',
+  'site_admin_state',
+  'inbox_mailboxes',
+  'inbox_macros',
+];
+
+/** Tables whose rows belong to one store through a site_id column. Copied only for paid stores. */
+export const STORE_TABLES = [
+  'site_products',
+  'site_product_variants',
+  'site_orders',
+  'site_order_events',
+  'site_coupons',
+  'site_carts',
+  'site_ad_slots',
+  'site_ad_bookings',
+  'site_booking_services',
+  'site_bookings',
+  'site_membership_tiers',
+  'site_memberships',
+  'site_messages',
+  'site_moderation',
+  'site_newsletters',
+  'site_plan_payments',
+  'site_push_subscriptions',
+  'site_reports',
+  'site_reviews',
+  'site_shipping_zones',
+  'site_staff',
+  'site_subscribers',
+  'site_support_requests',
+];
 
 export function encryptBackup(plain: Buffer, passphrase: string): Buffer {
   const salt = randomBytes(16);
@@ -30,40 +72,47 @@ export function encryptBackup(plain: Buffer, passphrase: string): Buffer {
 
 const headers = () => ({ apikey: KEY, Authorization: `Bearer ${KEY}` });
 
-async function listTables(): Promise<string[]> {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/`, { headers: headers(), cache: 'no-store' });
-  if (!r.ok) throw new Error(`Could not list tables (${r.status})`);
-  const spec = (await r.json()) as { paths?: Record<string, unknown> };
-  return Object.keys(spec.paths || {}).filter((p) => p !== '/' && !p.startsWith('/rpc/')).map((p) => p.slice(1)).sort();
-}
-
-async function readTable(table: string, from = 0, maxRows = Infinity): Promise<{ rows: unknown[]; done: boolean }> {
-  const rows: unknown[] = [];
-  let start = from;
-  for (;;) {
-    const want = Math.min(PAGE, maxRows - rows.length);
-    if (want <= 0) return { rows, done: false };
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${encodeURIComponent(table)}?select=*`, {
-      headers: { ...headers(), Range: `${start}-${start + want - 1}`, 'Range-Unit': 'items' },
-      cache: 'no-store',
-    });
-    if (r.status === 416) return { rows, done: true };
-    if (!r.ok) throw new Error(`${table}: ${r.status}`);
-    const page = (await r.json()) as unknown[];
-    rows.push(...page);
-    if (page.length < want) return { rows, done: true };
-    start += page.length;
+/** Reads a table (optionally only rows whose `column` is one of `values`), a page at a time. */
+async function readRows(table: string, filter?: { column: string; values: string[] }): Promise<unknown[]> {
+  if (filter && filter.values.length === 0) return [];
+  const batches = filter ? chunk(filter.values, 60) : [null];
+  const out: unknown[] = [];
+  for (const batch of batches) {
+    let start = 0;
+    for (;;) {
+      const q = batch && filter ? `&${filter.column}=in.(${batch.map(encodeURIComponent).join(',')})` : '';
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${encodeURIComponent(table)}?select=*${q}`, {
+        headers: { ...headers(), Range: `${start}-${start + PAGE - 1}`, 'Range-Unit': 'items' },
+        cache: 'no-store',
+      });
+      if (r.status === 416) break;
+      if (!r.ok) throw new Error(`${table}: ${r.status}`);
+      const page = (await r.json()) as unknown[];
+      out.push(...page);
+      if (page.length < PAGE) break;
+      start += page.length;
+    }
   }
+  return out;
 }
 
-async function readAccounts(): Promise<unknown[]> {
+function chunk<T>(list: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
+  return out;
+}
+
+async function readAccounts(ids: Set<string>): Promise<unknown[]> {
   const out: unknown[] = [];
   for (let page = 1; page < 200; page++) {
     const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=${page}&per_page=1000`, { headers: headers(), cache: 'no-store' });
     if (!r.ok) throw new Error(`accounts: ${r.status}`);
     const j = (await r.json()) as { users?: Record<string, unknown>[] };
     const users = j.users || [];
-    for (const u of users) out.push({ id: u.id, email: u.email, phone: u.phone, created_at: u.created_at, last_sign_in_at: u.last_sign_in_at, email_confirmed_at: u.email_confirmed_at, app_metadata: u.app_metadata, user_metadata: u.user_metadata });
+    for (const u of users) {
+      if (!ids.has(String(u.id))) continue;
+      out.push({ id: u.id, email: u.email, phone: u.phone, created_at: u.created_at, last_sign_in_at: u.last_sign_in_at, email_confirmed_at: u.email_confirmed_at, app_metadata: u.app_metadata, user_metadata: u.user_metadata });
+    }
     if (users.length < 1000) break;
   }
   return out;
@@ -76,7 +125,7 @@ async function upload(fileName: string, data: Buffer) {
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ secret, fileName: fileName, base64Data: data.toString('base64') }),
+    body: JSON.stringify({ secret, fileName, base64Data: data.toString('base64') }),
     redirect: 'follow',
   });
   const j = (await r.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
@@ -85,9 +134,9 @@ async function upload(fileName: string, data: Buffer) {
 
 export interface BackupResult {
   files: { name: string; bytes: number }[];
-  tables: number;
+  paid_stores: number;
+  tables: Record<string, number>;
   rows: number;
-  skipped: string[];
   seconds: number;
 }
 
@@ -96,52 +145,62 @@ export async function runPlatformBackup(): Promise<BackupResult> {
   if (pass.length < 24) throw new Error('BACKUP_PASSPHRASE is missing or too short');
   const t0 = Date.now();
   const today = new Date().toISOString().slice(0, 10);
-  const isSunday = new Date().getUTCDay() === 0;
-  const result: BackupResult = { files: [], tables: 0, rows: 0, skipped: [], seconds: 0 };
+  const counts: Record<string, number> = {};
+  const archive: Record<string, unknown> = { _meta: { created_at: new Date().toISOString(), format: 2, scope: 'developa paid stores and admin settings' } };
 
-  const tables = await listTables();
-  const archive: Record<string, unknown> = { _meta: { created_at: new Date().toISOString(), format: 1 } };
-  // Read several tables at once; each one is small, so this finishes in a few seconds.
-  const queue = tables.filter((t) => !BIG_TABLES.has(t));
+  // 1. Which stores are paid. Free stores are left out.
+  const paidRes = await fetch(`${SUPABASE_URL}/rest/v1/forums?select=*&plan_tier=neq.free`, { headers: headers(), cache: 'no-store' });
+  if (!paidRes.ok) throw new Error(`stores: ${paidRes.status}`);
+  const stores = (await paidRes.json()) as Record<string, unknown>[];
+  const siteIds = stores.map((s) => String(s.id));
+  const ownerIds = new Set(stores.map((s) => String(s.owner_id)));
+  archive.forums = stores;
+  counts.forums = stores.length;
+
+  // 2. Everything that belongs to those stores, several tables at a time.
+  const jobs: { name: string; run: () => Promise<unknown[]> }[] = [
+    ...STORE_TABLES.map((t) => ({ name: t, run: () => readRows(t, { column: 'site_id', values: siteIds }) })),
+    { name: 'forum_members', run: () => readRows('forum_members', { column: 'forum_id', values: siteIds }) },
+    { name: 'forum_threads', run: () => readRows('forum_threads', { column: 'forum_id', values: siteIds }) },
+    { name: 'forum_posts', run: () => readRows('forum_posts', { column: 'forum_id', values: siteIds }) },
+    ...SETTINGS_TABLES.map((t) => ({ name: t, run: () => readRows(t) })),
+  ];
+  const queue = [...jobs];
+  const errors: string[] = [];
   await Promise.all(
     Array.from({ length: 6 }, async () => {
       for (;;) {
-        const t = queue.shift();
-        if (!t) return;
-        if (Date.now() - t0 > BUDGET_MS) { result.skipped.push(t); continue; }
-        const { rows } = await readTable(t);
-        archive[t] = rows;
-        result.tables++;
-        result.rows += rows.length;
+        const j = queue.shift();
+        if (!j) return;
+        try {
+          archive[j.name] = await j.run();
+          counts[j.name] = (archive[j.name] as unknown[]).length;
+        } catch (e) {
+          errors.push(`${j.name}: ${e instanceof Error ? e.message : 'failed'}`);
+        }
       }
     })
   );
-  archive._accounts = await readAccounts();
+  // 3. The owners' profiles and accounts, and the admins (their settings reference them).
+  const admins = (await readRows('profiles').then((rows) => (rows as { id: string; is_admin?: boolean }[]).filter((p) => p.is_admin))).map((p) => String(p.id));
+  const people = new Set<string>(Array.from(ownerIds).concat(admins));
+  const allProfiles = (await readRows('profiles', { column: 'id', values: Array.from(people) })) as unknown[];
+  archive.profiles = allProfiles;
+  counts.profiles = allProfiles.length;
+  archive._accounts = await readAccounts(people);
+  counts._accounts = (archive._accounts as unknown[]).length;
 
-  const main = encryptBackup(gzipSync(Buffer.from(JSON.stringify(archive))), pass);
-  const mainName = `${today}_developa-main.dvbk`;
-  await upload(mainName, main);
-  result.files.push({ name: mainName, bytes: main.length });
+  // A backup that silently misses a table is worse than none: fail loudly so the owner is told.
+  if (errors.length) throw new Error(`Some tables could not be read: ${errors.join('; ')}`);
 
-  // The large catalogue goes up in parts, on Sundays only, while time allows.
-  if (isSunday) {
-    for (const t of tables.filter((x) => BIG_TABLES.has(x))) {
-      let from = 0;
-      for (let part = 1; ; part++) {
-        if (Date.now() - t0 > BUDGET_MS) { result.skipped.push(`${t} (from row ${from})`); break; }
-        const { rows, done } = await readTable(t, from, 12_000);
-        if (rows.length) {
-          const enc = encryptBackup(gzipSync(Buffer.from(JSON.stringify({ [t]: rows }))), pass);
-          const name = `${today}_${t}-part${String(part).padStart(2, '0')}.dvbk`;
-          await upload(name, enc);
-          result.files.push({ name, bytes: enc.length });
-          result.rows += rows.length;
-          from += rows.length;
-        }
-        if (done) break;
-      }
-    }
-  }
-  result.seconds = Math.round((Date.now() - t0) / 100) / 10;
-  return result;
+  const enc = encryptBackup(gzipSync(Buffer.from(JSON.stringify(archive))), pass);
+  const name = `${today}_developa-paid-stores-and-settings.dvbk`;
+  await upload(name, enc);
+  return {
+    files: [{ name, bytes: enc.length }],
+    paid_stores: stores.length,
+    tables: counts,
+    rows: Object.values(counts).reduce((n, v) => n + v, 0),
+    seconds: Math.round((Date.now() - t0) / 100) / 10,
+  };
 }
