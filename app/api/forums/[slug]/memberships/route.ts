@@ -13,6 +13,7 @@ import {
 import { planFor } from '@/lib/plans';
 import { sendSystemEmail } from '@/lib/emailService';
 import { emailShell } from '@/lib/emailTemplates';
+import { loadSiteBrand } from '@/lib/siteBrandServer';
 import { siteUrl } from '@/lib/siteUrl';
 
 const createTierSchema = z.object({
@@ -306,7 +307,7 @@ export async function PATCH(
             : `<p>Your membership payment on <strong>${esc(access.site.name)}</strong> could not be confirmed.</p>`,
           `Open ${access.site.name}`,
           link,
-          'developa'
+          await loadSiteBrand(access.site)
         ),
       }).catch(() => {});
     }

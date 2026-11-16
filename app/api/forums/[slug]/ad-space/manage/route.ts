@@ -5,6 +5,7 @@ import { requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 import { effectiveTier, PLANS } from '@/lib/plans';
 import { sendSiteEmail } from '@/lib/siteMailer';
 import { emailShell } from '@/lib/emailTemplates';
+import { loadSiteBrand } from '@/lib/siteBrandServer';
 
 async function access(slug: string) {
   const a = await requireSiteAccess(slug, ['owner', 'manager']);
@@ -146,6 +147,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ slug: str
     : { status: 'rejected' };
   await supabaseAdmin.from('site_ad_bookings').update(update).eq('id', booking.id).eq('status', 'pending');
 
+  const brand = await loadSiteBrand(a.site);
   sendSiteEmail({
     to: booking.advertiser_email,
     subject: parsed.data.status === 'approved' ? `Your ad on ${a.site.name} is live` : `Your ad request on ${a.site.name}`,
@@ -155,7 +157,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ slug: str
         : `<h2>Request not approved</h2><p>${xss(a.site.name)} could not take your ad "${xss(booking.title)}" this time. Contact the seller if you have questions.</p>`,
       'Visit the site',
       `https://${a.site.slug}.developa.me`,
-      'developa'
+      brand
     ),
   }).catch(() => undefined);
   return NextResponse.json({ ok: true });

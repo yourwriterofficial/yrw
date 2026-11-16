@@ -33,7 +33,18 @@ async function api<T = Record<string, unknown>>(url: string, method = 'GET', bod
 }
 
 export default function AdminDevelopaSitesPage() {
-  const [tab, setTab] = useState<Tab>('sites');
+  const [tab, setTabState] = useState<Tab>('sites');
+  // The open tab lives in the address (?tab=), so the sidebar can link straight to it.
+  const TABS: Tab[] = ['sites', 'reports', 'announce', 'payments', 'themes', 'ads', 'support', 'audit'];
+  useEffect(() => {
+    const read = () => { const t = new URLSearchParams(window.location.search).get('tab') as Tab | null; setTabState(t && TABS.includes(t) ? t : 'sites'); };
+    read();
+    window.addEventListener('admintab', read);
+    window.addEventListener('popstate', read);
+    return () => { window.removeEventListener('admintab', read); window.removeEventListener('popstate', read); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const setTab = (t: Tab) => { setTabState(t); window.history.replaceState(null, '', `?tab=${t}`); window.dispatchEvent(new Event('admintab')); };
   const [sites, setSites] = useState<AdminSiteRow[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [settlements, setSettlements] = useState<MonthlySettlementRow[]>([]);

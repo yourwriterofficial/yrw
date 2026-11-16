@@ -5,6 +5,7 @@ import { requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
 import { effectiveTier, PLANS } from '@/lib/plans';
 import { sendSiteEmail } from '@/lib/siteMailer';
 import { emailShell } from '@/lib/emailTemplates';
+import { loadSiteBrand } from '@/lib/siteBrandServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,10 +66,11 @@ export async function POST(request: Request, ctx: { params: Promise<{ slug: stri
   if (error) return NextResponse.json({ error: 'Could not send.' }, { status: 500 });
   const { data: buyer } = await supabaseAdmin.auth.admin.getUserById(parsed.data.buyer_id);
   if (buyer?.user?.email) {
+    const brand = await loadSiteBrand(a.site);
     sendSiteEmail({
       to: buyer.user.email,
       subject: `${a.site.name} replied to your message`,
-      html: emailShell(`<h2>${xss(a.site.name)} replied</h2><p>${xss(parsed.data.body).slice(0, 500)}</p>`, 'Open the store', `https://${a.site.slug}.developa.me`, 'developa'),
+      html: emailShell(`<h2>${xss(a.site.name)} replied</h2><p>${xss(parsed.data.body).slice(0, 500)}</p>`, 'Open the store', `https://${a.site.slug}.developa.me`, brand),
     }).catch(() => undefined);
   }
   return NextResponse.json({ message: msg }, { status: 201 });

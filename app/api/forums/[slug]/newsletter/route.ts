@@ -8,6 +8,7 @@ import { creditsOf, spendEmailCredits } from '@/lib/emailCredits';
 import { readPluginSettings } from '@/lib/pluginsServer';
 import { sendSystemEmail } from '@/lib/emailService';
 import { emailShell } from '@/lib/emailTemplates';
+import { loadSiteBrand } from '@/lib/siteBrandServer';
 import { siteUrl } from '@/lib/siteUrl';
 
 const sendSchema = z.object({
@@ -141,6 +142,7 @@ export async function POST(
       .join('');
 
     let sentCount = 0;
+    const brand = await loadSiteBrand(access.site);
     for (const r of recipients) {
       const unsubHref = `${siteUrl()}/api/forums/${encodeURIComponent(access.site.slug)}/newsletter/unsubscribe?token=${encodeURIComponent(r.unsubscribe_token)}`;
       const ok = await sendSystemEmail({
@@ -150,7 +152,7 @@ export async function POST(
           `${bodyParagraphs}<p style="font-size:12px;color:#71717a;margin-top:20px">You received this because you opted in at ${esc(access.site.name)}. <a href="${esc(unsubHref)}">Unsubscribe</a></p>`,
           `Visit ${access.site.name}`,
           storeHref,
-          'developa'
+          brand
         ),
       }).catch(() => false);
       if (ok) sentCount++;

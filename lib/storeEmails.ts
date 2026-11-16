@@ -2,6 +2,7 @@ import { sendSiteEmail as sendSystemEmail } from './siteMailer';
 import { emailShell } from './emailTemplates';
 import { formatMoney } from './forums';
 import { siteUrl } from './siteUrl';
+import { loadSiteBrand } from './siteBrandServer';
 
 /**
  * Emails sent to the people who buy from a developa store. They are best effort:
@@ -61,13 +62,15 @@ const trackLink = (site: StoreInfo, order: OrderInfo) =>
 const receiptLink = (site: StoreInfo, order: OrderInfo) =>
   `${siteUrl()}/receipt/${encodeURIComponent(order.order_code)}?slug=${encodeURIComponent(site.slug)}&email=${encodeURIComponent(order.buyer_email)}`;
 
-function send(order: OrderInfo, subject: string, body: string, site: StoreInfo) {
+async function send(order: OrderInfo, subject: string, body: string, site: StoreInfo) {
   const track = trackLink(site, order);
   const trackNote = `<p style="font-size:13px;margin-top:12px">Track this order any time: <a href="${esc(track)}">${esc(order.order_code)}</a></p>`;
+  // Mail to a store's customers carries the store's own name, logo and colour.
+  const brand = await loadSiteBrand(site);
   return sendSystemEmail({
     to: order.buyer_email,
     subject: `${site.name}: ${subject} (${order.order_code})`,
-    html: emailShell(`${body}${trackNote}`, 'Track order', track, 'developa'),
+    html: emailShell(`${body}${trackNote}`, 'Track order', track, brand),
   });
 }
 

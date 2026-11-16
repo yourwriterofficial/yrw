@@ -13,6 +13,7 @@ import { clientIp, overLimit } from '@/lib/rateLimit';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { sendSystemEmail } from '@/lib/emailService';
 import { emailShell } from '@/lib/emailTemplates';
+import { loadSiteBrand } from '@/lib/siteBrandServer';
 import { siteUrl } from '@/lib/siteUrl';
 
 const createServiceSchema = z.object({
@@ -219,7 +220,7 @@ export async function POST(
         `<p>Hi ${esc(parsed.data.buyer_name)}, your booking request for <strong>${esc(service.title)}</strong> on <strong>${esc(parsed.data.slot_date)} at ${esc(parsed.data.slot_time)}</strong> was received. The owner will confirm shortly.</p>`,
         `Visit ${site.name}`,
         storeHref,
-        'developa'
+        await loadSiteBrand(site)
       ),
     }).catch(() => {});
 
@@ -285,7 +286,7 @@ export async function PATCH(
           `<p>Hi ${esc(booking.buyer_name)}, your appointment on <strong>${esc(booking.slot_date)} at ${esc(booking.slot_time)}</strong> is now <strong>${esc(parsed.data.status)}</strong>.</p>`,
           `Visit ${access.site.name}`,
           `${siteUrl()}/forums/${access.site.slug}`,
-          'developa'
+          await loadSiteBrand(access.site)
         ),
       }).catch(() => {});
     }

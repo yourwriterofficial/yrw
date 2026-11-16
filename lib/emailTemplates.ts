@@ -530,9 +530,158 @@ export const emailTemplates = {
   }),
 };
 
-export function emailShell(bodyHtml: string, ctaText?: string, ctaUrl?: string, brand?: 'developa' | 'yourresearchwriter'): string {
-  return baseLayout(`
-    ${bodyHtml}
-    ${ctaText && ctaUrl ? ctaButton(ctaText, ctaUrl) : ''}
-  `, brand);
+/** A site's own look for mail to its customers: name, link, accent colour and logo. */
+export interface SiteBrand {
+  name: string;
+  url: string;
+  accent?: string | null;
+  logoUrl?: string | null;
+  /** The owner switched off "Powered by Developa". */
+  hidePlatform?: boolean;
+}
+
+/** Builds a SiteBrand from a site record (only the fields that exist are used). */
+export function siteBrand(site: { name: string; slug?: string; accent_color?: string | null; logo_url?: string | null; hide_branding?: boolean | null }, url?: string): SiteBrand {
+  return {
+    name: site.name,
+    url: url || (site.slug ? `https://${site.slug}.developa.me` : 'https://developa.me'),
+    accent: site.accent_color,
+    logoUrl: site.logo_url,
+    hidePlatform: site.hide_branding === true,
+  };
+}
+
+const escHtml = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const safeColor = (c: string | null | undefined, fallback: string) => (c && /^#[0-9a-fA-F]{6}$/.test(c) ? c : fallback);
+const safeUrl = (u: string | null | undefined) => (u && /^https:\/\//.test(u) ? escHtml(u) : '');
+
+/** A readable text colour (dark or white) for a given background. */
+function onColor(hex: string) {
+  const n = parseInt(hex.slice(1), 16);
+  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return lum > 0.62 ? '#0f172a' : '#ffffff';
+}
+
+const DEVELOPA_ACCENT = '#2563eb';
+
+/**
+ * The modern layout used for Developa mail and for site mail. One calm white card on a soft background, a slim
+ * accent stripe, the brand mark at the top, roomy type, and a quiet footer. Table based, so it holds up in
+ * Gmail, Apple Mail and Outlook. No gradients or web fonts.
+ */
+function modernLayout(content: string, b: { accent: string; name: string; href: string; logoUrl?: string; footerHtml: string }) {
+  const ink = '#0f172a';
+  const mark = b.logoUrl
+    ? `<img src="${b.logoUrl}" alt="" width="36" height="36" style="display:block;width:36px;height:36px;border-radius:10px;object-fit:cover;border:0;">`
+    : `<table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="36" height="36" align="center" bgcolor="${b.accent}" style="width:36px;height:36px;border-radius:10px;background-color:${b.accent};color:${onColor(b.accent)};font-size:18px;font-weight:800;line-height:36px;">${escHtml((b.name.trim()[0] || 'D').toLowerCase())}</td></tr></table>`;
+  return `
+<!DOCTYPE html>
+<html>
+<!--brand:developa-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>${escHtml(b.name)}</title>
+  <style>
+    body { margin:0; padding:0; background:#f1f5f9; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color:#334155; line-height:1.65; }
+    h1 { font-size:24px; line-height:1.25; font-weight:800; color:${ink}; margin:0 0 14px; letter-spacing:-0.3px; }
+    h2 { font-size:20px; line-height:1.3; font-weight:800; color:${ink}; margin:0 0 12px; letter-spacing:-0.2px; }
+    p { font-size:15px; color:#334155; margin:0 0 16px; }
+    ul, ol { font-size:15px; color:#334155; }
+    a { color:${b.accent}; }
+    .card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:18px; margin:18px 0; }
+    .card-label { font-size:11px; color:#64748b; text-transform:uppercase; font-weight:700; letter-spacing:1px; margin-bottom:6px; }
+    .footer a { color:#64748b; text-decoration:underline; }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9;">
+    <tr>
+      <td align="center" style="padding:32px 12px;">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+          <tr><td height="4" bgcolor="${b.accent}" style="height:4px;line-height:4px;font-size:0;background-color:${b.accent};">&nbsp;</td></tr>
+          <tr>
+            <td style="padding:26px 32px 0;">
+              <a href="${b.href}" style="text-decoration:none;">
+                <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+                  <td style="vertical-align:middle;">${mark}</td>
+                  <td style="vertical-align:middle;padding-left:12px;font-size:18px;font-weight:800;color:${ink};letter-spacing:-0.3px;">${escHtml(b.name)}</td>
+                </tr></table>
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px 34px;font-size:15px;color:#334155;">
+              ${content}
+            </td>
+          </tr>
+          <tr>
+            <td class="footer" style="padding:20px 32px;background-color:#f8fafc;border-top:1px solid #e2e8f0;font-size:12px;line-height:1.6;color:#64748b;text-align:center;">
+              ${b.footerHtml}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+}
+
+/** Rounded accent button, with an Outlook-safe fallback. */
+function modernButton(text: string, url: string, color: string) {
+  const fg = onColor(color);
+  return `
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:22px;">
+        <tr><td align="left">
+          <!--[if mso]>
+          <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${url}" style="height:46px;v-text-anchor:middle;width:240px;" arcsize="22%" fillcolor="${color}" stroke="f">
+            <w:anchorlock/>
+            <center style="color:${fg};font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">${text}</center>
+          </v:roundrect>
+          <![endif]-->
+          <!--[if !mso]><!-->
+          <a href="${url}" style="display:inline-block;background-color:${color};color:${fg};text-decoration:none;padding:13px 26px;border-radius:10px;font-weight:700;font-size:15px;">${text}</a>
+          <!--<![endif]-->
+        </td></tr>
+      </table>`;
+}
+
+const developaFooter = () =>
+  `<strong style="color:#334155;">Developa</strong> &middot; Build and run your online store<br>` +
+  `<a href="https://developa.me">developa.me</a> &nbsp;&middot;&nbsp; <a href="https://wa.me/2348121443666">Help on WhatsApp</a><br>` +
+  `<span style="color:#94a3b8;">&copy; ${new Date().getFullYear()} Developa</span>`;
+
+/**
+ * Wraps message content in the right email design.
+ * - 'developa' (default for Developa mail): the Developa design.
+ * - a SiteBrand: the site's own name, logo and colour, for mail a store sends to its customers.
+ * - 'yourresearchwriter': the original YourResearchWriter design.
+ */
+export function emailShell(bodyHtml: string, ctaText?: string, ctaUrl?: string, brand?: 'developa' | 'yourresearchwriter' | SiteBrand): string {
+  if (brand && typeof brand === 'object') {
+    const accent = safeColor(brand.accent, DEVELOPA_ACCENT);
+    const href = safeUrl(brand.url) || 'https://developa.me';
+    const footerHtml =
+      `<strong style="color:#334155;">${escHtml(brand.name)}</strong><br>` +
+      `<a href="${href}">${escHtml(href.replace(/^https:\/\//, ''))}</a>` +
+      (brand.hidePlatform ? '' : `<br><span style="color:#94a3b8;">Powered by <a href="https://developa.me" style="color:#94a3b8;">Developa</a></span>`);
+    return modernLayout(`${bodyHtml}${ctaText && ctaUrl ? modernButton(ctaText, ctaUrl, accent) : ''}`, {
+      accent, name: brand.name, href, logoUrl: safeUrl(brand.logoUrl) || undefined, footerHtml,
+    });
+  }
+  if (brand === 'yourresearchwriter') {
+    return baseLayout(`${bodyHtml}${ctaText && ctaUrl ? ctaButton(ctaText, ctaUrl) : ''}`, brand);
+  }
+  // Anything that mentions Developa but did not say which design (older call sites) gets the Developa design too.
+  const looksDeveloa = brand === 'developa' || /developa|dev shop|my scripts|dev lead|technical brief/i.test(bodyHtml);
+  if (looksDeveloa) {
+    return modernLayout(`${bodyHtml}${ctaText && ctaUrl ? modernButton(ctaText, ctaUrl, DEVELOPA_ACCENT) : ''}`, {
+      accent: DEVELOPA_ACCENT, name: 'developa', href: 'https://developa.me', footerHtml: developaFooter(),
+    });
+  }
+  return baseLayout(`${bodyHtml}${ctaText && ctaUrl ? ctaButton(ctaText, ctaUrl) : ''}`, brand);
 }

@@ -329,7 +329,7 @@ export async function sendReply(p: {
 
   // The reference code in the subject lets the customer's reply find this conversation again.
   const subject = /\[T-[A-F0-9]{6}\]/i.test(p.subject) ? p.subject : `${p.subject.trim()} [${thread.ref_code}]`;
-  const html = emailShell(textToHtml(p.body) + `<!-- inbox_thread:${thread.id} -->`, `Visit ${brand.label}`, brand.url || siteUrl(), brand.shell);
+  const html = emailShell(textToHtml(p.body) + `<!-- inbox_thread:${thread.id} -->`, undefined, undefined, brand.shell);
   const result = await sendSystemEmail({
     to, subject, html, text: p.body,
     from: `${mailbox.display_name} <${mailbox.address}>`, fromName: mailbox.display_name, replyTo: mailbox.address,

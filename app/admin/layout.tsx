@@ -13,7 +13,7 @@ import Button from '@/app/components/ui/Button';
 import { Breadcrumb } from '@/app/components/ui/Breadcrumb';
 import Card from '@/app/components/ui/Card';
 
-type NavItem = { href: string; label: string; icon: typeof lucide.LayoutDashboard; exact?: boolean };
+type NavItem = { href: string; label: string; icon: typeof lucide.LayoutDashboard; exact?: boolean; tab?: string; defaultTab?: boolean };
 type NavGroup = { label: string; items: NavItem[] };
 
 const NAV_GROUPS: NavGroup[] = [
@@ -74,19 +74,43 @@ const NAV_GROUPS: NavGroup[] = [
 // invoices and catalogue stay on the main domain.
 const DEVELOPA_NAV_GROUPS: NavGroup[] = [
   {
-    label: 'Developa',
+    label: 'Overview',
+    items: [{ href: '/admin/developa', label: 'Overview', icon: lucide.LayoutDashboard, exact: true }],
+  },
+  {
+    label: 'Stores',
     items: [
-      { href: '/admin/developa-sites', label: 'Sites & revenue', icon: lucide.Globe },
+      { href: '/admin/developa-sites', tab: 'sites', defaultTab: true, label: 'Sites', icon: lucide.Globe },
+      { href: '/admin/developa-sites', tab: 'reports', label: 'Reports', icon: lucide.Flag },
+      { href: '/admin/developa-sites', tab: 'payments', label: 'Plan payments', icon: lucide.Wallet },
+      { href: '/admin/developa-sites', tab: 'themes', label: 'Themes and prices', icon: lucide.Palette },
+    ],
+  },
+  {
+    label: 'Reach',
+    items: [
+      { href: '/admin/developa-sites', tab: 'announce', label: 'Announcements', icon: lucide.Megaphone },
+      { href: '/admin/developa-sites', tab: 'ads', label: 'Ads on all sites', icon: lucide.Tag },
+    ],
+  },
+  {
+    label: 'Support',
+    items: [
+      { href: '/admin/inbox', label: 'Support inbox', icon: lucide.Inbox },
+      { href: '/admin/developa-sites', tab: 'support', label: 'Priority support', icon: lucide.LifeBuoy },
+      { href: '/admin/email', label: 'Messaging', icon: lucide.Send },
+    ],
+  },
+  {
+    label: 'People and products',
+    items: [
+      { href: '/admin/users', label: 'Users', icon: lucide.Users },
       { href: '/admin/dev-shop', label: 'Script Shop', icon: lucide.ShoppingBag },
     ],
   },
   {
-    label: 'People',
-    items: [
-      { href: '/admin/users', label: 'Users', icon: lucide.Users },
-      { href: '/admin/inbox', label: 'Support inbox', icon: lucide.Inbox },
-      { href: '/admin/email', label: 'Messaging', icon: lucide.Send },
-    ],
+    label: 'Safety',
+    items: [{ href: '/admin/developa-sites', tab: 'audit', label: 'History', icon: lucide.History }],
   },
 ];
 
@@ -104,6 +128,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [isDevelopa, setIsDevelopa] = useState(false);
   const [inboxUnread, setInboxUnread] = useState(0);
+  // Which tab of the Developa hub is open (kept in the address as ?tab=). The hub tells us when it changes.
+  const [tabParam, setTabParam] = useState('');
+  useEffect(() => {
+    const read = () => setTabParam(new URLSearchParams(window.location.search).get('tab') || '');
+    read();
+    window.addEventListener('admintab', read);
+    window.addEventListener('popstate', read);
+    return () => { window.removeEventListener('admintab', read); window.removeEventListener('popstate', read); };
+  }, [pathname]);
   useEffect(() => { setIsDevelopa(onDevelopaHost()); }, []);
   const navGroups = isDevelopa ? DEVELOPA_NAV_GROUPS : NAV_GROUPS;
   const navItems = navGroups.flatMap((g) => g.items);
@@ -143,19 +176,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/');
   };
 
-  const isActive = (href: string, exact?: boolean) => {
-    if (exact) return pathname === href;
-    return pathname === href || pathname?.startsWith(href + '/');
+  const hrefFor = (item: NavItem) => (item.tab ? `${item.href}?tab=${item.tab}` : item.href);
+  const isActive = (item: NavItem) => {
+    const onPath = item.exact ? pathname === item.href : pathname === item.href || !!pathname?.startsWith(item.href + '/');
+    if (!onPath) return false;
+    if (item.tab) return (tabParam || 'sites') === item.tab;
+    return true;
   };
 
-  const navLinkClass = (href: string, exact?: boolean) =>
-    `flex items-center p-3 rounded-xl transition font-bold text-sm ${
-      isActive(href, exact)
-        ? 'bg-accent/10 text-accent border border-accent/20'
+  // Clicking a tab link while already on that page switches the tab in place instead of reloading the page.
+  const onNavClick = (e: React.MouseEvent, item: NavItem) => {
+    if (item.tab && pathname === item.href) {
+      e.preventDefault();
+      window.history.pushState(null, '', hrefFor(item));
+      window.dispatchEvent(new Event('admintab'));
+    }
+  };
+
+  const navLinkClass = (item: NavItem) =>
+    `flex items-center gap-3 px-3 py-2 rounded-lg transition font-semibold text-[13px] ${
+      isActive(item)
+        ? 'bg-accent/10 text-accent'
         : 'text-secondary hover:bg-hover hover:text-primary'
     }`;
 
-  const currentPage = navItems.find((item) => isActive(item.href, item.exact));
+  const currentPage = navItems.find((item) => isActive(item));
 
   if (checkingAdmin) {
     return (
@@ -183,11 +228,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div key={group.label}>
               <p className="text-[9px] uppercase tracking-widest text-secondary/70 font-black pl-3 mb-1.5">{group.label}</p>
               <div className="flex flex-col gap-0.5">
-                {group.items.map(({ href, label, icon: Icon, exact }) => (
-                  <Link key={href} href={href} className={navLinkClass(href, exact)}>
-                    <Icon className="w-5 h-5 mr-3 shrink-0" /> {label}{href === '/admin/inbox' && inboxUnread > 0 && <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-accent text-[var(--accent-foreground)] text-[11px] font-bold flex items-center justify-center">{inboxUnread}</span>}
+                {group.items.map((item) => { const Icon = item.icon; const href = item.href; const label = item.label; return (
+                  <Link key={hrefFor(item)} href={hrefFor(item)} onClick={(e) => onNavClick(e, item)} className={navLinkClass(item)}>
+                    <Icon className="w-4 h-4 shrink-0" /> {label}{href === '/admin/inbox' && inboxUnread > 0 && <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-accent text-[var(--accent-foreground)] text-[11px] font-bold flex items-center justify-center">{inboxUnread}</span>}
                   </Link>
-                ))}
+                ); })}
               </div>
             </div>
           ))}
@@ -240,11 +285,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div key={group.label}>
               <p className="text-[9px] uppercase tracking-widest text-secondary/70 font-black pl-3 mb-1">{group.label}</p>
               <div className="flex flex-col gap-0.5">
-                {group.items.map(({ href, label, icon: Icon, exact }) => (
-                  <Link key={href} href={href} onClick={() => setMobileMenuOpen(false)} className={navLinkClass(href, exact)}>
-                    <Icon className="w-4 h-4 mr-3 shrink-0" /> {label}{href === '/admin/inbox' && inboxUnread > 0 && <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-accent text-[var(--accent-foreground)] text-[11px] font-bold flex items-center justify-center">{inboxUnread}</span>}
+                {group.items.map((item) => { const Icon = item.icon; const href = item.href; const label = item.label; return (
+                  <Link key={hrefFor(item)} href={hrefFor(item)} onClick={(e) => { onNavClick(e, item); setMobileMenuOpen(false); }} className={navLinkClass(item)}>
+                    <Icon className="w-4 h-4 shrink-0" /> {label}{href === '/admin/inbox' && inboxUnread > 0 && <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-accent text-[var(--accent-foreground)] text-[11px] font-bold flex items-center justify-center">{inboxUnread}</span>}
                   </Link>
-                ))}
+                ); })}
               </div>
             </div>
           ))}

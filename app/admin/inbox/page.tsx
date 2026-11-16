@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Star, Search, Inbox as InboxIcon, Send, StickyNote, Trash2, Plus, Settings2, ArrowLeft, Mail, CornerUpLeft } from 'lucide-react';
 import { BRANDS, type InboxBrand } from '@/lib/inboxBrands';
@@ -81,73 +81,76 @@ export default function AdminInboxPage() {
   ];
 
   return (
-    <div className="p-4 md:p-8 max-w-[1500px] mx-auto space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="p-4 md:p-6 max-w-[1500px] mx-auto space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="g-h2 flex items-center gap-2"><InboxIcon className="w-6 h-6" /> Support inbox</h1>
-          <p className="text-sm text-secondary">One inbox for Developa and YourResearchWriter. Each message shows which one it is for.</p>
+          <h1 className="text-2xl font-black tracking-tight flex items-center gap-2"><InboxIcon className="w-6 h-6 text-accent" /> Support inbox</h1>
+          <p className="text-sm text-secondary mt-0.5">Customer email for Developa and YourResearchWriter in one place.</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setPanel(panel === 'compose' ? 'none' : 'compose')} className="h-10 px-4 rounded-full bg-accent text-[var(--accent-foreground)] text-sm font-medium inline-flex items-center gap-2"><Plus className="w-4 h-4" /> New message</button>
-          <button onClick={() => setPanel(panel === 'macros' ? 'none' : 'macros')} className="h-10 px-4 rounded-full border border-theme hover:bg-hover text-sm">Saved replies</button>
-          <button onClick={() => setPanel(panel === 'mailboxes' ? 'none' : 'mailboxes')} className="h-10 px-4 rounded-full border border-theme hover:bg-hover text-sm inline-flex items-center gap-2"><Settings2 className="w-4 h-4" /> Mailboxes</button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setPanel(panel === 'macros' ? 'none' : 'macros')} className={`h-10 px-4 rounded-xl border text-sm font-medium ${panel === 'macros' ? 'border-accent bg-accent/10' : 'border-theme hover:bg-hover'}`}>Saved replies</button>
+          <button onClick={() => setPanel(panel === 'mailboxes' ? 'none' : 'mailboxes')} className={`h-10 px-4 rounded-xl border text-sm font-medium inline-flex items-center gap-2 ${panel === 'mailboxes' ? 'border-accent bg-accent/10' : 'border-theme hover:bg-hover'}`}><Settings2 className="w-4 h-4" /> Mailboxes</button>
+          <button onClick={() => setPanel(panel === 'compose' ? 'none' : 'compose')} className="h-10 px-4 rounded-xl bg-accent text-[var(--accent-foreground)] text-sm font-bold inline-flex items-center gap-2 shadow-sm"><Plus className="w-4 h-4" /> New message</button>
         </div>
       </div>
 
       {needsUpdate && <p className="text-sm text-warning border border-warning/30 rounded-xl p-4">The inbox needs the latest database update first (<span className="font-mono">20261115050000_shared_support_inbox.sql</span>). Until then, incoming emails only send an alert to the admins.</p>}
-      {note && <p className={`text-sm rounded-xl p-3 border ${note.ok ? 'text-success border-success/30' : 'text-danger border-danger/30'}`} role="status">{note.text}</p>}
+      {note && <p className={`text-sm rounded-xl p-3 border ${note.ok ? 'text-success border-success/30 bg-success/5' : 'text-danger border-danger/30 bg-danger/5'}`} role="status">{note.text}</p>}
 
       {panel === 'compose' && <ComposePanel mailboxes={mailboxes} macros={macros} onClose={() => setPanel('none')} onSent={async (id) => { setPanel('none'); flash(true, 'Message sent.'); await load(); setSelected(id); }} flash={flash} />}
       {panel === 'mailboxes' && <MailboxesPanel mailboxes={mailboxes} reload={async () => { const m = await api<{ mailboxes?: Mailbox[] }>('/api/admin/inbox/mailboxes'); setMailboxes(m.data.mailboxes || []); await load(); }} flash={flash} />}
       {panel === 'macros' && <MacrosPanel macros={macros} reload={async () => { const c = await api<{ macros?: Macro[] }>('/api/admin/inbox/macros'); setMacros(c.data.macros || []); }} flash={flash} />}
 
-      <div className="flex flex-wrap items-center gap-2">
-        {brandTabs.map((t) => (
-          <button key={t.key} onClick={() => setBrand(t.key)} aria-pressed={brand === t.key} className={`h-10 px-4 rounded-full text-sm font-medium inline-flex items-center gap-2 ${brand === t.key ? 'bg-accent text-[var(--accent-foreground)]' : 'border border-theme hover:bg-hover text-secondary'}`}>
-            {t.label}{!!t.unread && <span className={`min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center ${brand === t.key ? 'bg-white/25' : 'bg-accent text-[var(--accent-foreground)]'}`}>{t.unread}</span>}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid lg:grid-cols-[400px_minmax(0,1fr)] gap-4 items-start">
-        <section className={`g-card overflow-hidden ${selected ? 'hidden lg:block' : ''}`}>
-          <div className="p-3 border-b border-theme space-y-2">
-            <div className="relative"><Search className="w-4 h-4 text-secondary absolute left-3 top-1/2 -translate-y-1/2" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, subject or T-code" aria-label="Search the inbox" className="input-box w-full pl-9" /></div>
+      <div className="grid md:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] gap-4 md:h-[calc(100vh-230px)] md:min-h-[520px]">
+        {/* list */}
+        <section className={`g-card overflow-hidden flex flex-col min-h-0 ${selected ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-3 border-b border-theme space-y-2.5 shrink-0">
+            <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-secondary/60 border border-theme" role="group" aria-label="Which brand">
+              {brandTabs.map((t) => (
+                <button key={t.key} onClick={() => setBrand(t.key)} aria-pressed={brand === t.key} className={`h-8 rounded-lg text-xs font-bold inline-flex items-center justify-center gap-1.5 transition ${brand === t.key ? 'bg-card shadow-sm text-primary' : 'text-secondary hover:text-primary'}`}>
+                  <span className="truncate">{t.label}</span>{!!t.unread && <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-[var(--accent-foreground)] text-[10px] font-bold flex items-center justify-center">{t.unread}</span>}
+                </button>
+              ))}
+            </div>
+            <div className="relative"><Search className="w-4 h-4 text-secondary absolute left-3 top-1/2 -translate-y-1/2" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, subject or T-code" aria-label="Search the inbox" className="w-full h-10 rounded-xl border border-theme bg-card pl-9 pr-3 text-sm" /></div>
             <div className="flex flex-wrap gap-1.5">
-              {(['open', 'pending', 'resolved', 'spam', 'all'] as const).map((s) => <button key={s} onClick={() => setStatus(s)} aria-pressed={status === s} className={`h-8 px-3 rounded-full text-xs border ${status === s ? 'border-accent bg-accent/10 font-medium' : 'border-theme hover:bg-hover'}`}>{s === 'all' ? 'Everything' : STATUS_LABEL[s].split(' ')[0]}</button>)}
-              <button onClick={() => setUnreadOnly((u) => !u)} aria-pressed={unreadOnly} className={`h-8 px-3 rounded-full text-xs border ${unreadOnly ? 'border-accent bg-accent/10 font-medium' : 'border-theme hover:bg-hover'}`}>Unread</button>
+              {(['open', 'pending', 'resolved', 'spam', 'all'] as const).map((s) => <button key={s} onClick={() => setStatus(s)} aria-pressed={status === s} className={`h-7 px-2.5 rounded-lg text-xs font-medium border ${status === s ? 'border-accent bg-accent/10 text-accent' : 'border-theme text-secondary hover:bg-hover'}`}>{s === 'all' ? 'Everything' : s === 'pending' ? 'Waiting' : STATUS_LABEL[s]}</button>)}
+              <button onClick={() => setUnreadOnly((u) => !u)} aria-pressed={unreadOnly} className={`h-7 px-2.5 rounded-lg text-xs font-medium border ${unreadOnly ? 'border-accent bg-accent/10 text-accent' : 'border-theme text-secondary hover:bg-hover'}`}>Unread</button>
             </div>
             {checked.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                <span className="font-medium">{checked.length} picked</span>
-                <button onClick={() => batch('status', 'resolved')} className="px-2.5 h-7 rounded-full border border-theme">Resolve</button>
-                <button onClick={() => batch('status', 'spam')} className="px-2.5 h-7 rounded-full border border-theme">Spam</button>
-                <button onClick={() => batch('read')} className="px-2.5 h-7 rounded-full border border-theme">Mark read</button>
-                <button onClick={() => batch('delete')} className="px-2.5 h-7 rounded-full border border-danger/40 text-danger">Delete</button>
+              <div className="flex flex-wrap items-center gap-1.5 text-xs rounded-lg bg-accent/5 border border-accent/20 p-1.5">
+                <span className="font-bold px-1">{checked.length} picked</span>
+                <button onClick={() => batch('status', 'resolved')} className="px-2.5 h-7 rounded-lg border border-theme bg-card">Resolve</button>
+                <button onClick={() => batch('status', 'spam')} className="px-2.5 h-7 rounded-lg border border-theme bg-card">Spam</button>
+                <button onClick={() => batch('read')} className="px-2.5 h-7 rounded-lg border border-theme bg-card">Mark read</button>
+                <button onClick={() => batch('delete')} className="px-2.5 h-7 rounded-lg border border-danger/40 text-danger bg-card">Delete</button>
               </div>
             )}
           </div>
           {loading ? <p className="p-6 text-sm text-secondary">Loading…</p> : threads.length === 0 ? (
-            <p className="p-8 text-sm text-secondary text-center">No conversations here.</p>
+            <div className="p-10 text-center text-secondary flex-1"><Mail className="w-8 h-8 mx-auto mb-2 opacity-50" /><p className="text-sm font-medium">Nothing here</p><p className="text-xs mt-1">New mail to your support addresses shows up in this list.</p></div>
           ) : (
-            <ul className="divide-y divide-theme max-h-[70vh] overflow-y-auto">
+            <ul className="divide-y divide-theme overflow-y-auto flex-1 min-h-0">
               {threads.map((t) => (
-                <li key={t.id} className={`flex gap-2 p-3 cursor-pointer hover:bg-hover ${selected === t.id ? 'bg-accent/5' : ''}`} onClick={() => { setSelected(t.id); setPanel('none'); }}>
-                  <input type="checkbox" aria-label={`Pick ${t.subject}`} checked={checked.includes(t.id)} onClick={(e) => e.stopPropagation()} onChange={() => setChecked((c) => (c.includes(t.id) ? c.filter((x) => x !== t.id) : [...c, t.id]))} className="mt-1 w-4 h-4 shrink-0" />
+                <li key={t.id} className={`flex gap-3 px-3 py-3 cursor-pointer transition border-l-2 ${selected === t.id ? 'bg-accent/5 border-accent' : 'border-transparent hover:bg-hover'}`} onClick={() => { setSelected(t.id); setPanel('none'); }}>
+                  <div className="relative shrink-0">
+                    <Initial name={t.customer_name || t.customer_email} brand={t.brand} />
+                    <input type="checkbox" aria-label={`Pick ${t.subject}`} checked={checked.includes(t.id)} onClick={(e) => e.stopPropagation()} onChange={() => setChecked((c) => (c.includes(t.id) ? c.filter((x) => x !== t.id) : [...c, t.id]))} className={`absolute -left-1 -top-1 w-4 h-4 ${checked.includes(t.id) ? '' : 'opacity-0 hover:opacity-100 focus:opacity-100'}`} />
+                  </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      {t.unread && <span className="w-2 h-2 rounded-full bg-accent shrink-0" aria-label="Unread" />}
-                      <p className={`text-sm truncate ${t.unread ? 'font-semibold' : 'font-medium'}`}>{t.customer_name || t.customer_email}</p>
+                      <p className={`text-sm truncate ${t.unread ? 'font-bold' : 'font-medium'}`}>{t.customer_name || t.customer_email}</p>
+                      {t.starred && <Star className="w-3 h-3 fill-warning text-warning shrink-0" />}
                       <span className="ml-auto text-[11px] text-secondary shrink-0">{ago(t.last_message_at)}</span>
                     </div>
-                    <p className={`text-sm truncate ${t.unread ? 'font-medium' : 'text-secondary'}`}>{t.subject}</p>
-                    <p className="text-xs text-secondary truncate">{t.last_direction === 'outbound' ? 'You: ' : ''}{t.preview}</p>
+                    <p className={`text-[13px] truncate ${t.unread ? 'font-semibold' : 'text-secondary'}`}>{t.subject}</p>
+                    <p className="text-xs text-secondary truncate">{t.last_direction === 'outbound' ? 'You: ' : ''}{previewText(t.preview)}</p>
                     <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                       <BrandBadge brand={t.brand} />
-                      {t.status !== 'open' && <span className="text-[10px] px-1.5 py-0.5 rounded border border-theme text-secondary">{STATUS_LABEL[t.status]}</span>}
+                      {t.status !== 'open' && <span className="text-[10px] px-1.5 py-0.5 rounded-md border border-theme text-secondary">{STATUS_LABEL[t.status]}</span>}
                       {t.priority !== 'normal' && <span className="flex items-center gap-1 text-[10px] text-secondary"><span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_DOT[t.priority]}`} />{t.priority}</span>}
                       {t.assigned_to && <span className="text-[10px] text-secondary">→ {t.assigned_to.split('@')[0]}</span>}
-                      {t.starred && <Star className="w-3 h-3 fill-warning text-warning" />}
+                      {t.unread && <span className="ml-auto w-2 h-2 rounded-full bg-accent" aria-label="Unread" />}
                     </div>
                   </div>
                 </li>
@@ -156,14 +159,34 @@ export default function AdminInboxPage() {
           )}
         </section>
 
-        <section className={`${selected ? '' : 'hidden lg:block'}`}>
+        {/* conversation */}
+        <section className={`min-h-0 ${selected ? 'flex' : 'hidden md:flex'} flex-col`}>
           {selected ? <ThreadView key={selected} id={selected} me={me} mailboxes={mailboxes} macros={macros} onBack={() => setSelected(null)} onChanged={load} onDeleted={() => { setSelected(null); void load(); }} flash={flash} /> : (
-            <div className="g-card p-10 text-center text-secondary"><Mail className="w-8 h-8 mx-auto mb-3 opacity-60" /><p className="text-sm">Pick a conversation to read and reply.</p></div>
+            <div className="g-card flex-1 flex flex-col items-center justify-center text-center text-secondary p-10"><Mail className="w-10 h-10 mb-3 opacity-40" /><p className="text-sm font-medium">Pick a conversation</p><p className="text-xs mt-1">Read it, reply, resolve it, or leave a private note for the team.</p></div>
           )}
         </section>
       </div>
     </div>
   );
+}
+
+/** Round initial for a person, tinted by the brand they wrote to. */
+function Initial({ name, brand }: { name: string; brand: InboxBrand }) {
+  const c = (name.trim()[0] || '?').toUpperCase();
+  return <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${brand === 'developa' ? 'bg-accent/15 text-accent' : 'bg-success/15 text-success'}`}>{c}</div>;
+}
+
+/** The first lines of a message without the quoted earlier mail ("On … wrote:" and "> …"). */
+function previewText(s: string) {
+  return splitQuote(s).main.replace(/\s+/g, ' ').slice(0, 140);
+}
+
+/** Splits a reply into what the person wrote and the older mail they quoted under it. */
+function splitQuote(text: string): { main: string; quoted: string } {
+  const t = (text || '').replace(/\r/g, '');
+  const m = t.match(/\n?\s*On .{4,120}wrote:\s*\n?/) || t.match(/\n-{2,}\s*Original Message\s*-{2,}/i) || t.match(/\n\s*>/);
+  if (m && m.index !== undefined && m.index > 0) return { main: t.slice(0, m.index).trim(), quoted: t.slice(m.index).trim() };
+  return { main: t.trim(), quoted: '' };
 }
 
 /* ------------------------------------------------------------------ one conversation */
@@ -174,7 +197,10 @@ function ThreadView({ id, me, mailboxes, macros, onBack, onChanged, onDeleted, f
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [noteText, setNoteText] = useState('');
+  const [mode, setMode] = useState<'reply' | 'note'>('reply');
+  const [open, setOpen] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
+  const endRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
     const r = await api<{ thread: Thread; messages: Message[]; notes: Note[]; mailbox: Mailbox | null }>(`/api/admin/inbox/threads/${id}`);
@@ -182,6 +208,7 @@ function ThreadView({ id, me, mailboxes, macros, onBack, onChanged, onDeleted, f
     await onChanged();
   }, [id, onChanged]);
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [d?.messages.length, d?.notes.length]);
 
   const brandBoxes = useMemo(() => mailboxes.filter((m) => d && m.brand === d.thread.brand && m.status === 'active'), [mailboxes, d]);
   if (!d) return <div className="g-card p-8 text-sm text-secondary">Opening…</div>;
@@ -198,64 +225,93 @@ function ThreadView({ id, me, mailboxes, macros, onBack, onChanged, onDeleted, f
   const applyMacro = (m: Macro) => { const first = (t.customer_name || t.customer_email.split('@')[0]).split(' ')[0]; setBody((b) => (b ? b + '\n\n' : '') + m.body.replace(/\{\{\s*name\s*\}\}/g, first)); if (m.subject) setSubject(m.subject); };
   const remove = async () => { if (!confirm('Delete this conversation for good?')) return; await api(`/api/admin/inbox/threads/${t.id}`, 'DELETE'); onDeleted(); };
   const myMacros = macros.filter((m) => !m.brand || m.brand === t.brand);
+  const sel = 'h-9 rounded-lg border border-theme bg-card px-2.5 text-sm font-medium';
+
+  // Messages and private notes in the order they happened.
+  const feed = [
+    ...d.messages.map((m) => ({ kind: 'msg' as const, at: m.created_at, m })),
+    ...d.notes.map((n) => ({ kind: 'note' as const, at: n.created_at, n })),
+  ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 
   return (
-    <div className="g-card overflow-hidden">
-      <div className="p-4 border-b border-theme space-y-3">
+    <div className="g-card overflow-hidden flex flex-col flex-1 min-h-0">
+      <div className="px-4 py-3 border-b border-theme space-y-3 shrink-0">
         <div className="flex items-start gap-3">
-          <button onClick={onBack} aria-label="Back to the list" className="lg:hidden w-9 h-9 rounded-full hover:bg-hover flex items-center justify-center shrink-0"><ArrowLeft className="w-5 h-5" /></button>
+          <button onClick={onBack} aria-label="Back to the list" className="md:hidden w-9 h-9 rounded-lg hover:bg-hover flex items-center justify-center shrink-0"><ArrowLeft className="w-5 h-5" /></button>
+          <Initial name={t.customer_name || t.customer_email} brand={t.brand} />
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2"><BrandBadge brand={t.brand} /><span className="font-mono text-xs text-secondary">{t.ref_code}</span></div>
-            <h2 className="font-semibold text-lg mt-1 break-words">{t.subject}</h2>
-            <p className="text-sm text-secondary">{t.customer_name ? `${t.customer_name} · ` : ''}<a href={`mailto:${t.customer_email}`} className="hover:underline">{t.customer_email}</a> · to {d.mailbox?.address || 'mailbox'}</p>
+            <h2 className="font-bold text-base leading-snug break-words">{t.subject}</h2>
+            <p className="text-xs text-secondary mt-0.5 break-words">{t.customer_name ? `${t.customer_name} · ` : ''}<a href={`mailto:${t.customer_email}`} className="hover:underline">{t.customer_email}</a> · to {d.mailbox?.address || 'mailbox'}</p>
+            <div className="flex items-center gap-2 mt-1.5"><BrandBadge brand={t.brand} /><span className="font-mono text-[11px] text-secondary">{t.ref_code}</span></div>
           </div>
-          <button onClick={() => patch({ starred: !t.starred })} aria-label={t.starred ? 'Remove star' : 'Star'} className="w-9 h-9 rounded-full hover:bg-hover flex items-center justify-center shrink-0"><Star className={`w-5 h-5 ${t.starred ? 'fill-warning text-warning' : ''}`} /></button>
+          <button onClick={() => patch({ starred: !t.starred })} aria-label={t.starred ? 'Remove star' : 'Star'} className="w-9 h-9 rounded-lg hover:bg-hover flex items-center justify-center shrink-0"><Star className={`w-5 h-5 ${t.starred ? 'fill-warning text-warning' : 'text-secondary'}`} /></button>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <select value={t.status} onChange={(e) => patch({ status: e.target.value })} aria-label="Status" className="input-box h-9 py-0 min-w-[12rem]">{Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-          <select value={t.priority} onChange={(e) => patch({ priority: e.target.value })} aria-label="Priority" className="input-box h-9 py-0 min-w-[10rem]">{['low', 'normal', 'high', 'urgent'].map((p) => <option key={p} value={p}>{p[0].toUpperCase() + p.slice(1)} priority</option>)}</select>
-          <button onClick={() => patch({ assigned_to: t.assigned_to ? null : me || null })} className="h-9 px-3 rounded-full border border-theme hover:bg-hover text-xs">{t.assigned_to ? `Assigned to ${t.assigned_to.split('@')[0]} · unassign` : 'Assign to me'}</button>
-          <button onClick={() => patch({ unread: true })} className="h-9 px-3 rounded-full border border-theme hover:bg-hover text-xs">Mark unread</button>
-          <button onClick={remove} aria-label="Delete conversation" className="h-9 w-9 rounded-full border border-danger/40 text-danger flex items-center justify-center ml-auto"><Trash2 className="w-4 h-4" /></button>
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={t.status} onChange={(e) => patch({ status: e.target.value })} aria-label="Status" className={sel}>{Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+          <select value={t.priority} onChange={(e) => patch({ priority: e.target.value })} aria-label="Priority" className={sel}>{['low', 'normal', 'high', 'urgent'].map((p) => <option key={p} value={p}>{p[0].toUpperCase() + p.slice(1)} priority</option>)}</select>
+          <button onClick={() => patch({ assigned_to: t.assigned_to ? null : me || null })} className="h-9 px-3 rounded-lg border border-theme hover:bg-hover text-xs font-medium">{t.assigned_to ? `Assigned to ${t.assigned_to.split('@')[0]} · unassign` : 'Assign to me'}</button>
+          <button onClick={() => patch({ unread: true })} className="h-9 px-3 rounded-lg border border-theme hover:bg-hover text-xs font-medium">Mark unread</button>
+          <button onClick={remove} aria-label="Delete conversation" className="h-9 w-9 rounded-lg border border-danger/40 text-danger flex items-center justify-center ml-auto"><Trash2 className="w-4 h-4" /></button>
         </div>
       </div>
 
-      <div className="p-4 space-y-3 max-h-[46vh] overflow-y-auto bg-secondary/20">
-        {d.messages.map((m) => (
-          <article key={m.id} className={`rounded-2xl p-3.5 border text-sm ${m.direction === 'outbound' ? 'bg-accent/5 border-accent/20 ml-6' : 'bg-card border-theme mr-6'}`}>
-            <p className="text-xs text-secondary mb-1.5">{m.direction === 'outbound' ? <>From <b>{m.from_name || m.from_address}</b>{m.sent_by ? ` (sent by ${m.sent_by.split('@')[0]})` : ''}</> : <>From <b>{m.from_name || m.from_address}</b></>} · {new Date(m.created_at).toLocaleString('en-GB')}</p>
-            <p className="whitespace-pre-wrap break-words">{m.body_text || '(No text)'}</p>
-          </article>
-        ))}
-        {d.notes.map((n) => (
-          <article key={n.id} className="rounded-2xl p-3.5 border border-warning/40 bg-warning/5 text-sm">
-            <p className="text-xs text-secondary mb-1 flex items-center gap-1"><StickyNote className="w-3 h-3" /> Private note by {n.author_name || n.author_email} · {ago(n.created_at)}</p>
-            <p className="whitespace-pre-wrap">{n.content}</p>
-          </article>
-        ))}
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 bg-secondary/30">
+        {feed.map((f) => {
+          if (f.kind === 'note') {
+            const n = f.n;
+            return (
+              <article key={`n-${n.id}`} className="rounded-xl p-3 border border-warning/40 bg-warning/5 text-sm">
+                <p className="text-xs text-secondary mb-1 flex items-center gap-1"><StickyNote className="w-3 h-3" /> Private note by {n.author_name || n.author_email} · {ago(n.created_at)}</p>
+                <p className="whitespace-pre-wrap">{n.content}</p>
+              </article>
+            );
+          }
+          const m = f.m;
+          const out = m.direction === 'outbound';
+          const { main, quoted } = splitQuote(m.body_text || '');
+          return (
+            <article key={`m-${m.id}`} className={`flex ${out ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm border ${out ? 'bg-accent/10 border-accent/25 rounded-br-md' : 'bg-card border-theme rounded-bl-md'}`}>
+                <p className="text-[11px] text-secondary mb-1.5">{out ? <>You{m.sent_by ? ` (${m.sent_by.split('@')[0]})` : ''}</> : <b className="text-primary">{m.from_name || m.from_address}</b>} · {new Date(m.created_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                <p className="whitespace-pre-wrap break-words leading-relaxed">{main || '(No text)'}</p>
+                {quoted && (
+                  <>
+                    <button onClick={() => setOpen((o) => ({ ...o, [m.id]: !o[m.id] }))} className="mt-2 text-[11px] px-2 py-0.5 rounded-md border border-theme text-secondary hover:bg-hover" aria-expanded={!!open[m.id]}>{open[m.id] ? 'Hide earlier message' : '···  Show earlier message'}</button>
+                    {open[m.id] && <p className="mt-2 pl-3 border-l-2 border-theme whitespace-pre-wrap break-words text-xs text-secondary">{quoted}</p>}
+                  </>
+                )}
+              </div>
+            </article>
+          );
+        })}
+        <div ref={endRef} />
       </div>
 
-      <div className="p-4 border-t border-theme space-y-3">
-        <div className="grid sm:grid-cols-2 gap-2">
-          <div><label className="block text-xs font-medium mb-1" htmlFor="rp-from">Send from</label>
-            <select id="rp-from" value={mailboxId} onChange={(e) => setMailboxId(e.target.value)} className="input-box w-full">{(brandBoxes.length ? brandBoxes : mailboxes.filter((m) => m.id === t.mailbox_id)).map((m) => <option key={m.id} value={m.id}>{m.display_name} &lt;{m.address}&gt;</option>)}</select></div>
-          <div><label className="block text-xs font-medium mb-1" htmlFor="rp-sub">Subject</label><input id="rp-sub" value={subject} onChange={(e) => setSubject(e.target.value)} className="input-box w-full" /></div>
+      <div className="border-t border-theme shrink-0 bg-card">
+        <div className="flex items-center gap-1 px-4 pt-3" role="tablist">
+          {(['reply', 'note'] as const).map((k) => <button key={k} role="tab" aria-selected={mode === k} onClick={() => setMode(k)} className={`h-8 px-3 rounded-lg text-xs font-bold ${mode === k ? 'bg-accent/10 text-accent' : 'text-secondary hover:bg-hover'}`}>{k === 'reply' ? 'Reply' : 'Private note'}</button>)}
+          {mode === 'reply' && myMacros.length > 0 && (
+            <div className="ml-auto flex items-center gap-1 overflow-x-auto"><span className="text-[11px] text-secondary shrink-0">Saved:</span>{myMacros.slice(0, 6).map((m) => <button key={m.id} onClick={() => applyMacro(m)} className="px-2 h-7 rounded-lg border border-theme hover:bg-hover text-[11px] shrink-0">{m.title}</button>)}</div>
+          )}
         </div>
-        {myMacros.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-secondary">Saved replies:</span>
-            {myMacros.slice(0, 8).map((m) => <button key={m.id} onClick={() => applyMacro(m)} className="px-2.5 h-7 rounded-full border border-theme hover:bg-hover text-xs">{m.title}</button>)}
+        {mode === 'reply' ? (
+          <div className="p-4 pt-2 space-y-2.5">
+            <div className="grid sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-2">
+              <select id="rp-from" aria-label="Send from" value={mailboxId} onChange={(e) => setMailboxId(e.target.value)} className={`${sel} w-full`}>{(brandBoxes.length ? brandBoxes : mailboxes.filter((m) => m.id === t.mailbox_id)).map((m) => <option key={m.id} value={m.id}>From: {m.display_name} &lt;{m.address}&gt;</option>)}</select>
+              <input id="rp-sub" aria-label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} className={`${sel} w-full`} />
+            </div>
+            <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder={`Write your reply to ${t.customer_name || t.customer_email}`} aria-label="Reply" className="w-full rounded-xl border border-theme bg-card px-3 py-2.5 text-sm" />
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => sendMsg()} disabled={busy || !body.trim()} className="h-10 px-5 rounded-xl bg-accent text-[var(--accent-foreground)] text-sm font-bold inline-flex items-center gap-2 disabled:opacity-50"><Send className="w-4 h-4" /> {busy ? 'Sending…' : 'Send reply'}</button>
+              <button onClick={() => sendMsg('resolved')} disabled={busy || !body.trim()} className="h-10 px-5 rounded-xl border border-theme hover:bg-hover text-sm font-medium disabled:opacity-50 inline-flex items-center gap-2"><CornerUpLeft className="w-4 h-4" /> Send and resolve</button>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 pt-2 space-y-2.5">
+            <textarea id="nt" value={noteText} onChange={(e) => setNoteText(e.target.value)} rows={3} aria-label="Private note" className="w-full rounded-xl border border-warning/40 bg-warning/5 px-3 py-2.5 text-sm" placeholder="Only the team sees this. For example: check their order first." />
+            <button onClick={addNote} disabled={!noteText.trim()} className="h-10 px-5 rounded-xl border border-theme hover:bg-hover text-sm font-medium disabled:opacity-50">Add note</button>
           </div>
         )}
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={5} placeholder={`Write your reply to ${t.customer_name || t.customer_email}`} aria-label="Reply" className="input-box w-full" />
-        <div className="flex flex-wrap gap-2">
-          <button onClick={() => sendMsg()} disabled={busy || !body.trim()} className="h-10 px-5 rounded-full bg-accent text-[var(--accent-foreground)] text-sm font-medium inline-flex items-center gap-2 disabled:opacity-50"><Send className="w-4 h-4" /> {busy ? 'Sending…' : 'Send reply'}</button>
-          <button onClick={() => sendMsg('resolved')} disabled={busy || !body.trim()} className="h-10 px-5 rounded-full border border-theme hover:bg-hover text-sm disabled:opacity-50 inline-flex items-center gap-2"><CornerUpLeft className="w-4 h-4" /> Send and resolve</button>
-        </div>
-        <div className="pt-3 border-t border-theme space-y-2">
-          <label className="block text-xs font-medium" htmlFor="nt">Private note <span className="text-secondary font-normal">(not sent to the customer)</span></label>
-          <div className="flex gap-2"><input id="nt" value={noteText} onChange={(e) => setNoteText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void addNote(); }} className="input-box flex-1" placeholder="Remember to check their order" /><button onClick={addNote} className="h-10 px-4 rounded-full border border-theme hover:bg-hover text-sm">Add</button></div>
-        </div>
       </div>
     </div>
   );
