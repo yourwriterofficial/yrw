@@ -169,7 +169,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     maxStaff: 0,
     deeperAnalytics: true,
     newsletterLimitPerMonth: 30,
-    scheduledBackup: true,
+    scheduledBackup: false,
     paidMemberships: false,
     bookings: false,
     prioritySupport: false,
@@ -210,7 +210,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     maxStaff: 3,
     deeperAnalytics: true,
     newsletterLimitPerMonth: 40,
-    scheduledBackup: true,
+    scheduledBackup: false,
     paidMemberships: true,
     bookings: true,
     prioritySupport: true,
@@ -266,7 +266,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'all',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 25 sites for agencies & branches', 'Everything in Business, and we keep only 0.5% of online payments', 'Up to 10 photos per product & 15 staff accounts', '50 customer emails a month (buy more any time)', 'Full white-label & priority support'],
+    highlights: ['Up to 25 sites for agencies & branches', 'Everything in Business, and we keep only 0.5% of online payments', 'Up to 10 photos per product & 15 staff accounts', '50 customer emails a month (buy more any time)', 'Weekly store backups by email and one-click downloads', 'Full white-label & priority support'],
   },
 };
 

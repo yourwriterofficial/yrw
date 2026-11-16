@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireSiteAccess, supabaseAdmin } from '@/lib/forumServer';
+import { requireSiteAccess, supabaseAdmin, readExtendedSite } from '@/lib/forumServer';
+import { planFor } from '@/lib/plans';
 
 export async function GET(
   _request: Request,
@@ -9,6 +10,12 @@ export async function GET(
     const { slug } = await context.params;
     const access = await requireSiteAccess(slug, ['owner']);
     if ('error' in access) return access.error;
+
+    // Store backups are part of the highest plan only.
+    const ext = await readExtendedSite(access.site.id);
+    if (!planFor(access.site.plan_tier, ext?.plan_expires_at).scheduledBackup) {
+      return NextResponse.json({ error: 'Store backups are part of the Corporate plan.' }, { status: 403 });
+    }
 
     const [siteRes, productsRes, variantsRes, couponsRes, ordersRes, threadsRes, subsRes] = await Promise.all([
       supabaseAdmin.from('forums').select('*').eq('id', access.site.id).single(),

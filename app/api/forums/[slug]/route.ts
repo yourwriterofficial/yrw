@@ -428,7 +428,13 @@ export async function PATCH(
       if (parsed.data[k] !== undefined) toolUpdates[k] = xss(parsed.data[k]!);
     }
     if (parsed.data.summary_email !== undefined) toolUpdates.summary_email = parsed.data.summary_email;
-    if (parsed.data.weekly_backup_email !== undefined) toolUpdates.weekly_backup_email = parsed.data.weekly_backup_email;
+    if (parsed.data.weekly_backup_email !== undefined) {
+      const backupPlan = planFor(forum.plan_tier, (extra as { plan_expires_at?: string | null } | null)?.plan_expires_at);
+      if (parsed.data.weekly_backup_email && !backupPlan.scheduledBackup) {
+        return NextResponse.json({ error: 'Store backups are part of the Corporate plan.' }, { status: 403 });
+      }
+      toolUpdates.weekly_backup_email = parsed.data.weekly_backup_email;
+    }
     if (parsed.data.social_links !== undefined) {
       const cleanedLinks: Record<string, string> = {};
       for (const platform of ['instagram', 'tiktok', 'facebook', 'x', 'youtube', 'website'] as const) {

@@ -209,11 +209,17 @@ export default function SettingsTab({ site, reload, goToPlan }: { site: Site; re
           <input type="checkbox" checked={f.summary_email} onChange={(e) => set('summary_email', e.target.checked)} className="w-4 h-4" />
           Send daily store summary & low-stock alerts to my email (Pro & Business)
         </label>
-        <label className="flex items-center gap-3 text-sm">
-          <input type="checkbox" checked={f.weekly_backup_email} onChange={(e) => set('weekly_backup_email', e.target.checked)} className="w-4 h-4" />
-          Email me a weekly JSON backup of products and orders
-        </label>
-        {(!site.my_role || site.my_role === 'owner') && (
+        {planFor(site.plan_tier, site.plan_expires_at).scheduledBackup ? (
+          <label className="flex items-center gap-3 text-sm">
+            <input type="checkbox" checked={f.weekly_backup_email} onChange={(e) => set('weekly_backup_email', e.target.checked)} className="w-4 h-4" />
+            Email me a weekly JSON backup of products and orders
+          </label>
+        ) : (
+          <p className="text-sm text-secondary rounded-xl border border-dashed border-theme p-3">
+            Weekly store backups and downloads are part of the Corporate plan. <button type="button" onClick={goToPlan} className="text-accent font-medium hover:underline">See plans</button>
+          </p>
+        )}
+        {planFor(site.plan_tier, site.plan_expires_at).scheduledBackup && (!site.my_role || site.my_role === 'owner') && (
           <div className="pt-2">
             <a
               href={`/api/forums/${encodeURIComponent(site.slug)}/export`}

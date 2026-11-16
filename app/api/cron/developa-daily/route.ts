@@ -160,7 +160,7 @@ export async function GET(request: Request) {
       }
 
       // 4.7 Weekly JSON backup email (Sundays)
-      if (isSunday && ext.weekly_backup_email === true && ext.last_backup_sent_date !== todayUtc) {
+      if (isSunday && plan.scheduledBackup && ext.weekly_backup_email === true && ext.last_backup_sent_date !== todayUtc) {
         const ownerEmail = await getOwnerEmail(site.owner_id as string);
         if (ownerEmail) {
           const [prods, orders, coupons] = await Promise.all([
