@@ -93,6 +93,11 @@ const nextConfig = {
         source: '/forums/:slug',
         headers: [{ key: 'X-Frame-Options', value: 'SAMEORIGIN' }],
       },
+      {
+        // The theme demo may be shown inside this site's own admin (one demo preview for every theme). No other site may frame it.
+        source: '/developer/preview/:id',
+        headers: [{ key: 'X-Frame-Options', value: 'SAMEORIGIN' }],
+      },
     ];
   },
 };

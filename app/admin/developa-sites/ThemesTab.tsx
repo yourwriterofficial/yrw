@@ -21,6 +21,9 @@ export default function ThemesTab({ flash }: { flash: (ok: boolean, text: string
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [q, setQ] = useState('');
   const [grp, setGrp] = useState('all');
+  // One demo preview for every theme: pick a theme and see exactly what customers see.
+  const [previewId, setPreviewId] = useState('');
+  const [device, setDevice] = useState<'desktop' | 'phone'>('desktop');
 
   const load = useCallback(async () => {
     const r = await api<{ themes?: Theme[]; purchases?: Purchase[]; needs_update?: boolean }>('GET');
@@ -95,6 +98,36 @@ export default function ThemesTab({ flash }: { flash: (ok: boolean, text: string
       </div>
 
       <section className="bg-card border border-theme rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-theme flex flex-wrap items-center gap-3">
+          <div className="min-w-0 flex-1 basis-56">
+            <h3 className="font-bold">Demo preview</h3>
+            <p className="text-xs text-secondary mt-0.5">One demo store for every theme. Pick a theme to see it exactly as customers see it.</p>
+          </div>
+          <select value={previewId || themes[0]?.id || ''} onChange={(e) => setPreviewId(e.target.value)} aria-label="Theme to preview" className="h-10 rounded-xl border border-theme bg-card px-3 text-sm font-medium max-w-full">
+            {themes.map((t) => <option key={t.id} value={t.id}>{t.label}{t.price_ngn > 0 ? ` · ${naira(t.price_ngn)}` : ' · Free'}</option>)}
+          </select>
+          <div className="flex gap-1 p-1 rounded-lg bg-secondary/60 border border-theme" role="group" aria-label="Screen size">
+            {(['desktop', 'phone'] as const).map((d) => <button key={d} onClick={() => setDevice(d)} aria-pressed={device === d} className={`h-8 px-3 rounded-md text-xs font-semibold capitalize ${device === d ? 'bg-card shadow-sm text-primary' : 'text-secondary hover:text-primary'}`}>{d}</button>)}
+          </div>
+          <a href={`/developer/preview/${previewId || themes[0]?.id || ''}`} target="_blank" rel="noreferrer" className="h-10 px-4 rounded-xl border border-theme hover:bg-hover text-sm font-medium inline-flex items-center">Open full page</a>
+        </div>
+        <div className="bg-secondary/40 p-4 flex justify-center">
+          {themes.length === 0 ? (
+            <p className="text-sm text-secondary py-16">Loading themes…</p>
+          ) : (
+            <iframe
+              key={(previewId || themes[0]?.id) + device}
+              src={`/developer/preview/${previewId || themes[0]?.id}`}
+              title="Theme demo preview"
+              className={`bg-white rounded-xl border border-theme ${device === 'phone' ? 'w-[390px] max-w-full' : 'w-full'}`}
+              style={{ height: '70vh', minHeight: 420 }}
+              loading="lazy"
+            />
+          )}
+        </div>
+      </section>
+
+      <section className="bg-card border border-theme rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-theme space-y-3">
           <div>
             <h3 className="font-bold">Theme prices</h3>
@@ -107,30 +140,46 @@ export default function ThemesTab({ flash }: { flash: (ok: boolean, text: string
             ))}
           </div>
         </div>
-        <ul className="divide-y divide-theme">
-          {shownThemes.length === 0 && <li className="p-6 text-sm text-secondary text-center">No themes match.</li>}
-          {shownThemes.map((t) => {
-            const v = value(t);
-            const changed = dirty(t);
+        <div>
+          {shownThemes.length === 0 && <p className="p-6 text-sm text-secondary text-center">No themes match.</p>}
+          {Array.from(new Set(shownThemes.map((t) => t.group))).map((g) => {
+            const inGroup = shownThemes.filter((t) => t.group === g);
+            const prem = inGroup.filter((t) => t.price_ngn > 0).length;
+            const anyDirty = inGroup.some((t) => dirty(t));
             return (
-              <li key={t.id} className="px-5 py-3 flex flex-wrap items-center gap-3">
-                <div className="min-w-0 flex-1 basis-44">
-                  <p className="text-sm font-semibold truncate">{t.label}</p>
-                  <p className="text-xs text-secondary capitalize">{t.group}{t.default_price_ngn !== t.price_ngn ? ` · default ${naira(t.default_price_ngn)}` : ''}</p>
-                </div>
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${Number(v.price) > 0 ? 'bg-accent/10 text-accent' : 'bg-secondary text-secondary'}`}>{Number(v.price) > 0 ? 'Premium' : 'Free'}</span>
-                <div className="relative shrink-0">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-secondary">₦</span>
-                  <input type="number" min={0} step={500} value={v.price} onChange={(e) => setEdits({ ...edits, [t.id]: { ...v, price: e.target.value } })} aria-label={`Price for ${t.label}`} className="h-9 w-28 rounded-lg border border-theme bg-primary pl-7 pr-2 text-sm font-semibold tabular-nums" />
-                </div>
-                <label className="inline-flex items-center gap-2 text-xs font-medium shrink-0 cursor-pointer select-none">
-                  <input type="checkbox" checked={v.active} onChange={(e) => setEdits({ ...edits, [t.id]: { ...v, active: e.target.checked } })} aria-label={`Show ${t.label}`} className="w-4 h-4 accent-[var(--accent)]" /> Shown
-                </label>
-                <button disabled={!changed} onClick={() => save(t)} className={`h-9 px-4 rounded-lg text-xs font-bold shrink-0 ${changed ? 'bg-accent text-[var(--accent-foreground)]' : 'bg-secondary text-secondary opacity-50'}`}>Save</button>
-              </li>
+              <details key={g} className="group border-b border-theme last:border-0" open={!!q.trim() || grp === g || anyDirty}>
+                <summary className="px-5 py-3 flex items-center gap-3 cursor-pointer list-none hover:bg-hover">
+                  <span className="font-semibold capitalize">{g}</span>
+                  <span className="text-xs text-secondary">{inGroup.length} {inGroup.length === 1 ? 'theme' : 'themes'}{prem ? ` · ${prem} premium` : ''}</span>
+                  <span className="ml-auto text-secondary text-lg leading-none transition group-open:rotate-90">›</span>
+                </summary>
+                <ul className="divide-y divide-theme border-t border-theme">
+                  {inGroup.map((t) => {
+                    const v = value(t);
+                    const changed = dirty(t);
+                    return (
+                      <li key={t.id} className="px-5 py-3 flex flex-wrap items-center gap-3">
+                        <div className="min-w-0 flex-1 basis-44">
+                          <button onClick={() => { setPreviewId(t.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-sm font-semibold truncate text-left hover:text-accent" title="Show in the demo preview">{t.label}</button>
+                          {t.default_price_ngn !== t.price_ngn && <p className="text-xs text-secondary">default {naira(t.default_price_ngn)}</p>}
+                        </div>
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${Number(v.price) > 0 ? 'bg-accent/10 text-accent' : 'bg-secondary text-secondary'}`}>{Number(v.price) > 0 ? 'Premium' : 'Free'}</span>
+                        <div className="relative shrink-0">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-secondary">₦</span>
+                          <input type="number" min={0} step={500} value={v.price} onChange={(e) => setEdits({ ...edits, [t.id]: { ...v, price: e.target.value } })} aria-label={`Price for ${t.label}`} className="h-9 w-28 rounded-lg border border-theme bg-primary pl-7 pr-2 text-sm font-semibold tabular-nums" />
+                        </div>
+                        <label className="inline-flex items-center gap-2 text-xs font-medium shrink-0 cursor-pointer select-none">
+                          <input type="checkbox" checked={v.active} onChange={(e) => setEdits({ ...edits, [t.id]: { ...v, active: e.target.checked } })} aria-label={`Show ${t.label}`} className="w-4 h-4 accent-[var(--accent)]" /> Shown
+                        </label>
+                        <button disabled={!changed} onClick={() => save(t)} className={`h-9 px-4 rounded-lg text-xs font-bold shrink-0 ${changed ? 'bg-accent text-[var(--accent-foreground)]' : 'bg-secondary text-secondary opacity-50'}`}>Save</button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </details>
             );
           })}
-        </ul>
+        </div>
       </section>
 
       <section className="g-card p-5">
