@@ -135,15 +135,21 @@ export default function AnnounceTab({ sites, flash }: { sites: SiteLite[]; flash
             <label className="flex items-start gap-3"><input type="checkbox" checked={channels.includes('email')} onChange={() => toggleCh('email')} className="w-4 h-4 mt-0.5" /><span><span className="font-medium">Email</span><span className="block text-xs text-secondary">Owners who turned off admin emails are skipped, except for “Important”.</span></span></label>
           </div>
           {channels.includes('inbox') && (
-            <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
-              <label className="flex items-center gap-2"><input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="w-4 h-4" /> Keep it on top of their dashboard</label>
-              <label className="flex items-center gap-2">Remove on <input type="date" value={expires} onChange={(e) => setExpires(e.target.value)} className="input-box" /></label>
+            <div className="mt-3 rounded-xl border border-theme bg-secondary/30 p-3 grid sm:grid-cols-2 gap-3 text-sm">
+              <label className="flex items-center gap-2 font-medium"><input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="w-4 h-4" /> Keep it on top of their dashboard</label>
+              <label className="block text-xs font-semibold text-secondary">Remove it on (optional)<input type="date" value={expires} onChange={(e) => setExpires(e.target.value)} className="input-box w-full mt-1 text-sm" /></label>
             </div>
           )}
         </div>
 
+        <div className="border-t border-theme pt-4 space-y-3">
+          <label className="block text-xs font-semibold text-secondary max-w-sm">Send later (optional)
+            <input type="datetime-local" value={sendAt} onChange={(e) => setSendAt(e.target.value)} className="input-box w-full mt-1 text-sm" />
+            <span className="block font-normal mt-1">{sendAt ? 'It will go out at that time.' : 'Leave empty to send right away.'}</span>
+          </label>
+        </div>
+
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-sm w-full">Send later <input type="datetime-local" value={sendAt} onChange={(e) => setSendAt(e.target.value)} className="input-box" /><span className="text-xs text-secondary">{sendAt ? '' : 'Leave empty to send now'}</span></label>
           <button type="button" onClick={check} disabled={noChannel} className="h-10 px-5 rounded-full border border-theme hover:bg-hover text-sm disabled:opacity-50">Check who gets this</button>
           <button type="submit" disabled={busy || noChannel} className="bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-medium text-sm px-7 h-10 rounded-full disabled:opacity-50">{busy ? 'Working…' : sendAt && new Date(sendAt).getTime() > Date.now() + 2 * 60_000 ? 'Schedule' : 'Send'}</button>
           {reach && <span className="text-sm text-secondary" role="status">{reach}</span>}
