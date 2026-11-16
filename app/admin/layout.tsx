@@ -211,6 +211,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const hrefFor = (item: NavItem) => (item.tab ? `${item.href}?tab=${item.tab}` : item.href);
   const isActive = (item: NavItem) => {
+    if (item.external) return false;
     const onPath = item.exact ? pathname === item.href : pathname === item.href || !!pathname?.startsWith(item.href + '/');
     if (!onPath) return false;
     if (item.tab) return (tabParam || 'sites') === item.tab;

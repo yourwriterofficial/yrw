@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
+  Search,
+  MoreHorizontal,
   Edit2,
   Wallet,
   Coins,
@@ -24,6 +26,9 @@ const formatDate = (iso: string) => new Date(iso).toLocaleString();
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<'all' | 'admins' | 'balance'>('all');
+  const [menuFor, setMenuFor] = useState<string | null>(null);
 
   // Modal states
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -256,6 +261,15 @@ export default function AdminUsersPage() {
     setSendingAlert(false);
   };
 
+  const shown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return users.filter((u) => {
+      if (filter === 'admins' && !u.is_admin) return false;
+      if (filter === 'balance' && !(Number(u.balance) > 0)) return false;
+      return !q || String(u.full_name || '').toLowerCase().includes(q) || String(u.email || '').toLowerCase().includes(q);
+    });
+  }, [users, query, filter]);
+
   if (loading) return <LoadingScreen label="Loading users..." accent="brand" />;
 
   return (
@@ -486,135 +500,89 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {/* ========== TABLE ========== */}
+      {/* ========== PEOPLE ========== */}
       <PageHeader
-        title="User Management"
-        description="Manage client accounts, wallets, and communications."
-        breadcrumb="Admin / Users"
+        title="Users"
+        description="Everyone with an account: clients, admins and site owners. Wallets, emails and alerts are one tap away."
       />
-      <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto table-row-hover">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-primary border-b border-theme text-[10px] uppercase text-secondary">
-            <tr>
-              <th className="px-4 py-4">Name</th>
-              <th className="px-4 py-4">Email</th>
-              <th className="px-4 py-4">Admin</th>
-              <th className="px-4 py-4">Balance</th>
-              <th className="px-4 py-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(user => (
-              <tr key={user.id} className="border-b border-theme hover:bg-white/5 transition">
-                <td className="px-4 py-4 text-primary">{user.full_name || '—'}</td>
-                <td className="px-4 py-4 text-primary">{user.email}</td>
-                <td className="px-4 py-4">
-                  {user.is_admin ? <span className="text-accent">✓</span> : <span className="text-secondary">—</span>}
-                </td>
-                <td className="px-4 py-4 font-mono text-primary">{formatNaira(user.balance)}</td>
-                <td className="px-4 py-4 text-right space-x-2 whitespace-nowrap">
-                  <button
-                    onClick={() => {
-                      setEditingUser(user);
-                      setUserForm({
-                        full_name: user.full_name || '',
-                        is_admin: user.is_admin || false,
-                        whatsapp: user.whatsapp || '',
-                        email: user.email || '',
-                      });
-                    }}
-                    className="px-3 py-1 bg-info/10 text-info border border-info/20 rounded-lg text-xs hover:bg-info/20 transition"
-                  >
-                    <Edit2 className="w-3 h-3 inline mr-1" /> Edit
-                  </button>
 
-                  <button
-                    onClick={() => {
-                      setAdjustingWallet({ userId: user.id, currentBalance: user.balance });
-                      setAdjustAmount(0);
-                      setAdjustReason('');
-                    }}
-                    className="px-3 py-1 bg-warning/10 text-warning border border-warning/20 rounded-lg text-xs hover:bg-warning/20 transition"
-                  >
-                    <Wallet className="w-3 h-3 inline mr-1" /> Adjust
-                  </button>
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        {[
+          { label: 'Accounts', value: String(users.length) },
+          { label: 'Admins', value: String(users.filter((u) => u.is_admin).length) },
+          { label: 'In wallets', value: formatNaira(users.reduce((n, u) => n + (Number(u.balance) || 0), 0)) },
+        ].map((x) => (
+          <div key={x.label} className="bg-card border border-theme rounded-2xl p-4 min-w-0">
+            <p className="text-xs font-semibold text-secondary">{x.label}</p>
+            <p className="text-xl font-black mt-1 tabular-nums whitespace-nowrap truncate">{x.value}</p>
+          </div>
+        ))}
+      </div>
 
-                  <button
-                    onClick={() => {
-                      setEditingWallet({ userId: user.id, balance: user.balance });
-                      setNewBalance(user.balance);
-                    }}
-                    className="px-3 py-1 bg-success/10 text-success border border-success/20 rounded-lg text-xs hover:bg-success/20 transition"
-                  >
-                    <Coins className="w-3 h-3 inline mr-1" /> Set
-                  </button>
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="w-4 h-4 text-secondary absolute left-3 top-1/2 -translate-y-1/2" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or email" aria-label="Search users" className="w-full h-10 rounded-xl border border-theme bg-card pl-9 pr-3 text-sm" />
+        </div>
+        {([['all', 'Everyone'], ['admins', 'Admins'], ['balance', 'With a balance']] as const).map(([k, label]) => (
+          <button key={k} onClick={() => setFilter(k)} aria-pressed={filter === k} className={`h-10 px-4 rounded-xl text-sm font-medium border ${filter === k ? 'border-accent bg-accent/10 text-accent' : 'border-theme text-secondary hover:bg-hover'}`}>{label}</button>
+        ))}
+      </div>
 
-                  <button
-                    onClick={() => viewTransactions(user.id)}
-                    className="px-3 py-1 bg-info/10 text-info border border-info/20 rounded-lg text-xs hover:bg-info/20 transition"
-                  >
-                    <List className="w-3 h-3 inline mr-1" /> Txns
-                  </button>
-
-                  <button
-                    onClick={() => viewOrders(user.id)}
-                    className="px-3 py-1 bg-accent/10 text-accent border border-accent/20 rounded-lg text-xs hover:bg-accent/20 transition"
-                  >
-                    <ShoppingBag className="w-3 h-3 inline mr-1" /> Orders
-                  </button>
-
-                  <button
-                    onClick={() => resetPassword(user.id, user.email)}
-                    className="px-3 py-1 bg-danger/10 text-danger border border-danger/20 rounded-lg text-xs hover:bg-danger/20 transition"
-                  >
-                    <Key className="w-3 h-3 inline mr-1" /> Reset
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setEmailRecipient({ id: user.id, email: user.email, name: user.full_name || user.email });
-                      setShowEmailModal(true);
-                      setEmailSubject('');
-                      setEmailBody('');
-                    }}
-                    className="px-3 py-1 bg-info/10 text-info border border-info/20 rounded-lg text-xs hover:bg-info/20 transition"
-                  >
-                    <Mail className="w-3 h-3 inline mr-1" /> Email
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      if (confirm(`Impersonate ${user.full_name || user.email}?`)) {
-                        startImpersonation(user.id, user.email, user.full_name || user.email);
-                        window.open('/dashboard/client', '_blank');
-                      }
-                    }}
-                    className="px-3 py-1 bg-warning/10 text-warning border border-warning/20 rounded-lg text-xs hover:bg-warning/20 transition"
-                  >
-                    <span className="inline-block mr-1 align-middle"><svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></span>
-                    Impersonate
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setAlertRecipient({ id: user.id, email: user.email, name: user.full_name || user.email });
-                      setShowAlertModal(true);
-                      setAlertMessage('');
-                    }}
-                    className="px-3 py-1 bg-accent/10 text-accent border border-accent/20 rounded-lg text-xs hover:bg-accent/20 transition"
-                  >
-                    <Bell className="w-3 h-3 inline mr-1" /> Alert
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {users.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-secondary">No users found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="bg-card border border-theme rounded-2xl">
+        <ul className="divide-y divide-theme">
+          {shown.map((user) => (
+            <li key={user.id} className="px-4 py-3 flex flex-wrap items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-accent/15 text-accent flex items-center justify-center font-bold shrink-0">{((user.full_name || user.email || '?')[0] || '?').toUpperCase()}</div>
+              <div className="min-w-0 flex-1 basis-48">
+                <p className="text-sm font-semibold truncate flex items-center gap-2">
+                  {user.full_name || '—'}
+                  {user.is_admin && <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-accent/10 text-accent">Admin</span>}
+                </p>
+                <p className="text-xs text-secondary truncate">{user.email}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-[11px] text-secondary">Wallet</p>
+                <p className="text-sm font-bold tabular-nums">{formatNaira(user.balance)}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 relative">
+                <button
+                  onClick={() => {
+                    setEditingUser(user);
+                    setUserForm({ full_name: user.full_name || '', is_admin: user.is_admin || false, whatsapp: user.whatsapp || '', email: user.email || '' });
+                  }}
+                  className="h-9 px-3 rounded-lg border border-theme hover:bg-hover text-xs font-semibold inline-flex items-center gap-1.5"
+                ><Edit2 className="w-3.5 h-3.5" /> Edit</button>
+                <button onClick={() => viewOrders(user.id)} className="h-9 px-3 rounded-lg border border-theme hover:bg-hover text-xs font-semibold inline-flex items-center gap-1.5"><ShoppingBag className="w-3.5 h-3.5" /> Orders</button>
+                <button onClick={() => setMenuFor(menuFor === user.id ? null : user.id)} aria-label={`More actions for ${user.email}`} aria-expanded={menuFor === user.id} className="h-9 w-9 rounded-lg border border-theme hover:bg-hover inline-flex items-center justify-center"><MoreHorizontal className="w-4 h-4" /></button>
+                {menuFor === user.id && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setMenuFor(null)} />
+                    <div className="absolute right-0 top-11 z-20 w-56 bg-card border border-theme rounded-xl shadow-elevation-3 p-1.5 text-sm">
+                      {[
+                        { icon: Wallet, label: 'Adjust wallet (add or take)', run: () => { setAdjustingWallet({ userId: user.id, currentBalance: user.balance }); setAdjustAmount(0); setAdjustReason(''); } },
+                        { icon: Coins, label: 'Set wallet balance', run: () => { setEditingWallet({ userId: user.id, balance: user.balance }); setNewBalance(user.balance); } },
+                        { icon: List, label: 'Transactions', run: () => viewTransactions(user.id) },
+                        { icon: Mail, label: 'Send an email', run: () => { setEmailRecipient({ id: user.id, email: user.email, name: user.full_name || user.email }); setShowEmailModal(true); setEmailSubject(''); setEmailBody(''); } },
+                        { icon: Bell, label: 'Send an alert', run: () => { setAlertRecipient({ id: user.id, email: user.email, name: user.full_name || user.email }); setShowAlertModal(true); setAlertMessage(''); } },
+                        { icon: Key, label: 'Reset password', run: () => resetPassword(user.id, user.email), danger: true },
+                        { icon: Edit2, label: 'Impersonate this user', run: () => { if (confirm(`Impersonate ${user.full_name || user.email}?`)) { startImpersonation(user.id, user.email, user.full_name || user.email); window.open('/dashboard/client', '_blank'); } }, danger: true },
+                      ].map((m) => {
+                        const Icon = m.icon;
+                        return (
+                          <button key={m.label} onClick={() => { setMenuFor(null); m.run(); }} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left hover:bg-hover ${m.danger ? 'text-danger' : ''}`}>
+                            <Icon className="w-4 h-4 shrink-0" /> {m.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            </li>
+          ))}
+          {shown.length === 0 && <li className="px-4 py-12 text-center text-secondary text-sm">{users.length === 0 ? 'No users found.' : 'No one matches that search.'}</li>}
+        </ul>
       </div>
     </div>
   );

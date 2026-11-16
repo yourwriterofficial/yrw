@@ -880,7 +880,7 @@ function OrdersPageContent() {
         />
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
           <StatCard label="Total Orders" value={filteredOrders.length} />
           <StatCard label="Active Projects" value={filteredOrders.filter(o => o['Workflow Status'] !== 'Completed' && o['Workflow Status'] !== 'Cancelled').length} color="text-warning" />
           <StatCard label="Awaiting Brief" value={filteredOrders.filter(o => o['Workflow Status'] === 'Briefing Received').length} color="text-info" />
@@ -938,7 +938,7 @@ function OrdersPageContent() {
         <div className="bg-secondary border border-theme rounded-3xl overflow-hidden">
           {/* Mobile: cards. A six-column nowrap table forced horizontal scrolling
               on a phone, which made the panel effectively unusable there. */}
-          <div className="md:hidden divide-y divide-theme">
+          <div className="xl:hidden divide-y divide-theme">
             {paginatedOrders.map(order => {
               const total = parsePriceStr(order['Financial Quote']);
               const needsQuote = total <= 0 || order['Workflow Status'] === 'Briefing Received';
@@ -982,7 +982,7 @@ function OrdersPageContent() {
             )}
           </div>
 
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden xl:block overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap table-row-hover">
               <thead className="bg-primary border-b border-theme text-[10px] uppercase tracking-widest text-secondary">
                 <tr>
