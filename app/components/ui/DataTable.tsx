@@ -79,11 +79,12 @@ export function DataTable<T>({
         </div>
       )}
 
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <Table columns={columns} rows={rows} rowKey={rowKey} loading={loading} />
       </div>
 
-      <div className="md:hidden divide-y divide-theme">
+      {/* Narrow screens: one card per row. The first column is the card's title, the rest are label and value pairs. */}
+      <div className="lg:hidden divide-y divide-theme">
         {loading
           ? Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="p-4 space-y-2">
@@ -92,13 +93,16 @@ export function DataTable<T>({
               </div>
             ))
           : mobileCards.map((row) => (
-              <div key={rowKey(row)} className="p-4 space-y-2">
-                {columns.map((col) => (
-                  <div key={col.key} className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-bold text-secondary">{col.header}</span>
-                    <span className="text-sm text-primary">{col.cell(row)}</span>
-                  </div>
-                ))}
+              <div key={rowKey(row)} className="p-4">
+                {columns[0] && <div className="text-sm font-semibold text-primary mb-2">{columns[0].cell(row)}</div>}
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  {columns.slice(1).map((col) => (
+                    <div key={col.key} className="min-w-0">
+                      <dt className="text-[11px] font-semibold text-secondary">{col.header}</dt>
+                      <dd className="text-sm text-primary break-words">{col.cell(row)}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             ))}
       </div>

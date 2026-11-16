@@ -13,8 +13,26 @@ import Button from '@/app/components/ui/Button';
 import { Breadcrumb } from '@/app/components/ui/Breadcrumb';
 import Card from '@/app/components/ui/Card';
 
-type NavItem = { href: string; label: string; icon: typeof lucide.LayoutDashboard; exact?: boolean; tab?: string; defaultTab?: boolean };
+type NavItem = { href: string; label: string; icon: typeof lucide.LayoutDashboard; exact?: boolean; tab?: string; defaultTab?: boolean; external?: string };
 type NavGroup = { label: string; items: NavItem[] };
+
+// Two admins live in this app. Each has its own address, colour, menu and set of pages, so nobody acts on the wrong business.
+const MAIN_URL = process.env.NEXT_PUBLIC_MAIN_URL || 'https://yourresearchwriter.com.ng';
+const DEVELOPA_URL = process.env.NEXT_PUBLIC_DEVELOPA_URL || 'https://developa.me';
+const DEVELOPA_ONLY_PAGES = ['/admin/developa', '/admin/developa-sites', '/admin/dev-shop'];
+const SHARED_PAGES = ['/admin/users', '/admin/email', '/admin/inbox'];
+type Workspace = 'developa' | 'yrw';
+const WORKSPACES: Record<Workspace, { name: string; tag: string; color: string; url: string }> = {
+  developa: { name: 'Developa', tag: 'Platform admin', color: '#2563eb', url: DEVELOPA_URL },
+  yrw: { name: 'YourResearchWriter', tag: 'Services admin', color: '#059669', url: MAIN_URL },
+};
+/** Which admin a page belongs to. Users, messaging and the support inbox serve both. */
+function pageOwner(path: string | null): Workspace | 'shared' {
+  const p = path || '';
+  if (SHARED_PAGES.some((x) => p === x || p.startsWith(x + '/'))) return 'shared';
+  if (DEVELOPA_ONLY_PAGES.some((x) => p === x || p.startsWith(x + '/'))) return 'developa';
+  return 'yrw';
+}
 
 const NAV_GROUPS: NavGroup[] = [
   {
@@ -55,12 +73,8 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: 'Developa',
-    items: [
-      { href: '/admin/developa', label: 'Developa overview', icon: lucide.Globe, exact: true },
-      { href: '/admin/developa-sites', tab: 'sites', defaultTab: true, label: 'Sites and revenue', icon: lucide.Store },
-      { href: '/admin/dev-shop', label: 'Script Shop', icon: lucide.ShoppingBag },
-    ],
+    label: 'Other admin',
+    items: [{ href: '/admin/developa', external: DEVELOPA_URL + '/admin/developa', label: 'Developa admin', icon: lucide.ArrowUpRight }],
   },
   {
     label: 'System',
@@ -113,6 +127,10 @@ const DEVELOPA_NAV_GROUPS: NavGroup[] = [
     label: 'Safety',
     items: [{ href: '/admin/developa-sites', tab: 'audit', label: 'History', icon: lucide.History }],
   },
+  {
+    label: 'Other admin',
+    items: [{ href: '/admin', external: MAIN_URL + '/admin', label: 'YourResearchWriter admin', icon: lucide.ArrowUpRight }],
+  },
 ];
 
 function onDevelopaHost(): boolean {
@@ -143,6 +161,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems = navGroups.flatMap((g) => g.items);
   const portalHref = isDevelopa ? '/create' : '/dashboard/client';
   const portalLabel = isDevelopa ? 'My sites' : 'Client Portal';
+  const workspace: Workspace = isDevelopa ? 'developa' : 'yrw';
+  const ws = WORKSPACES[workspace];
+  const owner = pageOwner(pathname);
+  const wrongAdmin = owner !== 'shared' && owner !== workspace;
+  const otherWs = WORKSPACES[workspace === 'developa' ? 'yrw' : 'developa'];
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | undefined;
@@ -214,13 +237,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-primary text-primary flex flex-col md:flex-row selection:bg-accent/30">
       <aside className="hidden md:flex flex-col w-64 bg-secondary border-r border-theme h-screen sticky top-0 p-6 z-40">
-        <div className="flex items-center gap-3 mb-10">
-          <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-accent-foreground font-black text-xl">
-            <lucide.Shield className="w-5 h-5" />
+        <div className="flex items-center gap-3 mb-8 rounded-xl border border-theme bg-card p-3" style={{ borderLeft: `4px solid ${ws.color}` }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0" style={{ background: ws.color }}>
+            {isDevelopa ? <lucide.Globe className="w-5 h-5" /> : <lucide.PenLine className="w-5 h-5" />}
           </div>
-          <div>
-            <h1 className="font-black tracking-tight leading-none text-lg">{isDevelopa ? 'Developa' : 'YRW'}</h1>
-            <p className="text-[10px] text-accent uppercase tracking-widest font-bold">{isDevelopa ? 'Platform admin' : 'SysAdmin'}</p>
+          <div className="min-w-0">
+            <h1 className="font-black tracking-tight leading-tight text-[15px] truncate">{ws.name}</h1>
+            <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: ws.color }}>{ws.tag}</p>
           </div>
         </div>
 
@@ -229,7 +252,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div key={group.label}>
               <p className="text-[9px] uppercase tracking-widest text-secondary/70 font-black pl-3 mb-1.5">{group.label}</p>
               <div className="flex flex-col gap-0.5">
-                {group.items.map((item) => { const Icon = item.icon; const href = item.href; const label = item.label; return (
+                {group.items.map((item) => { const Icon = item.icon; const href = item.href; const label = item.label; return item.external ? (
+                  <a key={item.external} href={item.external} className={`${navLinkClass(item)} border border-dashed border-theme`}>
+                    <Icon className="w-4 h-4 shrink-0" /> {label}
+                  </a>
+                ) : (
                   <Link key={hrefFor(item)} href={hrefFor(item)} onClick={(e) => onNavClick(e, item)} className={navLinkClass(item)}>
                     <Icon className="w-4 h-4 shrink-0" /> {label}{href === '/admin/inbox' && inboxUnread > 0 && <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-accent text-[var(--accent-foreground)] text-[11px] font-bold flex items-center justify-center">{inboxUnread}</span>}
                   </Link>
@@ -267,7 +294,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-accent-foreground">
             <lucide.Shield className="w-4 h-4" />
           </div>
-          <span className="font-bold text-sm uppercase tracking-widest text-accent">{isDevelopa ? 'Developa admin' : 'Admin'}</span>
+          <span className="font-bold text-sm uppercase tracking-widest text-accent">{isDevelopa ? 'Developa admin' : 'YourResearchWriter admin'}</span>
         </div>
         <button
           type="button"
@@ -286,7 +313,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div key={group.label}>
               <p className="text-[9px] uppercase tracking-widest text-secondary/70 font-black pl-3 mb-1">{group.label}</p>
               <div className="flex flex-col gap-0.5">
-                {group.items.map((item) => { const Icon = item.icon; const href = item.href; const label = item.label; return (
+                {group.items.map((item) => { const Icon = item.icon; const href = item.href; const label = item.label; return item.external ? (
+                  <a key={item.external} href={item.external} className={`${navLinkClass(item)} border border-dashed border-theme`}>
+                    <Icon className="w-4 h-4 shrink-0" /> {label}
+                  </a>
+                ) : (
                   <Link key={hrefFor(item)} href={hrefFor(item)} onClick={(e) => { onNavClick(e, item); setMobileMenuOpen(false); }} className={navLinkClass(item)}>
                     <Icon className="w-4 h-4 shrink-0" /> {label}{href === '/admin/inbox' && inboxUnread > 0 && <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-accent text-[var(--accent-foreground)] text-[11px] font-bold flex items-center justify-center">{inboxUnread}</span>}
                   </Link>
@@ -305,18 +336,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       )}
 
       <main className="flex-1 overflow-y-auto flex flex-col h-screen bg-primary">
-        <header className="bg-secondary/40 backdrop-blur-md border-b border-theme px-6 py-4 flex justify-between items-center sticky top-0 z-30 shrink-0">
-          <Breadcrumb
-            items={[
-              { label: 'Admin', href: '/admin' },
-              { label: currentPage?.label || 'Dashboard' },
-            ]}
-          />
+        <header className="bg-secondary/40 backdrop-blur-md border-b border-theme px-6 py-4 flex justify-between items-center sticky top-0 z-30 shrink-0" style={{ borderTop: `3px solid ${ws.color}` }}>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="hidden sm:inline-flex items-center h-6 px-2.5 rounded-full text-[11px] font-bold text-white shrink-0" style={{ background: ws.color }}>{ws.name}</span>
+            <Breadcrumb
+              items={[
+                { label: 'Admin', href: owner === 'developa' || (owner === 'shared' && isDevelopa) ? '/admin/developa' : '/admin' },
+                { label: currentPage?.label || (owner === 'shared' ? 'Shared' : 'Dashboard') },
+              ]}
+            />
+          </div>
           <div className="flex items-center gap-4">
             <NotificationBell isAdmin={true} userEmail={user?.email || ''} userId={user?.id} />
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto">{children}</div>
+        <div className="flex-1 overflow-y-auto">
+          {wrongAdmin ? (
+            <div className="p-6 md:p-10 max-w-xl mx-auto mt-10">
+              <div className="g-card p-8 text-center space-y-4">
+                <div className="w-12 h-12 rounded-xl mx-auto flex items-center justify-center text-white" style={{ background: otherWs.color }}><lucide.ArrowLeftRight className="w-6 h-6" /></div>
+                <h2 className="text-xl font-black">This page is in the {otherWs.name} admin</h2>
+                <p className="text-sm text-secondary">You are in the <b>{ws.name}</b> admin. To keep the two businesses apart, this page only opens in the <b>{otherWs.name}</b> admin.</p>
+                <div className="flex flex-wrap gap-2 justify-center pt-2">
+                  <a href={`${otherWs.url}${pathname || '/admin'}`} className="h-10 px-5 rounded-xl text-sm font-bold text-white inline-flex items-center gap-2" style={{ background: otherWs.color }}>Open in {otherWs.name} admin <lucide.ArrowUpRight className="w-4 h-4" /></a>
+                  <Link href={workspace === 'developa' ? '/admin/developa' : '/admin'} className="h-10 px-5 rounded-xl text-sm font-medium border border-theme hover:bg-hover inline-flex items-center">Back to {ws.name} admin</Link>
+                </div>
+              </div>
+            </div>
+          ) : children}
+        </div>
       </main>
     </div>
   );

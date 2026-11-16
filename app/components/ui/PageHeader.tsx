@@ -14,13 +14,10 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, description, icon, actions, breadcrumb, items, compact }: PageHeaderProps) {
   return (
-    <header className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <header className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
       <div className="min-w-0">
         {items && items.length > 0 && <Breadcrumb items={items} className="mb-2" />}
-        {!items && breadcrumb && (
-          <p className="text-[11px] font-bold text-secondary mb-2">{breadcrumb}</p>
-        )}
-        <h1 className={`font-bold text-primary flex items-center gap-3 ${compact ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'}`}>
+        <h1 className={`font-bold text-primary flex items-center gap-3 ${compact ? 'text-xl md:text-2xl' : 'text-2xl md:text-[28px] tracking-tight'}`}>
           {icon && <span className="text-accent">{icon}</span>}
           <span className="truncate">{title}</span>
         </h1>

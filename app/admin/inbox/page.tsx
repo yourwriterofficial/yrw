@@ -27,7 +27,9 @@ function BrandBadge({ brand }: { brand: InboxBrand }) {
 }
 
 export default function AdminInboxPage() {
+  // Open on the tab of the admin you are in: Developa on developa.me, YourResearchWriter on the main site.
   const [brand, setBrand] = useState<'all' | InboxBrand>('all');
+  useEffect(() => { if (typeof window !== 'undefined') setBrand(window.location.hostname.includes('developa') ? 'developa' : 'yourwriter'); }, []);
   const [status, setStatus] = useState<'open' | 'pending' | 'resolved' | 'spam' | 'all'>('open');
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [q, setQ] = useState('');

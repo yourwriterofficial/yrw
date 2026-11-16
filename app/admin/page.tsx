@@ -81,7 +81,7 @@ export default function AdminDashboard() {
     { href: '/admin/finance', label: 'Finance', icon: lucide.Wallet },
     { href: '/admin/users', label: 'Users', icon: lucide.Users },
     { href: '/admin/email', label: 'Send an email', icon: lucide.Send },
-    { href: '/admin/developa', label: 'Developa platform', icon: lucide.Globe },
+    { href: 'https://developa.me/admin/developa', label: 'Developa admin (separate)', icon: lucide.Globe },
   ];
 
   return (
