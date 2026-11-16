@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { extractDevelopaSubdomain, isCreateSubdomain, RESERVED_FORUM_SLUGS } from '@/lib/forums'
 import { lookupCustomDomainSlug } from '@/lib/customDomainCache'
+import { resolveHost } from '@/lib/edgeHost'
 
 // Single canonical Content-Security-Policy. The browser is only ever asked to
 // talk to our own origin and Supabase (REST + realtime websockets). Paystack,
@@ -44,7 +45,8 @@ export default async function proxy(request: NextRequest) {
   )
 
   const path = request.nextUrl.pathname
-  const host = request.headers.get('host') || request.nextUrl.host || ''
+  // For store addresses served through Cloudflare, the real address arrives in a private header (see lib/edgeHost.ts).
+  const host = resolveHost(request.headers, request.nextUrl.host)
   const forumSubdomain = extractDevelopaSubdomain(host)
   const isCreatePortal = isCreateSubdomain(host)
   const isDevelopaDomain =

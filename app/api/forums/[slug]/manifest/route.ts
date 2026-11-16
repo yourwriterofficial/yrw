@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { resolveHost } from '@/lib/edgeHost';
 import { extractDevelopaSubdomain } from '@/lib/forums';
 import { supabaseAdmin } from '@/lib/forumServer';
 
@@ -18,7 +19,8 @@ export async function GET(
   if (!site || !site.is_public) return NextResponse.json({ error: 'Site not found' }, { status: 404 });
 
   const accent = /^#[0-9a-f]{3,8}$/i.test(site.accent_color || '') ? (site.accent_color as string) : FALLBACK_ACCENT;
-  const host = (request.headers.get('x-forwarded-host') || request.headers.get('host') || '').split(':')[0].toLowerCase();
+  const trusted = resolveHost(request.headers);
+  const host = (trusted !== request.headers.get('host') ? trusted : request.headers.get('x-forwarded-host') || trusted || '').split(':')[0].toLowerCase();
   const ownHost =
     extractDevelopaSubdomain(host) === site.slug ||
     (site.custom_domain_verified === true && !!site.custom_domain && site.custom_domain.toLowerCase() === host);
