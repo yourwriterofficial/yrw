@@ -6,7 +6,7 @@
  * Apps whose sign-in is not live yet are shown disabled with a "Soon" tag. Developa brand only.
  */
 
-const MAIN_PROSEPEN_LIVE = false;
+const MAIN_PROSEPEN_LIVE = true;
 
 interface NetApp { id: string; name: string; logo: string; href: string | null }
 
