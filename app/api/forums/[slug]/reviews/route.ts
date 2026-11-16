@@ -150,7 +150,7 @@ export async function POST(
 
     if (error) {
       if (isMissingRelationError(error)) {
-        return NextResponse.json({ error: 'Reviews require the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       if (error.code === '23505') {
         return NextResponse.json({ error: 'You have already reviewed this product for that order.' }, { status: 409 });
@@ -194,7 +194,7 @@ export async function PATCH(
 
     if (error) {
       if (isMissingRelationError(error)) {
-        return NextResponse.json({ error: 'Reviews require the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

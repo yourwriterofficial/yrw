@@ -189,7 +189,7 @@ export async function POST(
 
     if (error) {
       if (isMissingRelationError(error)) {
-        return NextResponse.json({ error: 'Customer lists need the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       throw error;
     }

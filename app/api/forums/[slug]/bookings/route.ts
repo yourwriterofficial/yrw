@@ -148,7 +148,7 @@ export async function POST(
         .single();
       if (error) {
         if (isMissingRelationError(error)) {
-          return NextResponse.json({ error: 'Bookings need the latest database update first.' }, { status: 503 });
+          return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
         }
         throw error;
       }
@@ -207,7 +207,7 @@ export async function POST(
         return NextResponse.json({ error: 'That time slot was just booked. Please pick another time.' }, { status: 409 });
       }
       if (isMissingRelationError(error)) {
-        return NextResponse.json({ error: 'Bookings need the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       throw error;
     }

@@ -67,7 +67,7 @@ export async function PATCH(
 
     if (error) {
       if (isMissingColumnError(error)) {
-        return NextResponse.json({ error: 'Private notes need the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       throw error;
     }

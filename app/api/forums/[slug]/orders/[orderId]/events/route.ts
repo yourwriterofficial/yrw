@@ -69,7 +69,7 @@ export async function POST(
 
     if (orderErr) {
       if (isMissingColumnError(orderErr)) {
-        return NextResponse.json({ error: 'Refund logging needs the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       throw orderErr;
     }
@@ -97,7 +97,7 @@ export async function POST(
 
     if (insErr) {
       if (isMissingRelationError(insErr)) {
-        return NextResponse.json({ error: 'Refund logging needs the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       throw insErr;
     }

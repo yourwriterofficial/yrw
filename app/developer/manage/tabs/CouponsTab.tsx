@@ -55,7 +55,7 @@ export default function CouponsTab({ site, goToPlan }: { site: Site; goToPlan: (
             <button type="button" onClick={goToPlan} className="text-accent font-medium hover:underline">See plans</button>
           </p>
         )}
-        {needsUpdate && <p className="text-sm text-warning">Coupons need the latest database update before they can be used.</p>}
+        {needsUpdate && <p className="text-sm text-warning">Coupons are not available right now. Please try again in a few minutes.</p>}
         <div>
           <label className="block text-sm font-medium mb-1.5" htmlFor="c-code">Code</label>
           <input id="c-code" required disabled={!allowed} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} placeholder="WELCOME10" className="input-box w-full font-mono" />

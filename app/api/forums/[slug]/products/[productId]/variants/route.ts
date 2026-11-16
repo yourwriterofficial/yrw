@@ -99,7 +99,7 @@ export async function POST(
 
     if (error) {
       if (isMissingRelationError(error)) {
-        return NextResponse.json({ error: 'Product variants need the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       throw error;
     }
@@ -145,7 +145,7 @@ export async function PUT(
       .eq('id', productId)
       .eq('site_id', access.site.id);
     if (isMissingColumnError(prodErr)) {
-      return NextResponse.json({ error: 'Product variants need the latest database update first.' }, { status: 503 });
+      return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
     }
 
     const { data: existingRows, error: exErr } = await supabaseAdmin
@@ -155,7 +155,7 @@ export async function PUT(
       .eq('site_id', access.site.id);
     if (exErr) {
       if (isMissingRelationError(exErr)) {
-        return NextResponse.json({ error: 'Product variants need the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       throw exErr;
     }

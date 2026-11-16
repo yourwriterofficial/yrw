@@ -412,14 +412,14 @@ export async function PATCH(
       if (parsed.data.seo_title !== undefined) seo.seo_title = xss(parsed.data.seo_title);
       if (parsed.data.seo_description !== undefined) seo.seo_description = xss(parsed.data.seo_description);
       const { error: seoErr } = await supabaseAdmin.from('forums').update(seo).eq('id', forum.id);
-      if (seoErr) return NextResponse.json({ error: 'Search appearance needs the latest database update first.' }, { status: 503 });
+      if (seoErr) return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
     }
     if (parsed.data.announcement !== undefined || parsed.data.announcement_active !== undefined) {
       const ann: Record<string, unknown> = {};
       if (parsed.data.announcement !== undefined) ann.announcement = xss(parsed.data.announcement);
       if (parsed.data.announcement_active !== undefined) ann.announcement_active = parsed.data.announcement_active;
       const { error: annErr } = await supabaseAdmin.from('forums').update(ann).eq('id', forum.id);
-      if (annErr) return NextResponse.json({ error: 'The announcement bar needs the latest database update first.' }, { status: 503 });
+      if (annErr) return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
     }
     if (parsed.data.currency !== undefined) updates.currency = parsed.data.currency;
 
@@ -446,7 +446,7 @@ export async function PATCH(
     if (Object.keys(toolUpdates).length > 0) {
       const { error: toolErr } = await supabaseAdmin.from('forums').update(toolUpdates).eq('id', forum.id);
       if (toolErr) {
-        return NextResponse.json({ error: 'Store pages and social links need the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
     }
 

@@ -39,7 +39,7 @@ export async function POST(req: Request, ctx: Ctx) {
     .single();
   if (error) {
     const dup = /duplicate|unique/i.test(error.message);
-    return NextResponse.json({ error: dup ? 'You already have a coupon with that code.' : 'Coupons need the latest database update first.' }, { status: dup ? 409 : 503 });
+    return NextResponse.json({ error: dup ? 'You already have a coupon with that code.' : 'This is not available right now. Please try again in a few minutes.' }, { status: dup ? 409 : 503 });
   }
   return NextResponse.json({ coupon: data }, { status: 201 });
 }

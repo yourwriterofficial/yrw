@@ -92,7 +92,7 @@ export async function PUT(
         .update({ pickup_address: xss(parsed.data.pickup_address) })
         .eq('id', access.site.id);
       if (isMissingColumnError(pickErr)) {
-        return NextResponse.json({ error: 'Store pickup needs the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       if (pickErr) throw pickErr;
     }
@@ -103,7 +103,7 @@ export async function PUT(
       .eq('site_id', access.site.id);
     if (delErr) {
       if (isMissingRelationError(delErr)) {
-        return NextResponse.json({ error: 'Delivery zones need the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       throw delErr;
     }

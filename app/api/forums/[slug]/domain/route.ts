@@ -55,7 +55,7 @@ export async function POST(req: Request, ctx: Ctx) {
     .single();
   if (error) {
     return NextResponse.json(
-      { error: /column|schema/i.test(error.message) ? 'Custom domains need the latest database update first.' : error.message },
+      { error: /column|schema/i.test(error.message) ? 'This is not available right now. Please try again in a few minutes.' : error.message },
       { status: /column|schema/i.test(error.message) ? 503 : 500 }
     );
   }

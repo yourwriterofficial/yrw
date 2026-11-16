@@ -46,8 +46,12 @@ export async function POST(request: Request, ctx: { params: Promise<{ slug: stri
 
     const tier = effectiveTier(owned.site.plan_tier, owned.site.plan_expires_at);
     const settings = await readPluginSettings(owned.site.id);
-    if (!PLANS[tier].onlinePayments || !pluginOn('online_payments', owned.site.plan_tier, owned.site.plan_expires_at, settings)) {
-      return NextResponse.json({ error: 'Upgrade to Lite or higher and enable Paystack Split Payments in Plugins.' }, { status: 403 });
+    if (!PLANS[tier].onlinePayments) {
+      return NextResponse.json({ error: 'Receiving online payments is not part of your current plan. Open Plans to add it.' }, { status: 403 });
+    }
+    // Connecting a bank is how an owner asks to receive payments, so the feature is switched on for them here.
+    if (!pluginOn('online_payments', owned.site.plan_tier, owned.site.plan_expires_at, settings)) {
+      await supabaseAdmin.from('forums').update({ plugins: { ...settings, online_payments: true } }).eq('id', owned.site.id);
     }
 
     const body = await request.json().catch(() => null);

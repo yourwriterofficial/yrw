@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       if ('error' in owned) return owned.error;
       const tier = data.plan_tier as PlanTier;
       if (!PAID_TIERS.includes(tier)) {
-        return NextResponse.json({ error: 'Invalid plan tier.' }, { status: 400 });
+        return NextResponse.json({ error: 'Please choose a plan.' }, { status: 400 });
       }
       const amountNgn = priceForPeriod(tier, data.months);
       const ref = referenceFor(`dev_plan_${suffix}`);
@@ -206,7 +206,7 @@ export async function POST(request: Request) {
     const tier = effectiveTier(site.plan_tier, site.plan_expires_at);
     const settings = await readPluginSettings(site.id);
     if (!PLANS[tier].onlinePayments || !pluginOn('online_payments', site.plan_tier, site.plan_expires_at, settings)) {
-      return NextResponse.json({ error: 'Online payments plugin is not active on this store.' }, { status: 403 });
+      return NextResponse.json({ error: 'This store cannot take online payments right now. Please choose another way to pay.' }, { status: 403 });
     }
 
     const { data: order } = await supabaseAdmin

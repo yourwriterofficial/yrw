@@ -52,7 +52,7 @@ interface PaystackBody { status?: boolean; message?: string; type?: string; code
 /** Maps what Paystack said to the right HTTP status: our caller's mistake (4xx), a rate limit (429), or their outage (503). */
 function failure(status: number, body: PaystackBody, fallback: string): PaystackError {
   const raw = String(body?.message || '');
-  if (status === 401 || status === 403) return new PaystackError('Online payments are not set up correctly on our side. Please contact support.', 502, 'provider_auth');
+  if (status === 401 || status === 403) return new PaystackError('Online payments are unavailable right now. Please try again shortly, or choose another way to pay.', 502, 'provider_auth');
   if (status === 429 || /daily limit|rate limit|too many/i.test(raw)) return new PaystackError('Too many attempts right now. Please try again in a few minutes.', 429, 'rate_limited');
   if (/account details are invalid|could not resolve account|invalid account/i.test(raw)) {
     return new PaystackError('We could not verify that bank account. Check the account number and the bank, then try again.', 422, 'bank_invalid');
@@ -61,7 +61,7 @@ function failure(status: number, body: PaystackBody, fallback: string): Paystack
   if (status >= 500 || body?.type === 'api_error' || /cannot add subaccount|try again later/i.test(raw)) {
     return new PaystackError('Our payment partner is unavailable right now. Please try again shortly.', 503, 'provider_unavailable');
   }
-  if (status >= 400) return new PaystackError(raw || fallback, 422, 'provider_rejected');
+  if (status >= 400) return new PaystackError(fallback, 422, 'provider_rejected');
   return new PaystackError(fallback, 502, 'provider_error');
 }
 

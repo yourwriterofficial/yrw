@@ -90,7 +90,7 @@ export async function PATCH(
 
     if (isMissingColumnError(error)) {
       if (urlsCount > 1) {
-        return NextResponse.json({ error: 'Multiple product photos need the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       const fallbackUpdates = { ...updates };
       delete fallbackUpdates.image_urls;

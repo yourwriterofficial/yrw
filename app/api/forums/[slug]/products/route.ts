@@ -94,7 +94,7 @@ export async function POST(
     let { data: product, error } = await supabaseAdmin.from('site_products').insert(extraRow).select('*').single();
     if (isMissingColumnError(error)) {
       if (urls.length > 1) {
-        return NextResponse.json({ error: 'Multiple product photos need the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       const fallback = await supabaseAdmin.from('site_products').insert(baseRow).select('*').single();
       product = fallback.data;

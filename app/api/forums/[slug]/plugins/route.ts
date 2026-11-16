@@ -24,7 +24,7 @@ export async function PUT(request: Request, ctx: { params: Promise<{ slug: strin
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
   const def = PLUGINS.find((p) => p.id === parsed.data.id);
-  if (!def || !def.toggle) return NextResponse.json({ error: 'That plugin cannot be switched.' }, { status: 400 });
+  if (!def || !def.toggle) return NextResponse.json({ error: 'That option cannot be changed.' }, { status: 400 });
   const site = a.site as { plan_tier?: string; plan_expires_at?: string | null };
   if (!planIncludes(def, effectiveTier(site.plan_tier, site.plan_expires_at))) {
     return NextResponse.json({ error: `${def.name} is not part of your plan.` }, { status: 403 });
@@ -33,7 +33,7 @@ export async function PUT(request: Request, ctx: { params: Promise<{ slug: strin
   const next = { ...current, [def.id]: parsed.data.enabled };
   const { error } = await supabaseAdmin.from('forums').update({ plugins: next }).eq('id', a.site.id);
   if (error) {
-    return NextResponse.json({ error: isMissingColumnError(error) ? 'Plugin switches need the latest database update first.' : 'Could not save.' }, { status: 503 });
+    return NextResponse.json({ error: isMissingColumnError(error) ? 'This is not available right now. Please try again in a few minutes.' : 'Could not save.' }, { status: 503 });
   }
   return NextResponse.json({ plugins: next });
 }
@@ -55,7 +55,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ slug: str
   }
   const { error } = await supabaseAdmin.from('forums').update({ plugins: next }).eq('id', a.site.id);
   if (error) {
-    return NextResponse.json({ error: isMissingColumnError(error) ? 'Plugin configuration needs the latest database update first.' : 'Could not save.' }, { status: 503 });
+    return NextResponse.json({ error: isMissingColumnError(error) ? 'This is not available right now. Please try again in a few minutes.' : 'Could not save.' }, { status: 503 });
   }
   return NextResponse.json({ plugins: next });
 }

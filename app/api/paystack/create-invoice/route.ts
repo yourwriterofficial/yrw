@@ -57,7 +57,7 @@ export async function POST(request: Request) {
         .single();
 
       if (lookupError || !dbOrder) {
-        return NextResponse.json({ error: 'Order not found in database' }, { status: 404 });
+        return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
       }
       
       orderData = dbOrder;

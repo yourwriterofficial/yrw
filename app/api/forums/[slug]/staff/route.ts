@@ -81,7 +81,7 @@ export async function POST(
 
     if (countErr) {
       if (isMissingRelationError(countErr)) {
-        return NextResponse.json({ error: 'Staff accounts need the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       throw countErr;
     }

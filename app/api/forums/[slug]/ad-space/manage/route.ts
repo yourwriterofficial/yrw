@@ -113,7 +113,7 @@ export async function PUT(request: Request, ctx: { params: Promise<{ slug: strin
     const { count } = await supabaseAdmin.from('site_ad_slots').select('id', { count: 'exact', head: true }).eq('site_id', a.site.id);
     if ((count ?? 0) >= 10) return NextResponse.json({ error: 'You can have up to 10 ad slots.' }, { status: 400 });
     const { error } = await supabaseAdmin.from('site_ad_slots').insert(row);
-    if (error) return NextResponse.json({ error: 'Ad space needs the latest database update first.' }, { status: 503 });
+    if (error) return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
   }
   return NextResponse.json({ ok: true });
 }

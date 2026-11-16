@@ -106,7 +106,7 @@ export async function POST(
       .eq('month_key', monthKey);
 
     if (isMissingRelationError(cntErr)) {
-      return NextResponse.json({ error: 'Newsletters need the latest database update first.' }, { status: 503 });
+      return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
     }
     const usedEmails = (monthLogs || []).reduce((sum, row) => sum + (Number(row.sent_count) || 0), 0);
     const monthlyLeft = Math.max(0, plan.newsletterLimitPerMonth - usedEmails);
@@ -125,7 +125,7 @@ export async function POST(
 
     if (subErr) {
       if (isMissingRelationError(subErr)) {
-        return NextResponse.json({ error: 'Subscribers require the latest database update first.' }, { status: 503 });
+        return NextResponse.json({ error: 'This is not available right now. Please try again in a few minutes.' }, { status: 503 });
       }
       throw subErr;
     }
