@@ -31,8 +31,11 @@ export async function GET(req: NextRequest) {
   let user;
   try {
     user = await exchangeSubskriptionCode(p.get('code')!, saved.verifier, `${origin}/api/auth/subskription/callback`);
-  } catch {
-    return fail('We could not reach Subskription. Please try again.');
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : 'unknown';
+    console.error('[subskription sign-in] code exchange failed:', reason);
+    // The provider's own error name is safe to show (for example invalid_grant); it tells us what to fix.
+    return fail(`Subskription sign-in could not be completed (${reason.slice(0, 80)}). Please try again.`);
   }
   if (!user.email) return fail('Subskription did not share an email address.');
   if (user.email_verified !== true) return fail('Verify your email on Subskription first, then sign in again.');

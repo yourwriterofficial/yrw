@@ -31,8 +31,10 @@ export async function GET(req: NextRequest) {
   let user;
   try {
     user = await exchangeProsepenCode(p.get('code')!, saved.verifier, `${origin}/api/auth/prosepen/callback`);
-  } catch {
-    return fail('We could not reach ProsePen. Please try again.');
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : 'unknown';
+    console.error('[prosepen sign-in] code exchange failed:', reason);
+    return fail(`ProsePen sign-in could not be completed (${reason.slice(0, 80)}). Please try again.`);
   }
   if (!user.email) return fail('ProsePen did not share an email address.');
   if (user.email_verified !== true) return fail('Confirm your email on ProsePen first, then sign in again.');
