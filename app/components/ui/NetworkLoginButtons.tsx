@@ -18,8 +18,7 @@ export function NetworkLoginButtons({ next }: { next?: string | null }) {
   const apps: NetApp[] = [
     { id: 'subskription', name: 'Subskription', logo: '/network/subskription.svg', href: `/api/auth/subskription/start${qs ? `?${qs}` : ''}` },
     { id: 'nairaguide', name: 'NairaGuide', logo: '/network/nairaguide.svg', href: `/api/auth/nairaguide/start?${ng}` },
-    // ProsePen has no sign-in provider yet: listed but disabled until it goes live.
-    { id: 'prosepen', name: 'ProsePen', logo: '/network/prosepen.svg', href: null },
+    { id: 'prosepen', name: 'ProsePen', logo: '/network/prosepen.svg', href: `/api/auth/prosepen/start${qs ? `?${qs}` : ''}` },
   ];
 
   const base = 'relative mt-3 flex w-full items-center justify-center gap-3 rounded-xl border border-theme bg-card py-3 text-sm font-bold shadow-sm transition';
