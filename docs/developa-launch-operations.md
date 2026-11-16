@@ -21,12 +21,22 @@ The daily Vercel crons (`/api/cron/developa-daily`, `/api/cron/prune-vault`) use
 `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` are set in Vercel production. Changing the key
 pair invalidates every existing phone subscription, so do not rotate it casually.
 
-## Backups (Supabase free has none you can download)
-The GitHub repository is public, so database dumps must never be stored as GitHub artifacts. Recommended free setup:
+## Backups (free, no card)
+Every night at 02:00 UTC the Cloudflare timer calls `POST /api/developa/backup`. The app exports every table in the
+database plus the account list (never password hashes), compresses it, **encrypts it with AES-256-GCM** using
+`BACKUP_PASSPHRASE`, and sends the scrambled file to the Google Apps Script web app
+"Developa Backup Receiver" (source: `scripts/google-apps-script-backup-receiver.gs`). That script saves it in the
+private Drive folder **Developa Backups (private)** and moves anything older than 14 days to the Drive trash. A run
+on the same day replaces that day's file. If a backup fails, an email goes to `ERROR_ALERT_TO`.
 
-1. Create a **private** Cloudflare R2 bucket (free tier: 10 GB, no download fees).
-2. A nightly job (GitHub Actions in a *private* backup repository, or a local scheduled task) exports every table with
-   the Supabase service key, compresses it, encrypts it with a passphrase kept in your password manager, and uploads it to R2.
-3. Keep 14 daily copies and 8 weekly copies. Test a restore once a month.
-4. Until that is running, take a manual export from the Supabase dashboard (Database, Backups is Pro-only, so use
-   Table editor export or `pg_dump` with the connection string) before any risky change.
+- Settings: `DRIVE_BACKUP_URL`, `DRIVE_BACKUP_SECRET` (same value as SHARED_SECRET in the Apps Script) and
+  `BACKUP_PASSPHRASE` in Vercel production. The passphrase is also saved in
+  `Documents/network-secrets/developa-backup-passphrase.txt` on the owner's computer. **Copy it to a password manager:
+  without it a backup cannot be opened.**
+- The very large `project_topics` catalogue (100,000+ rows) is added in parts on Sundays.
+- Not included: images and files in storage buckets.
+- Open a backup: download the `.dvbk` file from Drive, then
+  `BACKUP_PASSPHRASE="..." node scripts/restore-backup.mjs 2026-11-16_developa-main.dvbk > backup.json`.
+  The result is JSON of every table. Re-insert rows with the Supabase service key or the SQL editor.
+- Test a restore once a month.
+- Store backups for site owners (weekly email and download) are a Corporate-plan feature and are separate from this.

@@ -6,6 +6,7 @@
  *    (x-developa-secret) that the app checks (see lib/edgeHost.ts).
  * 2. scheduled: every 10 minutes it calls the app's two timers, so scheduled announcements go out on time and pending
  *    Paystack payments are re-checked. Needs the Worker secret CRON_SECRET (same value as the app's CRON_SECRET).
+ *    At 02:00 to 02:09 UTC it also calls /api/developa/backup, the nightly encrypted backup to private Google Drive.
  *    Cron trigger: every 10 minutes ("star-slash-10 * * * *").
  */
 export default {
@@ -17,13 +18,16 @@ export default {
     return fetch(new Request(url, { method: request.method, headers, body: request.body, redirect: 'manual' }));
   },
 
-  async scheduled(_event, env, ctx) {
+  async scheduled(event, env, ctx) {
     if (!env.CRON_SECRET) return;
     const call = (path) =>
       fetch('https://developa.me' + path, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + env.CRON_SECRET, 'User-Agent': 'Developa-CF-Timer/1.0' },
       }).catch(() => {});
-    ctx.waitUntil(Promise.all([call('/api/developa/announcements/run'), call('/api/developa/reconcile')]));
+    const jobs = [call('/api/developa/announcements/run'), call('/api/developa/reconcile')];
+    const t = new Date(event.scheduledTime);
+    if (t.getUTCHours() === 2 && t.getUTCMinutes() < 10) jobs.push(call('/api/developa/backup'));
+    ctx.waitUntil(Promise.all(jobs));
   },
 };
