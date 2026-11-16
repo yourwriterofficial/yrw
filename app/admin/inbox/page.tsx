@@ -289,7 +289,7 @@ function ThreadView({ id, me, mailboxes, macros, onBack, onChanged, onDeleted, f
 
       <div className="border-t border-theme shrink-0 bg-card">
         <div className="flex items-center gap-1 px-4 pt-3" role="tablist">
-          {(['reply', 'note'] as const).map((k) => <button key={k} role="tab" aria-selected={mode === k} onClick={() => setMode(k)} className={`h-8 px-3 rounded-lg text-xs font-bold ${mode === k ? 'bg-accent/10 text-accent' : 'text-secondary hover:bg-hover'}`}>{k === 'reply' ? 'Reply' : 'Private note'}</button>)}
+          {(['reply', 'note'] as const).map((k) => <button key={k} role="tab" aria-selected={mode === k} onClick={() => setMode(k)} className={`h-8 px-3 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 ${mode === k ? 'bg-accent/10 text-accent' : 'text-secondary hover:bg-hover'}`}>{k === 'reply' ? 'Reply' : 'Private note'}</button>)}
           {mode === 'reply' && myMacros.length > 0 && (
             <div className="ml-auto flex items-center gap-1 overflow-x-auto"><span className="text-[11px] text-secondary shrink-0">Saved:</span>{myMacros.slice(0, 6).map((m) => <button key={m.id} onClick={() => applyMacro(m)} className="px-2 h-7 rounded-lg border border-theme hover:bg-hover text-[11px] shrink-0">{m.title}</button>)}</div>
           )}

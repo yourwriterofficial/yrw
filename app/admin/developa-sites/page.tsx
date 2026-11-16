@@ -24,6 +24,16 @@ interface MonthlySettlementRow { month: string; orders: number; gross: number; p
 interface AdRow { id: string; title: string; body: string; link_url: string; image_url: string; placement: 'banner' | 'footer'; target_site_id: string | null; is_active: boolean; starts_at: string | null; ends_at: string | null }
 
 type Tab = 'sites' | 'reports' | 'announce' | 'payments' | 'themes' | 'ads' | 'support' | 'audit';
+const TAB_INFO: Record<Tab, [string, string]> = {
+  sites: ['Sites', 'Every store and community, with its plan, sales and owner. Open one to limit, edit or ban it.'],
+  reports: ['Reports', 'Abuse reports from visitors. Review them, take things down, or dismiss.'],
+  announce: ['Announcements', 'Send a notice to site owners: in their bell, inbox or email. Schedule it for later if you like.'],
+  payments: ['Plan payments', 'Paid plans you have recorded, and what each month brought in.'],
+  themes: ['Themes and prices', 'Which themes exist and what the premium ones cost.'],
+  ads: ['Ads on all sites', 'Ads you show on free sites, with how many people saw and clicked them.'],
+  support: ['Priority support', 'Requests from paying site owners who get a faster reply.'],
+  audit: ['History', 'Everything an admin changed, and who did it.'],
+};
 const naira = (n: number) => '₦' + Math.round(n).toLocaleString('en-NG');
 
 async function api<T = Record<string, unknown>>(url: string, method = 'GET', body?: unknown) {
@@ -105,9 +115,10 @@ export default function AdminDevelopaSitesPage() {
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-6">
       <PageHeader
-        title="Developa platform"
-        description="All stores and communities, paid plans, and the ads you show on every site."
+        title={TAB_INFO[tab][0]}
+        description={TAB_INFO[tab][1]}
         breadcrumb="Admin / Developa"
+        actions={<button onClick={loadAll} className="px-4 h-10 rounded-xl text-sm font-medium border border-theme hover:bg-hover">Refresh</button>}
       />
 
       {needsUpdate && (
@@ -122,28 +133,13 @@ export default function AdminDevelopaSitesPage() {
       )}
       {note && <p className={`text-sm rounded-xl p-3 border ${note.ok ? 'text-success border-success/30' : 'text-danger border-danger/30'}`} role="status">{note.text}</p>}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {tab === 'sites' && <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi label="Sites" value={String(kpi.sites)} sub={`${kpi.paidSites} on a paid plan`} />
         <Kpi label="Plan income per month" value={naira(kpi.mrr)} sub={kpi.soon ? `${kpi.soon} ending within 7 days` : 'from active paid plans'} />
         <Kpi label="Plan payments received" value={naira(kpi.received)} sub={`${payments.length} recorded`} />
-        <Kpi label="Sales across all stores" value={formatMoney(kpi.gmv)} sub={`${kpi.orders} orders`} />
-      </div>
+        <Kpi label="Sales across all stores" value={formatMoney(kpi.gmv)} sub={`${kpi.orders} ${kpi.orders === 1 ? 'order' : 'orders'}`} />
+      </div>}
 
-      <div className="flex flex-wrap gap-2 border-b border-theme pb-3">
-        {([
-          ['sites', 'Sites'],
-          ['reports', 'Reports'],
-          ['announce', 'Announcements'],
-          ['payments', 'Plan payments'],
-          ['themes', 'Themes and prices'],
-          ['ads', 'Ads on all sites'],
-          ['support', 'Priority support'],
-          ['audit', 'History'],
-        ] as [Tab, string][]).map(([k, label]) => (
-          <button key={k} onClick={() => setTab(k)} className={`px-4 h-10 rounded-full text-sm font-medium ${tab === k ? 'bg-accent text-[var(--accent-foreground)]' : 'text-secondary hover:bg-hover'}`}>{label}</button>
-        ))}
-        <button onClick={loadAll} className="ml-auto px-4 h-10 rounded-full text-sm border border-theme hover:bg-hover">Refresh</button>
-      </div>
 
       {loading ? <p className="text-sm text-secondary">Loading…</p> : (
         <>
