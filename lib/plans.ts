@@ -51,6 +51,8 @@ export interface PlanDefinition {
   adSpace: boolean;           // sell banner space or place house ads on your own site
   houseAds: boolean;          // run your own promo banners on your own site(s)
   onlinePayments: boolean;    // Paystack subaccount split payments directly to seller's bank
+  bankTransfer: boolean;      // shoppers can pay by bank transfer and the seller confirms it (Pro and above)
+  payOnDelivery: boolean;     // shoppers can choose to pay when the order arrives (Pro and above)
   splitFeePct: number;        // platform fee % taken on split transactions
   directMessages: boolean;    // buyers can chat with the seller inside the site
   pushNotifications: boolean; // phone alerts for new orders and order updates
@@ -95,6 +97,8 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     adSpace: false,
     houseAds: false,
     onlinePayments: false,
+    bankTransfer: false,
+    payOnDelivery: false,
     splitFeePct: 0,
     directMessages: false,
     pushNotifications: false,
@@ -102,7 +106,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'none',
     businessCard: false,
     catalogueMode: true,
-    highlights: ['1 site on yourname.developa.me', 'Up to 10 products with 1 photo each', '10 free themes', 'WhatsApp ordering & catalogue mode', 'Orders by bank transfer or pay on delivery', 'Installable as a phone app', '10 customer emails a month (buy more any time)'],
+    highlights: ['1 site on yourname.developa.me', 'Up to 10 products with 1 photo each', '10 free themes', 'WhatsApp ordering & catalogue mode', 'Installable as a phone app', '10 customer emails a month (buy more any time)'],
   },
   lite: {
     tier: 'lite',
@@ -136,6 +140,8 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     adSpace: true,
     houseAds: true,
     onlinePayments: true,
+    bankTransfer: false,
+    payOnDelivery: false,
     splitFeePct: 3,
     directMessages: false,
     pushNotifications: true,
@@ -177,6 +183,8 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     adSpace: true,
     houseAds: true,
     onlinePayments: true,
+    bankTransfer: true,
+    payOnDelivery: true,
     splitFeePct: 2,
     directMessages: true,
     pushNotifications: true,
@@ -184,7 +192,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'plus',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 4 sites on one account', 'Unlimited products & 6 photos each', 'Get paid online straight to your bank (we keep 2%)', 'Every Plus-tier premium theme included', 'Variants, delivery zones, coupons & abandoned carts', 'Run house ads, chat with buyers & no platform ads', '30 customer emails a month (buy more any time)'],
+    highlights: ['Up to 4 sites on one account', 'Unlimited products & 6 photos each', 'Get paid online straight to your bank (we keep 2%)', 'Bank transfer and pay on delivery for your shoppers', 'Every Plus-tier premium theme included', 'Variants, delivery zones, coupons & abandoned carts', 'Run house ads, chat with buyers & no platform ads', '30 customer emails a month (buy more any time)'],
   },
   business: {
     tier: 'business',
@@ -218,6 +226,8 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     adSpace: true,
     houseAds: true,
     onlinePayments: true,
+    bankTransfer: true,
+    payOnDelivery: true,
     splitFeePct: 1,
     directMessages: true,
     pushNotifications: true,
@@ -259,6 +269,8 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     adSpace: true,
     houseAds: true,
     onlinePayments: true,
+    bankTransfer: true,
+    payOnDelivery: true,
     splitFeePct: 0.5,
     directMessages: true,
     pushNotifications: true,

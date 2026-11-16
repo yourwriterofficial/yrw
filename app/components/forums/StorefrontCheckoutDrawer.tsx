@@ -18,6 +18,7 @@ import {
 import Button from '@/app/components/ui/Button';
 import { waNumber } from '@/lib/phone';
 import { pluginOn } from '@/lib/plugins';
+import { planFor } from '@/lib/plans';
 import { formatMoney, type ForumSummary, type ProductVariant, type SiteOrder, type SiteProduct } from '@/lib/forums';
 import { NIGERIAN_STATES } from '@/lib/shipping';
 
@@ -130,6 +131,9 @@ export default function StorefrontCheckoutDrawer(props: Props) {
   const hasBank = !!(site.bank_name && site.bank_account_number);
   // Printable receipts are a Pro feature, so the link only shows where it will open.
   const receiptsOn = pluginOn('receipts', site.plan_tier, site.plan_expires_at, site.plugins);
+  // Which ways to pay this store offers: online first, then bank transfer and pay on delivery where the plan includes them.
+  const sitePlan = planFor(site.plan_tier, site.plan_expires_at);
+  const methods = [props.canPayOnline && 'paystack', sitePlan.bankTransfer && 'manual_transfer', sitePlan.payOnDelivery && 'pay_on_delivery'].filter(Boolean) as string[];
 
   const handleCopyAccount = async () => {
     if (!site.bank_account_number) return;
@@ -392,7 +396,12 @@ export default function StorefrontCheckoutDrawer(props: Props) {
               </label>
 
               <h4 className="text-xs font-semibold text-secondary pt-2">Payment method</h4>
-              <div className={`grid gap-2 ${props.canPayOnline ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              {methods.length === 0 && (
+                <p className="text-xs text-secondary p-3 rounded-xl bg-card border border-theme">
+                  This store takes orders on WhatsApp. {site.whatsapp_number ? 'Tap the button below to send your order.' : 'Please contact the store to order.'}
+                </p>
+              )}
+              <div className={`grid gap-2 ${methods.length >= 3 ? 'grid-cols-3' : methods.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                 {props.canPayOnline && (
                   <button
                     type="button"
@@ -404,7 +413,7 @@ export default function StorefrontCheckoutDrawer(props: Props) {
                     <CreditCard className="w-3.5 h-3.5" /> Pay Online
                   </button>
                 )}
-                <button
+                {sitePlan.bankTransfer && <button
                   type="button"
                   onClick={() => setPaymentMethod('manual_transfer')}
                   className={`h-10 px-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 ${
@@ -412,8 +421,8 @@ export default function StorefrontCheckoutDrawer(props: Props) {
                   }`}
                 >
                   <Landmark className="w-3.5 h-3.5" /> Bank Transfer
-                </button>
-                <button
+                </button>}
+                {sitePlan.payOnDelivery && <button
                   type="button"
                   onClick={() => setPaymentMethod('pay_on_delivery')}
                   className={`h-10 px-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 ${
@@ -421,7 +430,7 @@ export default function StorefrontCheckoutDrawer(props: Props) {
                   }`}
                 >
                   <Truck className="w-3.5 h-3.5" /> Pay on Delivery
-                </button>
+                </button>}
               </div>
               {paymentMethod === 'paystack' && (
                 <p className="text-xs text-secondary p-3 rounded-xl bg-card border border-theme">
@@ -429,7 +438,7 @@ export default function StorefrontCheckoutDrawer(props: Props) {
                 </p>
               )}
 
-              {paymentMethod === 'manual_transfer' && (
+              {paymentMethod === 'manual_transfer' && sitePlan.bankTransfer && (
                 <div className="p-3.5 rounded-xl bg-card border border-theme space-y-2 text-xs">
                   {hasBank ? (
                     <>
@@ -466,9 +475,22 @@ export default function StorefrontCheckoutDrawer(props: Props) {
               )}
 
               {checkoutError && <p className="text-xs text-danger" role="alert">{checkoutError}</p>}
-              <Button type="submit" variant="primary" disabled={submitting}>
-                {submitting ? 'Placing Order...' : `Place Order (${formatMoney(payable, currency)})`}
-              </Button>
+              {methods.length === 0 ? (
+                site.whatsapp_number ? (
+                  <a
+                    href={`https://wa.me/${waNumber(site.whatsapp_number)}?text=${encodeURIComponent(`Hi ${site.name}, I would like to order from your store.`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4" /> Order on WhatsApp
+                  </a>
+                ) : null
+              ) : (
+                <Button type="submit" variant="primary" disabled={submitting}>
+                  {submitting ? 'Placing Order...' : `Place Order (${formatMoney(payable, currency)})`}
+                </Button>
+              )}
             </form>
           </>
         )}

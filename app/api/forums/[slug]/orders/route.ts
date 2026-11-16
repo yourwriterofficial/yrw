@@ -121,6 +121,15 @@ export async function POST(
       return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid order' }, { status: 400 });
     }
 
+    // Bank transfer and pay on delivery are Pro features. A store without them takes online payments or WhatsApp orders only.
+    {
+      const ext = await readExtendedSite(site.id);
+      const plan = planFor(site.plan_tier, ext?.plan_expires_at);
+      if ((parsed.data.payment_method === 'manual_transfer' && !plan.bankTransfer) || (parsed.data.payment_method === 'pay_on_delivery' && !plan.payOnDelivery)) {
+        return NextResponse.json({ error: 'This store does not offer that way to pay. Please choose another.' }, { status: 403 });
+      }
+    }
+
     const productIds = parsed.data.items.map((i) => i.product_id);
     const { data: dbProducts, error: prodErr } = await supabaseAdmin
       .from('site_products')

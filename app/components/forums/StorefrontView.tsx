@@ -61,11 +61,18 @@ export default function StorefrontView({
   const [deliveryState, setDeliveryState] = useState('Lagos');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [notes, setNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'manual_transfer' | 'pay_on_delivery' | 'paystack'>('manual_transfer');
+  const [paymentMethod, setPaymentMethod] = useState<'manual_transfer' | 'pay_on_delivery' | 'paystack'>('paystack');
   const [previewCurrency, setPreviewCurrency] = useState<PreviewCurrency>('NGN');
   const canPayOnline = (Boolean(site.online_payments_ready) || Boolean(site.paystack_subaccount_code)) && pluginOn('online_payments', site.plan_tier, site.plan_expires_at, site.plugins);
-  // When the store can take online payments, that is the default, so shoppers land on the payment step rather than an unpaid order.
-  useEffect(() => { if (canPayOnline) setPaymentMethod((m) => (m === 'manual_transfer' ? 'paystack' : m)); }, [canPayOnline]);
+  // Paying online is the default for every shopper. Bank transfer and pay on delivery are Pro features, so a method the plan does not include is never selected.
+  const sitePlan = planFor(site.plan_tier, site.plan_expires_at);
+  useEffect(() => {
+    const allowed: ('paystack' | 'manual_transfer' | 'pay_on_delivery')[] = [];
+    if (canPayOnline) allowed.push('paystack');
+    if (sitePlan.bankTransfer) allowed.push('manual_transfer');
+    if (sitePlan.payOnDelivery) allowed.push('pay_on_delivery');
+    setPaymentMethod((m) => (allowed.length && !allowed.includes(m) ? allowed[0] : m));
+  }, [canPayOnline, sitePlan.bankTransfer, sitePlan.payOnDelivery]);
   const [paymentRef, setPaymentRef] = useState('');
   const [proofNote, setProofNote] = useState('');
   const [marketingConsent, setMarketingConsent] = useState(false);

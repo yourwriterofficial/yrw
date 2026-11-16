@@ -53,6 +53,8 @@ export const PLUGINS: PluginDef[] = [
   // Look after your shop
   { id: 'lowstock', name: 'Daily shop summary', description: 'Get a daily email with yesterday’s orders, money received and items running low.', group: 'protect', minTier: 'pro', toggle: false, tab: 'settings' },
   { id: 'carts', name: 'Unfinished order reminders', description: 'See shoppers who added items but did not finish ordering, and send them a reminder.', group: 'protect', minTier: 'pro', toggle: false },
+  { id: 'bank_transfer', name: 'Pay by bank transfer', description: 'Let shoppers pay by bank transfer, then confirm each payment from your orders.', group: 'sell', minTier: 'pro', toggle: false, tab: 'orders' },
+  { id: 'pay_on_delivery', name: 'Pay on delivery', description: 'Let shoppers choose to pay when their order arrives.', group: 'sell', minTier: 'pro', toggle: false, tab: 'orders' },
   { id: 'backup', name: 'Weekly backup', description: 'Get a weekly email with a copy of your products and orders, and download a full copy any time, so nothing is ever lost.', group: 'protect', minTier: 'corporate', toggle: false, tab: 'settings' },
   { id: 'staff', name: 'Helper logins', description: 'Give your helpers their own login with only the access you choose, so you never share your password.', group: 'protect', minTier: 'business', toggle: false, tab: 'settings' },
   { id: 'priority', name: 'Priority help', description: 'Get help from our team on WhatsApp within 4 working hours.', group: 'protect', minTier: 'business', toggle: false, tab: 'plan' },
@@ -156,6 +158,8 @@ export function pluginMatchesPlan(): string[] {
     check('receipts', p.receipts, tier);
     check('carts', p.abandonedCarts, tier);
     check('backup', p.scheduledBackup, tier);
+    check('bank_transfer', p.bankTransfer, tier);
+    check('pay_on_delivery', p.payOnDelivery, tier);
     check('staff', p.staffAccounts, tier);
     check('bookings', p.bookings, tier);
     check('memberships', p.paidMemberships, tier);
