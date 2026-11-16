@@ -6,19 +6,26 @@
  * Apps whose sign-in is not live yet are shown disabled with a "Soon" tag. Developa brand only.
  */
 
+const MAIN_PROSEPEN_LIVE = false;
+
 interface NetApp { id: string; name: string; logo: string; href: string | null }
 
-export function NetworkLoginButtons({ next }: { next?: string | null }) {
+export function NetworkLoginButtons({ next, main }: { next?: string | null; main?: boolean }) {
+  // `main` is the YourResearchWriter site: people stay on it and land on their client dashboard.
   const q = new URLSearchParams();
   if (next && next.startsWith('/')) q.set('next', next);
+  if (main) q.set('site', 'main');
   const qs = q.toString();
   const ng = new URLSearchParams(q);
-  ng.set('brand', 'developa');
+  ng.delete('site');
+  if (!main) ng.set('brand', 'developa');
+  const ngQs = ng.toString();
 
   const apps: NetApp[] = [
     { id: 'subskription', name: 'Subskription', logo: '/network/subskription.svg', href: `/api/auth/subskription/start${qs ? `?${qs}` : ''}` },
-    { id: 'nairaguide', name: 'NairaGuide', logo: '/network/nairaguide.svg', href: `/api/auth/nairaguide/start?${ng}` },
-    { id: 'prosepen', name: 'ProsePen', logo: '/network/prosepen.svg', href: `/api/auth/prosepen/start${qs ? `?${qs}` : ''}` },
+    { id: 'nairaguide', name: 'NairaGuide', logo: '/network/nairaguide.svg', href: `/api/auth/nairaguide/start${ngQs ? `?${ngQs}` : ''}` },
+    // On the main site ProsePen stays disabled until ProsePen allows that site's return address (flip MAIN_PROSEPEN_LIVE).
+    { id: 'prosepen', name: 'ProsePen', logo: '/network/prosepen.svg', href: main && !MAIN_PROSEPEN_LIVE ? null : `/api/auth/prosepen/start${qs ? `?${qs}` : ''}` },
   ];
 
   const base = 'relative mt-3 flex w-full items-center justify-center gap-3 rounded-xl border border-theme bg-card py-3 text-sm font-bold shadow-sm transition';

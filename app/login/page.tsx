@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '@/app/components/ui/Button';
 import { SocialLoginButton } from '@/app/components/ui/SocialLoginButton';
-import { NairaguideLoginButton } from '@/app/components/ui/NairaguideLoginButton';
 import { NetworkLoginButtons } from '@/app/components/ui/NetworkLoginButtons';
 import AuthShell from '@/app/components/AuthShell';
 
@@ -144,7 +143,7 @@ function LoginInner() {
       {isDevelopa ? (
         <NetworkLoginButtons next={nextPath} />
       ) : (
-        <NairaguideLoginButton developa={false} label="Continue with Nairaguide" next={nextPath} />
+        <NetworkLoginButtons main next={nextPath} />
       )}
 
       <div className="flex items-center gap-3 my-5 text-xs text-secondary">

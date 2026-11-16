@@ -14,12 +14,12 @@ const admin = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, (proces
 export async function GET(req: NextRequest) {
   const origin = req.nextUrl.origin;
   const p = req.nextUrl.searchParams;
-  let saved: { state: string; verifier: string; next: string } | null = null;
+  let saved: { state: string; verifier: string; next: string; main?: boolean } | null = null;
   try {
     saved = JSON.parse(req.cookies.get('pp_oauth')?.value || 'null');
   } catch {}
   const fail = (message: string) => {
-    const res = NextResponse.redirect(`${origin}/login?brand=developa&message=${encodeURIComponent(message)}`);
+    const res = NextResponse.redirect(`${origin}/login${saved?.main ? '?' : '?brand=developa&'}message=${encodeURIComponent(message)}`);
     res.cookies.delete('pp_oauth');
     res.headers.set('Cache-Control', 'no-store');
     return res;
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
   // Never touch the admin flag here: signing in through ProsePen must not change anyone's access.
   if (!existing) await admin.from('profiles').insert({ id: data.user.id, full_name: name, is_admin: false });
 
-  const to = saved.next ? `${origin}${saved.next}` : `${origin}/developer/manage`;
+  const to = saved.next ? `${origin}${saved.next}` : `${origin}${saved.main ? '/dashboard/client' : '/developer/manage'}`;
   const res = NextResponse.redirect(to);
   res.cookies.delete('pp_oauth');
   res.headers.set('Cache-Control', 'no-store');
