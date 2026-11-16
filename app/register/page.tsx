@@ -151,6 +151,7 @@ function RegisterInner() {
 
         <Button type="submit" size="lg" fullWidth loading={loading} loadingText="Creating account…">Create account</Button>
         <p className="text-xs text-secondary text-center">We&apos;ll email you a link to confirm your address.</p>
+        {isDevelopa && <p className="text-xs text-secondary text-center">By creating an account you agree to our <a href="/terms" className="text-accent hover:underline">Terms</a> and <a href="/privacy" className="text-accent hover:underline">Privacy Policy</a>.</p>}
       </form>
     </AuthShell>
   );

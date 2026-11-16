@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import ForumView from '@/app/components/forums/ForumView';
 import { supabaseAdmin, readSeo } from '@/lib/forumServer';
 
@@ -12,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .select('id, slug, name, description, hero_headline, hero_subheadline, logo_url, is_public, custom_domain, custom_domain_verified, plan_tier')
     .eq('slug', slug.toLowerCase().trim())
     .maybeSingle();
-  if (!site) return { title: 'Site not found', robots: { index: false } };
+  if (!site) return { title: { absolute: 'Store not found | developa.me' }, robots: { index: false } };
 
   const seo = await readSeo(site.id);
   const title = seo.seo_title || (site.hero_headline ? `${site.name}: ${site.hero_headline}` : site.name);
@@ -41,5 +42,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ForumSlugPage({ params }: Props) {
   const { slug } = await params;
+  // An address nobody owns answers with a real 404 (and the store-not-found page), not a blank 200.
+  const { data: exists } = await supabaseAdmin.from('forums').select('id').eq('slug', slug.toLowerCase().trim()).maybeSingle();
+  if (!exists) notFound();
   return <ForumView slug={slug} />;
 }
