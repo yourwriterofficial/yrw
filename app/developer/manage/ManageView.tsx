@@ -87,10 +87,11 @@ export default function ManageView() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setAuthState('out'); return; }
-      setAuthState('in');
+      // Only say "signed in" once the owner's sites are loaded, so "no site yet" is never shown while they are still on the way.
       const r = await jsonFetch<{ forums?: Site[] }>('/api/forums?mine=1');
       const mine = r.data.forums || [];
       setSites(mine);
+      setAuthState('in');
       const wanted = new URLSearchParams(window.location.search).get('site');
       setSlug(mine.find((s) => s.slug === wanted)?.slug || mine[0]?.slug || '');
       // Coming back from a payment (or a shared link): open the tab named in the address, and say so when paid.

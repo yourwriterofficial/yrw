@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
 import { waNumber } from '@/lib/phone';
+import { pluginOn } from '@/lib/plugins';
 import { formatMoney, type ForumSummary, type ProductVariant, type SiteOrder, type SiteProduct } from '@/lib/forums';
 import { NIGERIAN_STATES } from '@/lib/shipping';
 
@@ -127,6 +128,8 @@ export default function StorefrontCheckoutDrawer(props: Props) {
 
   const [copiedAcct, setCopiedAcct] = useState(false);
   const hasBank = !!(site.bank_name && site.bank_account_number);
+  // Printable receipts are a Pro feature, so the link only shows where it will open.
+  const receiptsOn = pluginOn('receipts', site.plan_tier, site.plan_expires_at, site.plugins);
 
   const handleCopyAccount = async () => {
     if (!site.bank_account_number) return;
@@ -160,11 +163,19 @@ export default function StorefrontCheckoutDrawer(props: Props) {
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1.5">
               <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-                <CheckCircle2 className="w-4 h-4" /> Order Confirmed: {placedOrder.order_code}
+                <CheckCircle2 className="w-4 h-4" /> {placedOrder.payment_status === 'paid' ? 'Paid' : 'Order placed'}: {placedOrder.order_code}
               </div>
               <p className="text-xs text-secondary">
-                Total: <strong className="text-primary">{formatMoney(placedOrder.total_amount, currency)}</strong> · Status:{' '}
-                <span className="font-mono">{placedOrder.payment_status}</span>
+                Total: <strong className="text-primary">{formatMoney(placedOrder.total_amount, currency)}</strong>
+              </p>
+              <p className="text-xs text-primary">
+                {placedOrder.payment_status === 'paid'
+                  ? 'Payment received. Thank you!'
+                  : placedOrder.payment_method === 'pay_on_delivery'
+                  ? 'You will pay when your order arrives.'
+                  : hasBank
+                  ? 'Not paid yet. Send the transfer using the details below, then the store will confirm it.'
+                  : 'Not paid yet. This store has not added a way to pay online, so the store will contact you to arrange payment.'}
               </p>
             </div>
 
@@ -178,14 +189,14 @@ export default function StorefrontCheckoutDrawer(props: Props) {
             )}
 
             <div className="flex flex-wrap gap-2">
-              <a
+              {receiptsOn && <a
                 href={`/receipt/${encodeURIComponent(placedOrder.order_code)}?email=${encodeURIComponent(placedOrder.buyer_email)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 min-w-[140px] h-10 px-4 rounded-xl border border-theme hover:bg-hover text-xs font-semibold flex items-center justify-center"
               >
                 Printable receipt
-              </a>
+              </a>}
               {site.whatsapp_number && (
                 <a
                   href={`https://wa.me/${waNumber(site.whatsapp_number)}?text=${encodeURIComponent(

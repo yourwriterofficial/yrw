@@ -64,6 +64,8 @@ export default function StorefrontView({
   const [paymentMethod, setPaymentMethod] = useState<'manual_transfer' | 'pay_on_delivery' | 'paystack'>('manual_transfer');
   const [previewCurrency, setPreviewCurrency] = useState<PreviewCurrency>('NGN');
   const canPayOnline = (Boolean(site.online_payments_ready) || Boolean(site.paystack_subaccount_code)) && pluginOn('online_payments', site.plan_tier, site.plan_expires_at, site.plugins);
+  // When the store can take online payments, that is the default, so shoppers land on the payment step rather than an unpaid order.
+  useEffect(() => { if (canPayOnline) setPaymentMethod((m) => (m === 'manual_transfer' ? 'paystack' : m)); }, [canPayOnline]);
   const [paymentRef, setPaymentRef] = useState('');
   const [proofNote, setProofNote] = useState('');
   const [marketingConsent, setMarketingConsent] = useState(false);
