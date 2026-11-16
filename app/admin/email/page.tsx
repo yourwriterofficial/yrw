@@ -175,198 +175,129 @@ export default function EmailNotificationsPage() {
   }
 
   return (
-    <div className="p-6 md:p-10 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-300">
-
+    <div className="p-6 md:p-10 max-w-5xl space-y-6">
       <PageHeader
-        title="Messaging Center"
-        description="Push in-app notifications to the bell or broadcast HTML emails — to everyone or a selected few."
-        breadcrumb="Admin / Messaging"
-        icon={<lucide.Send className="w-8 h-8 text-accent" />}
+        title="Messaging"
+        description="Send a short notice to people's notification bell, or an email, to everyone with an account or just a few."
+        icon={<lucide.Send className="w-7 h-7 text-accent" />}
       />
 
-      {/* Tabs */}
-      <div className="flex gap-2 p-1 bg-secondary border border-theme rounded-2xl w-fit">
+      {/* How to send */}
+      <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-secondary/60 border border-theme w-full sm:w-fit" role="tablist">
         <TabButton active={tab === 'notify'} onClick={() => setTab('notify')} icon={<lucide.Bell className="w-4 h-4" />}>
-          In-App Notification
+          Bell notice
         </TabButton>
         <TabButton active={tab === 'email'} onClick={() => setTab('email')} icon={<lucide.Mail className="w-4 h-4" />}>
-          Email Broadcast
+          Email
         </TabButton>
       </div>
 
-      <div className="bg-secondary border border-theme rounded-3xl p-6 md:p-8 space-y-6 shadow-card">
-        {/* Recipient targeting (shared) */}
-        <RecipientSelector
-          users={users}
-          audience={audience}
-          setAudience={setAudience}
-          selectedIds={selectedIds}
-          setSelectedIds={setSelectedIds}
-        />
+      <div className="grid xl:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+        <div className="space-y-6 min-w-0">
+          {/* Step 1 */}
+          <section className="bg-card border border-theme rounded-2xl p-5 space-y-4">
+            <h2 className="font-bold flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-accent text-[var(--accent-foreground)] text-xs font-black flex items-center justify-center">1</span> Who gets it</h2>
+            <RecipientSelector users={users} audience={audience} setAudience={setAudience} selectedIds={selectedIds} setSelectedIds={setSelectedIds} />
+          </section>
 
-        <div className="h-px bg-[var(--border)]" />
+          {/* Step 2 */}
+          <section className="bg-card border border-theme rounded-2xl p-5 space-y-4">
+            <h2 className="font-bold flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-accent text-[var(--accent-foreground)] text-xs font-black flex items-center justify-center">2</span> {tab === 'notify' ? 'Write the notice' : 'Write the email'}</h2>
+            {tab === 'notify' ? (
+              <div>
+                <label htmlFor="ms-note" className="text-xs font-semibold text-secondary block mb-1">Message (appears in the bell)</label>
+                <textarea id="ms-note" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={280} className="w-full bg-primary border border-theme rounded-xl p-4 h-28 text-sm text-primary focus:border-accent outline-none resize-none" placeholder="e.g. Your order is ready for review in your dashboard." />
+                <p className="text-[11px] text-secondary text-right mt-1">{message.length}/280</p>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label htmlFor="ms-sub" className="text-xs font-semibold text-secondary block mb-1">Subject</label>
+                  <input id="ms-sub" type="text" value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full h-11 bg-primary border border-theme rounded-xl px-4 text-sm focus:border-accent outline-none text-primary font-semibold" placeholder="Important update about your account" />
+                </div>
+                <div>
+                  <label htmlFor="ms-html" className="text-xs font-semibold text-secondary block mb-1">Message (HTML is allowed)</label>
+                  <textarea id="ms-html" value={html} onChange={(e) => setHtml(e.target.value)} className="w-full bg-primary border border-theme rounded-xl p-4 h-52 font-mono text-xs text-primary focus:border-accent outline-none resize-y" placeholder="<h2>Hello,</h2><p>We have an update for you...</p>" />
+                  <p className="text-[11px] text-secondary mt-1">The email is wrapped in the standard design automatically. Use Preview to see it.</p>
+                </div>
+              </>
+            )}
+          </section>
+        </div>
 
-        {tab === 'notify' ? (
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] uppercase font-black tracking-widest text-secondary block ml-1 mb-2">
-                Notification Message
-              </label>
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                maxLength={280}
-                className="w-full bg-primary border border-theme rounded-xl p-4 h-28 text-sm text-primary focus:border-accent outline-none resize-none"
-                placeholder="e.g. Your order is ready for review in your dashboard."
-              />
-              <p className="text-[10px] text-secondary text-right mt-1 mr-1">{message.length}/280</p>
-            </div>
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <p className="text-xs text-secondary flex items-center gap-1.5">
-                <lucide.Users className="w-3.5 h-3.5" /> Will reach <span className="text-primary font-bold">{recipientCount}</span> {recipientCount === 1 ? 'user' : 'users'}
-              </p>
-              <Button
-                onClick={sendNotification}
-                disabled={sendingNotif}
-                loading={sendingNotif}
-                loadingText="Pushing..."
-                size="lg"
-              >
-                <lucide.Bell className="w-4 h-4" /> Push Notification
+        {/* Send summary */}
+        <aside className="bg-card border border-theme rounded-2xl p-5 space-y-4 xl:sticky xl:top-4">
+          <h2 className="font-bold">Ready to send</h2>
+          <dl className="text-sm space-y-2">
+            <div className="flex justify-between gap-3"><dt className="text-secondary">How</dt><dd className="font-semibold">{tab === 'notify' ? 'Bell notice' : 'Email + bell'}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-secondary">To</dt><dd className="font-semibold">{audience === 'all' ? 'Everyone' : 'Chosen people'} · {recipientCount}</dd></div>
+          </dl>
+          {recipientCount === 0 && <p className="text-xs text-warning">Choose at least one person.</p>}
+          {tab === 'notify' ? (
+            <Button onClick={sendNotification} disabled={sendingNotif || !message.trim() || recipientCount === 0} loading={sendingNotif} loadingText="Sending..." size="lg" fullWidth>
+              <lucide.Bell className="w-4 h-4" /> Send notice
+            </Button>
+          ) : (
+            <div className="space-y-2">
+              <Button variant="secondary" size="md" fullWidth onClick={() => { setPreviewSubject(subject || 'No subject yet'); setPreviewHtml(html || '<p style="color:#666">Write the message first to preview it here.</p>'); setPreviewOpen(true); }}>
+                <lucide.Eye className="w-4 h-4" /> Preview
+              </Button>
+              <Button onClick={sendEmail} disabled={sendingEmail || !subject.trim() || !html.trim() || recipientCount === 0} loading={sendingEmail} loadingText="Sending..." size="lg" fullWidth>
+                <lucide.Send className="w-4 h-4" /> Send email
               </Button>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] uppercase font-black tracking-widest text-secondary block ml-1 mb-2">Subject Line</label>
-              <input
-                type="text"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                className="w-full bg-primary border border-theme rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-primary font-bold"
-                placeholder="Important update regarding your workspace..."
-              />
-            </div>
-            <div>
-              <label className="text-[10px] uppercase font-black tracking-widest text-secondary block ml-1 mb-2">HTML Body</label>
-              <textarea
-                value={html}
-                onChange={(e) => setHtml(e.target.value)}
-                className="w-full bg-primary border border-theme rounded-xl p-4 h-56 font-mono text-xs text-primary focus:border-accent outline-none resize-none"
-                placeholder="<h2>Hello,</h2><p>We have an update for you...</p>"
-              />
-            </div>
-             <div className="flex items-center justify-between gap-4 flex-wrap">
-              <p className="text-xs text-secondary flex items-center gap-1.5">
-                <lucide.Users className="w-3.5 h-3.5" /> Sending to <span className="text-primary font-bold">{recipientCount}</span> {recipientCount === 1 ? 'user' : 'users'}
-              </p>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="secondary"
-                  size="md"
-                  onClick={() => {
-                    setPreviewSubject(subject || 'No Subject Line');
-                    setPreviewHtml(html || '<p style="color:#666">Please enter some HTML content in the editor to preview it here.</p>');
-                    setPreviewOpen(true);
-                  }}
-                >
-                  <lucide.Eye className="w-4 h-4" /> Preview Sample
-                </Button>
-                <Button
-                  onClick={sendEmail}
-                  disabled={sendingEmail}
-                  loading={sendingEmail}
-                  loadingText="Sending..."
-                  size="lg"
-                >
-                  <lucide.Send className="w-4 h-4" /> Send Mass Email
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+          )}
+          <p className="text-[11px] text-secondary">People who turned off marketing email still get the bell notice. Sends are logged below.</p>
+        </aside>
       </div>
 
-      {/* Mass-send audit log */}
-      <div className="bg-secondary border border-theme rounded-3xl p-6 md:p-8 space-y-4">
-        <div className="flex items-center gap-2">
-          <lucide.ScrollText className="w-5 h-5 text-accent" />
-          <h2 className="font-black text-primary">Recent Mass Sends</h2>
+      {/* Mass-send history */}
+      <section className="bg-card border border-theme rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-theme flex items-center gap-2">
+          <lucide.ScrollText className="w-4 h-4 text-accent" />
+          <h2 className="font-bold">Recent sends</h2>
         </div>
         {massLogs.length === 0 ? (
-          <p className="text-xs text-secondary">No mass emails sent yet.</p>
+          <p className="p-6 text-sm text-secondary">Nothing sent yet.</p>
         ) : (
-          <div className="space-y-2">
-            {massLogs.map(log => (
-              <div key={log.id} className="flex items-center justify-between gap-4 bg-primary border border-theme rounded-xl px-4 py-3 text-xs">
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold text-primary truncate">{log.subject}</p>
-                  <p className="text-secondary mt-0.5">{new Date(log.sent_at).toLocaleString()}</p>
+          <ul className="divide-y divide-theme">
+            {massLogs.map((log) => (
+              <li key={log.id} className="px-5 py-3 flex flex-wrap items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center shrink-0"><lucide.Mail className="w-4 h-4" /></div>
+                <div className="min-w-0 flex-1 basis-48">
+                  <p className="text-sm font-semibold truncate">{log.subject}</p>
+                  <p className="text-xs text-secondary">{new Date(log.sent_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPreviewSubject(log.subject);
-                      setPreviewHtml(`
-                        <h2 style="color: #1DB954; font-weight: 800; font-size: 18px; margin-bottom: 12px;">${log.subject}</h2>
-                        <p style="margin-bottom: 16px;">This is a sample layout preview for the mass email broadcast sent to your registered audience.</p>
-                        <div style="background: #050505; border: 1px dashed #1DB954; border-radius: 12px; padding: 16px; margin: 16px 0; color: #aaa; font-style: italic; text-align: center;">
-                          (The specific customized dynamic content sent to individual clients is not fully stored in the audit logs, but is rendered in this template view).
-                        </div>
-                      `);
-                      setPreviewOpen(true);
-                    }}
-                    className="px-2.5 py-1.5 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/25 rounded-lg font-bold text-[10px] transition cursor-pointer"
-                  >
-                    <lucide.Eye className="w-3 h-3 inline mr-1" /> Preview Layout
-                  </button>
-                  <span className="text-[10px] font-black uppercase px-2 py-1 rounded bg-accent/10 text-accent border border-accent/20">
-                    {log.recipient_count} {log.recipient_count === 1 ? 'recipient' : 'recipients'}{log.all_users ? ' · all' : ''}
-                  </span>
-                </div>
-              </div>
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-accent/10 text-accent shrink-0">
+                  {log.recipient_count} {log.recipient_count === 1 ? 'person' : 'people'}{log.all_users ? ' · everyone' : ''}
+                </span>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
 
-      {/* Prune / manage notifications */}
-      <div className="bg-secondary border border-theme rounded-3xl p-6 md:p-8 space-y-4">
-        <div className="flex items-center gap-2">
-          <lucide.Trash2 className="w-5 h-5 text-danger" />
-          <h2 className="font-black text-primary">Prune Notifications</h2>
+      {/* Housekeeping */}
+      <details className="bg-card border border-theme rounded-2xl group">
+        <summary className="px-5 py-4 cursor-pointer list-none flex items-center gap-2 font-bold">
+          <lucide.Trash2 className="w-4 h-4 text-danger" /> Clean up old notifications
+          <lucide.ChevronDown className="w-4 h-4 ml-auto text-secondary transition group-open:rotate-180" />
+        </summary>
+        <div className="px-5 pb-5 space-y-3">
+          <p className="text-xs text-secondary max-w-2xl">Removes old notices from everyone&apos;s bell. Emails already sent are not affected, and this cannot be undone.</p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" size="sm" onClick={() => prune({ olderThanDays: 30 }, 'Delete notifications older than 30 days')} disabled={pruning}>
+              <lucide.Clock className="w-4 h-4" /> Older than 30 days
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => prune({ olderThanDays: 7 }, 'Delete notifications older than 7 days')} disabled={pruning}>
+              <lucide.Clock className="w-4 h-4" /> Older than 7 days
+            </Button>
+            <button onClick={() => prune({ all: true }, 'Delete ALL notifications')} disabled={pruning} className="h-8 px-4 rounded-full border border-danger/30 text-danger hover:bg-danger/10 text-xs font-bold inline-flex items-center gap-2 disabled:opacity-50">
+              <lucide.Trash2 className="w-3.5 h-3.5" /> Clear everything
+            </button>
+          </div>
         </div>
-        <p className="text-xs text-secondary max-w-2xl">
-          Clear out old in-app notifications. This removes them from every user&apos;s bell. Email delivery is unaffected.
-        </p>
-        <div className="flex flex-wrap gap-3 pt-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => prune({ olderThanDays: 30 }, 'Delete notifications older than 30 days')}
-            disabled={pruning}
-          >
-            <lucide.Clock className="w-4 h-4" /> Older than 30 days
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => prune({ olderThanDays: 7 }, 'Delete notifications older than 7 days')}
-            disabled={pruning}
-          >
-            <lucide.Clock className="w-4 h-4" /> Older than 7 days
-          </Button>
-          <button
-            onClick={() => prune({ all: true }, 'Delete ALL notifications')}
-            disabled={pruning}
-            className="px-5 py-2.5 rounded-xl border border-danger/30 bg-[var(--danger-bg)] text-danger hover:bg-[color-mix(in_srgb,var(--danger)_20%,transparent)] text-xs font-black uppercase tracking-wider transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-          >
-            <lucide.Trash2 className="w-4 h-4" /> Clear everything
-          </button>
-        </div>
-     </div>
+      </details>
 
       {/* Preview Modal */}
       {previewOpen && (
@@ -410,9 +341,11 @@ export default function EmailNotificationsPage() {
 function TabButton({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <button
+      role="tab"
+      aria-selected={active}
       onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer ${
-        active ? 'bg-accent text-[var(--accent-foreground)]' : 'text-secondary hover:text-primary hover:bg-hover'
+      className={`h-9 px-5 rounded-lg text-sm font-semibold inline-flex items-center justify-center gap-2 transition ${
+        active ? 'bg-card shadow-sm text-primary' : 'text-secondary hover:text-primary'
       }`}
     >
       {icon}
@@ -434,48 +367,53 @@ function RecipientSelector({
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
 }) {
+  const [q, setQ] = useState('');
+  const shown = users.filter((u) => {
+    const t = q.trim().toLowerCase();
+    return !t || u.full_name.toLowerCase().includes(t) || u.email.toLowerCase().includes(t);
+  });
   return (
     <div>
-      <label className="text-[10px] uppercase font-black tracking-widest text-secondary block ml-1 mb-3">Recipients</label>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2">
         <AudienceRadio active={audience === 'all'} onClick={() => setAudience('all')}>
-          All registered clients ({users.length})
+          Everyone with an account ({users.length})
         </AudienceRadio>
         <AudienceRadio active={audience === 'selected'} onClick={() => setAudience('selected')}>
-          Select custom recipients
+          Choose people{audience === 'selected' && selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
         </AudienceRadio>
       </div>
 
       {audience === 'selected' && (
-        <div className="mt-4 border border-theme rounded-2xl p-2 max-h-56 overflow-y-auto bg-primary">
-          {users.length === 0 ? (
-            <p className="text-xs text-secondary p-4 text-center">No users found.</p>
-          ) : (
-            users.map((user) => {
-              const checked = selectedIds.includes(user.id);
-              return (
-                <label
-                  key={user.id}
-                  className="flex items-center gap-3 py-2 px-2 text-xs text-primary cursor-pointer hover:bg-hover rounded-lg transition"
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(e) =>
-                      setSelectedIds(
-                        e.target.checked
-                          ? [...selectedIds, user.id]
-                          : selectedIds.filter((id) => id !== user.id)
-                      )
-                    }
-                    className="accent-accent w-4 h-4"
-                  />
-                  <span className="font-bold">{user.full_name || 'No Name'}</span>
-                  <span className="text-secondary font-mono text-[10px] truncate">{user.email}</span>
-                </label>
-              );
-            })
-          )}
+        <div className="mt-4 border border-theme rounded-xl bg-primary overflow-hidden">
+          <div className="p-2 border-b border-theme flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[180px]">
+              <lucide.Search className="w-4 h-4 text-secondary absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or email" aria-label="Search people" className="w-full h-9 rounded-lg border border-theme bg-card pl-8 pr-2 text-sm" />
+            </div>
+            <button type="button" onClick={() => setSelectedIds(Array.from(new Set([...selectedIds, ...shown.map((u) => u.id)])))} className="h-9 px-3 rounded-lg border border-theme hover:bg-hover text-xs font-semibold">Pick shown</button>
+            <button type="button" onClick={() => setSelectedIds([])} className="h-9 px-3 rounded-lg border border-theme hover:bg-hover text-xs font-semibold">Clear</button>
+          </div>
+          <div className="max-h-56 overflow-y-auto p-1">
+            {shown.length === 0 ? (
+              <p className="text-xs text-secondary p-4 text-center">{users.length === 0 ? 'No users found.' : 'No one matches.'}</p>
+            ) : (
+              shown.map((user) => {
+                const checked = selectedIds.includes(user.id);
+                return (
+                  <label key={user.id} className="flex items-center gap-3 py-2 px-2 text-sm text-primary cursor-pointer hover:bg-hover rounded-lg transition">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => setSelectedIds(e.target.checked ? [...selectedIds, user.id] : selectedIds.filter((id) => id !== user.id))}
+                      className="accent-accent w-4 h-4 shrink-0"
+                    />
+                    <span className="font-semibold truncate">{user.full_name || 'No name'}</span>
+                    <span className="text-secondary text-xs truncate ml-auto">{user.email}</span>
+                  </label>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -485,15 +423,15 @@ function RecipientSelector({
 function AudienceRadio({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-bold transition cursor-pointer border ${
-        active
-          ? 'border-accent bg-accent/10 text-primary'
-          : 'border-theme bg-primary text-secondary hover:border-accent/50'
+      aria-pressed={active}
+      className={`flex items-center gap-2 rounded-xl px-4 h-11 text-sm font-semibold transition cursor-pointer border ${
+        active ? 'border-accent bg-accent/10 text-primary' : 'border-theme bg-primary text-secondary hover:border-accent/50'
       }`}
     >
-      <span className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${active ? 'border-accent' : 'border-current'}`}>
-        {active && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
+      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${active ? 'border-accent' : 'border-current'}`}>
+        {active && <span className="w-2 h-2 rounded-full bg-accent" />}
       </span>
       {children}
     </button>

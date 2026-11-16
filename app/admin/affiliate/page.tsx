@@ -5,12 +5,11 @@ import { supabase } from '@/lib/supabaseClient';
 import * as lucide from 'lucide-react';
 import { showToast } from '@/app/components/ui/Toast';
 import PageHeader from '@/app/components/ui/PageHeader';
-import StatCard from '@/app/components/ui/StatCard';
-import Card from '@/app/components/ui/Card';
 
 export default function AdminAffiliatePage() {
   const [loading, setLoading] = useState(true);
-  
+  const [view, setView] = useState<'pending' | 'done' | 'all'>('pending');
+
   // Settings
   const [commission, setCommission] = useState(10);
   const [minWithdrawal, setMinWithdrawal] = useState(1000);
@@ -111,20 +110,18 @@ export default function AdminAffiliatePage() {
     }
   };
 
-  return (
-    <div className="p-6 md:p-10 space-y-8">
+  const shown = withdrawals.filter((w) => (view === 'all' ? true : view === 'pending' ? w.status === 'pending' : w.status !== 'pending'));
+  const naira = (n: number) => '₦' + Math.round(Number(n) || 0).toLocaleString('en-NG');
 
+  return (
+    <div className="p-6 md:p-10 max-w-6xl space-y-6">
       <PageHeader
-        title="Affiliate System & Payouts"
-        description="Configure referral commission rates and process client payout requests."
-        breadcrumb="Admin / Affiliates"
-        icon={<lucide.Coins className="w-8 h-8 text-accent" />}
+        title="Affiliates and payouts"
+        description="Clients earn commission when people they refer pay. Review payout requests here and set the rules."
+        icon={<lucide.Coins className="w-7 h-7 text-accent" />}
         actions={
-          <button
-            onClick={fetchAffiliateData}
-            className="px-4 py-2 bg-secondary border border-theme hover:bg-white/5 text-primary text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
-          >
-            <lucide.RefreshCw className="w-3.5 h-3.5" /> Refresh
+          <button onClick={fetchAffiliateData} className="h-10 px-4 rounded-xl border border-theme hover:bg-hover text-sm font-medium inline-flex items-center gap-2">
+            <lucide.RefreshCw className="w-4 h-4" /> Refresh
           </button>
         }
       />
@@ -135,103 +132,82 @@ export default function AdminAffiliatePage() {
         </div>
       ) : (
         <>
-          {/* STATS */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard label="Total Commissions Handled" value={`₦${stats.totalCommissions.toLocaleString()}`} icon={<lucide.Banknote />} />
-            <StatCard label="Total Referral Conversions" value={`${stats.totalReferred} referrals`} icon={<lucide.Users />} />
-            <StatCard label="Pending Payout Requests" value={`${stats.pendingPayouts} pending`} color="text-accent" icon={<lucide.Clock />} />
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Payouts to review', value: String(stats.pendingPayouts), tone: stats.pendingPayouts ? 'text-warning' : '' },
+              { label: 'Commission earned', value: naira(stats.totalCommissions), tone: '' },
+              { label: 'Referrals', value: String(stats.totalReferred), tone: '' },
+            ].map((x) => (
+              <div key={x.label} className="bg-card border border-theme rounded-2xl p-4 min-w-0">
+                <p className="text-xs font-semibold text-secondary truncate">{x.label}</p>
+                <p className={`text-xl font-black mt-1 tabular-nums whitespace-nowrap truncate ${x.tone}`}>{x.value}</p>
+              </div>
+            ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* SETTINGS CARD */}
-            <Card padding="lg" className="space-y-6 h-fit">
-              <h3 className="text-sm font-black text-primary uppercase tracking-wider border-b border-theme pb-3">Affiliate Settings</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] uppercase font-black text-secondary block mb-1">Referral Commission (%)</label>
-                  <input
-                    type="number"
-                    value={commission}
-                    onChange={e => setCommission(Number(e.target.value))}
-                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-bold focus:border-accent outline-none"
-                  />
-                  <p className="text-[10px] text-secondary mt-1">Percentage of order payment paid as commission to the referrer.</p>
-                </div>
-
-                <div>
-                  <label className="text-[10px] uppercase font-black text-secondary block mb-1">Min Withdrawal Limit (₦)</label>
-                  <input
-                    type="number"
-                    value={minWithdrawal}
-                    onChange={e => setMinWithdrawal(Number(e.target.value))}
-                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-bold focus:border-accent outline-none"
-                  />
-                  <p className="text-[10px] text-secondary mt-1">Minimum wallet/affiliate payout limit required to request withdrawals.</p>
-                </div>
-
-                <button
-                  onClick={saveSettings}
-                  disabled={savingSettings}
-                  className="w-full py-3 bg-accent hover:bg-accent-hover text-white font-black uppercase text-xs tracking-wider rounded-xl transition cursor-pointer flex items-center justify-center gap-2"
-                >
-                  {savingSettings ? <lucide.Loader2 className="w-4 h-4 animate-spin" /> : null} Save Config
-                </button>
-              </div>
-            </Card>
-
-            {/* WITHDRAWALS LIST */}
-            <Card padding="lg" className="lg:col-span-2 space-y-4">
-              <h3 className="text-sm font-black text-primary uppercase tracking-wider border-b border-theme pb-3">Payout Requests</h3>
-              
-              {withdrawals.length === 0 ? (
-                <div className="py-20 text-center text-xs text-secondary">No payout requests submitted yet.</div>
-              ) : (
-                <div className="space-y-4">
-                  {withdrawals.map(w => (
-                    <div key={w.id} className="bg-secondary/40 border border-theme rounded-2xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-primary">{w.profiles?.full_name || 'Client'}</span>
-                          <span className="text-xs text-secondary">({w.profiles?.email})</span>
-                        </div>
-                        
-                        <div className="text-xs space-y-1">
-                          <div>Amount: <span className="font-bold text-emerald-500 font-mono">₦{Number(w.amount).toLocaleString()}</span></div>
-                          <div>
-                            Bank Info: <span className="font-bold text-primary">{w.bank_details?.bank || 'N/A'}</span> &middot; Acct: <span className="font-mono font-bold text-primary">{w.bank_details?.accountNumber || 'N/A'}</span> ({w.bank_details?.accountName || 'N/A'})
-                          </div>
-                          <div className="text-[10px] text-secondary">Submitted: {new Date(w.requested_at).toLocaleString()}</div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                        {w.status === 'pending' ? (
-                          <>
-                            <button
-                              onClick={() => handleWithdrawalAction(w.id, 'rejected')}
-                              className="px-3.5 py-2 border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-red-400 font-bold text-xs rounded-xl transition cursor-pointer"
-                            >
-                              Reject
-                            </button>
-                            <button
-                              onClick={() => handleWithdrawalAction(w.id, 'approved')}
-                              className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs rounded-xl transition cursor-pointer"
-                            >
-                              Approve & Payout
-                            </button>
-                          </>
-                        ) : (
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${w.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                            {w.status}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+          <div className="grid xl:grid-cols-[minmax(0,1fr)_300px] gap-6 items-start">
+            {/* Payout requests */}
+            <section className="bg-card border border-theme rounded-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-theme flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-bold">Payout requests</h2>
+                <div className="flex gap-1 p-1 rounded-lg bg-secondary/60 border border-theme" role="group" aria-label="Show">
+                  {([['pending', 'To review'], ['done', 'Done'], ['all', 'All']] as const).map(([k, label]) => (
+                    <button key={k} onClick={() => setView(k)} aria-pressed={view === k} className={`h-7 px-3 rounded-md text-xs font-semibold ${view === k ? 'bg-card shadow-sm text-primary' : 'text-secondary hover:text-primary'}`}>{label}</button>
                   ))}
                 </div>
+              </div>
+              {shown.length === 0 ? (
+                <div className="py-16 text-center text-secondary">
+                  <lucide.CheckCircle2 className="w-9 h-9 mx-auto opacity-40 mb-2" />
+                  <p className="text-sm font-medium">{view === 'pending' ? 'Nothing to review' : 'No payout requests here'}</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-theme">
+                  {shown.map((w) => (
+                    <li key={w.id} className="p-5 flex flex-col md:flex-row md:items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-accent/15 text-accent flex items-center justify-center font-bold shrink-0">{((w.profiles?.full_name || w.profiles?.email || '?')[0] || '?').toUpperCase()}</div>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-sm font-semibold truncate">{w.profiles?.full_name || 'Client'} <span className="text-xs font-normal text-secondary">{w.profiles?.email}</span></p>
+                        <p className="text-xs text-secondary break-words">{w.bank_details?.bank || 'Bank not given'} · <span className="font-mono text-primary">{w.bank_details?.accountNumber || 'N/A'}</span> · {w.bank_details?.accountName || 'N/A'}</p>
+                        <p className="text-[11px] text-secondary">Requested {new Date(w.requested_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                      </div>
+                      <div className="flex items-center gap-3 md:justify-end">
+                        <p className="text-lg font-black tabular-nums text-success whitespace-nowrap">{naira(w.amount)}</p>
+                        {w.status === 'pending' ? (
+                          <div className="flex gap-2">
+                            <button onClick={() => handleWithdrawalAction(w.id, 'rejected')} className="h-9 px-3 rounded-lg border border-danger/30 text-danger hover:bg-danger/10 text-xs font-semibold">Reject</button>
+                            <button onClick={() => handleWithdrawalAction(w.id, 'approved')} className="h-9 px-3 rounded-lg bg-success text-black hover:opacity-90 text-xs font-bold whitespace-nowrap">Approve and pay</button>
+                          </div>
+                        ) : (
+                          <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase ${w.status === 'approved' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>{w.status}</span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </Card>
+            </section>
+
+            {/* Rules */}
+            <section className="bg-card border border-theme rounded-2xl p-5 space-y-4">
+              <div>
+                <h2 className="font-bold">Rules</h2>
+                <p className="text-xs text-secondary mt-0.5">Apply to every client from now on.</p>
+              </div>
+              <div>
+                <label htmlFor="af-pct" className="text-xs font-semibold text-secondary block mb-1">Commission (%)</label>
+                <input id="af-pct" type="number" value={commission} onChange={(e) => setCommission(Number(e.target.value))} className="w-full h-11 bg-primary border border-theme rounded-xl px-3 text-sm font-bold focus:border-accent outline-none" />
+                <p className="text-[11px] text-secondary mt-1">Share of a referred client&apos;s payment paid to the referrer.</p>
+              </div>
+              <div>
+                <label htmlFor="af-min" className="text-xs font-semibold text-secondary block mb-1">Smallest payout (₦)</label>
+                <input id="af-min" type="number" value={minWithdrawal} onChange={(e) => setMinWithdrawal(Number(e.target.value))} className="w-full h-11 bg-primary border border-theme rounded-xl px-3 text-sm font-bold focus:border-accent outline-none" />
+                <p className="text-[11px] text-secondary mt-1">Clients cannot request less than this.</p>
+              </div>
+              <button onClick={saveSettings} disabled={savingSettings} className="w-full h-11 bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] font-bold text-sm rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50">
+                {savingSettings ? <lucide.Loader2 className="w-4 h-4 animate-spin" /> : null} Save rules
+              </button>
+            </section>
           </div>
         </>
       )}
