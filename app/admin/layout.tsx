@@ -22,48 +22,49 @@ const NAV_GROUPS: NavGroup[] = [
     items: [{ href: '/admin', label: 'Dashboard', icon: lucide.LayoutDashboard, exact: true }],
   },
   {
-    label: 'Sales & Orders',
+    label: 'Work',
     items: [
       { href: '/admin/quote-requests', label: 'Quote requests', icon: lucide.Inbox },
       { href: '/admin/orders', label: 'Orders', icon: lucide.Database },
       { href: '/admin/invoices', label: 'Invoices', icon: lucide.FileSpreadsheet },
-      { href: '/admin/transactions', label: 'Transactions', icon: lucide.History },
-      { href: '/admin/finance', label: 'Finance', icon: lucide.Wallet },
+      { href: '/admin/inbox', label: 'Support inbox', icon: lucide.Mail },
     ],
   },
   {
-    label: 'Developa SaaS',
+    label: 'Money',
     items: [
-      { href: '/admin/developa-sites', label: 'Developa platform', icon: lucide.Globe },
-      { href: '/admin/dev-shop', label: 'Script Shop', icon: lucide.ShoppingBag },
+      { href: '/admin/finance', label: 'Finance', icon: lucide.Wallet },
+      { href: '/admin/transactions', label: 'Transactions', icon: lucide.History },
+      { href: '/admin/affiliate', label: 'Affiliates', icon: lucide.Coins },
     ],
   },
   {
-    label: 'Catalog',
+    label: 'Content',
     items: [
       { href: '/admin/projects', label: 'Project Topics', icon: lucide.BookOpen },
       { href: '/admin/promos', label: 'Promo Codes', icon: lucide.Tag },
       { href: '/admin/ads', label: 'Ads', icon: lucide.Megaphone },
+      { href: '/admin/vault', label: 'Vault Files', icon: lucide.FolderArchive },
     ],
   },
   {
     label: 'People',
     items: [
       { href: '/admin/users', label: 'Users', icon: lucide.Users },
-      { href: '/admin/affiliate', label: 'Affiliates', icon: lucide.Coins },
+      { href: '/admin/email', label: 'Messaging', icon: lucide.Send },
     ],
   },
   {
-    label: 'Communication',
+    label: 'Developa',
     items: [
-      { href: '/admin/inbox', label: 'Support inbox', icon: lucide.Inbox },
-      { href: '/admin/email', label: 'Messaging', icon: lucide.Send },
+      { href: '/admin/developa', label: 'Developa overview', icon: lucide.Globe, exact: true },
+      { href: '/admin/developa-sites', tab: 'sites', defaultTab: true, label: 'Sites and revenue', icon: lucide.Store },
+      { href: '/admin/dev-shop', label: 'Script Shop', icon: lucide.ShoppingBag },
     ],
   },
   {
     label: 'System',
     items: [
-      { href: '/admin/vault', label: 'Vault Files', icon: lucide.FolderArchive },
       { href: '/admin/logs', label: 'System Logs', icon: lucide.FileText },
       { href: '/admin/settings', label: 'Settings', icon: lucide.Settings },
     ],
