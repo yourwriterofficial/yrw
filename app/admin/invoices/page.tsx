@@ -122,7 +122,7 @@ export default function InvoicesListPage() {
     }
   };
 
-  if (loading) return <LoadingScreen label="Loading invoices..." accent="purple" />;
+  if (loading) return <LoadingScreen label="Loading invoices..." accent="brand" />;
 
   return (
     <div className="p-6 md:p-10 space-y-10">
@@ -132,11 +132,11 @@ export default function InvoicesListPage() {
           title="Custom Invoices"
           description="Create, prefill, and manage custom milestone invoices for clients and third-party buyers."
           breadcrumb="Admin / Invoices"
-          icon={<lucide.FileSpreadsheet className="w-8 h-8 text-purple-500" />}
+          icon={<lucide.FileSpreadsheet className="w-8 h-8 text-accent" />}
         />
         <Link
           href="/admin/invoices/new"
-          className="px-6 py-4 bg-purple-500 hover:bg-purple-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition flex items-center gap-2 shadow-xl shadow-purple-500/20"
+          className="px-6 py-4 bg-accent hover:bg-accent-hover text-white font-black text-xs uppercase tracking-wider rounded-2xl transition flex items-center gap-2 shadow-xl shadow-accent/20"
         >
           <lucide.Plus className="w-4 h-4" /> Create Custom Invoice
         </Link>
@@ -145,9 +145,9 @@ export default function InvoicesListPage() {
       {/* ========== MODAL: Manage Milestones ========== */}
       {editingInvoice && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-primary border border-purple-500/30 rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-primary border border-accent/30 rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-black text-primary mb-2 flex items-center gap-2">
-              <lucide.Milestone className="w-5 h-5 text-purple-500" /> Manage Milestones
+              <lucide.Milestone className="w-5 h-5 text-accent" /> Manage Milestones
             </h2>
             <p className="text-secondary text-sm mb-6">
               Invoice #{editingInvoice.invoice_number} — {editingInvoice.project_title}
@@ -211,7 +211,7 @@ export default function InvoicesListPage() {
               <button
                 type="button"
                 onClick={saveMilestones}
-                className="flex-1 py-4 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-black transition"
+                className="flex-1 py-4 bg-accent hover:bg-accent-hover text-white rounded-xl font-black transition"
               >
                 Save Milestone Status
               </button>
@@ -226,28 +226,28 @@ export default function InvoicesListPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-primary border-b border-theme text-[10px] uppercase text-secondary">
               <tr>
-                <th className="px-6 py-4">Invoice #</th>
-                <th className="px-6 py-4">Client / Company</th>
-                <th className="px-6 py-4">Project Title</th>
-                <th className="px-6 py-4">Total Amount</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Created Date</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-4 py-4">Invoice #</th>
+                <th className="px-4 py-4">Client / Company</th>
+                <th className="px-4 py-4 hidden xl:table-cell">Project Title</th>
+                <th className="px-4 py-4">Total Amount</th>
+                <th className="px-4 py-4">Status</th>
+                <th className="px-4 py-4 hidden xl:table-cell">Created</th>
+                <th className="px-4 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {invoices.map(invoice => (
                 <tr key={invoice.id} className="border-b border-theme hover:bg-white/5">
-                  <td className="px-6 py-4 font-black text-primary">#{invoice.invoice_number}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 font-black text-primary">#{invoice.invoice_number}</td>
+                  <td className="px-4 py-4">
                     <div className="text-primary font-bold">{invoice.client_name}</div>
                     <div className="text-xs text-secondary">{invoice.company_name || 'Individual'}</div>
                   </td>
-                  <td className="px-6 py-4 text-xs font-semibold text-primary max-w-xs truncate">{invoice.project_title}</td>
-                  <td className="px-6 py-4 font-mono font-black text-primary">
+                  <td className="px-4 py-4 text-xs font-semibold text-primary max-w-xs truncate hidden xl:table-cell">{invoice.project_title}</td>
+                  <td className="px-4 py-4 font-mono font-black text-primary">
                     {formatNaira(invoice.total_amount, invoice.currency)}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4">
                     <span className={`inline-block px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider ${
                       invoice.status === 'PAID'
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
@@ -258,7 +258,7 @@ export default function InvoicesListPage() {
                       {invoice.status === 'PAID' ? 'FULLY PAID ✓' : invoice.status === 'PARTIALLY_PAID' ? 'PART PAID' : 'UNPAID'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-xs text-secondary">
+                  <td className="px-4 py-4 text-xs text-secondary hidden xl:table-cell">
                     {new Date(invoice.created_at).toLocaleDateString()}
                     {(invoice as any).sent_via && (
                       <span className="block text-[10px] text-emerald-400 font-bold mt-0.5">
@@ -266,7 +266,7 @@ export default function InvoicesListPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-right whitespace-nowrap space-x-2">
+                  <td className="px-4 py-4 text-right whitespace-nowrap space-x-2">
                     <select
                       value={sendFormat[invoice.id] || 'link'}
                       onChange={e => setSendFormat(prev => ({ ...prev, [invoice.id]: e.target.value as 'link' | 'image' | 'pdf' }))}
@@ -295,7 +295,7 @@ export default function InvoicesListPage() {
                     </button>
                     <button
                       onClick={() => handleCopyLink(invoice.invoice_number)}
-                      className="p-2.5 bg-white/5 hover:bg-purple-500/10 text-secondary hover:text-purple-400 rounded-xl border border-theme transition"
+                      className="p-2.5 bg-white/5 hover:bg-accent-hover/10 text-secondary hover:text-accent rounded-xl border border-theme transition"
                       title="Copy Public Link"
                     >
                       <lucide.Copy className="w-4 h-4" />
@@ -310,7 +310,7 @@ export default function InvoicesListPage() {
                     </Link>
                     <button
                       onClick={() => openMilestoneModal(invoice)}
-                      className="px-3.5 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 font-bold rounded-xl border border-purple-500/30 transition text-xs"
+                      className="px-3.5 py-2 bg-accent/20 hover:bg-accent-hover/30 text-accent font-bold rounded-xl border border-accent/30 transition text-xs"
                       title="Manage Milestones"
                     >
                       Milestones

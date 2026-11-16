@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Header from '@/app/components/Header';
 import { supabase } from '@/lib/supabaseClient';
 import { useAdminAds, useUserAdPurchases, useAdPricing, type Ad, type UserAdPurchase, type AdPricing } from '@/app/hooks/admin/useAds';
 import { AD_POSITIONS } from '@/lib/adPages';
@@ -121,10 +120,8 @@ export default function AdminAdsPage() {
   const totalClicks = systemAds.reduce((s, a) => s + (a.clicks || 0), 0) + userPurchases.reduce((s, a) => s + (a.clicks || 0), 0);
 
   return (
-    <div className="min-h-screen bg-background text-primary">
-      <Header />
-
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <div className="text-primary">
+      <main className="p-6 md:p-10 max-w-6xl space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-theme pb-6">
           <div>

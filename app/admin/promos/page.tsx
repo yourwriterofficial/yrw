@@ -60,7 +60,7 @@ export default function PromoCodesPage() {
     fetchCodes();
   };
 
-  if (loading) return <LoadingScreen label="Loading promo codes..." accent="purple" />;
+  if (loading) return <LoadingScreen label="Loading promo codes..." accent="brand" />;
 
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-300">
@@ -69,7 +69,7 @@ export default function PromoCodesPage() {
         title="Promo Codes"
         description="Configure active discount tags to run special sales or campaigns."
         breadcrumb="Admin / Promos"
-        icon={<lucide.Tag className="w-8 h-8 text-purple-500" />}
+        icon={<lucide.Tag className="w-8 h-8 text-accent" />}
       />
 
       {/* Add/Edit Form */}
@@ -83,7 +83,7 @@ export default function PromoCodesPage() {
               value={newCode.code} 
               onChange={e => setNewCode({ ...newCode, code: e.target.value.toUpperCase() })} 
               placeholder="SUMMER50" 
-              className="w-full bg-primary border border-theme rounded-xl px-4 py-3 text-sm focus:border-purple-500 outline-none text-primary uppercase font-mono font-bold" 
+              className="w-full bg-primary border border-theme rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-primary uppercase font-mono font-bold" 
             />
           </div>
           <div>
@@ -94,7 +94,7 @@ export default function PromoCodesPage() {
               max={100}
               value={newCode.discount_percent} 
               onChange={e => setNewCode({ ...newCode, discount_percent: Number(e.target.value) })} 
-              className="w-full bg-primary border border-theme rounded-xl px-4 py-3 text-sm focus:border-purple-500 outline-none text-primary font-bold" 
+              className="w-full bg-primary border border-theme rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-primary font-bold" 
             />
           </div>
           <div className="flex items-center justify-between bg-primary border border-theme rounded-xl p-3 h-[46px] md:h-[46px]">
@@ -106,7 +106,7 @@ export default function PromoCodesPage() {
                 onChange={e => setNewCode({ ...newCode, active: e.target.checked })} 
                 className="sr-only peer" 
               />
-              <div className="w-9 h-5 bg-secondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-tertiary after:border-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500 peer-checked:after:bg-white" />
+              <div className="w-9 h-5 bg-secondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-tertiary after:border-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent peer-checked:after:bg-white" />
             </label>
           </div>
         </div>
@@ -115,7 +115,7 @@ export default function PromoCodesPage() {
             type="button"
             onClick={handleSave} 
             disabled={saving} 
-            className="px-6 py-3 bg-purple-500 text-white font-black uppercase text-xs tracking-widest rounded-xl hover:bg-purple-400 disabled:opacity-50 transition cursor-pointer"
+            className="px-6 py-3 bg-accent text-white font-black uppercase text-xs tracking-widest rounded-xl hover:bg-accent-hover disabled:opacity-50 transition cursor-pointer"
           >
             {saving ? 'Saving...' : 'Save Promo Code'}
           </button>
@@ -149,7 +149,7 @@ export default function PromoCodesPage() {
                     <td className="px-6 py-4 text-right space-x-2">
                       <button 
                         onClick={() => toggleStatus(code.code, code.active)} 
-                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${code.active ? 'bg-secondary border-theme text-secondary hover:text-primary' : 'bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/20'}`}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${code.active ? 'bg-secondary border-theme text-secondary hover:text-primary' : 'bg-accent/10 border-accent/20 text-accent hover:bg-accent-hover/20'}`}
                       >
                         {code.active ? 'Deactivate' : 'Activate'}
                       </button>

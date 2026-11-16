@@ -74,8 +74,8 @@ function LoadingScreen() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin" />
-        <span className="text-purple-500 text-xs font-black uppercase tracking-widest animate-pulse">Loading Config...</span>
+        <div className="w-12 h-12 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
+        <span className="text-accent text-xs font-black uppercase tracking-widest animate-pulse">Loading Config...</span>
       </div>
     </div>
   );
@@ -325,40 +325,37 @@ function SettingsContent() {
           <PageHeader
             title="Platform Configuration"
             description="Manage dynamic pricing variables, pipeline add-ons, and site-wide copy (HTML supported)."
-            breadcrumb="Admin / Settings"
-            icon={<lucide.Settings className="text-purple-500 w-8 h-8" />}
-            actions={
-              <div className="flex bg-secondary border border-theme rounded-full p-1 gap-1 overflow-x-auto min-w-0">
-                <button onClick={() => setActiveTab('ADDONS')} className={`shrink-0 whitespace-nowrap px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'ADDONS' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+                        icon={<lucide.Settings className="text-accent w-8 h-8" />}
+          />
+          <div className="flex bg-secondary/60 border border-theme rounded-xl p-1 gap-1 overflow-x-auto max-w-full w-fit mb-6">
+                <button onClick={() => setActiveTab('ADDONS')} className={`shrink-0 whitespace-nowrap px-4 md:px-6 py-2 rounded-lg text-xs font-bold transition ${activeTab === 'ADDONS' ? 'bg-accent text-white' : 'text-secondary hover:text-primary'}`}>
                   Add-ons
                 </button>
-                <button onClick={() => setActiveTab('PRICING')} className={`shrink-0 whitespace-nowrap px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'PRICING' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+                <button onClick={() => setActiveTab('PRICING')} className={`shrink-0 whitespace-nowrap px-4 md:px-6 py-2 rounded-lg text-xs font-bold transition ${activeTab === 'PRICING' ? 'bg-accent text-white' : 'text-secondary hover:text-primary'}`}>
                   Pricing Tiers
                 </button>
-                <button onClick={() => setActiveTab('PAGES')} className={`shrink-0 whitespace-nowrap px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'PAGES' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+                <button onClick={() => setActiveTab('PAGES')} className={`shrink-0 whitespace-nowrap px-4 md:px-6 py-2 rounded-lg text-xs font-bold transition ${activeTab === 'PAGES' ? 'bg-accent text-white' : 'text-secondary hover:text-primary'}`}>
                   Pages
                 </button>
-                <button onClick={() => setActiveTab('CONTENT')} className={`shrink-0 whitespace-nowrap px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'CONTENT' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+                <button onClick={() => setActiveTab('CONTENT')} className={`shrink-0 whitespace-nowrap px-4 md:px-6 py-2 rounded-lg text-xs font-bold transition ${activeTab === 'CONTENT' ? 'bg-accent text-white' : 'text-secondary hover:text-primary'}`}>
                   Site Content (HTML)
                 </button>
-                <button onClick={() => setActiveTab('INVOICE')} className={`shrink-0 whitespace-nowrap px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'INVOICE' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+                <button onClick={() => setActiveTab('INVOICE')} className={`shrink-0 whitespace-nowrap px-4 md:px-6 py-2 rounded-lg text-xs font-bold transition ${activeTab === 'INVOICE' ? 'bg-accent text-white' : 'text-secondary hover:text-primary'}`}>
                   Invoice Defaults
                 </button>
-                <button onClick={() => setActiveTab('NOTIFICATIONS')} className={`shrink-0 whitespace-nowrap px-4 md:px-6 py-2 rounded-full text-xs font-bold transition ${activeTab === 'NOTIFICATIONS' ? 'bg-purple-500 text-white' : 'text-secondary hover:text-primary'}`}>
+                <button onClick={() => setActiveTab('NOTIFICATIONS')} className={`shrink-0 whitespace-nowrap px-4 md:px-6 py-2 rounded-lg text-xs font-bold transition ${activeTab === 'NOTIFICATIONS' ? 'bg-accent text-white' : 'text-secondary hover:text-primary'}`}>
                   Push Notifications
                 </button>
               </div>
-            }
-          />
 
           {/* ADDONS TAB */}
           {activeTab === 'ADDONS' && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <div className="flex justify-between items-center">
-                <h2 className="text-lg font-black uppercase tracking-wider text-purple-400 flex items-center gap-2">
+                <h2 className="text-lg font-black uppercase tracking-wider text-accent flex items-center gap-2">
                   <lucide.Activity className="w-5 h-5" /> Active Modifiers
                 </h2>
-                <button onClick={() => { setEditingAddon({ price_type: 'FLAT_FEE', is_active: true, categories: [], ids: [] }); setSelectedCategories([]); }} className="bg-purple-500 hover:bg-purple-400 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-1">
+                <button onClick={() => { setEditingAddon({ price_type: 'FLAT_FEE', is_active: true, categories: [], ids: [] }); setSelectedCategories([]); }} className="bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-1">
                   <lucide.Plus className="w-4 h-4" /> New Add-on
                 </button>
               </div>
@@ -368,7 +365,7 @@ function SettingsContent() {
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex flex-wrap gap-1 max-w-[80%]">
                         {addon.categories.map(cat => (
-                          <span key={cat} className="text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-white/5 text-purple-400 rounded-md">
+                          <span key={cat} className="text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-white/5 text-accent rounded-md">
                             {cat}
                           </span>
                         ))}
@@ -405,12 +402,12 @@ function SettingsContent() {
                 return (
                   <div key={cat} className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <h2 className="text-lg font-black uppercase tracking-wider text-purple-400 flex items-center gap-2">
+                      <h2 className="text-lg font-black uppercase tracking-wider text-accent flex items-center gap-2">
                         <lucide.Tag className="w-5 h-5" /> {PRICING_CATEGORY_LABELS[cat]}
                       </h2>
                       <button
                         onClick={() => setEditingTier({ service_category: cat, price_model: cat === 'ACADEMIC' ? 'PER_WORD' : 'FLAT', is_active: true, features: [], volume_discount_percent: 0, volume_discount_threshold_words: 10000, sort_order: tiersForCat.length })}
-                        className="bg-purple-500 hover:bg-purple-400 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-1"
+                        className="bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-1"
                       >
                         <lucide.Plus className="w-4 h-4" /> New Tier
                       </button>
@@ -419,7 +416,7 @@ function SettingsContent() {
                       {tiersForCat.map(tier => (
                         <div key={tier.id} className={`p-6 rounded-2xl border transition ${tier.is_active ? 'bg-card border-theme' : 'bg-primary border-red-500/20 opacity-60'}`}>
                           <div className="flex justify-between items-start mb-3">
-                            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-white/5 text-purple-400 rounded-md">{tier.tier_key}</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-white/5 text-accent rounded-md">{tier.tier_key}</span>
                             <button onClick={() => toggleTierStatus(tier.id, tier.is_active)} className={tier.is_active ? 'text-emerald-500' : 'text-red-500'}>
                               {tier.is_active ? <lucide.ToggleRight className="w-6 h-6" /> : <lucide.ToggleLeft className="w-6 h-6" />}
                             </button>
@@ -450,7 +447,7 @@ function SettingsContent() {
             <div className="space-y-6 animate-in fade-in duration-300">
               <div className="flex flex-wrap gap-2">
                 {PAGE_OPTIONS.map(p => (
-                  <button key={p.key} onClick={() => setActivePage(p.key)} className={`px-4 py-2 rounded-xl text-xs font-bold transition border ${activePage === p.key ? 'bg-purple-500 text-white border-purple-500' : 'text-secondary border-theme hover:text-primary'}`}>
+                  <button key={p.key} onClick={() => setActivePage(p.key)} className={`px-4 py-2 rounded-xl text-xs font-bold transition border ${activePage === p.key ? 'bg-accent text-white border-accent' : 'text-secondary border-theme hover:text-primary'}`}>
                     {p.label}
                   </button>
                 ))}
@@ -460,7 +457,7 @@ function SettingsContent() {
                 <div className="space-y-6">
                   <div className="bg-card border border-theme p-6 rounded-2xl space-y-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-bold text-purple-400">Hero</h3>
+                      <h3 className="text-sm font-bold text-accent">Hero</h3>
                       <div className="flex gap-2">
                         <button onClick={() => restoreHomeSection('hero')} className="text-[10px] font-bold text-secondary hover:text-primary flex items-center gap-1"><lucide.RotateCcw className="w-3 h-3" /> Restore sample</button>
                         <button onClick={() => saveHomeSection('hero')} disabled={saving} className="bg-white/5 hover:bg-white/10 text-primary px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition flex items-center gap-1"><lucide.Save className="w-3.5 h-3.5" /> Save</button>
@@ -478,7 +475,7 @@ function SettingsContent() {
 
                   <div className="bg-card border border-theme p-6 rounded-2xl space-y-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-bold text-purple-400">Trust Bar Items</h3>
+                      <h3 className="text-sm font-bold text-accent">Trust Bar Items</h3>
                       <div className="flex gap-2">
                         <button onClick={() => restoreHomeSection('trust_bar')} className="text-[10px] font-bold text-secondary hover:text-primary flex items-center gap-1"><lucide.RotateCcw className="w-3 h-3" /> Restore sample</button>
                         <button onClick={() => saveHomeSection('trust_bar')} disabled={saving} className="bg-white/5 hover:bg-white/10 text-primary px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition flex items-center gap-1"><lucide.Save className="w-3.5 h-3.5" /> Save</button>
@@ -494,7 +491,7 @@ function SettingsContent() {
 
                   <div className="bg-card border border-theme p-6 rounded-2xl space-y-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-bold text-purple-400">Why Us Cards</h3>
+                      <h3 className="text-sm font-bold text-accent">Why Us Cards</h3>
                       <div className="flex gap-2">
                         <button onClick={() => restoreHomeSection('why_us')} className="text-[10px] font-bold text-secondary hover:text-primary flex items-center gap-1"><lucide.RotateCcw className="w-3 h-3" /> Restore sample</button>
                         <button onClick={() => saveHomeSection('why_us')} disabled={saving} className="bg-white/5 hover:bg-white/10 text-primary px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition flex items-center gap-1"><lucide.Save className="w-3.5 h-3.5" /> Save</button>
@@ -516,7 +513,7 @@ function SettingsContent() {
 
                   <div className="bg-card border border-theme p-6 rounded-2xl space-y-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-bold text-purple-400">FAQs</h3>
+                      <h3 className="text-sm font-bold text-accent">FAQs</h3>
                       <div className="flex gap-2">
                         <button onClick={() => restoreHomeSection('faqs')} className="text-[10px] font-bold text-secondary hover:text-primary flex items-center gap-1"><lucide.RotateCcw className="w-3 h-3" /> Restore sample</button>
                         <button onClick={() => saveHomeSection('faqs')} disabled={saving} className="bg-white/5 hover:bg-white/10 text-primary px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition flex items-center gap-1"><lucide.Save className="w-3.5 h-3.5" /> Save</button>
@@ -539,7 +536,7 @@ function SettingsContent() {
                 <div className="space-y-6">
                   <div className="bg-card border border-theme p-6 rounded-2xl space-y-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-bold text-purple-400">Hero</h3>
+                      <h3 className="text-sm font-bold text-accent">Hero</h3>
                       <div className="flex gap-2">
                         <button onClick={() => restoreOrderPageSection(activePage, 'hero')} className="text-[10px] font-bold text-secondary hover:text-primary flex items-center gap-1"><lucide.RotateCcw className="w-3 h-3" /> Restore sample</button>
                         <button onClick={() => saveOrderPageSection(activePage, 'hero')} disabled={saving} className="bg-white/5 hover:bg-white/10 text-primary px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition flex items-center gap-1"><lucide.Save className="w-3.5 h-3.5" /> Save</button>
@@ -552,7 +549,7 @@ function SettingsContent() {
 
                   <div className="bg-card border border-theme p-6 rounded-2xl space-y-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-bold text-purple-400">"Propose Your Own Budget" Note</h3>
+                      <h3 className="text-sm font-bold text-accent">"Propose Your Own Budget" Note</h3>
                       <div className="flex gap-2">
                         <button onClick={() => restoreOrderPageSection(activePage, 'budget_note')} className="text-[10px] font-bold text-secondary hover:text-primary flex items-center gap-1"><lucide.RotateCcw className="w-3 h-3" /> Restore sample</button>
                         <button onClick={() => saveOrderPageSection(activePage, 'budget_note')} disabled={saving} className="bg-white/5 hover:bg-white/10 text-primary px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition flex items-center gap-1"><lucide.Save className="w-3.5 h-3.5" /> Save</button>
@@ -570,14 +567,14 @@ function SettingsContent() {
           {/* CONTENT TAB */}
           {activeTab === 'CONTENT' && (
             <div className="space-y-6 animate-in fade-in duration-300">
-              <h2 className="text-lg font-black uppercase tracking-wider text-purple-400 flex items-center gap-2 mb-6">
+              <h2 className="text-lg font-black uppercase tracking-wider text-accent flex items-center gap-2 mb-6">
                 <lucide.FileText className="w-5 h-5" /> Text & Legal Copy (HTML supported)
               </h2>
               <div className="space-y-8">
                 {siteContent.map(content => (
                   <div key={content.id} className="bg-card border border-theme p-6 rounded-2xl">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-sm font-bold text-purple-400">
+                      <h3 className="text-sm font-bold text-accent">
                         {KEY_LABELS[content.content_key] || `Site Content (${content.content_key})`}
                       </h3>
                       <span className="text-[9px] font-mono text-secondary bg-white/5 px-2 py-1 rounded">
@@ -585,7 +582,7 @@ function SettingsContent() {
                       </span>
                     </div>
                     <textarea
-                      className="w-full bg-primary border border-theme rounded-xl p-4 text-sm text-primary focus:border-purple-500 outline-none resize-y font-mono"
+                      className="w-full bg-primary border border-theme rounded-xl p-4 text-sm text-primary focus:border-accent outline-none resize-y font-mono"
                       defaultValue={content.content_text}
                       id={`content-${content.id}`}
                       rows={12}
@@ -617,7 +614,7 @@ function SettingsContent() {
           {/* INVOICE DEFAULTS TAB */}
           {activeTab === 'INVOICE' && invoiceDefaults && (
             <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl">
-              <h2 className="text-lg font-black uppercase tracking-wider text-purple-400 flex items-center gap-2 mb-2">
+              <h2 className="text-lg font-black uppercase tracking-wider text-accent flex items-center gap-2 mb-2">
                 <lucide.FileText className="w-5 h-5" /> Invoice Prefill Defaults
               </h2>
               <p className="text-secondary text-sm">These values prefill the invoice builder and every auto-generated invoice. Update them once here instead of per invoice.</p>
@@ -625,36 +622,36 @@ function SettingsContent() {
               <Card padding="lg" className="space-y-5">
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Contact Email (shown on invoices)</label>
-                  <input type="email" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none" value={invoiceDefaults.contact_email || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, contact_email: e.target.value })} />
+                  <input type="email" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-accent outline-none" value={invoiceDefaults.contact_email || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, contact_email: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Bank Name</label>
-                    <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none" value={invoiceDefaults.bank_name || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, bank_name: e.target.value })} />
+                    <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-accent outline-none" value={invoiceDefaults.bank_name || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, bank_name: e.target.value })} />
                   </div>
                   <div>
                     <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Account Name</label>
-                    <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none" value={invoiceDefaults.account_name || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, account_name: e.target.value })} />
+                    <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-accent outline-none" value={invoiceDefaults.account_name || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, account_name: e.target.value })} />
                   </div>
                   <div>
                     <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Account Number</label>
-                    <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none" value={invoiceDefaults.account_number || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, account_number: e.target.value })} />
+                    <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-accent outline-none" value={invoiceDefaults.account_number || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, account_number: e.target.value })} />
                   </div>
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Developer / Signature Name</label>
-                  <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none" value={invoiceDefaults.developer_signature_name || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, developer_signature_name: e.target.value })} />
+                  <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-accent outline-none" value={invoiceDefaults.developer_signature_name || ''} onChange={e => setInvoiceDefaults({ ...invoiceDefaults, developer_signature_name: e.target.value })} />
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-2">Default Terms & Conditions (one per line)</label>
                   <textarea
-                    className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none resize-y font-mono"
+                    className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-accent outline-none resize-y font-mono"
                     rows={6}
                     value={(invoiceDefaults.default_terms || []).join('\n')}
                     onChange={e => setInvoiceDefaults({ ...invoiceDefaults, default_terms: e.target.value.split('\n').filter((l: string) => l.trim()) })}
                   />
                 </div>
-                <button onClick={saveInvoiceDefaults} disabled={saving} className="bg-purple-500 hover:bg-purple-400 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2 disabled:opacity-50">
+                <button onClick={saveInvoiceDefaults} disabled={saving} className="bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2 disabled:opacity-50">
                   <lucide.Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Invoice Defaults'}
                 </button>
               </Card>
@@ -666,8 +663,8 @@ function SettingsContent() {
             <div className="max-w-2xl">
             <Card padding="lg" className="space-y-6 animate-in fade-in duration-300">
               <div>
-                <h2 className="text-lg font-black uppercase tracking-wider text-purple-400 flex items-center gap-2 mb-2">
-                  <lucide.BellRing className="w-5 h-5 text-purple-500" /> Admin Push Settings
+                <h2 className="text-lg font-black uppercase tracking-wider text-accent flex items-center gap-2 mb-2">
+                  <lucide.BellRing className="w-5 h-5 text-accent" /> Admin Push Settings
                 </h2>
                 <p className="text-secondary text-sm">Configure push notifications for this device to receive alerts on new orders, payments, and client requests.</p>
               </div>
@@ -710,7 +707,7 @@ function SettingsContent() {
                               setSelectedCategories(prev => [...prev, cat.key]);
                             }
                           }}
-                          className="w-4 h-4 accent-purple-500 bg-primary border border-theme rounded"
+                          className="w-4 h-4 accent-[var(--accent)] bg-primary border border-theme rounded"
                         />
                         <span className="text-sm text-primary font-bold">{cat.label}</span>
                       </label>
@@ -720,25 +717,25 @@ function SettingsContent() {
               </div>
               <div>
                 <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Add-on Name</label>
-                <input type="text" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-primary" value={editingAddon.name || ''} onChange={e => setEditingAddon({ ...editingAddon, name: e.target.value })} placeholder="e.g., PowerPoint Presentation" />
+                <input type="text" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none text-primary" value={editingAddon.name || ''} onChange={e => setEditingAddon({ ...editingAddon, name: e.target.value })} placeholder="e.g., PowerPoint Presentation" />
               </div>
               <div>
                 <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Description</label>
-                <textarea className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none resize-none text-primary h-20" value={editingAddon.description || ''} onChange={e => setEditingAddon({ ...editingAddon, description: e.target.value })} />
+                <textarea className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none resize-none text-primary h-20" value={editingAddon.description || ''} onChange={e => setEditingAddon({ ...editingAddon, description: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Pricing Logic</label>
-                  <select className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-primary" value={editingAddon.price_type || 'FLAT_FEE'} onChange={e => setEditingAddon({ ...editingAddon, price_type: e.target.value as any })}>
+                  <select className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none text-primary" value={editingAddon.price_type || 'FLAT_FEE'} onChange={e => setEditingAddon({ ...editingAddon, price_type: e.target.value as any })}>
                     <option value="FLAT_FEE">Flat Fee (₦)</option><option value="PERCENT_INCREASE">Percentage (%)</option>
                   </select>
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Value</label>
-                  <input type="number" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-primary" value={editingAddon.price_value || ''} onChange={e => setEditingAddon({ ...editingAddon, price_value: Number(e.target.value) })} />
+                  <input type="number" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none text-primary" value={editingAddon.price_value || ''} onChange={e => setEditingAddon({ ...editingAddon, price_value: Number(e.target.value) })} />
                 </div>
               </div>
-              <button onClick={handleSaveAddon} disabled={saving} className="w-full bg-purple-500 hover:bg-purple-400 text-white font-black uppercase text-xs tracking-widest py-4 rounded-xl transition mt-4">
+              <button onClick={handleSaveAddon} disabled={saving} className="w-full bg-accent hover:bg-accent-hover text-white font-black uppercase text-xs tracking-widest py-4 rounded-xl transition mt-4">
                 {saving ? 'Saving...' : 'Save Configuration'}
               </button>
             </div>
@@ -758,48 +755,48 @@ function SettingsContent() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Tier Key (e.g. GOLD, STARTER)</label>
-                  <input type="text" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-primary uppercase" value={editingTier.tier_key || ''} onChange={e => setEditingTier({ ...editingTier, tier_key: e.target.value.toUpperCase().replace(/\s+/g, '_') })} placeholder="STARTER" />
+                  <input type="text" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none text-primary uppercase" value={editingTier.tier_key || ''} onChange={e => setEditingTier({ ...editingTier, tier_key: e.target.value.toUpperCase().replace(/\s+/g, '_') })} placeholder="STARTER" />
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Display Name</label>
-                  <input type="text" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-primary" value={editingTier.name || ''} onChange={e => setEditingTier({ ...editingTier, name: e.target.value })} placeholder="Starter" />
+                  <input type="text" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none text-primary" value={editingTier.name || ''} onChange={e => setEditingTier({ ...editingTier, name: e.target.value })} placeholder="Starter" />
                 </div>
               </div>
               <div>
                 <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Tagline</label>
-                <input type="text" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-primary" value={editingTier.tagline || ''} onChange={e => setEditingTier({ ...editingTier, tagline: e.target.value })} placeholder="Short one-line description" />
+                <input type="text" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none text-primary" value={editingTier.tagline || ''} onChange={e => setEditingTier({ ...editingTier, tagline: e.target.value })} placeholder="Short one-line description" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Pricing Model</label>
-                  <select className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-primary" value={editingTier.price_model || 'FLAT'} onChange={e => setEditingTier({ ...editingTier, price_model: e.target.value as any })}>
+                  <select className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none text-primary" value={editingTier.price_model || 'FLAT'} onChange={e => setEditingTier({ ...editingTier, price_model: e.target.value as any })}>
                     <option value="FLAT">Flat Price (₦)</option>
                     <option value="PER_WORD">Per Word (₦/word)</option>
                   </select>
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">{editingTier.price_model === 'PER_WORD' ? 'Rate per Word (₦)' : 'Flat Price (₦)'}</label>
-                  <input type="number" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-primary" value={(editingTier.price_model === 'PER_WORD' ? editingTier.rate_per_word : editingTier.flat_price) || ''} onChange={e => setEditingTier(editingTier.price_model === 'PER_WORD' ? { ...editingTier, rate_per_word: Number(e.target.value) } : { ...editingTier, flat_price: Number(e.target.value) })} />
+                  <input type="number" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none text-primary" value={(editingTier.price_model === 'PER_WORD' ? editingTier.rate_per_word : editingTier.flat_price) || ''} onChange={e => setEditingTier(editingTier.price_model === 'PER_WORD' ? { ...editingTier, rate_per_word: Number(e.target.value) } : { ...editingTier, flat_price: Number(e.target.value) })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Volume Discount (%)</label>
-                  <input type="number" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-primary" value={editingTier.volume_discount_percent ?? ''} onChange={e => setEditingTier({ ...editingTier, volume_discount_percent: Number(e.target.value) })} />
+                  <input type="number" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none text-primary" value={editingTier.volume_discount_percent ?? ''} onChange={e => setEditingTier({ ...editingTier, volume_discount_percent: Number(e.target.value) })} />
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Discount Threshold (words)</label>
-                  <input type="number" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-primary" value={editingTier.volume_discount_threshold_words ?? ''} onChange={e => setEditingTier({ ...editingTier, volume_discount_threshold_words: Number(e.target.value) })} />
+                  <input type="number" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none text-primary" value={editingTier.volume_discount_threshold_words ?? ''} onChange={e => setEditingTier({ ...editingTier, volume_discount_threshold_words: Number(e.target.value) })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Correction Cycles</label>
-                  <input type="number" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-primary" value={editingTier.correction_cycles ?? ''} onChange={e => setEditingTier({ ...editingTier, correction_cycles: Number(e.target.value) })} />
+                  <input type="number" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none text-primary" value={editingTier.correction_cycles ?? ''} onChange={e => setEditingTier({ ...editingTier, correction_cycles: Number(e.target.value) })} />
                 </div>
                 <div>
                   <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1">Sort Order</label>
-                  <input type="number" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-purple-500 outline-none text-primary" value={editingTier.sort_order ?? ''} onChange={e => setEditingTier({ ...editingTier, sort_order: Number(e.target.value) })} />
+                  <input type="number" className="w-full bg-secondary border border-theme p-4 rounded-xl text-sm focus:border-accent outline-none text-primary" value={editingTier.sort_order ?? ''} onChange={e => setEditingTier({ ...editingTier, sort_order: Number(e.target.value) })} />
                 </div>
               </div>
               <div>
@@ -812,10 +809,10 @@ function SettingsContent() {
                 />
               </div>
               <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" checked={editingTier.highlight ?? false} onChange={e => setEditingTier({ ...editingTier, highlight: e.target.checked })} className="w-4 h-4 accent-purple-500 bg-primary border border-theme rounded" />
+                <input type="checkbox" checked={editingTier.highlight ?? false} onChange={e => setEditingTier({ ...editingTier, highlight: e.target.checked })} className="w-4 h-4 accent-[var(--accent)] bg-primary border border-theme rounded" />
                 <span className="text-sm text-primary font-bold">Mark as "Most Popular"</span>
               </label>
-              <button onClick={saveTier} disabled={saving} className="w-full bg-purple-500 hover:bg-purple-400 text-white font-black uppercase text-xs tracking-widest py-4 rounded-xl transition mt-4">
+              <button onClick={saveTier} disabled={saving} className="w-full bg-accent hover:bg-accent-hover text-white font-black uppercase text-xs tracking-widest py-4 rounded-xl transition mt-4">
                 {saving ? 'Saving...' : 'Save Tier'}
               </button>
             </div>
@@ -830,7 +827,7 @@ function LabeledInput({ label, value, onChange }: { label: string; value: string
   return (
     <div>
       <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-1">{label}</label>
-      <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none" value={value} onChange={e => onChange(e.target.value)} />
+      <input type="text" className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-accent outline-none" value={value} onChange={e => onChange(e.target.value)} />
     </div>
   );
 }
@@ -839,7 +836,7 @@ function LabeledTextarea({ label, value, onChange }: { label: string; value: str
   return (
     <div>
       <label className="text-[10px] uppercase font-black tracking-widest text-secondary ml-1 block mb-1">{label}</label>
-      <textarea className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-purple-500 outline-none resize-y" rows={3} value={value} onChange={e => onChange(e.target.value)} />
+      <textarea className="w-full bg-secondary border border-theme p-3 rounded-xl text-sm text-primary focus:border-accent outline-none resize-y" rows={3} value={value} onChange={e => onChange(e.target.value)} />
     </div>
   );
 }
@@ -860,7 +857,7 @@ function ListEditor<T>({ items, onChange, renderItem, newItem }: {
           </button>
         </div>
       ))}
-      <button type="button" onClick={() => onChange([...items, newItem()])} className="text-[10px] font-black uppercase tracking-wider text-purple-400 hover:text-purple-300 flex items-center gap-1">
+      <button type="button" onClick={() => onChange([...items, newItem()])} className="text-[10px] font-black uppercase tracking-wider text-accent hover:text-accent flex items-center gap-1">
         <lucide.Plus className="w-3.5 h-3.5" /> Add
       </button>
     </div>

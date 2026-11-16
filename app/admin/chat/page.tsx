@@ -9,7 +9,7 @@ export default function AdminChatPage() {
   const router = useRouter();
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="p-6 md:p-10 max-w-4xl mx-auto space-y-6">
       <PageHeader
         title="Support Desk"
         description="Live client communication is now centralized on the official WhatsApp desk"

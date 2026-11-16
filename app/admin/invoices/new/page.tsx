@@ -284,7 +284,7 @@ export default function NewInvoicePage() {
     }
   };
 
-  if (loading) return <LoadingScreen label="Loading data..." accent="purple" />;
+  if (loading) return <LoadingScreen label="Loading data..." accent="brand" />;
 
   return (
     <div className="p-6 md:p-10 space-y-10 max-w-5xl">
@@ -292,21 +292,21 @@ export default function NewInvoicePage() {
         title="Generate Invoice Contract"
         description="Create a dynamic milestone-based invoice contract matching premium styling rules."
         breadcrumb="Admin / Invoices / New"
-        icon={<lucide.FileText className="w-8 h-8 text-purple-500" />}
+        icon={<lucide.FileText className="w-8 h-8 text-accent" />}
       />
 
       <div className="space-y-8 bg-secondary border border-theme rounded-[32px] p-6 md:p-10">
         
         {/* Step 1: Link Order */}
         <div>
-          <h2 className="text-sm font-black uppercase tracking-widest text-purple-400 mb-4 border-b border-theme pb-2">
+          <h2 className="text-sm font-black uppercase tracking-widest text-accent mb-4 border-b border-theme pb-2">
             1. Prefill From Existing Order (Optional)
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Select Order</label>
               <select
-                className="w-full bg-primary border border-theme rounded-xl p-4 font-bold outline-none focus:border-purple-500 text-primary"
+                className="w-full bg-primary border border-theme rounded-xl p-4 font-bold outline-none focus:border-accent text-primary"
                 value={selectedOrderId}
                 onChange={e => handlePrefillOrder(e.target.value)}
               >
@@ -323,7 +323,7 @@ export default function NewInvoicePage() {
               <input
                 type="text"
                 placeholder="233"
-                className="w-full bg-primary border border-theme rounded-xl p-4 font-bold outline-none focus:border-purple-500 text-primary font-mono text-lg"
+                className="w-full bg-primary border border-theme rounded-xl p-4 font-bold outline-none focus:border-accent text-primary font-mono text-lg"
                 value={invoiceNumber}
                 onChange={e => setInvoiceNumber(e.target.value)}
               />
@@ -333,7 +333,7 @@ export default function NewInvoicePage() {
 
         {/* Step 2: Client details */}
         <div>
-          <h2 className="text-sm font-black uppercase tracking-widest text-purple-400 mb-4 border-b border-theme pb-2">
+          <h2 className="text-sm font-black uppercase tracking-widest text-accent mb-4 border-b border-theme pb-2">
             2. Bill To (Client Details)
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -362,7 +362,7 @@ export default function NewInvoicePage() {
 
         {/* Step 3: Project Title, Description & Budget */}
         <div>
-          <h2 className="text-sm font-black uppercase tracking-widest text-purple-400 mb-4 border-b border-theme pb-2">
+          <h2 className="text-sm font-black uppercase tracking-widest text-accent mb-4 border-b border-theme pb-2">
             3. Project & Financial Quote
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -387,8 +387,8 @@ export default function NewInvoicePage() {
         {/* Step 4: Deliverables list */}
         <div>
           <div className="flex justify-between items-center mb-4 border-b border-theme pb-2">
-            <h2 className="text-sm font-black uppercase tracking-widest text-purple-400">4. Deliverables & Tools</h2>
-            <button type="button" onClick={addDeliverableCategory} className="px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-lg text-xs font-bold flex items-center gap-1"><lucide.Plus className="w-3.5 h-3.5" /> Add Category</button>
+            <h2 className="text-sm font-black uppercase tracking-widest text-accent">4. Deliverables & Tools</h2>
+            <button type="button" onClick={addDeliverableCategory} className="px-3 py-1 bg-accent/10 text-accent border border-accent/20 rounded-lg text-xs font-bold flex items-center gap-1"><lucide.Plus className="w-3.5 h-3.5" /> Add Category</button>
           </div>
           <div className="space-y-6">
             {deliverables.map((cat, catIdx) => (
@@ -405,7 +405,7 @@ export default function NewInvoicePage() {
                 <div className="space-y-2 ml-4">
                   {cat.items.map((item, itemIdx) => (
                     <div key={itemIdx} className="flex items-center gap-2">
-                      <lucide.CircleDot className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                      <lucide.CircleDot className="w-3.5 h-3.5 text-accent shrink-0" />
                       <input
                         type="text"
                         className="flex-1 bg-secondary/50 border border-theme rounded-xl p-2.5 text-primary text-xs"
@@ -415,7 +415,7 @@ export default function NewInvoicePage() {
                       <button type="button" onClick={() => removeDeliverableItem(catIdx, itemIdx)} className="text-secondary hover:text-red-400 transition"><lucide.X className="w-4 h-4" /></button>
                     </div>
                   ))}
-                  <button type="button" onClick={() => addDeliverableItem(catIdx)} className="text-xs text-purple-400 font-bold ml-6 flex items-center gap-1 mt-2"><lucide.Plus className="w-3 h-3" /> Add Item</button>
+                  <button type="button" onClick={() => addDeliverableItem(catIdx)} className="text-xs text-accent font-bold ml-6 flex items-center gap-1 mt-2"><lucide.Plus className="w-3 h-3" /> Add Item</button>
                 </div>
               </div>
             ))}
@@ -425,8 +425,8 @@ export default function NewInvoicePage() {
         {/* Step 5: Timeline phases */}
         <div>
           <div className="flex justify-between items-center mb-4 border-b border-theme pb-2">
-            <h2 className="text-sm font-black uppercase tracking-widest text-purple-400">5. Project Timeline</h2>
-            <button type="button" onClick={addTimelinePhase} className="px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-lg text-xs font-bold flex items-center gap-1"><lucide.Plus className="w-3.5 h-3.5" /> Add Phase</button>
+            <h2 className="text-sm font-black uppercase tracking-widest text-accent">5. Project Timeline</h2>
+            <button type="button" onClick={addTimelinePhase} className="px-3 py-1 bg-accent/10 text-accent border border-accent/20 rounded-lg text-xs font-bold flex items-center gap-1"><lucide.Plus className="w-3.5 h-3.5" /> Add Phase</button>
           </div>
           <div className="space-y-3">
             {timeline.map((t, idx) => (
@@ -444,10 +444,10 @@ export default function NewInvoicePage() {
         <div>
           <div className="flex justify-between items-center mb-4 border-b border-theme pb-2">
             <div>
-              <h2 className="text-sm font-black uppercase tracking-widest text-purple-400">6. Payment Milestones</h2>
+              <h2 className="text-sm font-black uppercase tracking-widest text-accent">6. Payment Milestones</h2>
               <p className="text-[10px] text-secondary lowercase">Ensure percentages sum to 100% (currently: {milestones.reduce((s, m) => s + Number(m.percentage || 0), 0)}%)</p>
             </div>
-            <button type="button" onClick={addMilestone} className="px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-lg text-xs font-bold flex items-center gap-1"><lucide.Plus className="w-3.5 h-3.5" /> Add Milestone</button>
+            <button type="button" onClick={addMilestone} className="px-3 py-1 bg-accent/10 text-accent border border-accent/20 rounded-lg text-xs font-bold flex items-center gap-1"><lucide.Plus className="w-3.5 h-3.5" /> Add Milestone</button>
           </div>
           <div className="space-y-4">
             {milestones.map((m, idx) => (
@@ -468,7 +468,7 @@ export default function NewInvoicePage() {
                   <label className="text-[9px] uppercase text-secondary font-black block mb-1">Del</label>
                   <button type="button" onClick={() => removeMilestone(idx)} className="text-secondary hover:text-red-400 transition block mx-auto mt-2"><lucide.Trash2 className="w-4 h-4" /></button>
                 </div>
-                <div className="col-span-12 text-right text-xs font-mono font-black text-purple-400">
+                <div className="col-span-12 text-right text-xs font-mono font-black text-accent">
                   Calculated Share: {currency}{(Math.round((Number(m.percentage) / 100) * totalAmount)).toLocaleString()}
                 </div>
               </div>
@@ -480,8 +480,8 @@ export default function NewInvoicePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <div className="flex justify-between items-center mb-4 border-b border-theme pb-2">
-              <h2 className="text-xs font-black uppercase tracking-widest text-purple-400">Included Services</h2>
-              <button type="button" onClick={() => addListItem(setAdditionalServices, additionalServices)} className="text-[10px] text-purple-400 font-bold flex items-center gap-0.5"><lucide.Plus className="w-3 h-3" /> Add</button>
+              <h2 className="text-xs font-black uppercase tracking-widest text-accent">Included Services</h2>
+              <button type="button" onClick={() => addListItem(setAdditionalServices, additionalServices)} className="text-[10px] text-accent font-bold flex items-center gap-0.5"><lucide.Plus className="w-3 h-3" /> Add</button>
             </div>
             <div className="space-y-2">
               {additionalServices.map((item, idx) => (
@@ -494,8 +494,8 @@ export default function NewInvoicePage() {
           </div>
           <div>
             <div className="flex justify-between items-center mb-4 border-b border-theme pb-2">
-              <h2 className="text-xs font-black uppercase tracking-widest text-purple-400">Exclusions</h2>
-              <button type="button" onClick={() => addListItem(setExclusions, exclusions)} className="text-[10px] text-purple-400 font-bold flex items-center gap-0.5"><lucide.Plus className="w-3 h-3" /> Add</button>
+              <h2 className="text-xs font-black uppercase tracking-widest text-accent">Exclusions</h2>
+              <button type="button" onClick={() => addListItem(setExclusions, exclusions)} className="text-[10px] text-accent font-bold flex items-center gap-0.5"><lucide.Plus className="w-3 h-3" /> Add</button>
             </div>
             <div className="space-y-2">
               {exclusions.map((item, idx) => (
@@ -510,7 +510,7 @@ export default function NewInvoicePage() {
 
         {/* Step 8: Payment details & banker info */}
         <div>
-          <h2 className="text-sm font-black uppercase tracking-widest text-purple-400 mb-4 border-b border-theme pb-2">
+          <h2 className="text-sm font-black uppercase tracking-widest text-accent mb-4 border-b border-theme pb-2">
             7. Payment Details & Bank Info
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -533,8 +533,8 @@ export default function NewInvoicePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <div className="flex justify-between items-center mb-4 border-b border-theme pb-2">
-              <h2 className="text-xs font-black uppercase tracking-widest text-purple-400">Terms & Conditions</h2>
-              <button type="button" onClick={() => addListItem(setTerms, terms)} className="text-[10px] text-purple-400 font-bold flex items-center gap-0.5"><lucide.Plus className="w-3 h-3" /> Add</button>
+              <h2 className="text-xs font-black uppercase tracking-widest text-accent">Terms & Conditions</h2>
+              <button type="button" onClick={() => addListItem(setTerms, terms)} className="text-[10px] text-accent font-bold flex items-center gap-0.5"><lucide.Plus className="w-3 h-3" /> Add</button>
             </div>
             <div className="space-y-2">
               {terms.map((item, idx) => (
@@ -546,7 +546,7 @@ export default function NewInvoicePage() {
             </div>
           </div>
           <div>
-            <h2 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-4 border-b border-theme pb-2">Developer Signature</h2>
+            <h2 className="text-xs font-black uppercase tracking-widest text-accent mb-4 border-b border-theme pb-2">Developer Signature</h2>
             <div>
               <label className="text-[10px] text-secondary uppercase font-bold ml-1 block mb-2">Developer Name</label>
               <input type="text" className="w-full bg-primary border border-theme rounded-xl p-3 text-primary text-sm font-bold" value={devSignatureName} onChange={e => setDevSignatureName(e.target.value)} />
@@ -566,7 +566,7 @@ export default function NewInvoicePage() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-4 bg-purple-500 hover:bg-purple-600 text-white rounded-2xl font-black transition flex items-center justify-center gap-2 shadow-xl shadow-purple-500/20 disabled:opacity-50"
+            className="flex-1 py-4 bg-accent hover:bg-accent-hover text-white rounded-2xl font-black transition flex items-center justify-center gap-2 shadow-xl shadow-accent/20 disabled:opacity-50"
           >
             {saving ? (
               <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />

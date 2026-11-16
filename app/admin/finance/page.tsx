@@ -224,7 +224,7 @@ export default function FinancePage() {
     }
   };
 
-  if (loading) return <LoadingScreen label="Loading finance..." accent="purple" />;
+  if (loading) return <LoadingScreen label="Loading finance..." accent="brand" />;
 
   return (
     <div className="p-6 md:p-10 space-y-10">
@@ -235,7 +235,7 @@ export default function FinancePage() {
         icon={<lucide.Wallet className="w-7 h-7 text-accent" />}
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {[
           { label: 'Transfers to review', value: String(pendingTransfers.length), tone: pendingTransfers.length ? 'text-warning' : '' },
           { label: 'Held in client wallets', value: '₦' + Math.round(Object.values(wallets).reduce((n, v) => n + (Number(v) || 0), 0)).toLocaleString('en-NG'), tone: '' },
@@ -412,7 +412,7 @@ export default function FinancePage() {
             {pendingTransfers.map((payment) => (
               <div
                 key={payment.reference || payment.id}
-                className="bg-secondary/60 border border-theme rounded-2xl p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 hover:border-purple-500/30 transition"
+                className="bg-secondary/60 border border-theme rounded-2xl p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 hover:border-accent/30 transition"
               >
                 <div className="space-y-2 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -467,7 +467,7 @@ export default function FinancePage() {
                         href={payment.proof_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-accent hover:text-purple-300 underline font-semibold"
+                        className="inline-flex items-center gap-1.5 text-xs text-accent hover:text-accent underline font-semibold"
                       >
                         <lucide.ExternalLink className="w-3.5 h-3.5" /> View Payment Proof Receipt
                       </a>
@@ -508,7 +508,7 @@ export default function FinancePage() {
       {/* ========== MODAL: Edit User & Bank Assignment ========== */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-primary border border-purple-500/30 rounded-3xl p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto space-y-6">
+          <div className="bg-primary border border-accent/30 rounded-3xl p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto space-y-6">
             <h2 className="text-xl font-black text-primary">Edit User & Bank Assignment</h2>
             <div className="space-y-4">
               <div>
@@ -526,7 +526,7 @@ export default function FinancePage() {
                   type="checkbox"
                   checked={userForm.is_admin}
                   onChange={e => setUserForm({ ...userForm, is_admin: e.target.checked })}
-                  className="accent-purple-500 w-5 h-5 cursor-pointer"
+                  className="accent-[var(--accent)] w-5 h-5 cursor-pointer"
                 />
               </div>
 
@@ -587,7 +587,7 @@ export default function FinancePage() {
             </div>
             <div className="flex gap-3 pt-2">
               <button onClick={() => setEditingUser(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl text-xs font-bold transition hover:bg-white/10">Cancel</button>
-              <button onClick={updateUser} className="flex-1 py-3 bg-purple-500 hover:bg-accent-hover text-white rounded-xl text-xs font-black transition">Save Changes</button>
+              <button onClick={updateUser} className="flex-1 py-3 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-black transition">Save Changes</button>
             </div>
           </div>
         </div>
@@ -718,7 +718,7 @@ export default function FinancePage() {
                         setEditingWallet({ userId: user.id, balance: wallets[user.id] || 0 });
                         setNewBalance(wallets[user.id] || 0);
                       }}
-                      className="px-3 py-1 bg-purple-500/20 text-accent rounded-lg text-xs"
+                      className="px-3 py-1 bg-accent/20 text-accent rounded-lg text-xs"
                     >
                       Set Balance
                     </button>

@@ -135,7 +135,7 @@ export default function AdminQuoteRequestsPage() {
   if (loading) return <LoadingScreen label="Loading quote requests..." />;
 
   return (
-    <div className="max-w-4xl">
+    <div className="p-6 md:p-10 max-w-5xl">
       <PageHeader
         title="Quote requests"
         description="Requests from the home page and the developa page. Reply by email or WhatsApp, then set the status."

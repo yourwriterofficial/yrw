@@ -118,7 +118,7 @@ export default function AdminAffiliatePage() {
         title="Affiliate System & Payouts"
         description="Configure referral commission rates and process client payout requests."
         breadcrumb="Admin / Affiliates"
-        icon={<lucide.Coins className="w-8 h-8 text-purple-500" />}
+        icon={<lucide.Coins className="w-8 h-8 text-accent" />}
         actions={
           <button
             onClick={fetchAffiliateData}
@@ -131,7 +131,7 @@ export default function AdminAffiliatePage() {
 
       {loading ? (
         <div className="py-20 text-center text-sm text-secondary flex items-center justify-center gap-2">
-          <lucide.Loader2 className="w-5 h-5 animate-spin text-purple-500" /> Loading details...
+          <lucide.Loader2 className="w-5 h-5 animate-spin text-accent" /> Loading details...
         </div>
       ) : (
         <>
@@ -139,7 +139,7 @@ export default function AdminAffiliatePage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard label="Total Commissions Handled" value={`₦${stats.totalCommissions.toLocaleString()}`} icon={<lucide.Banknote />} />
             <StatCard label="Total Referral Conversions" value={`${stats.totalReferred} referrals`} icon={<lucide.Users />} />
-            <StatCard label="Pending Payout Requests" value={`${stats.pendingPayouts} pending`} color="text-purple-400" icon={<lucide.Clock />} />
+            <StatCard label="Pending Payout Requests" value={`${stats.pendingPayouts} pending`} color="text-accent" icon={<lucide.Clock />} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -154,7 +154,7 @@ export default function AdminAffiliatePage() {
                     type="number"
                     value={commission}
                     onChange={e => setCommission(Number(e.target.value))}
-                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-bold focus:border-purple-500 outline-none"
+                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-bold focus:border-accent outline-none"
                   />
                   <p className="text-[10px] text-secondary mt-1">Percentage of order payment paid as commission to the referrer.</p>
                 </div>
@@ -165,7 +165,7 @@ export default function AdminAffiliatePage() {
                     type="number"
                     value={minWithdrawal}
                     onChange={e => setMinWithdrawal(Number(e.target.value))}
-                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-bold focus:border-purple-500 outline-none"
+                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary font-bold focus:border-accent outline-none"
                   />
                   <p className="text-[10px] text-secondary mt-1">Minimum wallet/affiliate payout limit required to request withdrawals.</p>
                 </div>
@@ -173,7 +173,7 @@ export default function AdminAffiliatePage() {
                 <button
                   onClick={saveSettings}
                   disabled={savingSettings}
-                  className="w-full py-3 bg-purple-500 hover:bg-purple-400 text-white font-black uppercase text-xs tracking-wider rounded-xl transition cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-accent hover:bg-accent-hover text-white font-black uppercase text-xs tracking-wider rounded-xl transition cursor-pointer flex items-center justify-center gap-2"
                 >
                   {savingSettings ? <lucide.Loader2 className="w-4 h-4 animate-spin" /> : null} Save Config
                 </button>

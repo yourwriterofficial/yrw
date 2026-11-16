@@ -87,7 +87,7 @@ export default function AdminTransactionsPage() {
   const getTypeBadge = (type: string) => {
     return type === 'deposit'
       ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-      : 'bg-purple-500/10 text-purple-400 border border-purple-500/20';
+      : 'bg-accent/10 text-accent border border-accent/20';
   };
 
   return (
@@ -97,7 +97,7 @@ export default function AdminTransactionsPage() {
         title="Transactions List"
         description="Review, monitor, and query all financial movements inside the system."
         breadcrumb="Admin / Transactions"
-        icon={<lucide.History className="w-8 h-8 text-purple-500" />}
+        icon={<lucide.History className="w-8 h-8 text-accent" />}
         actions={
           <button
             onClick={() => { setPage(1); fetchTransactions(); }}
@@ -116,11 +116,11 @@ export default function AdminTransactionsPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search by reference, email, or client name..." 
-            className="w-full bg-secondary border border-theme rounded-xl pl-11 pr-24 py-3 text-sm text-primary outline-none focus:border-purple-500 transition"
+            className="w-full bg-secondary border border-theme rounded-xl pl-11 pr-24 py-3 text-sm text-primary outline-none focus:border-accent transition"
           />
           <button 
             type="submit"
-            className="absolute right-2 top-1.2 bg-purple-500 hover:bg-purple-400 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
+            className="absolute right-2 top-1.2 bg-accent hover:bg-accent-hover text-white text-xs font-bold px-4 py-2 rounded-lg transition"
           >
             Search
           </button>
@@ -130,7 +130,7 @@ export default function AdminTransactionsPage() {
           <select 
             value={statusFilter} 
             onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-            className="bg-secondary border border-theme rounded-xl px-4 py-3 text-sm text-primary outline-none focus:border-purple-500 flex-1 md:flex-none"
+            className="bg-secondary border border-theme rounded-xl px-4 py-3 text-sm text-primary outline-none focus:border-accent flex-1 md:flex-none"
           >
             <option value="all">🟢 All Statuses</option>
             <option value="completed">Completed</option>
@@ -141,7 +141,7 @@ export default function AdminTransactionsPage() {
           <select 
             value={typeFilter} 
             onChange={e => { setTypeFilter(e.target.value); setPage(1); }}
-            className="bg-secondary border border-theme rounded-xl px-4 py-3 text-sm text-primary outline-none focus:border-purple-500 flex-1 md:flex-none"
+            className="bg-secondary border border-theme rounded-xl px-4 py-3 text-sm text-primary outline-none focus:border-accent flex-1 md:flex-none"
           >
             <option value="all">📂 All Types</option>
             <option value="deposit">Deposit</option>
@@ -154,7 +154,7 @@ export default function AdminTransactionsPage() {
       <div className="bg-card border border-theme rounded-3xl overflow-hidden shadow-sm">
         {loading ? (
           <div className="py-20 text-center text-sm text-secondary flex items-center justify-center gap-2">
-            <lucide.Loader2 className="w-5 h-5 animate-spin text-purple-500" /> Loading transactions...
+            <lucide.Loader2 className="w-5 h-5 animate-spin text-accent" /> Loading transactions...
           </div>
         ) : transactions.length === 0 ? (
           <div className="py-20 text-center text-secondary">

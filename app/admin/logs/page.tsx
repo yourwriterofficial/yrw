@@ -173,7 +173,7 @@ export default function AdminLogsPage() {
         title="System & Audit Logs"
         description="Review live notifications, transactions, and email transmission audits."
         breadcrumb="Admin / System Logs"
-        icon={<lucide.FileText className="w-8 h-8 text-purple-500" />}
+        icon={<lucide.FileText className="w-8 h-8 text-accent" />}
         actions={
           <button
             onClick={() => { setPage(1); fetchLogs(); }}
@@ -188,19 +188,19 @@ export default function AdminLogsPage() {
       <div className="flex border-b border-theme gap-6">
         <button
           onClick={() => { setActiveTab('system'); setPage(1); setSearch(''); }}
-          className={`pb-4 text-sm font-bold border-b-2 transition ${activeTab === 'system' ? 'border-purple-500 text-purple-500' : 'border-transparent text-secondary hover:text-primary'}`}
+          className={`pb-4 text-sm font-bold border-b-2 transition ${activeTab === 'system' ? 'border-accent text-accent' : 'border-transparent text-secondary hover:text-primary'}`}
         >
           💳 System / Transaction Logs
         </button>
         <button
           onClick={() => { setActiveTab('notifications'); setPage(1); setSearch(''); }}
-          className={`pb-4 text-sm font-bold border-b-2 transition ${activeTab === 'notifications' ? 'border-purple-500 text-purple-500' : 'border-transparent text-secondary hover:text-primary'}`}
+          className={`pb-4 text-sm font-bold border-b-2 transition ${activeTab === 'notifications' ? 'border-accent text-accent' : 'border-transparent text-secondary hover:text-primary'}`}
         >
           🔔 In-App Notification Logs
         </button>
         <button
           onClick={() => { setActiveTab('emails'); setPage(1); setSearch(''); }}
-          className={`pb-4 text-sm font-bold border-b-2 transition ${activeTab === 'emails' ? 'border-purple-500 text-purple-500' : 'border-transparent text-secondary hover:text-primary'}`}
+          className={`pb-4 text-sm font-bold border-b-2 transition ${activeTab === 'emails' ? 'border-accent text-accent' : 'border-transparent text-secondary hover:text-primary'}`}
         >
           ✉️ Email Delivery Logs
         </button>
@@ -214,11 +214,11 @@ export default function AdminLogsPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={`Search ${activeTab === 'system' ? 'references or statuses' : activeTab === 'notifications' ? 'titles or messages' : 'recipients or subjects'}...`} 
-            className="w-full bg-secondary border border-theme rounded-xl pl-11 pr-24 py-3 text-sm text-primary outline-none focus:border-purple-500 transition"
+            className="w-full bg-secondary border border-theme rounded-xl pl-11 pr-24 py-3 text-sm text-primary outline-none focus:border-accent transition"
           />
           <button 
             type="submit"
-            className="absolute right-2 top-1.5 bg-purple-500 hover:bg-purple-400 text-white text-xs font-bold px-4 py-1.5 rounded-lg transition cursor-pointer"
+            className="absolute right-2 top-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-bold px-4 py-1.5 rounded-lg transition cursor-pointer"
           >
             Filter
           </button>
@@ -229,7 +229,7 @@ export default function AdminLogsPage() {
       <div className="bg-card border border-theme rounded-3xl overflow-hidden shadow-sm">
         {loading ? (
           <div className="py-20 text-center text-sm text-secondary flex items-center justify-center gap-2">
-            <lucide.Loader2 className="w-5 h-5 animate-spin text-purple-500" /> Loading log entries...
+            <lucide.Loader2 className="w-5 h-5 animate-spin text-accent" /> Loading log entries...
           </div>
         ) : (
           <div>
@@ -258,7 +258,7 @@ export default function AdminLogsPage() {
                             <span className="font-bold text-primary">{log.profiles?.full_name || 'Guest'}</span>
                             <span className="block text-secondary text-[10px]">{log.profiles?.email || 'N/A'}</span>
                           </td>
-                          <td className="p-4 uppercase font-bold text-[10px] text-purple-400">{log.type}</td>
+                          <td className="p-4 uppercase font-bold text-[10px] text-accent">{log.type}</td>
                           <td className="p-4 font-mono font-bold text-primary">₦{Number(log.amount).toLocaleString()}</td>
                           <td className="p-4">
                             <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${log.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
@@ -297,7 +297,7 @@ export default function AdminLogsPage() {
                         <tr key={log.id} className="hover:bg-white/5 transition">
                           <td className="p-4">
                             {log.is_group ? (
-                              <span className="font-extrabold text-purple-400 flex items-center gap-1.5">
+                              <span className="font-extrabold text-accent flex items-center gap-1.5">
                                 <lucide.Users className="w-3.5 h-3.5" /> Group ({log.recipient_count} users)
                               </span>
                             ) : (
@@ -333,7 +333,7 @@ export default function AdminLogsPage() {
                           <td className="p-4 text-right">
                             <button 
                               onClick={() => openLogDetails(log, 'notification')}
-                              className="px-2.5 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/25 rounded-md font-bold text-[10px] transition cursor-pointer"
+                              className="px-2.5 py-1 bg-accent/10 hover:bg-accent-hover/20 text-accent border border-accent/25 rounded-md font-bold text-[10px] transition cursor-pointer"
                             >
                               Details
                             </button>
@@ -368,7 +368,7 @@ export default function AdminLogsPage() {
                         <tr key={log.id} className="hover:bg-white/5 transition">
                           <td className="p-4">
                             {log.is_group ? (
-                              <span className="font-extrabold text-purple-400 flex items-center gap-1.5">
+                              <span className="font-extrabold text-accent flex items-center gap-1.5">
                                 <lucide.Users className="w-3.5 h-3.5" /> Group ({log.recipient_count} users)
                               </span>
                             ) : (
@@ -390,7 +390,7 @@ export default function AdminLogsPage() {
                           <td className="p-4 text-right">
                             <button 
                               onClick={() => openLogDetails(log, 'email')}
-                              className="px-2.5 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/25 rounded-md font-bold text-[10px] transition cursor-pointer"
+                              className="px-2.5 py-1 bg-accent/10 hover:bg-accent-hover/20 text-accent border border-accent/25 rounded-md font-bold text-[10px] transition cursor-pointer"
                             >
                               Details
                             </button>
@@ -437,7 +437,7 @@ export default function AdminLogsPage() {
           <div className="w-full max-w-2xl bg-primary h-screen border-l border-theme flex flex-col shadow-2xl animate-in slide-in-from-right duration-350">
             <header className="p-6 border-b border-theme flex justify-between items-center shrink-0">
               <div>
-                <span className="text-[10px] font-black uppercase text-purple-400 tracking-widest">{selectedType === 'email' ? 'Email Dispatch Audit' : 'In-App Notification Audit'}</span>
+                <span className="text-[10px] font-black uppercase text-accent tracking-widest">{selectedType === 'email' ? 'Email Dispatch Audit' : 'In-App Notification Audit'}</span>
                 <h3 className="text-lg font-black text-primary mt-1">{selectedLog.subject || selectedLog.title || 'Log Details'}</h3>
               </div>
               <button onClick={() => { setSelectedLog(null); setSelectedType(null); }} className="w-11 h-11 rounded-full bg-secondary hover:bg-white/5 text-primary flex items-center justify-center transition cursor-pointer">
@@ -462,7 +462,7 @@ export default function AdminLogsPage() {
                   {selectedLog.batch_id && (
                     <div className="col-span-2 border-t border-theme/40 pt-3">
                       <span className="text-secondary block font-bold">Batch Group ID</span>
-                      <span className="text-purple-400 font-mono font-bold mt-1 block select-all">{selectedLog.batch_id}</span>
+                      <span className="text-accent font-mono font-bold mt-1 block select-all">{selectedLog.batch_id}</span>
                     </div>
                   )}
                 </div>
@@ -471,7 +471,7 @@ export default function AdminLogsPage() {
               {/* Group recipients block */}
               <div className="bg-card border border-theme rounded-2xl p-5 space-y-3">
                 <h4 className="text-[10px] font-black uppercase tracking-wider text-secondary flex items-center gap-1.5">
-                  {selectedLog.is_group ? <lucide.Users className="w-4 h-4 text-purple-400" /> : <lucide.User className="w-4 h-4 text-purple-400" />}
+                  {selectedLog.is_group ? <lucide.Users className="w-4 h-4 text-accent" /> : <lucide.User className="w-4 h-4 text-accent" />}
                   Recipient(s) List ({selectedLog.recipients?.length || 1})
                 </h4>
                 
@@ -519,7 +519,7 @@ export default function AdminLogsPage() {
                           href={selectedLog.link} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-xs text-purple-400 hover:underline block mt-1 font-mono truncate"
+                          className="text-xs text-accent hover:underline block mt-1 font-mono truncate"
                         >
                           {selectedLog.link}
                         </a>
