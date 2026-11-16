@@ -14,6 +14,7 @@ export default function FinancePage() {
   const [wallets, setWallets] = useState<Record<string, number>>({});
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'pending' | 'wallets' | 'transactions' | 'invoice'>('pending');
   
   // Wallet edit modal (set absolute balance)
   const [editingWallet, setEditingWallet] = useState<{ userId: string; balance: number } | null>(null);
@@ -230,16 +231,36 @@ export default function FinancePage() {
 
       <PageHeader
         title="Finance"
-        description="Manage user wallets, balances, and platform transactions."
-        breadcrumb="Admin / Finance"
-        icon={<lucide.Wallet className="w-8 h-8 text-purple-500" />}
+        description="Approve bank transfers, manage client wallets, review every transaction, and send bank invoices."
+        icon={<lucide.Wallet className="w-7 h-7 text-accent" />}
       />
 
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        {[
+          { label: 'Transfers to review', value: String(pendingTransfers.length), tone: pendingTransfers.length ? 'text-warning' : '' },
+          { label: 'Held in client wallets', value: '₦' + Math.round(Object.values(wallets).reduce((n, v) => n + (Number(v) || 0), 0)).toLocaleString('en-NG'), tone: '' },
+          { label: 'Transactions recorded', value: String(transactions.length), tone: '' },
+        ].map((x) => (
+          <div key={x.label} className="bg-card border border-theme rounded-2xl p-4 min-w-0">
+            <p className="text-xs font-semibold text-secondary">{x.label}</p>
+            <p className={`text-xl font-black mt-1 tabular-nums whitespace-nowrap truncate ${x.tone}`}>{x.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-secondary/60 border border-theme w-fit max-w-full" role="tablist">
+        {([['pending', 'Pending transfers'], ['wallets', 'Wallets'], ['transactions', 'Transactions'], ['invoice', 'New bank invoice']] as const).map(([k, label]) => (
+          <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`h-9 px-4 rounded-lg text-sm font-semibold inline-flex items-center gap-2 ${tab === k ? 'bg-card shadow-sm text-primary' : 'text-secondary hover:text-primary'}`}>
+            {label}{k === 'pending' && pendingTransfers.length > 0 && <span className="min-w-5 h-5 px-1.5 rounded-full bg-warning text-black text-[11px] font-bold flex items-center justify-center">{pendingTransfers.length}</span>}
+          </button>
+        ))}
+      </div>
+
       {/* ========== SECTION: Bank Transfer Invoice Generator ========== */}
-      <div className="bg-card border border-theme rounded-3xl p-6 md:p-8 space-y-6 max-w-4xl">
+      {tab === 'invoice' && <div className="bg-card border border-theme rounded-3xl p-6 md:p-8 space-y-6 max-w-4xl">
         <div>
           <h2 className="text-lg font-black text-primary flex items-center gap-2">
-            <lucide.Link2 className="w-5 h-5 text-purple-500" /> Generate Client Bank Invoice
+            <lucide.Link2 className="w-5 h-5 text-accent" /> Generate Client Bank Invoice
           </h2>
           <p className="text-xs text-secondary mt-1">Generate an invoice with designated bank transfer details for any custom topic, email the receipt/onboarding credentials, and track client delivery seamlessly.</p>
         </div>
@@ -253,7 +274,7 @@ export default function FinancePage() {
               placeholder="client@example.com"
               value={payLinkForm.email}
               onChange={e => setPayLinkForm({ ...payLinkForm, email: e.target.value })}
-              className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-purple-500 outline-none"
+              className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-accent outline-none"
             />
           </div>
 
@@ -265,7 +286,7 @@ export default function FinancePage() {
               placeholder="e.g. Design of an E-commerce system..."
               value={payLinkForm.topic}
               onChange={e => setPayLinkForm({ ...payLinkForm, topic: e.target.value })}
-              className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-purple-500 outline-none"
+              className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-accent outline-none"
             />
           </div>
 
@@ -274,7 +295,7 @@ export default function FinancePage() {
             <select
               value={payLinkForm.department}
               onChange={e => setPayLinkForm({ ...payLinkForm, department: e.target.value })}
-              className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-purple-500 outline-none font-bold"
+              className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-accent outline-none font-bold"
             >
               <option value="Computer Science">Computer Science</option>
               <option value="Accounting">Accountancy / Accounting</option>
@@ -300,7 +321,7 @@ export default function FinancePage() {
               <select
                 value={payLinkForm.level}
                 onChange={e => setPayLinkForm({ ...payLinkForm, level: e.target.value })}
-                className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-purple-500 outline-none font-bold"
+                className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-accent outline-none font-bold"
               >
                 <option value="BSc">BSc / Undergraduate</option>
                 <option value="MSc">MSc / Postgrad</option>
@@ -314,7 +335,7 @@ export default function FinancePage() {
                 min="500"
                 value={payLinkForm.price}
                 onChange={e => setPayLinkForm({ ...payLinkForm, price: Number(e.target.value) })}
-                className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-purple-500 outline-none"
+                className="w-full bg-secondary border border-theme rounded-xl p-3 text-sm text-primary mt-1 focus:border-accent outline-none"
               />
             </div>
           </div>
@@ -323,7 +344,7 @@ export default function FinancePage() {
             <button
               type="submit"
               disabled={generatingLink}
-              className="w-full py-3 bg-purple-500 hover:bg-purple-400 disabled:opacity-50 text-white rounded-xl font-black text-xs uppercase tracking-wider transition cursor-pointer"
+              className="w-full py-3 bg-accent hover:bg-accent-hover disabled:opacity-50 text-[var(--accent-foreground)] rounded-xl font-black text-xs uppercase tracking-wider transition cursor-pointer"
             >
               {generatingLink ? 'Generating Invoice...' : 'Generate & Email Bank Invoice'}
             </button>
@@ -331,8 +352,8 @@ export default function FinancePage() {
         </form>
 
         {generatedLink && (
-          <div className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-2xl space-y-2 mt-4 animate-in fade-in duration-300">
-            <div className="flex items-center gap-1.5 text-xs text-purple-400 font-bold">
+          <div className="bg-accent/10 border border-accent/20 p-4 rounded-2xl space-y-2 mt-4 animate-in fade-in duration-300">
+            <div className="flex items-center gap-1.5 text-xs text-accent font-bold">
               <lucide.CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>Invoice link successfully generated and emailed to user!</span>
             </div>
@@ -347,17 +368,17 @@ export default function FinancePage() {
                   navigator.clipboard.writeText(generatedLink);
                   showToast('Link copied to clipboard!', 'success');
                 }}
-                className="px-4 py-2 bg-purple-500 text-white rounded-xl text-xs font-bold hover:bg-purple-400 transition"
+                className="px-4 py-2 bg-accent text-[var(--accent-foreground)] rounded-xl text-xs font-bold hover:bg-accent-hover transition"
               >
                 Copy Link
               </button>
             </div>
           </div>
         )}
-      </div>
+      </div>}
 
       {/* ========== SECTION: Pending Bank Transfers Review ========== */}
-      <div className="bg-card border border-theme rounded-3xl p-6 md:p-8 space-y-6 max-w-4xl">
+      {tab === 'pending' && <div className="bg-card border border-theme rounded-3xl p-6 md:p-8 space-y-6 max-w-4xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-primary flex items-center gap-2">
@@ -398,7 +419,7 @@ export default function FinancePage() {
                     <span className="font-mono font-black text-base text-primary">
                       {formatNaira(payment.amount || 0)}
                     </span>
-                    <span className="bg-purple-500/10 text-purple-400 text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
+                    <span className="bg-accent/10 text-accent text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
                       {payment.payment_type || 'Transfer'}
                     </span>
                     <span className="font-mono text-xs text-secondary">
@@ -446,7 +467,7 @@ export default function FinancePage() {
                         href={payment.proof_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 underline font-semibold"
+                        className="inline-flex items-center gap-1.5 text-xs text-accent hover:text-purple-300 underline font-semibold"
                       >
                         <lucide.ExternalLink className="w-3.5 h-3.5" /> View Payment Proof Receipt
                       </a>
@@ -482,7 +503,7 @@ export default function FinancePage() {
             ))}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* ========== MODAL: Edit User & Bank Assignment ========== */}
       {editingUser && (
@@ -496,7 +517,7 @@ export default function FinancePage() {
                   type="text"
                   value={userForm.full_name}
                   onChange={e => setUserForm({ ...userForm, full_name: e.target.value })}
-                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1 text-sm outline-none focus:border-purple-500"
+                  className="w-full bg-secondary border border-theme rounded-xl p-3 text-primary mt-1 text-sm outline-none focus:border-accent"
                 />
               </div>
               <div className="flex items-center gap-3">
@@ -511,7 +532,7 @@ export default function FinancePage() {
 
               <div className="pt-4 border-t border-theme space-y-4">
                 <div className="flex items-center gap-2 text-sm font-black text-primary">
-                  <lucide.Building2 className="w-4 h-4 text-purple-400" />
+                  <lucide.Building2 className="w-4 h-4 text-accent" />
                   <span>Custom Assigned Bank Account</span>
                 </div>
                 <p className="text-xs text-secondary leading-relaxed">
@@ -526,7 +547,7 @@ export default function FinancePage() {
                       placeholder="e.g. Opay, GTBank, Kuda"
                       value={userForm.assigned_bank_name}
                       onChange={e => setUserForm({ ...userForm, assigned_bank_name: e.target.value })}
-                      className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary mt-1 outline-none focus:border-purple-500"
+                      className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary mt-1 outline-none focus:border-accent"
                     />
                   </div>
                   <div>
@@ -536,7 +557,7 @@ export default function FinancePage() {
                       placeholder="10-digit Account No"
                       value={userForm.assigned_account_number}
                       onChange={e => setUserForm({ ...userForm, assigned_account_number: e.target.value })}
-                      className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary mt-1 font-mono outline-none focus:border-purple-500"
+                      className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary mt-1 font-mono outline-none focus:border-accent"
                     />
                   </div>
                 </div>
@@ -548,7 +569,7 @@ export default function FinancePage() {
                     placeholder="Beneficiary / Account Name"
                     value={userForm.assigned_account_name}
                     onChange={e => setUserForm({ ...userForm, assigned_account_name: e.target.value })}
-                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary mt-1 outline-none focus:border-purple-500"
+                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary mt-1 outline-none focus:border-accent"
                   />
                 </div>
 
@@ -559,14 +580,14 @@ export default function FinancePage() {
                     placeholder="e.g. Include student name in transfer narration"
                     value={userForm.assigned_bank_notes}
                     onChange={e => setUserForm({ ...userForm, assigned_bank_notes: e.target.value })}
-                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary mt-1 outline-none focus:border-purple-500"
+                    className="w-full bg-secondary border border-theme rounded-xl p-3 text-xs text-primary mt-1 outline-none focus:border-accent"
                   />
                 </div>
               </div>
             </div>
             <div className="flex gap-3 pt-2">
               <button onClick={() => setEditingUser(null)} className="flex-1 py-3 bg-white/5 text-primary rounded-xl text-xs font-bold transition hover:bg-white/10">Cancel</button>
-              <button onClick={updateUser} className="flex-1 py-3 bg-purple-500 hover:bg-purple-400 text-white rounded-xl text-xs font-black transition">Save Changes</button>
+              <button onClick={updateUser} className="flex-1 py-3 bg-purple-500 hover:bg-accent-hover text-white rounded-xl text-xs font-black transition">Save Changes</button>
             </div>
           </div>
         </div>
@@ -627,7 +648,7 @@ export default function FinancePage() {
       )}
 
       {/* ========== Users Table ========== */}
-      <div>
+      {tab === 'wallets' && <div>
         <h2 className="text-lg font-black text-primary mb-4">User Wallets</h2>
         <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto table-row-hover">
           <table className="w-full text-left text-sm">
@@ -650,7 +671,7 @@ export default function FinancePage() {
                     <td className="px-4 py-4 text-primary">{user.email}</td>
                     <td className="px-4 py-4">
                       {user.is_admin ? (
-                        <span className="text-purple-400">✓</span>
+                        <span className="text-accent">✓</span>
                       ) : (
                         <span className="text-secondary">—</span>
                       )}
@@ -697,7 +718,7 @@ export default function FinancePage() {
                         setEditingWallet({ userId: user.id, balance: wallets[user.id] || 0 });
                         setNewBalance(wallets[user.id] || 0);
                       }}
-                      className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-xs"
+                      className="px-3 py-1 bg-purple-500/20 text-accent rounded-lg text-xs"
                     >
                       Set Balance
                     </button>
@@ -708,10 +729,10 @@ export default function FinancePage() {
           </tbody>
           </table>
         </div>
-      </div>
+      </div>}
 
       {/* ========== Transactions Table ========== */}
-      <div>
+      {tab === 'transactions' && <div>
         <h2 className="text-lg font-black text-primary mb-4">All Transactions</h2>
         <div className="bg-secondary border border-theme rounded-2xl overflow-x-auto table-row-hover">
           <table className="w-full text-left text-sm">
@@ -747,7 +768,7 @@ export default function FinancePage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
