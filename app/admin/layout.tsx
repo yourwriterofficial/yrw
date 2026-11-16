@@ -135,6 +135,15 @@ const DEVELOPA_NAV_GROUPS: NavGroup[] = [
 
 function onDevelopaHost(): boolean {
   if (typeof window === 'undefined') return false;
+  // An admin can look at the other workspace on this address with ?ws=yrw or ?ws=developa (?ws=auto goes back to the address's own).
+  try {
+    const q = new URLSearchParams(window.location.search).get('ws');
+    if (q === 'auto') sessionStorage.removeItem('admin_ws');
+    else if (q === 'yrw' || q === 'developa') sessionStorage.setItem('admin_ws', q);
+    const forced = sessionStorage.getItem('admin_ws');
+    if (forced === 'yrw') return false;
+    if (forced === 'developa') return true;
+  } catch { /* storage blocked: use the address */ }
   const host = window.location.hostname;
   return host.includes('developa') || new URLSearchParams(window.location.search).get('brand') === 'developa';
 }
