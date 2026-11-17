@@ -62,7 +62,8 @@ export function RotatingWord({ words }: { words: string[] }) {
     const t = setInterval(() => setI((n) => (n + 1) % words.length), 2600);
     return () => clearInterval(t);
   }, [words.length]);
-  return <span className="block min-h-[1.2em]"><span key={i} className="dv-word dv-grad-text inline-block" style={{ animation: 'dv-word 2.6s ease both' }}>{words[i]}</span></span>;
+  // First word is visible straight away; only later words animate in.
+  return <span className="block min-h-[1.2em]"><span key={i} className="dv-grad-text inline-block" style={i === 0 ? undefined : { animation: 'dv-word 2.6s ease both' }}>{words[i]}</span></span>;
 }
 
 /** Soft moving colour behind the hero. */

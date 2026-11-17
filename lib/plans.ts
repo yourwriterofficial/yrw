@@ -149,7 +149,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'none',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 2 sites on one account', 'Custom domain (yourbrand.com)', 'Up to 50 products (3 photos each)', 'Get paid online straight to your bank (we keep 3%)', 'Run house ads on your own site & sell ad slots', 'Reviews, receipts, business card & phone alerts', '20 customer emails a month (buy more any time)'],
+    highlights: ['Up to 2 sites on one account', 'Custom domain (yourbrand.com)', 'Up to 50 products (3 photos each)', 'Get paid online straight to your bank', 'Run house ads on your own site & sell ad slots', 'Reviews, receipts, business card & phone alerts', '20 customer emails a month (buy more any time)'],
   },
   pro: {
     tier: 'pro',
@@ -192,7 +192,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'plus',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 4 sites on one account', 'Unlimited products & 6 photos each', 'Get paid online straight to your bank (we keep 2%)', 'Bank transfer and pay on delivery for your shoppers', 'Every Plus-tier premium theme included', 'Variants, delivery zones, coupons & abandoned carts', 'Run house ads, chat with buyers & no platform ads', '30 customer emails a month (buy more any time)'],
+    highlights: ['Up to 4 sites on one account', 'Unlimited products & 6 photos each', 'Get paid online straight to your bank, at a lower rate', 'Bank transfer and pay on delivery for your shoppers', 'Every Plus-tier premium theme included', 'Variants, delivery zones, coupons & abandoned carts', 'Run house ads, chat with buyers & no platform ads', '30 customer emails a month (buy more any time)'],
   },
   business: {
     tier: 'business',
@@ -235,7 +235,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'all',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 8 sites on one account', 'Everything in Pro, and we keep only 1% of online payments', 'Every premium theme included (incl. Signature)', 'Up to 3 staff accounts with roles', 'Paid memberships & booking slots', '40 customer emails a month & priority WhatsApp support'],
+    highlights: ['Up to 8 sites on one account', 'Everything in Pro, with even lower rates on online payments', 'Every premium theme included (incl. Signature)', 'Up to 3 staff accounts with roles', 'Paid memberships & booking slots', '40 customer emails a month & priority WhatsApp support'],
   },
   corporate: {
     tier: 'corporate',
@@ -278,7 +278,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     includedThemes: 'all',
     businessCard: true,
     catalogueMode: true,
-    highlights: ['Up to 25 sites for agencies & branches', 'Everything in Business, and we keep only 0.5% of online payments', 'Up to 10 photos per product & 15 staff accounts', '50 customer emails a month (buy more any time)', 'Weekly store backups by email and one-click downloads', 'Full white-label & priority support'],
+    highlights: ['Up to 25 sites for agencies & branches', 'Everything in Business, with our lowest rates on online payments', 'Up to 10 photos per product & 15 staff accounts', '50 customer emails a month (buy more any time)', 'Weekly store backups by email and one-click downloads', 'Full white-label & priority support'],
   },
 };
 
