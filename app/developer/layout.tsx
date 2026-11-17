@@ -4,7 +4,7 @@ export const metadata = {
     apple: [{ url: '/developa/apple-touch-icon.png', sizes: '180x180' }],
   },
   manifest: '/developa/manifest.json',
-  title: 'developa.me | Create a website without coding experience',
+  title: { absolute: 'developa.me | Create a website without coding experience' },
   description: 'Create your online store or community on developa.me. Pick a template, add products, get paid online, and connect your own domain. No coding needed.',
 };
 

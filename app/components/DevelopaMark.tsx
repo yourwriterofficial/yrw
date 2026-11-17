@@ -36,6 +36,9 @@ export function DevelopaIcons() {
     set('apple-touch-icon', '/developa/apple-touch-icon.png');
     set('manifest', '/developa/manifest.json');
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#7c3aed');
+    // Pages that share the main site's title (login, register) should not call themselves YourResearchWriter on developa.me.
+    const t = document.title;
+    if (/YourResearchWriter/i.test(t)) document.title = /^YourResearchWriter/i.test(t) ? 'Developa | Build your website without coding' : t.replace(/s*|s*YourResearchWriter.*$/i, '');
     };
     apply();
     const t = setTimeout(apply, 800);

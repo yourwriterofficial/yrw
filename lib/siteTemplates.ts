@@ -10,9 +10,9 @@ export const TEMPLATE_GROUPS: { key: TemplateGroup; label: string }[] = [
   { key: 'premium', label: 'Premium' },
   { key: 'news', label: 'News and media' },
   { key: 'social', label: 'Social and forums' },
-  { key: 'shopify', label: 'Shopify style' },
-  { key: 'selar', label: 'Selar style' },
-  { key: 'wordpress', label: 'WordPress style' },
+  { key: 'shopify', label: 'Boutique and fashion' },
+  { key: 'selar', label: 'Creators and digital' },
+  { key: 'wordpress', label: 'Business and blogs' },
 ];
 
 export interface SiteTemplateProduct {

@@ -55,7 +55,9 @@ export default async function proxy(request: NextRequest) {
     request.nextUrl.searchParams.get('brand') === 'developa'
 
   const bypassPrefixes = ['/api/', '/oauth/', '/_next/', '/auth/', '/login', '/register', '/dashboard', '/admin', '/forums/']
-  const shouldBypass = bypassPrefixes.some((prefix) => path === prefix.replace(/\/$/, '') || path.startsWith(prefix))
+  // Files in /public (service workers, install manifest, icons) are served as they are on store addresses too, not treated as store pages.
+  const isPublicFile = /^\/(developa|icons|network|ads)\//.test(path) || ['/sw.js', '/site-sw.js', '/manifest.json', '/developa-icon.svg'].includes(path)
+  const shouldBypass = isPublicFile || bypassPrefixes.some((prefix) => path === prefix.replace(/\/$/, '') || path.startsWith(prefix))
 
   // Portal routing: create.developa.me -> /create
   if (isCreatePortal && !shouldBypass) {
