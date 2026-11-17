@@ -133,7 +133,7 @@ export default function CreatePortalView() {
               No coding. No designer. {TRIAL_DAYS} days of Pro free.
             </p>
             <h1 className="g-h1 max-w-3xl mx-auto lg:mx-0">
-              Build your <RotatingWord words={['online store', 'community', 'booking site', 'digital shop']} /> without code
+              Build your <RotatingWord words={['online store', 'community', 'booking site', 'digital shop']} /> even without knowing how to code
             </h1>
             <p className="g-lead max-w-xl mx-auto lg:mx-0 mt-5">
               Pick a look, add your products, and share your own address. Your site can be live in minutes, and customers can pay you online.

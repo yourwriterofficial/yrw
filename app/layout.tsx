@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Roboto, Playfair_Display, Space_Grotesk, Fraunces, Oswald } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import "./theme-skins.css";
 import "./theme-skins-2.css";
@@ -13,18 +13,20 @@ import ReferralCapture from "./components/ReferralCapture";
 import PromoPopup from "./components/PromoPopup";
 import { siteUrl } from "@/lib/siteUrl";
 
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
+// The fonts are kept in the project (app/fonts) rather than downloaded from Google when the site is built,
+// so a slow or blocked download can never fail a deployment. Same families, weights and variable names as before.
+const roboto = localFont({
+  src: "./fonts/Roboto-var.woff2",
+  weight: "300 700",
   variable: "--font-sans",
   display: "swap",
 });
 
-// Display faces used by individual storefront themes (see lib/themeSkins.ts and globals.css).
-const playfair = Playfair_Display({ subsets: ["latin"], preload: false, variable: "--font-playfair", display: "swap" });
-const grotesk = Space_Grotesk({ subsets: ["latin"], preload: false, variable: "--font-grotesk", display: "swap" });
-const fraunces = Fraunces({ subsets: ["latin"], preload: false, variable: "--font-fraunces", display: "swap" });
-const oswald = Oswald({ subsets: ["latin"], preload: false, variable: "--font-oswald", display: "swap" });
+// Display faces used by individual storefront themes (see lib/themeSkins.ts and globals.css). Loaded only when used.
+const playfair = localFont({ src: "./fonts/PlayfairDisplay.woff2", weight: "400 900", variable: "--font-playfair", display: "swap", preload: false });
+const grotesk = localFont({ src: "./fonts/SpaceGrotesk.woff2", weight: "300 700", variable: "--font-grotesk", display: "swap", preload: false });
+const fraunces = localFont({ src: "./fonts/Fraunces.woff2", weight: "100 900", variable: "--font-fraunces", display: "swap", preload: false });
+const oswald = localFont({ src: "./fonts/Oswald.woff2", weight: "200 700", variable: "--font-oswald", display: "swap", preload: false });
 
 export const viewport: Viewport = {
   themeColor: "#050505",
