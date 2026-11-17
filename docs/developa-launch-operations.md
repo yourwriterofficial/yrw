@@ -64,3 +64,9 @@ on the same day replaces that day's file. If a backup fails, an email goes to `E
 - Themes retired from the picker are listed in `RETIRED_TEMPLATE_IDS` (`lib/siteTemplates.ts`). Sites already using them keep working.
 - The Developa D logo and icons live in `public/developa/` (favicon, install icons, notification badge, manifest) and `app/components/DevelopaMark.tsx`.
   Phone notifications on developa hosts use the D (`public/sw.js`, `public/site-sw.js`); bump `ICON_VERSION` in `sw.js` after changing the icon files.
+
+## Store owner support
+Every store dashboard has a **Support** tab: a chat with the Developa team on all plans. A message becomes (or is added to) a thread in the
+Developa support inbox (`/admin/inbox`, address `support@developa.me`), titled "Support: <store> (<slug>)" with the store and plan
+at the bottom. Business and Corporate stores are marked high priority. Reply from the inbox as usual: the owner gets the reply by
+email and sees it in their Support tab, and their email reply lands back in the same thread. API: `app/api/forums/[slug]/support-chat/route.ts`.

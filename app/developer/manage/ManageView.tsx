@@ -6,7 +6,7 @@ import ShareCard from './ShareCard';
 import InboxCard from './InboxCard';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, CalendarDays, Ticket, Truck, MessagesSquare, Crown, MessageCircle, Puzzle, Megaphone,
-  Globe, Gem, Settings as SettingsIcon, ExternalLink, Copy, Check, Menu, X, ChevronRight, Share2, Plus, TrendingUp, Wallet, Eye,
+  Globe, Gem, LifeBuoy, Settings as SettingsIcon, ExternalLink, Copy, Check, Menu, X, ChevronRight, Share2, Plus, TrendingUp, Wallet, Eye,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import DevelopaHeader from '@/app/components/DevelopaHeader';
@@ -25,6 +25,7 @@ import BookingsTab from './tabs/BookingsTab';
 import MembershipsTab from './tabs/MembershipsTab';
 import DomainTab from './tabs/DomainTab';
 import PlanTab from './tabs/PlanTab';
+import SupportTab from './tabs/SupportTab';
 import AdSpaceTab from './tabs/AdSpaceTab';
 import MessagesTab from './tabs/MessagesTab';
 import PluginsTab from './tabs/PluginsTab';
@@ -33,8 +34,8 @@ import StoreQrCard from './StoreQrCard';
 import CartsLeftCard from './CartsLeftCard';
 import AnalyticsCard from './AnalyticsCard';
 
-type TabKey = 'overview' | 'products' | 'orders' | 'customers' | 'bookings' | 'community' | 'memberships' | 'coupons' | 'shipping' | 'plugins' | 'messages' | 'adspace' | 'domain' | 'plan' | 'settings';
-const TAB_KEYS: TabKey[] = ['overview', 'products', 'orders', 'customers', 'bookings', 'community', 'memberships', 'coupons', 'shipping', 'plugins', 'messages', 'adspace', 'domain', 'plan', 'settings'];
+type TabKey = 'overview' | 'products' | 'orders' | 'customers' | 'bookings' | 'community' | 'memberships' | 'coupons' | 'shipping' | 'plugins' | 'messages' | 'adspace' | 'domain' | 'plan' | 'support' | 'settings';
+const TAB_KEYS: TabKey[] = ['overview', 'products', 'orders', 'customers', 'bookings', 'community', 'memberships', 'coupons', 'shipping', 'plugins', 'messages', 'adspace', 'domain', 'plan', 'support', 'settings'];
 type NavGroup = 'main' | 'sell' | 'community' | 'grow' | 'account';
 
 const GROUPS: { key: NavGroup; label: string }[] = [
@@ -60,6 +61,7 @@ const TABS: { key: TabKey; label: string; group: NavGroup; Icon: typeof Package;
   { key: 'adspace', label: 'Ad space', group: 'grow', Icon: Megaphone },
   { key: 'domain', label: 'Domain', group: 'grow', Icon: Globe },
   { key: 'plan', label: 'Plan', group: 'account', Icon: Gem },
+  { key: 'support', label: 'Support', group: 'account', Icon: LifeBuoy },
   { key: 'settings', label: 'Settings', group: 'account', Icon: SettingsIcon },
 ];
 
@@ -269,6 +271,7 @@ export default function ManageView() {
             {activeTab === 'adspace' && <AdSpaceTab site={site} goToPlan={() => setTab('plan')} />}
             {activeTab === 'domain' && <DomainTab site={site} goToPlan={() => setTab('plan')} />}
             {activeTab === 'plan' && <PlanTab site={site} />}
+            {activeTab === 'support' && <SupportTab site={site} />}
             {activeTab === 'settings' && <SettingsTab key={site.slug + (site.name || '')} site={site} reload={reload} goToPlan={() => setTab('plan')} />}
           </div>
 
