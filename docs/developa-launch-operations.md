@@ -70,3 +70,10 @@ Every store dashboard has a **Support** tab: a chat with the Developa team on al
 Developa support inbox (`/admin/inbox`, address `support@developa.me`), titled "Support: <store> (<slug>)" with the store and plan
 at the bottom. Business and Corporate stores are marked high priority. Reply from the inbox as usual: the owner gets the reply by
 email and sees it in their Support tab, and their email reply lands back in the same thread. API: `app/api/forums/[slug]/support-chat/route.ts`.
+
+## Store page speed
+The store page (`app/forums/[slug]/page.tsx`) is built once per store and kept for 30 seconds on Vercel's edge, because its HTML is the same
+for every visitor (store content and personal details load in the browser through separate requests). A visit now takes about as long as the
+network allows instead of waiting for the server. Edits show up within about 30 seconds (the dashboard and the store's data are not delayed).
+Checked on the live site: a store address and the home page, both requested as `developa.me/` by the Worker, are cached separately, and
+unknown store names get their own 404. If a store ever shows another store's page, remove `revalidate` and `generateStaticParams` from that file.
