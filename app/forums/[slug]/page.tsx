@@ -6,6 +6,16 @@ import { supabaseAdmin, readSeo } from '@/lib/forumServer';
 
 type Props = { params: Promise<{ slug: string }> };
 
+/**
+ * The page itself is the same for every visitor of a store (the store's content and each person's own details are
+ * loaded in the browser by separate requests), so it can be kept ready for 30 seconds instead of being built for every
+ * visit. generateStaticParams returns nothing on purpose: each store is built the first time someone opens it.
+ */
+export const revalidate = 30;
+export async function generateStaticParams() {
+  return [];
+}
+
 const getStoreMeta = cache(async (slug: string) => {
   const { data } = await supabaseAdmin
     .from('forums')
