@@ -25,15 +25,17 @@ const SHIP_LABEL: Record<string, string> = {
 export default function OrderTrackingModal({
   site,
   initialCode = '',
+  initialEmail = '',
   onClose,
 }: {
   site: ForumSummary;
   initialCode?: string;
+  initialEmail?: string;
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<'track' | 'profile'>('track');
   const [code, setCode] = useState(initialCode);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [order, setOrder] = useState<SiteOrder | null>(null);

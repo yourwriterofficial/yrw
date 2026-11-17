@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { DevelopaMark } from '@/app/components/DevelopaMark';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {
@@ -556,7 +557,7 @@ export default function ForumView({ slug }: { slug: string }) {
             )}
             {showPowered && (
               <div>
-                <span>Powered by </span>
+                <DevelopaMark className="inline-block w-4 h-4 rounded mr-1 align-[-3px]" /><span>Powered by </span>
                 <a
                   href="https://developa.me"
                   target="_blank"

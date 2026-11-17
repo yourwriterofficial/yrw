@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import ThemeToggle from './ThemeToggle';
+import { DevelopaMark, DevelopaIcons } from './DevelopaMark';
 
 /**
  * Shared frame for login and register: logo, a short heading, a card, and a few
@@ -25,7 +26,9 @@ export default function AuthShell({
   return (
     <div className={`${developa ? 'brand-developa' : ''} min-h-screen bg-primary text-primary flex flex-col`}>
       <header className="max-w-5xl w-full mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link href={developa ? '/developer' : '/'} className="font-bold tracking-tight">
+        {developa && <DevelopaIcons />}
+        <Link href={developa ? '/developer' : '/'} className="font-bold tracking-tight flex items-center gap-2.5">
+          {developa && <DevelopaMark className="w-8 h-8 rounded-[9px]" />}
           {developa ? 'developa.me' : 'ResearchWriter'}
         </Link>
         <ThemeToggle compact />

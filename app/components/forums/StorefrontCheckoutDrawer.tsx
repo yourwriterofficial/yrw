@@ -475,6 +475,9 @@ export default function StorefrontCheckoutDrawer(props: Props) {
               )}
 
               {checkoutError && <p className="text-xs text-danger" role="alert">{checkoutError}</p>}
+              {paymentMethod === 'paystack' && props.canPayOnline && (
+                <p className="text-[11px] text-secondary text-center">Secure payment by Paystack. Your card details never reach this store.</p>
+              )}
               {methods.length === 0 ? (
                 site.whatsapp_number ? (
                   <a

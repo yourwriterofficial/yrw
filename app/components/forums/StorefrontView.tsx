@@ -59,6 +59,8 @@ export default function StorefrontView({
   // Checkout state
   const [buyerName, setBuyerName] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
+  // The email used at checkout is remembered on this phone, so "Track your order" does not ask for it again.
+  const rememberedEmail = () => { try { return localStorage.getItem(`dv_buyer_${site.slug}`) || buyerEmail.trim(); } catch { return buyerEmail.trim(); } };
   const [buyerPhone, setBuyerPhone] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [deliveryState, setDeliveryState] = useState('Lagos');
@@ -298,6 +300,7 @@ export default function StorefrontView({
     e.preventDefault();
     setCheckoutError('');
     setSubmitting(true);
+    try { if (buyerEmail.trim()) localStorage.setItem(`dv_buyer_${site.slug}`, buyerEmail.trim().toLowerCase()); } catch { /* private mode */ }
     try {
       const res = await fetch(`/api/forums/${encodeURIComponent(site.slug)}/orders`, {
         method: 'POST',
@@ -577,6 +580,7 @@ export default function StorefrontView({
         <OrderTrackingModal
           site={site}
           initialCode={trackInitialCode}
+          initialEmail={rememberedEmail()}
           onClose={() => setTrackOpen(false)}
         />
       )}

@@ -5,51 +5,14 @@ import Link from 'next/link';
 import { Search, Store, MessageSquare, ArrowRight, Eye, Gem, Check } from 'lucide-react';
 import DevelopaHeader from '@/app/components/DevelopaHeader';
 import DevelopaFooter from '@/app/components/DevelopaFooter';
-import { SITE_TEMPLATES, TEMPLATE_GROUPS, type SiteTemplate } from '@/lib/siteTemplates';
-import { brandFor, demoProducts, archetypeOf } from '@/lib/demoContent';
+import { PICKABLE_TEMPLATES, PICKABLE_GROUPS, type SiteTemplate } from '@/lib/siteTemplates';
+import { archetypeOf } from '@/lib/demoContent';
+import Thumb from '@/app/developer/TemplateThumb';
 import { PREMIUM_PERKS, TIER_LABEL, tierForPrice } from '@/lib/premium';
 
 type Kind = 'all' | 'store' | 'community';
 type Cost = 'any' | 'free' | 'premium';
 const KINDS: { key: Kind; label: string }[] = [{ key: 'all', label: 'All themes' }, { key: 'store', label: 'Online stores' }, { key: 'community', label: 'Communities & media' }];
-
-/** A miniature of the finished site, built from the same sample content as the live preview. */
-function Thumb({ t }: { t: SiteTemplate }) {
-  const brand = brandFor(t);
-  const items = useMemo(() => demoProducts(t).slice(0, 3), [t]);
-  const isForum = t.site_mode === 'forum';
-  return (
-    <div className="relative aspect-[4/3] overflow-hidden" style={{ background: `linear-gradient(160deg, ${t.accent_color}26, ${t.accent_color}08)` }}>
-      <div className="absolute inset-x-4 top-4 bottom-0 rounded-t-xl bg-white shadow-[0_8px_30px_rgba(0,0,0,.12)] overflow-hidden text-[#202124]">
-        <div className="h-6 flex items-center gap-1 px-2 border-b border-black/5">
-          <i className="w-1.5 h-1.5 rounded-full bg-red-400" /><i className="w-1.5 h-1.5 rounded-full bg-amber-400" /><i className="w-1.5 h-1.5 rounded-full bg-green-400" />
-          <span className="ml-1 text-[7px] text-black/40 truncate">{brand.toLowerCase().replace(/[^a-z0-9]+/g, '')}.developa.me</span>
-        </div>
-        <div className="flex items-center justify-between px-3 py-1.5">
-          <span className="text-[9px] font-bold" style={{ color: t.accent_color }}>{brand}</span>
-          <span className="flex gap-1.5 text-[7px] text-black/40"><span>Home</span><span>{isForum ? 'Community' : 'Shop'}</span><span>About</span></span>
-        </div>
-        <div className="mx-3 rounded-md px-2.5 py-2 text-white" style={{ background: `linear-gradient(135deg, ${t.accent_color}, ${t.accent_color}b8)` }}>
-          <p className="text-[9px] font-bold leading-tight line-clamp-2">{t.hero_headline}</p>
-          <span className="inline-block mt-1 text-[6px] px-1.5 py-0.5 rounded-full bg-white/90 text-black font-semibold">{isForum ? 'Join now' : 'Shop now'}</span>
-        </div>
-        {isForum ? (
-          <div className="px-3 mt-2 space-y-1">{[0, 1, 2].map((i) => <div key={i} className="h-4 rounded bg-black/[.05] flex items-center gap-1 px-1.5"><i className="w-2 h-2 rounded-full" style={{ background: t.accent_color }} /><i className="h-1 rounded bg-black/15" style={{ width: `${70 - i * 12}%` }} /></div>)}</div>
-        ) : (
-          <div className="grid grid-cols-3 gap-1.5 px-3 mt-2">
-            {items.map((p) => (
-              <div key={p.id} className="rounded overflow-hidden bg-white border border-black/5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.image_url} alt="" className="w-full aspect-[4/3] object-cover" loading="lazy" />
-                <div className="p-1"><i className="block h-1 rounded bg-black/15 w-4/5" /><i className="block h-1 rounded mt-0.5 w-1/3" style={{ background: t.accent_color }} /></div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 export default function TemplatesGalleryPage() {
   const [kind, setKind] = useState<Kind>('all');
@@ -71,7 +34,7 @@ export default function TemplatesGalleryPage() {
   }, []);
 
   const groupKey = (t: SiteTemplate) => t.group ?? 'core';
-  const filtered = SITE_TEMPLATES.filter((t) => {
+  const filtered = PICKABLE_TEMPLATES.filter((t) => {
     if (kind === 'store' && t.site_mode === 'forum') return false;
     if (kind === 'community' && t.site_mode === 'store') return false;
     if (group !== 'all' && groupKey(t) !== group) return false;
@@ -81,14 +44,14 @@ export default function TemplatesGalleryPage() {
     const s = q.trim().toLowerCase();
     return !s || `${t.label} ${t.tagline} ${archetypeOf(t)}`.toLowerCase().includes(s);
   });
-  const chips = [{ key: 'all', label: 'Every style' }, { key: 'core', label: 'Popular' }, ...TEMPLATE_GROUPS];
+  const chips = [{ key: 'all', label: 'Every style' }, { key: 'core', label: 'Popular' }, ...PICKABLE_GROUPS];
 
   return (
     <div className="g-font min-h-screen bg-primary text-primary">
       <DevelopaHeader />
       <main>
         <section className="g-wrap pt-10 sm:pt-16 pb-6 text-center">
-          <p className="inline-flex px-3.5 py-1.5 rounded-full g-tonal-strong text-xs sm:text-sm font-medium text-accent mb-5">{SITE_TEMPLATES.length} themes · every one fully working</p>
+          <p className="inline-flex px-3.5 py-1.5 rounded-full g-tonal-strong text-xs sm:text-sm font-medium text-accent mb-5">{PICKABLE_TEMPLATES.length} themes · every one fully working</p>
           <h1 className="g-h1 max-w-3xl mx-auto">Find a theme that fits your business</h1>
           <p className="g-lead max-w-xl mx-auto mt-4">Open any theme to try it like a real site: browse, search, fill a cart and read the discussions. Then make it yours in minutes.</p>
         </section>

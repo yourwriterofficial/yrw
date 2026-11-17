@@ -79,16 +79,26 @@ export async function GET(request: Request) {
       // 4.11 Expiry notices at 7 days and 1 day left
       if ((site.plan_tier as string) !== 'free' && planExpires) {
         const left = daysLeft(planExpires);
-        const reminderTag = left === 7 ? '7d' : left === 1 ? '1d' : null;
+        // A site that has never paid for a plan is on its free trial, and gets plainer wording about what switches off.
+        let isTrial = false;
+        if (left === 1 || left === 2) {
+          const { count } = await supabaseAdmin.from('site_plan_payments').select('id', { count: 'exact', head: true }).eq('site_id', site.id).eq('status', 'paid');
+          isTrial = !count;
+        }
+        const reminderTag = left === 7 ? '7d' : left === 1 ? '1d' : left === 2 && isTrial ? '2d' : null;
         if (reminderTag && ext.plan_reminded_stage !== reminderTag) {
           const email = await getOwnerEmail(site.owner_id as string);
           if (email) {
             const renewUrl = `${siteUrl()}/developer/manage?slug=${encodeURIComponent(site.slug as string)}&tab=plan`;
             const ok = await sendSystemEmail({
               to: email,
-              subject: `${site.name}: your ${plan.name} plan ends in ${left === 1 ? '1 day' : '7 days'}`,
+              subject: isTrial
+                ? `${site.name}: your free Pro trial ends in ${left === 1 ? '1 day' : '2 days'}`
+                : `${site.name}: your ${plan.name} plan ends in ${left === 1 ? '1 day' : '7 days'}`,
               html: emailShell(
-                `<h2>Plan renewal reminder</h2><p>Your <strong>${esc(plan.name)}</strong> plan for <strong>${esc(site.name)}</strong> expires in ${left === 1 ? '1 day' : '7 days'} (${new Date(planExpires).toLocaleDateString('en-GB')}).</p><p>Renew early so your Pro tools and custom domain stay active.</p>`,
+                isTrial
+                  ? `<h2>Your free Pro trial is almost over</h2><p>The Pro trial for <strong>${esc(site.name)}</strong> ends in ${left === 1 ? '1 day' : '2 days'}. After that your site stays online on the free plan.</p><p><strong>What will switch off:</strong> pay by bank transfer, pay on delivery, delivery prices, sizes and colours, chat with customers and other Pro tools. If you take online payments, that keeps working on Lite and above.</p><p>Choose a plan now to keep everything running, with no break for your customers.</p>`
+                  : `<h2>Plan renewal reminder</h2><p>Your <strong>${esc(plan.name)}</strong> plan for <strong>${esc(site.name)}</strong> expires in ${left === 1 ? '1 day' : '7 days'} (${new Date(planExpires).toLocaleDateString('en-GB')}).</p><p>Renew early so your Pro tools and custom domain stay active.</p>`,
                 'Manage plan',
                 renewUrl,
                 'developa'

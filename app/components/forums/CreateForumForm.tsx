@@ -4,17 +4,25 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Globe, Lock, Plus, ArrowRight, ShoppingBag, MessageSquare, Layers } from 'lucide-react';
 import { FORUM_ACCENTS, normalizeForumSlug, validateForumSlug, getForumHref } from '@/lib/forums';
-import { SITE_TEMPLATES, TEMPLATE_GROUPS, getTemplateById, templateGroup, type TemplateGroup } from '@/lib/siteTemplates';
+import TemplateThumb from '@/app/developer/TemplateThumb';
+import { SITE_TEMPLATES, PICKABLE_TEMPLATES, PICKABLE_GROUPS, getTemplateById, templateGroup, type TemplateGroup } from '@/lib/siteTemplates';
 import Button from '@/app/components/ui/Button';
 
 interface Props {
   onCreated?: () => void;
+  /** Used by the guided setup: the theme is already chosen, so the picker is replaced by a short summary. */
+  guided?: boolean;
+  initialTemplateId?: string;
+  /** Features the owner switched on or off in the guided setup. Saved right after the site is created. */
+  pluginChoices?: Record<string, boolean>;
+  onChangeTheme?: () => void;
 }
 
-export default function CreateForumForm({ onCreated }: Props) {
+export default function CreateForumForm({ onCreated, guided, initialTemplateId, pluginChoices, onChangeTheme }: Props) {
   const router = useRouter();
   // A theme preview links here with ?template=<id>, so start on that theme.
   const [wantedId] = useState<string>(() => {
+    if (initialTemplateId && SITE_TEMPLATES.some((t) => t.id === initialTemplateId)) return initialTemplateId;
     if (typeof window === 'undefined') return SITE_TEMPLATES[0].id;
     const w = new URLSearchParams(window.location.search).get('template');
     return w && SITE_TEMPLATES.some((t) => t.id === w) ? w : SITE_TEMPLATES[0].id;
@@ -119,6 +127,14 @@ export default function CreateForumForm({ onCreated }: Props) {
         setError(data.error || 'Could not launch site.');
         return;
       }
+      // Save the features the owner chose in the guided setup (one at a time, so none overwrite another).
+      if (pluginChoices) {
+        for (const [id, enabled] of Object.entries(pluginChoices)) {
+          await fetch(`/api/forums/${encodeURIComponent(data.forum.slug)}/plugins`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, enabled }),
+          }).catch(() => null);
+        }
+      }
       onCreated?.();
       const target = getForumHref(data.forum.slug, typeof window !== 'undefined' ? window.location.host : undefined);
       if (target.startsWith('http')) {
@@ -147,10 +163,21 @@ export default function CreateForumForm({ onCreated }: Props) {
       </div>
 
       {/* Template Picker */}
+      {guided ? (
+        <div className="flex items-center gap-3 rounded-xl border border-theme p-3">
+          <div className="w-28 shrink-0 rounded-lg overflow-hidden"><TemplateThumb t={selectedTemplate} /></div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-secondary">Your theme</p>
+            <p className="text-sm font-semibold truncate">{selectedTemplate.label}</p>
+            <p className="text-[11px] text-secondary">{priceOf(selectedTemplate.id) > 0 && prices[selectedTemplate.id]?.owned !== true ? naira(priceOf(selectedTemplate.id)) : 'Free'}</p>
+          </div>
+          {onChangeTheme && <button type="button" onClick={onChangeTheme} className="text-xs font-medium text-accent hover:underline shrink-0">Change</button>}
+        </div>
+      ) : (
       <div className="space-y-2">
         <label className="block text-xs font-semibold text-secondary">1. Choose a Template</label>
         <div className="flex gap-2 overflow-x-auto pb-1" role="tablist">
-          {TEMPLATE_GROUPS.map((g) => (
+          {PICKABLE_GROUPS.map((g) => (
             <button key={g.key} type="button" role="tab" aria-selected={group === g.key} onClick={() => setGroup(g.key)}
               className={`shrink-0 px-4 h-9 rounded-full text-xs font-semibold border transition ${group === g.key ? 'bg-accent text-[var(--accent-foreground)] border-transparent' : 'border-theme text-secondary hover:bg-hover'}`}>
               {g.label}
@@ -158,7 +185,7 @@ export default function CreateForumForm({ onCreated }: Props) {
           ))}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          {SITE_TEMPLATES.filter((t) => templateGroup(t) === group && prices[t.id]?.active !== false).map((tpl) => {
+          {PICKABLE_TEMPLATES.filter((t) => templateGroup(t) === group && prices[t.id]?.active !== false).map((tpl) => {
             const active = tpl.id === templateId;
             return (
               <button
@@ -171,6 +198,7 @@ export default function CreateForumForm({ onCreated }: Props) {
                     : 'border-theme bg-primary/60 hover:border-accent/40'
                 }`}
               >
+                <div className="-mx-3.5 -mt-3.5 mb-2 rounded-t-xl overflow-hidden"><TemplateThumb t={tpl} /></div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-bold text-primary">{tpl.label}</span>
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-secondary/50 text-secondary flex items-center gap-1">
@@ -195,6 +223,8 @@ export default function CreateForumForm({ onCreated }: Props) {
           })}
         </div>
       </div>
+
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -247,7 +277,7 @@ export default function CreateForumForm({ onCreated }: Props) {
       {hasStore && (
         <div className="rounded-xl border border-theme bg-primary/50 p-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-bold text-primary">Manual Bank Transfer & Contact (Optional — editable anytime)</span>
+            <span className="text-xs font-bold text-primary">Bank details & contact (Optional, used for bank transfer on Pro plans)</span>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value as 'NGN' | 'USD' | 'GBP')}
@@ -292,7 +322,7 @@ export default function CreateForumForm({ onCreated }: Props) {
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => setIsPublic(true)}

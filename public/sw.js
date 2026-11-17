@@ -8,7 +8,9 @@ const APP_ORIGIN = self.location.origin;
 // across multiple deploys. A query-string bump forces it to be treated as a
 // distinct resource. (Workbox-based builds get this for free via revision-hashed
 // precache entries; this hand-written worker has no build step to do that.)
-const ICON_VERSION = 'v3';
+const ICON_VERSION = 'v4';
+// developa.me (and its store addresses) show the Developa D in notifications.
+const IS_DEVELOPA = self.location.hostname.includes('developa');
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -34,16 +36,16 @@ self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data?.json() ?? {}; } catch {}
 
-  const title = data.title || 'YourResearchWriter';
+  const title = data.title || (IS_DEVELOPA ? 'Developa' : 'YourResearchWriter');
   const options = {
     body: data.body || 'You have a new notification',
     // `icon` is the full-colour artwork shown in the notification body.
-    icon: `/icons/icon-192x192.png?${ICON_VERSION}`,
+    icon: IS_DEVELOPA ? `/developa/icon-192.png?${ICON_VERSION}` : `/icons/icon-192x192.png?${ICON_VERSION}`,
     // `badge` is the small status-bar mark on Android. Android paints it from
     // the ALPHA CHANNEL ONLY — every opaque pixel becomes a flat white. Passing
     // the full-colour square icon here rendered as a featureless white square,
     // so this must stay a transparent-background monochrome glyph.
-    badge: `/icons/badge-96x96.png?${ICON_VERSION}`,
+    badge: IS_DEVELOPA ? `/developa/badge-96.png?${ICON_VERSION}` : `/icons/badge-96x96.png?${ICON_VERSION}`,
     tag: data.tag || 'yrw',
     renotify: true,
     vibrate: [100, 50, 100],

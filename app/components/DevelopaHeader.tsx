@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { DevelopaMark, DevelopaIcons } from '@/app/components/DevelopaMark';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
@@ -12,7 +13,6 @@ import {
   Menu,
   X,
   ArrowRight,
-  Terminal,
   ShoppingBag,
   Code2,
   Cpu,
@@ -77,6 +77,7 @@ export default function DevelopaHeader() {
             : 'bg-transparent border-b border-transparent'
         }`}
       >
+        <DevelopaIcons />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
           {/* Brand Logo */}
           <Link
@@ -84,9 +85,7 @@ export default function DevelopaHeader() {
             className="text-[15px] font-semibold tracking-tight flex items-center gap-2.5 select-none group"
             aria-label="developa.me home"
           >
-            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/30 flex items-center justify-center text-accent font-mono font-bold text-xs group-hover:border-accent/60 transition-colors">
-              <Terminal className="w-4 h-4 text-accent" />
-            </div>
+            <DevelopaMark className="w-9 h-9 rounded-[10px] shadow-sm group-hover:scale-105 transition-transform" />
             <div className="flex flex-col">
               <div className="flex items-baseline gap-0.5 leading-none">
                 <span className="text-primary font-black text-lg tracking-tight">developa</span>

@@ -344,6 +344,9 @@ function Overview({ site, detail, orders, origin, go, tier }: { site: Site; deta
   const steps = [
     { done: !isStore || detail.products.length > 0, label: `Add your first ${itemLabels(site.template_id)[0].toLowerCase()}`, tab: 'products' as TabKey, show: isStore },
     { done: !!site.bank_account_number || !!site.whatsapp_number, label: 'Tell buyers how to reach or pay you', tab: 'settings' as TabKey, show: isStore },
+    // Only for owners who chose to take payments on their site: bank details are what let customers pay online.
+    { done: !!(site as Site & { paystack_subaccount_code?: string | null; online_payments_ready?: boolean }).paystack_subaccount_code || !!(site as Site & { online_payments_ready?: boolean }).online_payments_ready, label: 'Connect your bank to get paid online', tab: 'settings' as TabKey, show: isStore && PLANS[tier].onlinePayments && (site as Site & { plugins?: Record<string, unknown> }).plugins?.catalogue !== true && (site as Site & { plugins?: Record<string, unknown> }).plugins?.online_payments !== false },
+    { done: orders.length > 0, label: 'Share your link and get your first order', tab: 'overview' as TabKey, show: isStore },
     { done: detail.products.some((p) => !!p.image_url), label: 'Add a photo to a product', tab: 'products' as TabKey, show: isStore },
     { done: !!site.logo_url, label: 'Add your logo', tab: 'settings' as TabKey, show: true },
     { done: !!site.hero_headline && site.hero_headline.trim().length > 3, label: 'Write your own welcome headline', tab: 'settings' as TabKey, show: true },

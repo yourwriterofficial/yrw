@@ -43,3 +43,24 @@ on the same day replaces that day's file. If a backup fails, an email goes to `E
   The result is JSON of every table. Re-insert rows with the Supabase service key or the SQL editor.
 - Test a restore once a month.
 - Store backups for site owners (weekly email and download) are a Corporate-plan feature and are separate from this.
+
+## Payments and plans
+- **Paystack is live in production.** `PAYSTACK_SECRET_KEY` (a live key) is set in Vercel and `PAYSTACK_FORCE_TEST` is removed.
+  Localhost keeps test mode through `.env.local`. If Paystack answers "Invalid key", the key was rolled in the dashboard:
+  copy the current live secret key, update `PAYSTACK_SECRET_KEY` in Vercel (production, sensitive) and redeploy.
+- Shoppers pay online by default. **Bank transfer and pay on delivery are Pro features** (Pro, Business, Corporate).
+  Plan flags: `bankTransfer` and `payOnDelivery` in `lib/plans.ts`; the order API refuses a method the plan lacks. A store
+  with no online payments on Free or Lite shows an "Order on WhatsApp" button instead.
+- A bank connected in live mode creates a live Paystack subaccount; test-mode subaccounts do not work live.
+- **No Paystack webhook is needed for Developa.** Paid orders are confirmed when the shopper returns from Paystack (`/api/developa/pay/return`),
+  and the 10-minute reconcile timer re-checks any checkout that was not confirmed. `/api/paystack/webhook` is intentionally switched off, so leave
+  the Paystack dashboard webhook field as it is.
+- Plans are priced per month in `lib/plans.ts`; 6-month and 1-year periods are discounted (`BILLING_PERIODS`).
+
+## Home page, guided setup and themes
+- The Developa home page (`app/create/CreatePortalView.tsx`, motion in `HomeMotion.tsx`) uses its own violet-to-pink palette (`.dv-theme`).
+- New sites are made through the guided setup (`app/create/GuidedSetup.tsx`): goal, matching themes, feature switches, then name and launch.
+  The owner's choices (payments or WhatsApp ordering, phone alerts, install as app, chat, business card) are saved as plugin switches right after the site is created.
+- Themes retired from the picker are listed in `RETIRED_TEMPLATE_IDS` (`lib/siteTemplates.ts`). Sites already using them keep working.
+- The Developa D logo and icons live in `public/developa/` (favicon, install icons, notification badge, manifest) and `app/components/DevelopaMark.tsx`.
+  Phone notifications on developa hosts use the D (`public/sw.js`, `public/site-sw.js`); bump `ICON_VERSION` in `sw.js` after changing the icon files.

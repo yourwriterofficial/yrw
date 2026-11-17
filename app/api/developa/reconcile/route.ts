@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
-import { supabaseAdmin } from '@/lib/forumServer';
+import { supabaseAdmin, releaseStock } from '@/lib/forumServer';
 import { settleDevelopaPayment } from '@/lib/developaPay';
 
 export const dynamic = 'force-dynamic';
@@ -44,5 +44,33 @@ export async function POST(request: Request) {
     if (res.ok && !res.alreadyPaid) settled++;
   }
 
-  return NextResponse.json({ checked: refs.size, settled });
+  // Online checkouts nobody paid within a day are closed, and the reserved stock goes back on the shelf.
+  // Each one is checked with Paystack one last time first, so a late payment is never thrown away.
+  let expired = 0;
+  const dayAgo = new Date(Date.now() - 24 * 3600_000).toISOString();
+  const { data: stale } = await supabaseAdmin
+    .from('site_orders')
+    .select('id, site_id, items, paystack_reference')
+    .eq('payment_method', 'paystack')
+    .eq('payment_status', 'pending')
+    .lt('created_at', dayAgo)
+    .limit(30);
+  for (const o of (stale || []) as { id: string; site_id: string; items: { product_id: string | number; variant_id?: string | null; qty: number }[]; paystack_reference: string | null }[]) {
+    if (o.paystack_reference?.startsWith('dev_')) {
+      const res = await settleDevelopaPayment(o.paystack_reference).catch(() => ({ ok: false, alreadyPaid: false }));
+      if (res.ok) continue;
+    }
+    const { data: closed } = await supabaseAdmin
+      .from('site_orders')
+      .update({ payment_status: 'rejected', fulfillment_status: 'cancelled' })
+      .eq('id', o.id)
+      .eq('payment_status', 'pending')
+      .select('id');
+    if (closed && closed.length) {
+      await releaseStock(o.site_id, o.items || []).catch(() => null);
+      expired++;
+    }
+  }
+
+  return NextResponse.json({ checked: refs.size, settled, expired });
 }

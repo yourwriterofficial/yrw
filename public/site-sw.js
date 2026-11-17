@@ -9,7 +9,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'New update', {
       body: data.body || '',
-      icon: data.icon || '/icons/icon-192x192.png',
+      icon: data.icon || '/developa/icon-192.png',
+      badge: '/developa/badge-96.png',
       tag: data.tag || 'site',
       data: { url: data.url || '/' },
     })

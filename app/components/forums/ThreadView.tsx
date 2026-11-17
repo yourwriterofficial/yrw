@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { DevelopaMark } from '@/app/components/DevelopaMark';
 import Link from 'next/link';
 import { ArrowLeft, Lock, MessageSquare, Send } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -158,7 +159,7 @@ export default function ThreadView({ slug, threadId }: { slug: string; threadId:
       </main>
 
       <footer className="w-full border-t border-theme py-6 text-center text-xs text-secondary bg-card/40">
-        <span>Powered by </span>
+        <DevelopaMark className="inline-block w-4 h-4 rounded mr-1 align-[-3px]" /><span>Powered by </span>
         <a
           href="https://developa.me"
           target="_blank"

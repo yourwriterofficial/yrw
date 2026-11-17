@@ -49,13 +49,13 @@ export interface SiteTemplate {
 export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'jumia-mart',
-    label: 'Jumia-Style Marketplace',
-    tagline: 'Orange flash-sales bar, left category sidebar, % OFF badges & Pay on Delivery.',
+    label: 'Marketplace',
+    tagline: 'Orange flash-sales bar, left category sidebar, % OFF badges & flash deals.',
     site_mode: 'store',
     layout_style: 'jumia',
     accent_color: '#f68b1e',
     hero_headline: 'Flash Sales & Everyday Essentials — Up to 40% Off',
-    hero_subheadline: 'Shop electronics, fashion, and home deals with Pay on Delivery or Bank Transfer.',
+    hero_subheadline: 'Shop electronics, fashion, and home deals with secure online payment.',
     sample_products: [
       {
         title: 'Oraimo FreePods 4 ANC Earbuds',
@@ -98,7 +98,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'temu-deals',
     price_ngn: 2500,
-    label: 'Temu-Style Flash Deals',
+    label: 'Flash Deals',
     tagline: 'High-energy deal grid, bold discount pills, low-stock urgency & buyer protection.',
     site_mode: 'store',
     layout_style: 'temu',
@@ -152,7 +152,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     layout_style: 'standard',
     accent_color: '#10b981',
     hero_headline: 'Quality products delivered straight to your door.',
-    hero_subheadline: 'Browse our catalog, pay easily via bank transfer or on delivery, and track your order.',
+    hero_subheadline: 'Browse our catalog, pay easily online, and track your order.',
     sample_products: [
       {
         title: 'Essential Cotton Tee',
@@ -476,7 +476,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'shopify-fashion',
     price_ngn: 3500,
-    label: 'Fashion Lookbook (Shopify style)',
+    label: 'Fashion Lookbook',
     group: 'shopify',
     item_label: ['Piece', 'Pieces'],
     tagline: 'Large photos and minimal text for clothing, shoes and accessories.',
@@ -494,7 +494,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'selar-creator',
     price_ngn: 2500,
-    label: 'Digital Creator Store (Selar style)',
+    label: 'Digital Creator Store',
     group: 'selar',
     item_label: ['Product', 'Products'],
     tagline: 'Sell ebooks, templates, presets and downloads with a big buy button.',
@@ -650,7 +650,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     id: 'forum-board',
-    label: 'Classic Discussion Board (Nairaland style)',
+    label: 'Classic Discussion Board',
     price_ngn: 4500,
     group: 'social',
     item_label: ['Item', 'Items'],
@@ -816,6 +816,19 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
 ];
+
+/**
+ * Themes no longer offered to new sites (duplicates of a better theme, or copies of a platform we cannot match).
+ * Sites already using one keep working, so they stay in SITE_TEMPLATES for lookups.
+ */
+export const RETIRED_TEMPLATE_IDS = new Set([
+  'creator-studio', 'shopify-clean', 'selar-course', 'wp-business', 'wp-blog', 'wp-magazine',
+  'news-tabloid', 'news-business', 'social-feed', 'social-micro', 'social-reels', 'subscription-share',
+]);
+/** What people can choose from today. */
+export const PICKABLE_TEMPLATES = SITE_TEMPLATES.filter((t) => !RETIRED_TEMPLATE_IDS.has(t.id));
+/** Groups that still have at least one theme to choose. */
+export const PICKABLE_GROUPS = TEMPLATE_GROUPS.filter((g) => PICKABLE_TEMPLATES.some((t) => templateGroup(t) === g.key));
 
 export function getTemplateById(id?: string | null): SiteTemplate {
   return SITE_TEMPLATES.find((t) => t.id === id) || SITE_TEMPLATES[0];

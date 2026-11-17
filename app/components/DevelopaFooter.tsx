@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Terminal, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { DevelopaMark } from '@/app/components/DevelopaMark';
 
 export default function DevelopaFooter() {
   return (
@@ -12,9 +13,7 @@ export default function DevelopaFooter() {
             href="/developer"
             className="text-[15px] font-semibold tracking-tight inline-flex items-center gap-2.5 group"
           >
-            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/30 flex items-center justify-center text-accent font-mono font-bold text-xs group-hover:border-accent/60 transition-colors">
-              <Terminal className="w-4 h-4 text-accent" />
-            </div>
+            <DevelopaMark className="w-8 h-8 rounded-lg" />
             <div className="flex items-baseline gap-0.5">
               <span className="text-primary font-black text-lg tracking-tight">developa</span>
               <span className="text-accent font-bold text-sm tracking-tight">.me</span>

@@ -60,7 +60,7 @@ const baseLayout = (content: string, brand?: 'developa' | 'yourresearchwriter') 
   const badgeColor = isDev ? '#67e8f9' : '#a7f3d0';
   const siteUrl = isDev ? 'https://developa.me' : SITE_URL;
   const logoHtml = isDev
-    ? `<a href="https://developa.me" class="logo" style="color:#ffffff; font-weight:900;">developa<span style="color:#38bdf8;">.me</span></a>`
+    ? `<a href="https://developa.me" class="logo" style="color:#ffffff; font-weight:900;"><img src="https://developa.me/developa/icon-192.png" alt="" width="30" height="30" style="vertical-align:middle;border-radius:8px;border:0;margin-right:8px;">developa<span style="color:#c4b5fd;">.me</span></a>`
     : `<a href="${SITE_URL}" class="logo">YourResearch<span>Writer</span></a>`;
   const footerText = isDev
     ? `© ${new Date().getFullYear()} Developa (developa.me). Full-Stack Software Engineering &amp; Marketplace.<br>Direct Support: <a href="https://wa.me/2348121443666">WhatsApp Dev Lead</a>`
@@ -562,7 +562,9 @@ function onColor(hex: string) {
   return lum > 0.62 ? '#0f172a' : '#ffffff';
 }
 
-const DEVELOPA_ACCENT = '#2563eb';
+const DEVELOPA_ACCENT = '#6d28d9';
+/** The Developa D, as a picture, because email apps cannot draw SVG. */
+const DEVELOPA_LOGO = 'https://developa.me/developa/icon-192.png';
 
 /**
  * The modern layout used for Developa mail and for site mail. One calm white card on a soft background, a slim
@@ -680,7 +682,7 @@ export function emailShell(bodyHtml: string, ctaText?: string, ctaUrl?: string, 
   const looksDeveloa = brand === 'developa' || /developa|dev shop|my scripts|dev lead|technical brief/i.test(bodyHtml);
   if (looksDeveloa) {
     return modernLayout(`${bodyHtml}${ctaText && ctaUrl ? modernButton(ctaText, ctaUrl, DEVELOPA_ACCENT) : ''}`, {
-      accent: DEVELOPA_ACCENT, name: 'developa', href: 'https://developa.me', footerHtml: developaFooter(),
+      accent: DEVELOPA_ACCENT, name: 'developa', href: 'https://developa.me', logoUrl: DEVELOPA_LOGO, footerHtml: developaFooter(),
     });
   }
   return baseLayout(`${bodyHtml}${ctaText && ctaUrl ? ctaButton(ctaText, ctaUrl) : ''}`, brand);

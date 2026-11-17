@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { DevelopaMark } from '@/app/components/DevelopaMark';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import * as lucide from 'lucide-react';
@@ -258,9 +259,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-3 mb-6 shrink-0 relative z-10">
           {isDevelopa ? (
             <>
-              <div className="w-9 h-9 bg-slate-900 border border-accent/40 rounded-xl flex items-center justify-center text-accent font-mono font-semibold text-lg shadow-sm shadow-accent/40">
-                &gt;_
-              </div>
+              <DevelopaMark className="w-9 h-9 rounded-xl" />
               <div>
                 <h1 className="font-semibold tracking-tight leading-none text-base text-slate-100 font-mono">developa<span className="text-accent">.me</span></h1>
                 <p className="text-[11px] text-secondary">My account</p>

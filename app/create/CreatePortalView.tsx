@@ -7,13 +7,14 @@ import {
   MousePointerClick, Palette, Rocket, Settings2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import CreateForumForm from '@/app/components/forums/CreateForumForm';
+import GuidedSetup from '@/app/create/GuidedSetup';
 import DevelopaHeader from '@/app/components/DevelopaHeader';
 import DevelopaFooter from '@/app/components/DevelopaFooter';
 import { getForumHref, type ForumSummary } from '@/lib/forums';
 import { PLANS, BILLING_PERIODS, priceForPeriod, TRIAL_DAYS, PRUNE_NOTICE, type PlanTier } from '@/lib/plans';
-import { SITE_TEMPLATES } from '@/lib/siteTemplates';
-import { demoProducts } from '@/lib/demoContent';
+import { PICKABLE_TEMPLATES as SITE_TEMPLATES } from '@/lib/siteTemplates';
+import TemplateThumb from '@/app/developer/TemplateThumb';
+import { HomeStyles, Reveal, RotatingWord, HeroBackdrop, PhoneMockup, FeatureMarquee, SignupBanner, StickySignupBar } from '@/app/create/HomeMotion';
 
 export default function CreatePortalView() {
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
@@ -118,52 +119,54 @@ export default function CreatePortalView() {
   const tiers: PlanTier[] = ['free', 'lite', 'pro', 'business', 'corporate'];
 
   return (
-    <div className="g-font min-h-screen bg-primary text-primary">
+    <div className="g-font dv-theme min-h-screen bg-primary text-primary pb-20 sm:pb-0">
       <DevelopaHeader />
 
+      <HomeStyles />
       {/* Hero */}
-      <section className="g-section pb-10 sm:pb-14">
-        <div className="g-wrap text-center">
-          <p className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full g-tonal-strong text-xs sm:text-sm font-medium text-accent mb-6">
-            No coding. No designer. {TRIAL_DAYS} days of Pro free.
-          </p>
-          <h1 className="g-h1 max-w-3xl mx-auto">Create a website without coding experience</h1>
-          <p className="g-lead max-w-xl mx-auto mt-5">
-            Pick a look, add your products or topics, and share your own address. Your online store or community can be live in minutes.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
-            <button type="button" onClick={scrollToStart} className="btn-primary inline-flex items-center justify-center gap-2 !rounded-full px-7 py-3.5 text-base font-medium">
-              Start free <ArrowRight className="w-4 h-4" />
-            </button>
-            <a href="#how" className="btn-secondary inline-flex items-center justify-center !rounded-full px-7 py-3.5 text-base font-medium">See how it works</a>
+      <section className="relative g-section pb-8 sm:pb-12 overflow-hidden" style={{ paddingTop: '7rem' }}>
+        <HeroBackdrop />
+        <div className="g-wrap relative grid lg:grid-cols-[1.15fr_.85fr] gap-10 lg:gap-6 items-center">
+          <div className="text-center lg:text-left">
+            <p className="dv-pop inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full g-tonal-strong text-xs sm:text-sm font-medium text-accent mb-6" style={{ animation: 'dv-pop .6s ease both' }}>
+              No coding. No designer. {TRIAL_DAYS} days of Pro free.
+            </p>
+            <h1 className="g-h1 max-w-3xl mx-auto lg:mx-0">
+              Build your <RotatingWord words={['online store', 'community', 'booking site', 'digital shop']} /> without code
+            </h1>
+            <p className="g-lead max-w-xl mx-auto lg:mx-0 mt-5">
+              Pick a look, add your products, and share your own address. Your site can be live in minutes, and customers can pay you online.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3">
+              <button type="button" onClick={scrollToStart} className="dv-cta btn-primary inline-flex items-center justify-center gap-2 !rounded-full px-7 py-3.5 text-base font-medium">
+                Start free <ArrowRight className="w-4 h-4" />
+              </button>
+              <a href="#how" className="btn-secondary inline-flex items-center justify-center !rounded-full px-7 py-3.5 text-base font-medium">See how it works</a>
+            </div>
+            <p className="text-xs sm:text-sm text-secondary mt-5">Your address will look like <span className="font-mono text-primary">yourname.developa.me</span></p>
           </div>
-          <p className="text-xs sm:text-sm text-secondary mt-5">Your address will look like <span className="font-mono text-primary">yourname.developa.me</span></p>
+          <PhoneMockup />
         </div>
       </section>
+
+      <FeatureMarquee items={['Pay online with card or transfer', 'Orders on WhatsApp', 'Your own yourname.developa.me address', 'Ready-made themes', 'Coupons and discounts', 'Order emails and receipts', 'Bookings and memberships', 'Works great on phones']} />
 
       {/* Templates */}
       <section id="templates" className="pb-10 sm:pb-14 scroll-mt-20">
         <div className="g-wrap">
-          <h2 className="g-h2 text-center">Pick a look</h2>
+          <Reveal><h2 className="g-h2 text-center">Pick a look</h2></Reveal>
           <p className="g-lead text-center max-w-xl mx-auto mt-3 mb-8">Every theme is a fully working site you can try before you choose.</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {SITE_TEMPLATES.slice(0, 8).map((t) => {
-              const items = demoProducts(t);
-              return (
-                <Link key={t.id} href={`/developer/preview/${t.id}`} className="g-card overflow-hidden text-left hover:shadow-md transition block">
-                  <div className="grid grid-cols-2 h-28 sm:h-32" style={{ background: `${t.accent_color}14` }}>
-                    {items.slice(0, 2).map((p) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img key={p.id} src={p.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                    ))}
-                  </div>
-                  <div className="p-3.5">
-                    <p className="text-sm font-medium">{t.label}</p>
-                    <p className="text-xs text-secondary mt-1 line-clamp-2">{t.tagline}</p>
-                  </div>
-                </Link>
-              );
-            })}
+            {SITE_TEMPLATES.slice(0, 8).map((t) => (
+              <Link key={t.id} href={`/developer/preview/${t.id}`} className="g-card dv-lift overflow-hidden text-left block">
+                <TemplateThumb t={t} />
+                <div className="p-3.5">
+                  <p className="text-sm font-medium">{t.label}</p>
+                  <p className="text-xs text-secondary mt-1 line-clamp-2">{t.tagline}</p>
+                  <p className="text-xs font-medium text-accent mt-2">Preview this site</p>
+                </div>
+              </Link>
+            ))}
           </div>
           <div className="text-center mt-8">
             <Link href="/developer/templates" className="btn-secondary inline-flex items-center gap-2 !rounded-full px-7 py-3.5 text-base font-medium">
@@ -181,18 +184,20 @@ export default function CreatePortalView() {
             {[
               { icon: Palette, t: 'Choose a look', d: 'Start from a ready-made store or community design. Change colours and text anytime.' },
               { icon: MousePointerClick, t: 'Add your content', d: 'Type in your products, prices and bank details. Photos upload from your phone.' },
-              { icon: Rocket, t: 'Share your link', d: 'Send your address on WhatsApp and Instagram. Customers order and pay by transfer.' },
+              { icon: Rocket, t: 'Share your link', d: 'Send your address on WhatsApp and Instagram. Customers order and pay online.' },
             ].map((x, n) => (
-              <div key={x.t} className="g-card p-6">
+              <Reveal key={x.t} delay={n * 120}><div className="g-card dv-lift p-6 h-full">
                 <span className="w-11 h-11 rounded-full g-tonal-strong flex items-center justify-center text-accent"><x.icon className="w-5 h-5" /></span>
                 <p className="text-xs text-secondary mt-4">Step {n + 1}</p>
                 <h3 className="g-h3 mt-1">{x.t}</h3>
                 <p className="text-sm text-secondary mt-2 leading-relaxed">{x.d}</p>
-              </div>
+              </div></Reveal>
             ))}
           </div>
         </div>
       </section>
+
+      <SignupBanner trialDays={TRIAL_DAYS} onStart={scrollToStart} />
 
       {/* Start: sign in + create */}
       <section id="start" className="g-section scroll-mt-16">
@@ -251,9 +256,9 @@ export default function CreatePortalView() {
                 </div>
               )}
 
-              <div className="g-card p-5 sm:p-7">
+              <div>
                 <h3 className="g-h3 mb-4">{mySites.length > 0 ? 'Create another site' : 'Create your first site'}</h3>
-                <CreateForumForm onCreated={() => { if (user) loadMySites(); }} />
+                <GuidedSetup onCreated={() => { if (user) loadMySites(); }} />
               </div>
 
               <button type="button" onClick={handleSignOut} className="mx-auto flex items-center gap-1.5 text-sm text-secondary hover:text-primary">
@@ -267,8 +272,8 @@ export default function CreatePortalView() {
       {/* Plans */}
       <section id="plans" className="g-section pt-0">
         <div className="g-wrap">
-          <h2 className="g-h2 text-center">Simple pricing</h2>
-          <p className="g-lead text-center mt-3">Start free, with {TRIAL_DAYS} days of Pro to try everything. Pay for longer and pay less.</p>
+          <Reveal><h2 className="g-h2 text-center">Simple monthly pricing</h2></Reveal>
+          <p className="g-lead text-center mt-3">Start free, with {TRIAL_DAYS} days of Pro to try everything. Pay month by month, or pay for longer and save.</p>
           <div className="mt-6 mx-auto flex w-fit rounded-full g-tonal-strong p-1 text-sm font-medium" role="tablist" aria-label="Billing period">
             {BILLING_PERIODS.map((b) => (
               <button
@@ -277,9 +282,9 @@ export default function CreatePortalView() {
                 role="tab"
                 aria-selected={months === b.months}
                 onClick={() => setMonths(b.months)}
-                className={`px-4 sm:px-5 py-2 rounded-full transition ${months === b.months ? 'bg-card shadow-sm text-primary' : 'text-secondary'}`}
+                className={`px-3 sm:px-5 py-2 rounded-full transition whitespace-nowrap flex flex-col sm:flex-row items-center leading-tight ${months === b.months ? 'bg-card shadow-sm text-primary' : 'text-secondary'}`}
               >
-                {b.label}{b.discountPct > 0 && <span className="ml-1.5 text-xs text-accent">save {b.discountPct}%</span>}
+                {b.label}{b.discountPct > 0 && <span className="sm:ml-1.5 text-[10px] sm:text-xs text-accent">save {b.discountPct}%</span>}
               </button>
             ))}
           </div>
@@ -288,7 +293,8 @@ export default function CreatePortalView() {
               const p = PLANS[t];
               const featured = t === 'pro';
               return (
-                <div key={t} className={`g-card p-6 sm:p-7 flex flex-col ${featured ? 'ring-2 ring-[var(--accent)]' : ''}`}>
+                <div key={t} className={`g-card dv-lift relative p-6 sm:p-7 flex flex-col ${featured ? 'ring-2 ring-[var(--accent)]' : ''}`}>
+                  {featured && <span className="absolute -top-3 left-6 rounded-full bg-[var(--accent)] text-white text-[11px] font-semibold px-3 py-1">Most popular</span>}
                   <h3 className="g-h3">{p.name}</h3>
                   <p className="mt-3">
                     <span className="text-3xl sm:text-4xl font-normal">{p.priceNgn === 0 ? 'Free' : naira(Math.round(priceForPeriod(t, months) / months))}</span>
@@ -309,11 +315,12 @@ export default function CreatePortalView() {
               );
             })}
           </div>
-          <p className="text-xs text-secondary text-center mt-6">Paid plans are paid by bank transfer and activated by our team. We take no commission on your sales.</p>
+          <p className="text-xs text-secondary text-center mt-6">Pay for a paid plan monthly, with no long contract. When customers pay you online, a small processing fee applies.</p>
           <p className="text-xs text-secondary text-center mt-2 max-w-xl mx-auto">{PRUNE_NOTICE}</p>
         </div>
       </section>
 
+      <StickySignupBar onStart={scrollToStart} trialDays={TRIAL_DAYS} />
       <DevelopaFooter />
     </div>
   );
