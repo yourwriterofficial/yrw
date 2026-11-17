@@ -21,10 +21,10 @@ const roboto = Roboto({
 });
 
 // Display faces used by individual storefront themes (see lib/themeSkins.ts and globals.css).
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap" });
-const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk", display: "swap" });
-const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap" });
-const oswald = Oswald({ subsets: ["latin"], variable: "--font-oswald", display: "swap" });
+const playfair = Playfair_Display({ subsets: ["latin"], preload: false, variable: "--font-playfair", display: "swap" });
+const grotesk = Space_Grotesk({ subsets: ["latin"], preload: false, variable: "--font-grotesk", display: "swap" });
+const fraunces = Fraunces({ subsets: ["latin"], preload: false, variable: "--font-fraunces", display: "swap" });
+const oswald = Oswald({ subsets: ["latin"], preload: false, variable: "--font-oswald", display: "swap" });
 
 export const viewport: Viewport = {
   themeColor: "#050505",

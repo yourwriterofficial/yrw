@@ -22,7 +22,7 @@ export function HomeStyles() {
       @keyframes dv-marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
       @keyframes dv-shine { 0% { background-position: 0% 50% } 100% { background-position: 200% 50% } }
       @keyframes dv-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent) } 100% { box-shadow: 0 0 0 16px transparent } }
-      .dv-blob { position: absolute; border-radius: 999px; filter: blur(70px); opacity: .45; pointer-events: none; animation: dv-drift 14s ease-in-out infinite; }
+      .dv-blob { position: absolute; border-radius: 999px; -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 68%); mask-image: radial-gradient(circle, #000 0%, transparent 68%); opacity: .5; pointer-events: none; will-change: transform; animation: dv-drift 14s ease-in-out infinite; }
       .dv-grad-text { background: linear-gradient(90deg, var(--dv-a), var(--dv-b), var(--dv-c), var(--dv-a)); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: dv-shine 6s linear infinite; }
       .dv-reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); transition-delay: var(--d, 0ms); }
       .dv-reveal.in { opacity: 1; transform: none; }

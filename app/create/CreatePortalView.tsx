@@ -7,7 +7,8 @@ import {
   MousePointerClick, Palette, Rocket, Settings2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import GuidedSetup from '@/app/create/GuidedSetup';
+import dynamic from 'next/dynamic';
+const GuidedSetup = dynamic(() => import('@/app/create/GuidedSetup'), { loading: () => <div className="g-card p-7 text-center text-sm text-secondary">Loading your setup…</div> });
 import DevelopaHeader from '@/app/components/DevelopaHeader';
 import DevelopaFooter from '@/app/components/DevelopaFooter';
 import { getForumHref, type ForumSummary } from '@/lib/forums';
