@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {
   MessageSquare, Users, Plus, Pin, Lock, UserPlus, Check, Settings, ShoppingBag, ShieldCheck, X,
@@ -9,18 +10,20 @@ import { formatDistanceToNow } from 'date-fns';
 import Button from '@/app/components/ui/Button';
 import StorefrontView from '@/app/components/forums/StorefrontView';
 import SiteAdSpace from '@/app/components/forums/SiteAdSpace';
-import SellerChat from '@/app/components/forums/SellerChat';
 import SitePwa from '@/app/components/forums/SitePwa';
 import ThreadListThemes, { FORUM_LAYOUTS } from '@/app/components/forums/ThreadListThemes';
 import { isPremiumTemplate } from '@/lib/premium';
 import { pluginOn } from '@/lib/plugins';
 import { PremiumFloaters, TrendingRail } from '@/app/components/forums/PremiumExtras';
 import { getTemplateById } from '@/lib/siteTemplates';
-import StoreManagerModal from '@/app/components/forums/StoreManagerModal';
-import ForumMembershipModal, {
-  type MyMembershipStatus,
-  type PublicMembershipTier,
+import type {
+  MyMembershipStatus,
+  PublicMembershipTier,
 } from '@/app/components/forums/ForumMembershipModal';
+
+const SellerChat = dynamic(() => import('@/app/components/forums/SellerChat'), { ssr: false });
+const StoreManagerModal = dynamic(() => import('@/app/components/forums/StoreManagerModal'), { ssr: false });
+const ForumMembershipModal = dynamic(() => import('@/app/components/forums/ForumMembershipModal'), { ssr: false });
 import {
   extractDevelopaSubdomain, type ForumSummary, type ForumThread, type SiteProduct,
 } from '@/lib/forums';

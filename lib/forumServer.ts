@@ -102,7 +102,7 @@ export async function readSiteTools(siteId: string) {
  * so without this an attacker could sign up with a victim's address (when email confirmation is
  * off, or via a provider that does not verify) and inherit their staff role.
  */
-async function emailIsConfirmed(userId: string): Promise<boolean> {
+export async function emailIsConfirmed(userId: string): Promise<boolean> {
   try {
     const { data } = await supabaseAdmin.auth.admin.getUserById(userId);
     return !!(data?.user?.email_confirmed_at || (data?.user as { confirmed_at?: string } | undefined)?.confirmed_at);

@@ -71,8 +71,16 @@ export async function GET(
 
       if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
-      // Strip internal owner-only fields before returning to buyers.
-      const { internal_note: _internalNote, buyer_id: _buyerId, ...publicOrder } = order as Record<string, unknown>;
+      // Strip internal owner-only and sensitive PII fields before returning to unauthenticated buyers.
+      const {
+        internal_note: _internalNote,
+        buyer_id: _buyerId,
+        delivery_address: _deliveryAddress,
+        buyer_phone: _buyerPhone,
+        payment_reference: _paymentRef,
+        payment_proof_note: _paymentProofNote,
+        ...publicOrder
+      } = order as Record<string, unknown>;
 
       // Download links are released only once the store owner has confirmed payment.
       const downloads = order.payment_status === 'paid' ? await downloadsForOrder(site.id, order.items) : [];

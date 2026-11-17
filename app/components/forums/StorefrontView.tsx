@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, Fragment } from 'react';
+import dynamic from 'next/dynamic';
 import { ShoppingCart, Search, Package, Calendar, ArrowUp } from 'lucide-react';
 import Button from '@/app/components/ui/Button';
 import { formatMoney, type ForumSummary, type ProductVariant, type SiteOrder, type SiteProduct } from '@/lib/forums';
@@ -8,17 +9,19 @@ import { getTemplateById } from '@/lib/siteTemplates';
 import { computeShipping } from '@/lib/shipping';
 import { planFor } from '@/lib/plans';
 import { StorefrontHeroAndTrust, StoreProductCard } from '@/app/components/forums/StorefrontThemes';
-import ProductDetailModal from '@/app/components/forums/ProductDetailModal';
-import OrderTrackingModal from '@/app/components/forums/OrderTrackingModal';
-import StorefrontBookingModal, { type PublicBookingService, type TakenSlot } from '@/app/components/forums/StorefrontBookingModal';
-import StorefrontCheckoutDrawer, { type StorefrontCartEntry } from '@/app/components/forums/StorefrontCheckoutDrawer';
+import ProductDetailModal, { buildProductWaHref } from '@/app/components/forums/ProductDetailModal';
+import type { PublicBookingService, TakenSlot } from '@/app/components/forums/StorefrontBookingModal';
+import type { StorefrontCartEntry } from '@/app/components/forums/StorefrontCheckoutDrawer';
+
+const OrderTrackingModal = dynamic(() => import('@/app/components/forums/OrderTrackingModal'), { ssr: false });
+const StorefrontBookingModal = dynamic(() => import('@/app/components/forums/StorefrontBookingModal'), { ssr: false });
+const StorefrontCheckoutDrawer = dynamic(() => import('@/app/components/forums/StorefrontCheckoutDrawer'), { ssr: false });
 
 import { isPremiumTemplate } from '@/lib/premium';
 import { pluginOn } from '@/lib/plugins';
 import BusinessCard from '@/app/components/forums/BusinessCard';
 import { skinFor } from '@/lib/themeSkins';
 import { parseLayout, type SectionKey } from '@/lib/sectionOrder';
-import { buildProductWaHref } from '@/app/components/forums/ProductDetailModal';
 import { PremiumFloaters, PremiumRails, Reveal, WishHeart, useRecentlyViewed } from '@/app/components/forums/PremiumExtras';
 import { StorefrontTrustBar, StorefrontFaqAccordion, StorefrontSafetyLinks, FlashSaleBanner, StorefrontCurrencyPreview } from '@/app/components/forums/StorefrontExtras';
 import type { PreviewCurrency } from '@/lib/storefrontTools';

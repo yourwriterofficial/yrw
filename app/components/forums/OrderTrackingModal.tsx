@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Search, Download, Printer, Star } from 'lucide-react';
+import Link from 'next/link';
+import { X, Search, Download, Printer, Star, User, Package, LogIn } from 'lucide-react';
 import { formatMoney, type ForumSummary, type SiteOrder } from '@/lib/forums';
 import { planFor } from '@/lib/plans';
+import { supabase } from '@/lib/supabaseClient';
 
 const PAY_LABEL: Record<string, string> = {
   pending: 'Awaiting payment',
@@ -29,12 +31,19 @@ export default function OrderTrackingModal({
   initialCode?: string;
   onClose: () => void;
 }) {
+  const [tab, setTab] = useState<'track' | 'profile'>('track');
   const [code, setCode] = useState(initialCode);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [order, setOrder] = useState<SiteOrder | null>(null);
   const [downloads, setDownloads] = useState<{ title: string; url: string }[]>([]);
+  const [myLoading, setMyLoading] = useState(false);
+  const [myAuthed, setMyAuthed] = useState<boolean | null>(null);
+  const [myProfile, setMyProfile] = useState<{ email: string; name: string; orders_count: number; paid_orders_count: number; total_spent: number } | null>(null);
+  const [myOrders, setMyOrders] = useState<SiteOrder[]>([]);
+  const [myDownloads, setMyDownloads] = useState<Record<string, { title: string; url: string }[]>>({});
+  const [myError, setMyError] = useState('');
   const [reviewingPid, setReviewingPid] = useState<string | null>(null);
   const [revRating, setRevRating] = useState(5);
   const [revBody, setRevBody] = useState('');
@@ -43,6 +52,56 @@ export default function OrderTrackingModal({
   const [reviewedPids, setReviewedPids] = useState<Record<string, boolean>>({});
   const currency = site.currency || 'NGN';
   const plan = planFor(site.plan_tier);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!active) return;
+      if (session?.user) {
+        setMyAuthed(true);
+        if (session.user.email && !email) {
+          setEmail(session.user.email);
+        }
+      } else {
+        setMyAuthed(false);
+      }
+    })();
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadMyOrders = async () => {
+    setMyLoading(true);
+    setMyError('');
+    try {
+      const res = await fetch(`/api/forums/${encodeURIComponent(site.slug)}/my-orders`, { cache: 'no-store' });
+      if (res.status === 401) {
+        setMyAuthed(false);
+        setMyLoading(false);
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMyError(data.error || 'Could not load your orders.');
+      } else {
+        setMyAuthed(true);
+        setMyProfile(data.profile || null);
+        setMyOrders(data.orders || []);
+        setMyDownloads(data.downloadsByCode || {});
+      }
+    } catch {
+      setMyError('Could not reach the server.');
+    }
+    setMyLoading(false);
+  };
+
+  useEffect(() => {
+    if (tab === 'profile' && myAuthed && myOrders.length === 0 && !myLoading) {
+      loadMyOrders();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, myAuthed]);
 
   const postReview = async (e: React.FormEvent, productId: string) => {
     e.preventDefault();
@@ -119,8 +178,8 @@ export default function OrderTrackingModal({
       >
         <div className="flex items-center justify-between border-b border-theme pb-3">
           <div>
-            <h2 id="track-order-title" className="g-h3">Track your order</h2>
-            <p className="text-xs text-secondary mt-0.5">Enter your order code and the email used at checkout.</p>
+            <h2 id="track-order-title" className="g-h3">Orders &amp; Profile</h2>
+            <p className="text-xs text-secondary mt-0.5">Track by order code or view your orders on {site.name}.</p>
           </div>
           <button
             type="button"
@@ -132,6 +191,145 @@ export default function OrderTrackingModal({
           </button>
         </div>
 
+        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-full bg-secondary/40 border border-theme text-xs font-medium">
+          <button
+            type="button"
+            onClick={() => setTab('track')}
+            className={`min-h-9 rounded-full inline-flex items-center justify-center gap-1.5 transition cursor-pointer ${
+              tab === 'track' ? 'bg-accent text-[var(--accent-foreground)] font-semibold' : 'text-secondary hover:text-primary'
+            }`}
+          >
+            <Search className="w-3.5 h-3.5" /> Track by code
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('profile')}
+            className={`min-h-9 rounded-full inline-flex items-center justify-center gap-1.5 transition cursor-pointer ${
+              tab === 'profile' ? 'bg-accent text-[var(--accent-foreground)] font-semibold' : 'text-secondary hover:text-primary'
+            }`}
+          >
+            <User className="w-3.5 h-3.5" /> My orders
+          </button>
+        </div>
+
+        {tab === 'profile' ? (
+          <div className="space-y-3">
+            {myAuthed === false ? (
+              <div className="g-card p-5 text-center space-y-3">
+                <Package className="w-8 h-8 text-accent mx-auto" />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-primary">Sign in to view your orders on {site.name}</p>
+                  <p className="text-xs text-secondary">
+                    Your order history, digital downloads, and receipts for this store stay private to your verified account.
+                  </p>
+                </div>
+                <Link
+                  href={`/login?next=${encodeURIComponent(`/forums/${site.slug}?track=1`)}`}
+                  className="inline-flex items-center justify-center gap-2 min-h-10 px-5 rounded-full bg-accent hover:bg-accent-hover text-[var(--accent-foreground)] text-xs font-semibold"
+                >
+                  <LogIn className="w-3.5 h-3.5" /> Sign in
+                </Link>
+              </div>
+            ) : myLoading ? (
+              <p className="text-sm text-secondary py-6 text-center">Loading your orders…</p>
+            ) : myError ? (
+              <p className="text-sm text-danger" role="alert">{myError}</p>
+            ) : (
+              <>
+                {myProfile && (
+                  <div className="p-3.5 rounded-2xl bg-secondary/40 border border-theme flex items-center justify-between gap-3 text-xs">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-primary truncate">{myProfile.name || myProfile.email}</p>
+                      <p className="text-secondary truncate">{myProfile.email}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-semibold text-primary">{myProfile.orders_count} order{myProfile.orders_count === 1 ? '' : 's'}</p>
+                      <p className="text-secondary">{formatMoney(myProfile.total_spent, currency)} spent</p>
+                    </div>
+                  </div>
+                )}
+                {myOrders.length === 0 ? (
+                  <div className="g-card p-5 text-center text-xs text-secondary">
+                    You have not placed any orders on {site.name} yet.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {myOrders.map((o) => {
+                      const dl = myDownloads[o.order_code] || [];
+                      return (
+                        <div key={o.id} className="g-card p-3.5 space-y-2.5 text-xs">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-mono font-bold text-sm text-primary">{o.order_code}</p>
+                              <p className="text-secondary">
+                                {new Date(o.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </p>
+                            </div>
+                            <p className="font-bold text-sm text-primary">{formatMoney(o.total_amount, currency)}</p>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            <span className="px-2.5 py-1 rounded-full bg-secondary/50 border border-theme font-medium">
+                              {PAY_LABEL[o.payment_status] || o.payment_status}
+                            </span>
+                            <span className="px-2.5 py-1 rounded-full bg-secondary/50 border border-theme font-medium">
+                              {SHIP_LABEL[o.fulfillment_status] || o.fulfillment_status}
+                            </span>
+                          </div>
+                          <div className="space-y-1 border-t border-theme pt-2">
+                            {o.items.map((it, idx) => (
+                              <div key={idx} className="flex justify-between gap-2 text-secondary">
+                                <span>{it.qty} × {it.title}</span>
+                                <span className="shrink-0">{formatMoney(Number(it.price) * it.qty, currency)}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {o.payment_status === 'paid' && dl.length > 0 && (
+                            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1">
+                              <p className="font-semibold text-emerald-400 flex items-center gap-1">
+                                <Download className="w-3 h-3" /> Downloads
+                              </p>
+                              {dl.map((d, idx) => (
+                                <a key={idx} href={d.url} target="_blank" rel="noopener noreferrer" className="block text-accent hover:underline truncate">
+                                  Download {d.title}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOrder(o);
+                                setDownloads(dl);
+                                setCode(o.order_code);
+                                setEmail(o.buyer_email || myProfile?.email || '');
+                                setTab('track');
+                              }}
+                              className="px-3 min-h-8 rounded-full border border-theme hover:bg-hover font-medium cursor-pointer"
+                            >
+                              Details &amp; review
+                            </button>
+                            {plan.receipts && (
+                              <a
+                                href={`/receipt/${encodeURIComponent(o.order_code)}?slug=${encodeURIComponent(site.slug)}&email=${encodeURIComponent(o.buyer_email || myProfile?.email || '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 min-h-8 rounded-full border border-theme hover:bg-hover font-medium inline-flex items-center gap-1"
+                              >
+                                <Printer className="w-3 h-3" /> Receipt
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : (
+        <>
         <form onSubmit={lookup} className="space-y-3">
           <div>
             <label htmlFor="track-code" className="block text-sm font-medium mb-1">Order code</label>
@@ -298,6 +496,8 @@ export default function OrderTrackingModal({
               </div>
             )}
           </div>
+        )}
+        </>
         )}
       </div>
     </div>
